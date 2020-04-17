@@ -3,7 +3,6 @@ package restapi
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"net/http"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
@@ -49,35 +48,29 @@ func GetSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-func getHistoryParams(r *http.Request) (*common.Address, int, int, error) {
+func getHistoryParams(r *http.Request) (address string, offset int, limit int, err error) {
 	vars := mux.Vars(r)
 	vals := r.URL.Query()
 
-	address := common.HexToAddress(vars["address"])
-	offset := 0
-	limit := 20
+	address = vars["address"]
 
 	offset_val, exist := vals["offset"]
 	if exist {
-		bi, ok := new(big.Int).SetString(offset_val[0], 0)
-		if !ok || !bi.IsUint64() || bi.Uint64() > uint64(common.MaxInt) {
-			err := fmt.Errorf("wrong offset")
-			return &address, offset, limit, err
+		offset, err = common.GetIntFromStr(offset_val[0])
+		if err != nil {
+			return address, offset, limit, err
 		}
-		offset = int(bi.Uint64())
 	}
 
 	limit_val, exist := vals["limit"]
 	if exist {
-		bi, ok := new(big.Int).SetString(limit_val[0], 0)
-		if !ok || !bi.IsUint64() || bi.Uint64() > uint64(common.MaxInt) {
-			err := fmt.Errorf("wrong offset")
-			return &address, offset, limit, err
+		limit, err = common.GetIntFromStr(limit_val[0])
+		if err != nil {
+			return address, offset, limit, err
 		}
-		limit = int(bi.Uint64())
 	}
 
-	return &address, offset, limit, nil
+	return address, offset, limit, nil
 }
 
 func SwapinHistoryHandler(w http.ResponseWriter, r *http.Request) {

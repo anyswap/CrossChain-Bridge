@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/server"
 )
 
@@ -21,6 +22,9 @@ func init() {
 }
 
 func main() {
+	mongoURL := "test:test@localhost:27917"
+	dbName := "testdb"
+	mongodb.MongoServerInit(mongoURL, dbName)
 	for {
 		server.StartAPIServer()
 		time.Sleep(time.Duration(60) * time.Second)

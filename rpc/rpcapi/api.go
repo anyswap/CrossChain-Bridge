@@ -44,13 +44,24 @@ func (s *RpcAPI) GetSwapout(r *http.Request, txid *common.Hash, result *swapapi.
 }
 
 type RpcQueryHistoryArgs struct {
-	Address *common.Address
+	Address string
 	Offset  int
 	Limit   int
 }
 
+func (args *RpcQueryHistoryArgs) getQueryArgs() (address string, offset int, limit int, err error) {
+	address = args.Address
+	offset = args.Offset
+	limit = args.Limit
+	return address, offset, limit, nil
+}
+
 func (s *RpcAPI) GetSwapinHistory(r *http.Request, args *RpcQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
-	res, err := swapapi.GetSwapinHistory(args.Address, args.Offset, args.Limit)
+	address, offset, limit, err := args.getQueryArgs()
+	if err != nil {
+		return err
+	}
+	res, err := swapapi.GetSwapinHistory(address, offset, limit)
 	if err == nil && res != nil {
 		*result = res
 	}
@@ -58,7 +69,11 @@ func (s *RpcAPI) GetSwapinHistory(r *http.Request, args *RpcQueryHistoryArgs, re
 }
 
 func (s *RpcAPI) GetSwapoutHistory(r *http.Request, args *RpcQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
-	res, err := swapapi.GetSwapoutHistory(args.Address, args.Offset, args.Limit)
+	address, offset, limit, err := args.getQueryArgs()
+	if err != nil {
+		return err
+	}
+	res, err := swapapi.GetSwapoutHistory(address, offset, limit)
 	if err == nil && res != nil {
 		*result = res
 	}
