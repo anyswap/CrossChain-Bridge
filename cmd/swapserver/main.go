@@ -7,6 +7,7 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/server"
+	"github.com/fsn-dev/crossChain-Bridge/worker"
 )
 
 type logWriter struct {
@@ -25,6 +26,11 @@ func main() {
 	mongoURL := "test:test@localhost:27917"
 	dbName := "testdb"
 	mongodb.MongoServerInit(mongoURL, dbName)
+
+	worker.StartWork()
+
+	time.Sleep(100 * time.Millisecond)
+
 	for {
 		server.StartAPIServer()
 		time.Sleep(time.Duration(60) * time.Second)
