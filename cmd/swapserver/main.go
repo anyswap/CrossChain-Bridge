@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
+	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/server"
 	"github.com/fsn-dev/crossChain-Bridge/worker"
 )
@@ -23,8 +24,14 @@ func init() {
 }
 
 func main() {
-	mongoURL := "test:test@localhost:27917"
-	dbName := "testdb"
+	config, err := params.LoadConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	dbConfig := config.MongoDB
+	mongoURL := dbConfig.GetURL()
+	dbName := dbConfig.DbName
 	mongodb.MongoServerInit(mongoURL, dbName)
 
 	worker.StartWork()
