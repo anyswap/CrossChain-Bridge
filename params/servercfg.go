@@ -27,7 +27,7 @@ type SwapServerConfig struct {
 	DescContractAddress string
 	DestRpcServer       string
 
-	ApiPort int `toml:",omitempty"`
+	ApiPort int `toml:",omitempty" json:"-"`
 }
 
 type MongoDBConfig struct {

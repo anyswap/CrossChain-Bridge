@@ -5,11 +5,15 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
+	"github.com/fsn-dev/crossChain-Bridge/params"
 )
 
 func GetServerInfo() (*ServerInfo, error) {
-	info := &ServerInfo{}
-	return info, nil
+	config := params.ServerConfig()
+	if config == nil {
+		return nil, nil
+	}
+	return config.SwapServer, nil
 }
 
 func GetSwapStatistics() (*SwapStatistics, error) {
