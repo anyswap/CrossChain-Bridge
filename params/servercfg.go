@@ -9,6 +9,11 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common"
 )
 
+const (
+	defaultApiPort      = 11556
+	defServerConfigFile = "server.toml"
+)
+
 type SwapServerConfig struct {
 	SrcChainName     string
 	SrcAssetSymbol   string
@@ -21,6 +26,8 @@ type SwapServerConfig struct {
 	DestAssetDecimals   uint8
 	DescContractAddress string
 	DestRpcServer       string
+
+	ApiPort int `toml:",omitempty"`
 }
 
 type MongoDBConfig struct {
@@ -42,26 +49,31 @@ type AllConfig struct {
 	MongoDB    *MongoDBConfig
 }
 
-var (
-	allConfig *AllConfig
-)
+var allConfig *AllConfig
 
-const (
-	configFileName = "config.toml"
-)
-
-func Config() *AllConfig {
+func ServerConfig() *AllConfig {
 	return allConfig
 }
 
-func LoadConfig() (*AllConfig, error) {
+func GetApiPort() int {
+	apiPort := allConfig.SwapServer.ApiPort
+	if apiPort == 0 {
+		apiPort = defaultApiPort
+	}
+	return apiPort
+}
+
+func LoadConfig(configFile string) (*AllConfig, error) {
 	if allConfig == nil {
-		// find config file in the execute directory (default).
-		dir, err := common.ExecuteDir()
-		if err != nil {
-			return nil, err
+		if configFile == "" {
+			// find config file in the execute directory (default).
+			dir, err := common.ExecuteDir()
+			if err != nil {
+				return nil, err
+			}
+			configFile = common.AbsolutePath(dir, defServerConfigFile)
 		}
-		configFile := common.AbsolutePath(dir, configFileName)
+		log.Println("Config file is", configFile)
 		if !common.FileExist(configFile) {
 			return nil, fmt.Errorf("config file %v not exist", configFile)
 		}
@@ -70,8 +82,7 @@ func LoadConfig() (*AllConfig, error) {
 			return nil, err
 		}
 	}
-	log.Println("LoadConfig finished.")
 	bs, _ := json.MarshalIndent(allConfig, "", "  ")
-	fmt.Println(string(bs))
+	log.Println("LoadConfig finished.", string(bs))
 	return allConfig, nil
 }

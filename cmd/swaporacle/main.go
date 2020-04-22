@@ -3,21 +3,48 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
+	"os"
+	"sort"
+
+	"github.com/fsn-dev/crossChain-Bridge/cmd/utils"
+	"github.com/urfave/cli/v2"
 )
 
-type logWriter struct {
-}
-
-func (writer logWriter) Write(bytes []byte) (int, error) {
-	return fmt.Print(time.Now().UTC().Format("2006-01-02T15:04:05.999Z") + " " + string(bytes))
-}
+var (
+	clientIdentifier = "swaporacle"
+	// Git SHA1 commit hash of the release (set via linker flags)
+	gitCommit = ""
+	// The app that holds all commands and flags.
+	app = utils.NewApp(clientIdentifier, gitCommit, "the swaporacle command line interface")
+)
 
 func init() {
-	log.SetFlags(0)
-	log.SetOutput(new(logWriter))
+	utils.InitLogger()
+	// Initialize the CLI app and start action
+	app.Action = swaporacle
+	app.HideVersion = true // we have a command to print the version
+	app.Copyright = "Copyright 2017-2020 The crossChain-Bridge Authors"
+	app.Commands = []*cli.Command{
+		utils.LicenseCommand,
+		utils.VersionCommand,
+	}
+	app.Flags = []cli.Flag{
+		utils.ConfigFileFlag,
+	}
+	sort.Sort(cli.CommandsByName(app.Commands))
 }
 
 func main() {
+	if err := app.Run(os.Args); err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+}
+
+func swaporacle(ctx *cli.Context) error {
+	if ctx.NArg() > 0 {
+		return fmt.Errorf("invalid command: %q", ctx.Args().Get(0))
+	}
 	log.Println("swap oracle stub")
+	return nil
 }
