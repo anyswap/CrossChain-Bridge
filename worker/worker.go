@@ -1,8 +1,9 @@
 package worker
 
 import (
-	"log"
 	"time"
+
+	"github.com/fsn-dev/crossChain-Bridge/log"
 )
 
 const interval = 10 * time.Millisecond

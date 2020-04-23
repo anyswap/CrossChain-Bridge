@@ -1,4 +1,4 @@
-.PHONY: all test clean fmt
+.PHONY: all test testv clean fmt
 .PHONY: swapserver swaporacle
 
 GOBIN = ./build/bin
@@ -21,6 +21,9 @@ all:
 
 test: all
 	$(GOCMD) test ./...
+
+testv: all
+	$(GOCMD) test -v ./...
 
 clean:
 	$(GOCMD) clean -cache

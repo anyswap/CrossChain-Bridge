@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"sort"
 
 	"github.com/fsn-dev/crossChain-Bridge/cmd/utils"
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/urfave/cli/v2"
 )
 
@@ -19,7 +19,6 @@ var (
 )
 
 func init() {
-	utils.InitLogger()
 	// Initialize the CLI app and start action
 	app.Action = swaporacle
 	app.HideVersion = true // we have a command to print the version

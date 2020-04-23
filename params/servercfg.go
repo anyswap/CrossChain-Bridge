@@ -3,10 +3,10 @@ package params
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/BurntSushi/toml"
 	"github.com/fsn-dev/crossChain-Bridge/common"
+	"github.com/fsn-dev/crossChain-Bridge/log"
 )
 
 const (

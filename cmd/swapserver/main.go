@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/cmd/utils"
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/server"
@@ -24,7 +24,6 @@ var (
 )
 
 func init() {
-	utils.InitLogger()
 	// Initialize the CLI app and start action
 	app.Action = swapserver
 	app.HideVersion = true // we have a command to print the version

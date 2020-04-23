@@ -2,9 +2,9 @@ package mongodb
 
 import (
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"gopkg.in/mgo.v2"
 )
 

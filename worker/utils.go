@@ -1,8 +1,9 @@
 package worker
 
 import (
-	"log"
 	"time"
+
+	"github.com/fsn-dev/crossChain-Bridge/log"
 )
 
 var (
