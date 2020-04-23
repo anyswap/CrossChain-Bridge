@@ -11,6 +11,20 @@ var (
 		Aliases: []string{"c"},
 		Usage:   "Specify config file",
 	}
+	LogFileFlag = &cli.StringFlag{
+		Name:  "log",
+		Usage: "Specify log file, support rotate",
+	}
+	LogRotationFlag = &cli.Uint64Flag{
+		Name:  "rotate",
+		Usage: "log rotation time (unit hour)",
+		Value: 24,
+	}
+	LogMaxAgeFlag = &cli.Uint64Flag{
+		Name:  "maxage",
+		Usage: "log max age (unit hour)",
+		Value: 720,
+	}
 	VerbosityFlag = &cli.Uint64Flag{
 		Name:    "verbosity",
 		Aliases: []string{"v"},
@@ -33,6 +47,13 @@ func SetLogger(ctx *cli.Context) {
 	jsonFormat := ctx.Bool(JsonFormatFlag.Name)
 	colorFormat := ctx.Bool(ColorFormatFlag.Name)
 	log.SetLogger(uint32(logLevel), jsonFormat, colorFormat)
+
+	logFile := ctx.String(LogFileFlag.Name)
+	if logFile != "" {
+		logRotation := ctx.Uint64(LogRotationFlag.Name)
+		logMaxAge := ctx.Uint64(LogMaxAgeFlag.Name)
+		log.SetLogFile(logFile, logRotation, logMaxAge)
+	}
 }
 
 func GetConfigFilePath(ctx *cli.Context) string {

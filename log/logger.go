@@ -1,8 +1,12 @@
 package log
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"time"
 
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,6 +32,28 @@ func SetLogger(logLevel uint32, jsonFormat, colorFormat bool) {
 			DisableSorting:  true,
 		})
 	}
+}
+
+func SetLogFile(logFile string, logRotation, logMaxAge uint64) {
+	if logFile == "" {
+		return
+	}
+	var (
+		logRotateSuffix = "%Y%m%d%H"
+		logRotationTime = time.Duration(logRotation) * time.Hour
+		logMaxAgeTime   = time.Duration(logMaxAge) * time.Hour
+	)
+	logFile, _ = filepath.Abs(logFile)
+	writer, err := rotatelogs.New(
+		fmt.Sprintf("%s.%s", logFile, logRotateSuffix),
+		rotatelogs.WithLinkName(logFile),
+		rotatelogs.WithMaxAge(logMaxAgeTime),
+		rotatelogs.WithRotationTime(logRotationTime),
+	)
+	if err != nil {
+		logrus.Fatalf("Failed to Initialize Log File %s", err)
+	}
+	logrus.SetOutput(writer)
 }
 
 func WithFields(ctx ...interface{}) *logrus.Entry {
