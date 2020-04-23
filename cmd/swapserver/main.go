@@ -34,6 +34,9 @@ func init() {
 	}
 	app.Flags = []cli.Flag{
 		utils.ConfigFileFlag,
+		utils.VerbosityFlag,
+		utils.JsonFormatFlag,
+		utils.ColorFormatFlag,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 }
@@ -46,6 +49,7 @@ func main() {
 }
 
 func swapserver(ctx *cli.Context) error {
+	utils.SetLogger(ctx)
 	if ctx.NArg() > 0 {
 		return fmt.Errorf("invalid command: %q", ctx.Args().Get(0))
 	}

@@ -82,7 +82,12 @@ func LoadConfig(configFile string) (*AllConfig, error) {
 			return nil, err
 		}
 	}
-	bs, _ := json.MarshalIndent(allConfig, "", "  ")
+	var bs []byte
+	if log.JsonFormat {
+		bs, _ = json.Marshal(allConfig)
+	} else {
+		bs, _ = json.MarshalIndent(allConfig, "", "  ")
+	}
 	log.Println("LoadConfig finished.", string(bs))
 	return allConfig, nil
 }

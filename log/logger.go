@@ -8,10 +8,13 @@ import (
 
 const timestampFormat = "2006-01-02T15:04:05.000"
 
+var JsonFormat bool
+
 func SetLogger(logLevel uint32, jsonFormat, colorFormat bool) {
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.Level(logLevel))
-	if jsonFormat {
+	JsonFormat = jsonFormat
+	if JsonFormat {
 		logrus.SetFormatter(&logrus.JSONFormatter{
 			TimestampFormat: timestampFormat,
 		})
