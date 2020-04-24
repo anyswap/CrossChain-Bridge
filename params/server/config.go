@@ -1,8 +1,9 @@
-package params
+package server
 
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/BurntSushi/toml"
 	"github.com/fsn-dev/crossChain-Bridge/common"
@@ -12,6 +13,11 @@ import (
 const (
 	defaultApiPort      = 11556
 	defServerConfigFile = "server.toml"
+)
+
+var (
+	serverConfig      *ServerConfig
+	loadConfigStarter sync.Once
 )
 
 type SwapServerConfig struct {
@@ -44,50 +50,54 @@ func (cfg *MongoDBConfig) GetURL() string {
 	return fmt.Sprintf("%s:%s@%s", cfg.UserName, cfg.Password, cfg.DbURL)
 }
 
-type AllConfig struct {
+type ServerConfig struct {
 	SwapServer *SwapServerConfig
 	MongoDB    *MongoDBConfig
 }
 
-var allConfig *AllConfig
+func GetConfig() *ServerConfig {
+	return serverConfig
+}
 
-func ServerConfig() *AllConfig {
-	return allConfig
+func SetConfig(config *ServerConfig) {
+	serverConfig = config
 }
 
 func GetApiPort() int {
-	apiPort := allConfig.SwapServer.ApiPort
+	apiPort := GetConfig().SwapServer.ApiPort
 	if apiPort == 0 {
 		apiPort = defaultApiPort
 	}
 	return apiPort
 }
 
-func LoadConfig(configFile string) (*AllConfig, error) {
-	if allConfig == nil {
+func LoadConfig(configFile string) *ServerConfig {
+	loadConfigStarter.Do(func() {
 		if configFile == "" {
 			// find config file in the execute directory (default).
 			dir, err := common.ExecuteDir()
 			if err != nil {
-				return nil, err
+				panic(fmt.Sprintf("LoadConfig error (get ExecuteDir): %v", err))
 			}
 			configFile = common.AbsolutePath(dir, defServerConfigFile)
 		}
 		log.Println("Config file is", configFile)
 		if !common.FileExist(configFile) {
-			return nil, fmt.Errorf("config file %v not exist", configFile)
+			panic(fmt.Sprintf("LoadConfig error: config file %v not exist", configFile))
 		}
-		allConfig = &AllConfig{}
-		if _, err := toml.DecodeFile(configFile, &allConfig); err != nil {
-			return nil, err
+		config := &ServerConfig{}
+		if _, err := toml.DecodeFile(configFile, &config); err != nil {
+			panic(fmt.Sprintf("LoadConfig error (toml DecodeFile): %v", err))
 		}
-	}
-	var bs []byte
-	if log.JsonFormat {
-		bs, _ = json.Marshal(allConfig)
-	} else {
-		bs, _ = json.MarshalIndent(allConfig, "", "  ")
-	}
-	log.Println("LoadConfig finished.", string(bs))
-	return allConfig, nil
+
+		SetConfig(config)
+		var bs []byte
+		if log.JsonFormat {
+			bs, _ = json.Marshal(config)
+		} else {
+			bs, _ = json.MarshalIndent(config, "", "  ")
+		}
+		log.Println("LoadConfig finished.", string(bs))
+	})
+	return serverConfig
 }

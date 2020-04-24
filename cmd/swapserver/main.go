@@ -9,8 +9,8 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/cmd/utils"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
-	"github.com/fsn-dev/crossChain-Bridge/params"
-	"github.com/fsn-dev/crossChain-Bridge/rpc/server"
+	"github.com/fsn-dev/crossChain-Bridge/params/server"
+	rpcserver "github.com/fsn-dev/crossChain-Bridge/rpc/server"
 	"github.com/fsn-dev/crossChain-Bridge/worker"
 	"github.com/urfave/cli/v2"
 )
@@ -56,11 +56,9 @@ func swapserver(ctx *cli.Context) error {
 	if ctx.NArg() > 0 {
 		return fmt.Errorf("invalid command: %q", ctx.Args().Get(0))
 	}
+	exitCh := make(chan struct{})
 	configFile := utils.GetConfigFilePath(ctx)
-	config, err := params.LoadConfig(configFile)
-	if err != nil {
-		panic(err)
-	}
+	config := server.LoadConfig(configFile)
 
 	dbConfig := config.MongoDB
 	mongoURL := dbConfig.GetURL()
@@ -68,12 +66,9 @@ func swapserver(ctx *cli.Context) error {
 	mongodb.MongoServerInit(mongoURL, dbName)
 
 	worker.StartWork()
-
 	time.Sleep(100 * time.Millisecond)
+	rpcserver.StartAPIServer()
 
-	for {
-		server.StartAPIServer()
-		time.Sleep(time.Duration(60) * time.Second)
-		log.Println("restart API server")
-	}
+	<-exitCh
+	return nil
 }
