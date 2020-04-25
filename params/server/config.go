@@ -2,13 +2,14 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/BurntSushi/toml"
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	. "github.com/fsn-dev/crossChain-Bridge/params"
+	. "github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 const (
@@ -28,6 +29,10 @@ type ServerConfig struct {
 	DestToken   *TokenConfig
 	DestGateway *GatewayConfig
 	ApiServer   *ApiServerConfig
+}
+
+type ApiServerConfig struct {
+	Port int
 }
 
 type MongoDBConfig struct {
@@ -87,6 +92,37 @@ func LoadConfig(configFile string) *ServerConfig {
 			bs, _ = json.MarshalIndent(config, "", "  ")
 		}
 		log.Println("LoadConfig finished.", string(bs))
+		if err := CheckConfig(); err != nil {
+			panic(fmt.Sprintf("Check server config error: %v", err))
+		}
 	})
 	return serverConfig
+}
+
+func CheckConfig() (err error) {
+	config := GetConfig()
+	if config.MongoDB == nil {
+		return errors.New("server must config 'MongoDB'")
+	}
+	if config.SrcToken == nil {
+		return errors.New("server must config 'SrcToken'")
+	}
+	if config.SrcGateway == nil {
+		return errors.New("server must config 'SrcGateway'")
+	}
+	if config.DestToken == nil {
+		return errors.New("server must config 'DestToken'")
+	}
+	if config.DestGateway == nil {
+		return errors.New("server must config 'DestGateway'")
+	}
+	err = config.SrcToken.CheckConfig(true)
+	if err != nil {
+		return err
+	}
+	err = config.DestToken.CheckConfig(false)
+	if err != nil {
+		return err
+	}
+	return nil
 }

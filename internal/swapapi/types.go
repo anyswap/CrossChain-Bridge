@@ -2,14 +2,14 @@ package swapapi
 
 import (
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
-	"github.com/fsn-dev/crossChain-Bridge/params"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 type SwapStatus = mongodb.SwapStatus
 
 type ServerInfo struct {
-	SrcToken  *params.TokenConfig
-	DestToken *params.TokenConfig
+	SrcToken  *tokens.TokenConfig
+	DestToken *tokens.TokenConfig
 }
 
 type SwapStatistics struct {
