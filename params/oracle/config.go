@@ -19,9 +19,6 @@ var (
 	loadConfigStarter sync.Once
 )
 
-type SwapOracleConfig struct {
-}
-
 type OracleConfig struct {
 	SwapOracle *SwapOracleConfig
 }
@@ -32,6 +29,9 @@ func GetConfig() *OracleConfig {
 
 func SetConfig(config *OracleConfig) {
 	oracleConfig = config
+}
+
+type SwapOracleConfig struct {
 }
 
 func LoadConfig(configFile string) *OracleConfig {

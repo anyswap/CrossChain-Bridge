@@ -8,6 +8,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
+	. "github.com/fsn-dev/crossChain-Bridge/params"
 )
 
 const (
@@ -20,20 +21,13 @@ var (
 	loadConfigStarter sync.Once
 )
 
-type SwapServerConfig struct {
-	SrcChainName     string
-	SrcAssetSymbol   string
-	SrcAssetDecimals uint8
-	SrcDcrmAddress   string
-	SrcRpcServer     string
-
-	DestChainName       string
-	DestAssetSymbol     string
-	DestAssetDecimals   uint8
-	DescContractAddress string
-	DestRpcServer       string
-
-	ApiPort int `toml:",omitempty" json:"-"`
+type ServerConfig struct {
+	MongoDB     *MongoDBConfig
+	SrcToken    *TokenConfig
+	SrcGateway  *GatewayConfig
+	DestToken   *TokenConfig
+	DestGateway *GatewayConfig
+	ApiServer   *ApiServerConfig
 }
 
 type MongoDBConfig struct {
@@ -50,9 +44,12 @@ func (cfg *MongoDBConfig) GetURL() string {
 	return fmt.Sprintf("%s:%s@%s", cfg.UserName, cfg.Password, cfg.DbURL)
 }
 
-type ServerConfig struct {
-	SwapServer *SwapServerConfig
-	MongoDB    *MongoDBConfig
+func GetApiPort() int {
+	apiPort := GetConfig().ApiServer.Port
+	if apiPort == 0 {
+		apiPort = defaultApiPort
+	}
+	return apiPort
 }
 
 func GetConfig() *ServerConfig {
@@ -61,14 +58,6 @@ func GetConfig() *ServerConfig {
 
 func SetConfig(config *ServerConfig) {
 	serverConfig = config
-}
-
-func GetApiPort() int {
-	apiPort := GetConfig().SwapServer.ApiPort
-	if apiPort == 0 {
-		apiPort = defaultApiPort
-	}
-	return apiPort
 }
 
 func LoadConfig(configFile string) *ServerConfig {

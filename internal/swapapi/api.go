@@ -13,7 +13,10 @@ func GetServerInfo() (*ServerInfo, error) {
 	if config == nil {
 		return nil, nil
 	}
-	return config.SwapServer, nil
+	return &ServerInfo{
+		SrcToken:  config.SrcToken,
+		DestToken: config.DestToken,
+	}, nil
 }
 
 func GetSwapStatistics() (*SwapStatistics, error) {

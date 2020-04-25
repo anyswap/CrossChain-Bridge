@@ -1,20 +1,32 @@
-[SwapServer]
-SrcChainName = "Bitcoin"
-SrcAssetSymbol = "BTC"
-SrcAssetDecimals = 8
-SrcDcrmAddress = "2MvK2LXz2jqE3tLFhU4dLb7SCWf2orPMvyF"
-SrcRpcServer = "http://localhost:11111"
-
-DestChainName = "Fusion"
-DestAssetSymbol = "fBTC"
-DestAssetDecimals = 8
-DescContractAddress = "0x26e3AB5f1930A0E4A75421743Eb11f298691675D"
-DestRpcServer = "http://localhost:22222"
-
-ApiPort = 11556
-
 [MongoDB]
 DbURL = "localhost:27917"
 DbName = "testdb"
 UserName = "test"
 Password = "test"
+
+[SrcToken]
+BlockChain = "Bitcoin"
+Name = "Bitcoin Coin"
+Symbol = "BTC"
+Decimals = 8
+Description = "Bitcoin Coin"
+DcrmAddress = "2MvK2LXz2jqE3tLFhU4dLb7SCWf2orPMvyF"
+Confirmations = 6
+
+[SrcGateway]
+ApiAddress = "http://localhost:11001"
+
+[DestToken]
+BlockChain = "Fusion"
+Name = "BTC Swap Asset"
+Symbol = "fBTC"
+Decimals = 8
+Description = "cross chain bridge BTC with fBTC"
+ContractAddress = "0x26e3AB5f1930A0E4A75421743Eb11f298691675D"
+Confirmations = 33
+
+[DestGateway]
+ApiAddress = "http://localhost:12001"
+
+[ApiServer]
+Port = 11556
