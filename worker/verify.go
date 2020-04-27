@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
+	. "github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 var (
@@ -69,54 +70,44 @@ func findSwapoutsToVerify() ([]*mongodb.MgoSwap, error) {
 	return mongodb.FindSwapoutsWithStatus(status, septime)
 }
 
-func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
-	var (
-		verifyFail = false
-		canRecall  = false
-	)
+func processSwapinVerify(swap *mongodb.MgoSwap) error {
 	txid := swap.TxId
-	// TODO
-	// get txid tx
-	// verify tx
-	// update database
+	swapInfo, err := SrcBridge.VerifyTransaction(txid)
 
-	if verifyFail {
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxVerifyFailed, now(), "")
+	switch err {
+	case ErrTxNotStable:
+		return err
+	case ErrTxWithWrongMemo:
+		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxCanRecall, now(), "")
+	case nil:
+		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxNotSwapped, now(), "")
+	default:
+		return mongodb.UpdateSwapinStatus(txid, mongodb.TxVerifyFailed, now(), "")
+	}
+
+	if err != nil {
 		return err
 	}
-
-	if canRecall {
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxCanRecall, now(), "")
-	} else {
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxNotSwapped, now(), "")
-	}
-
-	initialTx := &InitialTx{}
-	addInitialSwapinResult(initialTx)
-	return err
+	return addInitialSwapinResult(swapInfo)
 }
 
-func processSwapoutVerify(swap *mongodb.MgoSwap) (err error) {
-	verifyFail := true
-	canRecall := false
+func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 	txid := swap.TxId
-	// TODO
-	// get txid tx
-	// verify tx
-	// update database
+	swapInfo, err := DstBridge.VerifyTransaction(txid)
 
-	if verifyFail {
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxVerifyFailed, now(), "")
+	switch err {
+	case ErrTxNotStable:
+		return err
+	case ErrTxWithWrongMemo:
+		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxCanRecall, now(), "")
+	case nil:
+		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxNotSwapped, now(), "")
+	default:
+		return mongodb.UpdateSwapoutStatus(txid, mongodb.TxVerifyFailed, now(), "")
+	}
+
+	if err != nil {
 		return err
 	}
-
-	if canRecall {
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxCanRecall, now(), "")
-	} else {
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxNotSwapped, now(), "")
-	}
-
-	initialTx := &InitialTx{}
-	addInitialSwapinResult(initialTx)
-	return err
+	return addInitialSwapoutResult(swapInfo)
 }
