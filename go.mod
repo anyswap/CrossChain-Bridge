@@ -4,6 +4,8 @@ go 1.14
 
 require (
 	github.com/BurntSushi/toml v0.3.1
+	github.com/btcsuite/btcd v0.20.1-beta
+	github.com/btcsuite/btcutil v1.0.2
 	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/rpc v1.2.0
 	github.com/lestrrat-go/file-rotatelogs v2.3.0+incompatible
