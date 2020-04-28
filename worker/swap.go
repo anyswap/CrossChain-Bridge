@@ -78,6 +78,12 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
+	if res.SwapTx != "" {
+		if res.Status == mongodb.TxNotSwapped {
+			mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+		}
+		return fmt.Errorf("%v already swapped to %v", txid, res.SwapTx)
+	}
 
 	value, err := common.GetBigIntFromStr(res.Value)
 	if err != nil {
@@ -107,35 +113,59 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+	mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 
 	matchTx := &MatchTx{
-		SwapTx:     txHash,
-		SwapHeight: 0,
-		SwapTime:   0,
-		IsRecall:   false,
+		SwapTx: txHash,
 	}
-	updateSwapinResult(txid, matchTx)
-	return err
+	return updateSwapinResult(txid, matchTx)
 }
 
 func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
-	swapFail := true
 	txid := swap.TxId
-	// TODO
-	// build rawtx of swap
-	// dcrm sign rawtx
-	// broadcast signtx
-	// update database
+	res, err := mongodb.FindSwapoutResult(txid)
+	if err != nil {
+		return err
+	}
+	if res.SwapTx != "" {
+		if res.Status == mongodb.TxNotSwapped {
+			mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
+		}
+		return fmt.Errorf("%v already swapped to %v", txid, res.SwapTx)
+	}
 
-	if swapFail {
+	value, err := common.GetBigIntFromStr(res.Value)
+	if err != nil {
+		return fmt.Errorf("wrong value %v", res.Value)
+	}
+
+	args := &BuildTxArgs{
+		IsSwapin: false,
+		To:       res.Bind,
+		Value:    value,
+		Memo:     res.TxId,
+	}
+	rawTx, err := SrcBridge.BuildRawTransaction(args)
+	if err != nil {
+		return err
+	}
+
+	signedTx, err := SrcBridge.DcrmSignTransaction(rawTx)
+	if err != nil {
+		return err
+	}
+
+	txHash, err := SrcBridge.SendTransaction(signedTx)
+
+	if err != nil {
 		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), "")
 		return err
 	}
 
-	err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
+	mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
 
-	matchTx := &MatchTx{}
-	updateSwapoutResult(txid, matchTx)
-	return err
+	matchTx := &MatchTx{
+		SwapTx: txHash,
+	}
+	return updateSwapoutResult(txid, matchTx)
 }

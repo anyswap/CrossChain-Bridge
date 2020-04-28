@@ -70,31 +70,63 @@ func findSwapoutResultsToStable() ([]*mongodb.MgoSwapResult, error) {
 	return mongodb.FindSwapoutResultsWithStatus(status, septime)
 }
 
-func processSwapinStable(swap *mongodb.MgoSwapResult) (err error) {
+func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 	txid := swap.SwapTx
-	var isStable bool
+	var txStatus *TxStatus
+	var confirmations uint64
 	if swap.Memo == RecallTxMemo {
-		isStable = SrcBridge.IsTransactionStable(txid)
+		txStatus = SrcBridge.GetTransactionStatus(txid)
+		token, _ := SrcBridge.GetTokenAndGateway()
+		confirmations = *token.Confirmations
 	} else {
-		isStable = DstBridge.IsTransactionStable(txid)
+		txStatus = DstBridge.GetTransactionStatus(txid)
+		token, _ := DstBridge.GetTokenAndGateway()
+		confirmations = *token.Confirmations
 	}
 
-	if !isStable {
+	if txStatus.Block_height == 0 {
 		return nil
 	}
 
-	err = markSwapinResultStable(txid)
-	return err
+	if swap.SwapHeight != 0 {
+		if txStatus.Confirmations >= confirmations {
+			return markSwapinResultStable(txid)
+		}
+		return nil
+	}
+
+	matchTx := &MatchTx{
+		SwapTx:     txid,
+		SwapHeight: txStatus.Block_height,
+		SwapTime:   txStatus.Block_time,
+	}
+	return updateSwapinResult(txid, matchTx)
 }
 
 func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	txid := swap.SwapTx
-	isStable := SrcBridge.IsTransactionStable(txid)
+	var txStatus *TxStatus
+	var confirmations uint64
 
-	if !isStable {
+	txStatus = SrcBridge.GetTransactionStatus(txid)
+	token, _ := SrcBridge.GetTokenAndGateway()
+	confirmations = *token.Confirmations
+
+	if txStatus.Block_height == 0 {
 		return nil
 	}
 
-	err = markSwapoutResultStable(txid)
-	return err
+	if swap.SwapHeight != 0 {
+		if txStatus.Confirmations >= confirmations {
+			return markSwapoutResultStable(txid)
+		}
+		return nil
+	}
+
+	matchTx := &MatchTx{
+		SwapTx:     txid,
+		SwapHeight: txStatus.Block_height,
+		SwapTime:   txStatus.Block_time,
+	}
+	return updateSwapoutResult(txid, matchTx)
 }

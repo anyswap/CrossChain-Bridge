@@ -1,9 +1,12 @@
 package worker
 
 import (
+	"fmt"
 	"sync"
 
+	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
+	. "github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 var (
@@ -42,24 +45,51 @@ func findSwapinsToRecall() ([]*mongodb.MgoSwap, error) {
 }
 
 func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
-	recallFailed := true
 	txid := swap.TxId
-	// TODO
-	// build rawtx of swap
-	// dcrm sign rawtx
-	// broadcast signtx
-	// update database
+	res, err := mongodb.FindSwapinResult(txid)
+	if err != nil {
+		return err
+	}
+	if res.SwapTx != "" {
+		if res.Status == mongodb.TxToBeRecall {
+			mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+		}
+		return fmt.Errorf("%v already swapped to %v", txid, res.SwapTx)
+	}
 
-	if recallFailed {
+	value, err := common.GetBigIntFromStr(res.Value)
+	if err != nil {
+		return fmt.Errorf("wrong value %v", res.Value)
+	}
+
+	args := &BuildTxArgs{
+		IsSwapin: false,
+		To:       res.Bind,
+		Value:    value,
+		Memo:     res.TxId,
+	}
+	rawTx, err := SrcBridge.BuildRawTransaction(args)
+	if err != nil {
+		return err
+	}
+
+	signedTx, err := SrcBridge.DcrmSignTransaction(rawTx)
+	if err != nil {
+		return err
+	}
+
+	txHash, err := SrcBridge.SendTransaction(signedTx)
+
+	if err != nil {
 		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxRecallFailed, now(), "")
 		return err
 	}
 
-	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+	mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 
 	matchTx := &MatchTx{
-		IsRecall: true,
+		SwapTx:        txHash,
+		SetRecallMemo: true,
 	}
-	updateSwapinResult(txid, matchTx)
-	return err
+	return updateSwapinResult(txid, matchTx)
 }

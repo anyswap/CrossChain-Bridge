@@ -6,10 +6,10 @@ import (
 )
 
 type MatchTx struct {
-	SwapTx     string
-	SwapHeight uint64
-	SwapTime   uint64
-	IsRecall   bool
+	SwapTx        string
+	SwapHeight    uint64
+	SwapTime      uint64
+	SetRecallMemo bool
 }
 
 const RecallTxMemo = "IsRecalled"
@@ -58,7 +58,7 @@ func updateSwapoutResult(key string, mtx *MatchTx) error {
 
 func updateSwapResult(key string, mtx *MatchTx, isSwapin bool) (err error) {
 	memo := ""
-	if mtx.IsRecall {
+	if mtx.SetRecallMemo {
 		memo = RecallTxMemo
 	}
 	updates := &mongodb.SwapResultUpdateItems{
@@ -88,7 +88,7 @@ func markSwapoutResultStable(key string) error {
 func markSwapResultStable(key string, isSwapin bool) (err error) {
 	status := mongodb.MatchTxStable
 	timestamp := now()
-	memo := ""
+	memo := "" // unchange
 	if isSwapin {
 		err = mongodb.UpdateSwapinResultStatus(key, status, timestamp, memo)
 	} else {
