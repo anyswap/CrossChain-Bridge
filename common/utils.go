@@ -3,7 +3,18 @@ package common
 import (
 	"errors"
 	"math/big"
+
+	"golang.org/x/crypto/sha3"
 )
+
+func Keccak256Hash(data ...[]byte) (h Hash) {
+	d := sha3.NewLegacyKeccak256()
+	for _, b := range data {
+		d.Write(b)
+	}
+	d.Sum(h[:0])
+	return h
+}
 
 func GetBigIntFromStr(str string) (*big.Int, error) {
 	bi, ok := new(big.Int).SetString(str, 0)
