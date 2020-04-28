@@ -1,9 +1,12 @@
 package worker
 
 import (
+	"fmt"
 	"sync"
 
+	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
+	. "github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 var (
@@ -70,22 +73,48 @@ func findSwapoutsToSwap() ([]*mongodb.MgoSwap, error) {
 }
 
 func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
-	swapFail := true
 	txid := swap.TxId
-	// TODO
-	// build rawtx of swap
-	// dcrm sign rawtx
-	// broadcast signtx
-	// update database
+	res, err := mongodb.FindSwapinResult(txid)
+	if err != nil {
+		return err
+	}
 
-	if swapFail {
+	value, err := common.GetBigIntFromStr(res.Value)
+	if err != nil {
+		return fmt.Errorf("wrong value %v", res.Value)
+	}
+
+	args := &BuildTxArgs{
+		IsSwapin: true,
+		To:       res.Bind,
+		Value:    value,
+		Memo:     res.TxId,
+	}
+	rawTx, err := DstBridge.BuildRawTransaction(args)
+	if err != nil {
+		return err
+	}
+
+	signedTx, err := DstBridge.DcrmSignTransaction(rawTx)
+	if err != nil {
+		return err
+	}
+
+	txHash, err := DstBridge.SendTransaction(signedTx)
+
+	if err != nil {
 		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), "")
 		return err
 	}
 
 	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 
-	matchTx := &MatchTx{}
+	matchTx := &MatchTx{
+		SwapTx:     txHash,
+		SwapHeight: 0,
+		SwapTime:   0,
+		IsRecall:   false,
+	}
 	updateSwapinResult(txid, matchTx)
 	return err
 }
