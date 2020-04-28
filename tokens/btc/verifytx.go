@@ -10,7 +10,7 @@ import (
 	. "github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
 
-func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *TxStatus, isStable bool) {
+func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *ElectTxStatus, isStable bool) {
 	var err error
 	txStatus, err = b.GetTransactionStatus(txHash)
 	if err != nil {

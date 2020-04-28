@@ -13,26 +13,26 @@ func GetLatestBlockNumber(b CrossChainBridge) (uint64, error) {
 	return result, err
 }
 
-func GetTransaction(b CrossChainBridge, txHash string) (*Tx, error) {
+func GetTransaction(b CrossChainBridge, txHash string) (*ElectTx, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/tx/" + txHash
-	var result Tx
+	var result ElectTx
 	err := client.RpcGet(&result, url)
 	return &result, err
 }
 
-func GetTransactionStatus(b CrossChainBridge, txHash string) (*TxStatus, error) {
+func GetTransactionStatus(b CrossChainBridge, txHash string) (*ElectTxStatus, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/tx/" + txHash + "/status"
-	var result TxStatus
+	var result ElectTxStatus
 	err := client.RpcGet(&result, url)
 	return &result, err
 }
 
-func FindUtxos(b CrossChainBridge, addr string) (*[]*Utxo, error) {
+func FindUtxos(b CrossChainBridge, addr string) (*[]*ElectUtxo, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/address/" + addr + "/utxo"
-	var result []*Utxo
+	var result []*ElectUtxo
 	err := client.RpcGet(&result, url)
 	return &result, err
 }
