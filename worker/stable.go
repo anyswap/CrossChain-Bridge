@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
+	. "github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 var (
@@ -70,12 +71,13 @@ func findSwapoutResultsToStable() ([]*mongodb.MgoSwapResult, error) {
 }
 
 func processSwapinStable(swap *mongodb.MgoSwapResult) (err error) {
-	isStable := false
-	txid := swap.TxId
-	// TODO
-	// get txid tx
-	// verify tx
-	// update database
+	txid := swap.SwapTx
+	var isStable bool
+	if swap.Memo == RecallTxMemo {
+		isStable = SrcBridge.IsTransactionStable(txid)
+	} else {
+		isStable = DstBridge.IsTransactionStable(txid)
+	}
 
 	if !isStable {
 		return nil
@@ -86,12 +88,8 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) (err error) {
 }
 
 func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
-	isStable := false
-	txid := swap.TxId
-	// TODO
-	// get txid tx
-	// verify tx
-	// update database
+	txid := swap.SwapTx
+	isStable := SrcBridge.IsTransactionStable(txid)
 
 	if !isStable {
 		return nil
