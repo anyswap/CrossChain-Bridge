@@ -94,6 +94,13 @@ type TxSwapInfo struct {
 	Value     string `json:"value"`
 }
 
+type TxStatus struct {
+	Confirmations uint64 `json:"confirmations"`
+	Block_height  uint64 `json:"block_height"`
+	Block_hash    string `json:"block_hash"`
+	Block_time    uint64 `json:"block_time"`
+}
+
 type BuildTxArgs struct {
 	IsSwapin      bool     `json:"isSwapin,omitempty"`
 	From          string   `json:"from"`
@@ -115,7 +122,7 @@ type CrossChainBridge interface {
 
 	IsValidAddress(address string) bool
 
-	IsTransactionStable(txHash string) bool
+	GetTransactionStatus(txHash string) *TxStatus
 	VerifyTransaction(txHash string) (*TxSwapInfo, error)
 
 	BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error)

@@ -21,7 +21,7 @@ func GetTransaction(b CrossChainBridge, txHash string) (*ElectTx, error) {
 	return &result, err
 }
 
-func GetTransactionStatus(b CrossChainBridge, txHash string) (*ElectTxStatus, error) {
+func GetElectTransactionStatus(b CrossChainBridge, txHash string) (*ElectTxStatus, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/tx/" + txHash + "/status"
 	var result ElectTxStatus

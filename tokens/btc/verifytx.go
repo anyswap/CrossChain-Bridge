@@ -10,14 +10,41 @@ import (
 	. "github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
 
+func (b *BtcBridge) GetTransactionStatus(txHash string) *TxStatus {
+	txStatus := &TxStatus{}
+	elcstStatus, err := b.GetElectTransactionStatus(txHash)
+	if err != nil {
+		log.Debug("BtcBridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
+		return txStatus
+	}
+	if elcstStatus.Block_hash != nil {
+		txStatus.Block_hash = *elcstStatus.Block_hash
+	}
+	if elcstStatus.Block_time != nil {
+		txStatus.Block_time = *elcstStatus.Block_time
+	}
+	if elcstStatus.Block_height != nil {
+		txStatus.Block_height = *elcstStatus.Block_height
+		latest, err := b.GetLatestBlockNumber()
+		if err != nil {
+			log.Debug("BtcBridge::GetLatestBlockNumber fail", "err", err)
+			return txStatus
+		}
+		if latest > txStatus.Block_height {
+			txStatus.Confirmations = latest - txStatus.Block_height
+		}
+	}
+	return txStatus
+}
+
 func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *ElectTxStatus, isStable bool) {
 	var err error
-	txStatus, err = b.GetTransactionStatus(txHash)
+	txStatus, err = b.GetElectTransactionStatus(txHash)
 	if err != nil {
-		log.Debug("BtcBridge::GetTransactionStatus fail", "tx", txHash, "err", err)
+		log.Debug("BtcBridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
 		return nil, false
 	}
-	if !*txStatus.Confirmed {
+	if txStatus.Confirmed != nil && !*txStatus.Confirmed {
 		return nil, false
 	}
 	latest, err := b.GetLatestBlockNumber()
@@ -31,11 +58,6 @@ func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *ElectTxStatus
 		return nil, false
 	}
 	return txStatus, true
-}
-
-func (b *BtcBridge) IsTransactionStable(txHash string) bool {
-	_, isStable := b.getTransactionStatus(txHash)
-	return isStable
 }
 
 func (b *BtcBridge) VerifyTransaction(txHash string) (*TxSwapInfo, error) {
