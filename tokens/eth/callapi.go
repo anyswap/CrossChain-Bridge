@@ -83,3 +83,14 @@ func (b *EthBridge) SendSignedTransaction(tx *Transaction) error {
 	var result interface{}
 	return client.RpcPost(&result, url, "eth_sendRawTransaction", common.ToHex(data))
 }
+
+func (b *EthBridge) ChainID() (*big.Int, error) {
+	_, gateway := b.GetTokenAndGateway()
+	url := gateway.ApiAddress
+	var result hexutil.Big
+	err := client.RpcPost(&result, url, "eth_chainId")
+	if err != nil {
+		return nil, err
+	}
+	return result.ToInt(), nil
+}

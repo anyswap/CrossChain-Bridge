@@ -1,7 +1,10 @@
 package fsn
 
 import (
+	"math/big"
+
 	"github.com/fsn-dev/crossChain-Bridge/common"
+	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
 )
 
@@ -58,4 +61,15 @@ func (b *FsnBridge) GetTransactionAndReceipt(txHash string) (*RPCTxAndReceipt, e
 		return nil, err
 	}
 	return &result, nil
+}
+
+func (b *FsnBridge) ChainID() (*big.Int, error) {
+	_, gateway := b.GetTokenAndGateway()
+	url := gateway.ApiAddress
+	var result hexutil.Big
+	err := client.RpcPost(&result, url, "eth_chainId")
+	if err != nil {
+		return nil, err
+	}
+	return result.ToInt(), nil
 }

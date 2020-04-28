@@ -18,23 +18,24 @@ MinimumSwap = 0.0004
 SwapFeeRate = 0.001
 
 [SrcGateway]
-ApiAddress = "http://localhost:11001"
+ApiAddress = "http://47.107.50.83:3002"
 
 [DestToken]
 BlockChain = "Ethereum"
 NetID = "Rinkeby"
-Name = "BTC Swap Asset"
+Name = "SMPC Bitcoin"
 Symbol = "mBTC"
 Decimals = 8
 Description = "cross chain bridge BTC with mBTC"
 ContractAddress = "0x26e3AB5f1930A0E4A75421743Eb11f298691675D"
+DcrmAddress = "0x2bac00388caa75edcc53a2bd329f7e9563c6acb6"
 Confirmations = 33
 MaximumSwap = 100.0
 MinimumSwap = 0.0004
 SwapFeeRate = 0.001
 
 [DestGateway]
-ApiAddress = "http://localhost:12001"
+ApiAddress = "http://5.189.139.168:8018"
 
 [ApiServer]
 Port = 11556
