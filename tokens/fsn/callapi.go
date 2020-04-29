@@ -5,6 +5,7 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
+	"github.com/fsn-dev/crossChain-Bridge/rlp"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
 )
 
@@ -61,6 +62,37 @@ func (b *FsnBridge) GetTransactionAndReceipt(txHash string) (*RPCTxAndReceipt, e
 		return nil, err
 	}
 	return &result, nil
+}
+
+func (b *FsnBridge) GetPoolNonce(address string) (uint64, error) {
+	_, gateway := b.GetTokenAndGateway()
+	url := gateway.ApiAddress
+	account := common.HexToAddress(address)
+	var result hexutil.Uint64
+	err := client.RpcPost(&result, url, "eth_getTransactionCount", account, "pending")
+	return uint64(result), err
+}
+
+func (b *FsnBridge) SuggestPrice() (*big.Int, error) {
+	_, gateway := b.GetTokenAndGateway()
+	url := gateway.ApiAddress
+	var result hexutil.Big
+	err := client.RpcPost(&result, url, "eth_gasPrice")
+	if err != nil {
+		return nil, err
+	}
+	return result.ToInt(), nil
+}
+
+func (b *FsnBridge) SendSignedTransaction(tx *Transaction) error {
+	data, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		return err
+	}
+	_, gateway := b.GetTokenAndGateway()
+	url := gateway.ApiAddress
+	var result interface{}
+	return client.RpcPost(&result, url, "eth_sendRawTransaction", common.ToHex(data))
 }
 
 func (b *FsnBridge) ChainID() (*big.Int, error) {

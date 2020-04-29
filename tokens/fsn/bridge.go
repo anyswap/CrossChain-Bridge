@@ -16,7 +16,9 @@ type FsnBridge struct {
 }
 
 func NewCrossChainBridge(isSrc bool) CrossChainBridge {
-	panic(ErrTodo)
+	if isSrc {
+		panic(ErrTodo)
+	}
 	return &FsnBridge{
 		IsSrc: isSrc,
 	}
