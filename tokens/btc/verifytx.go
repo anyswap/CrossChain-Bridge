@@ -101,7 +101,7 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*TxSwapInfo, error) {
 	if !rightReceiver {
 		return nil, ErrTxWithWrongReceiver
 	}
-	if value == 0 {
+	if !CheckSwapValue(float64(value), b.IsSrc) {
 		return nil, ErrTxWithWrongValue
 	}
 	// NOTE: must verify memo at last step (as it can be recall)

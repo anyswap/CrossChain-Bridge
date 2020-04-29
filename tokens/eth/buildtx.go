@@ -27,6 +27,8 @@ func (b *EthBridge) BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, e
 		input = *args.Input
 	}
 
+	value = CalcSwappedValue(value, b.IsSrc)
+
 	return NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
 }
 

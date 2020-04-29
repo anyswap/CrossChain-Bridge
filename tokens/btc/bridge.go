@@ -26,7 +26,8 @@ func NewCrossChainBridge(isSrc bool) CrossChainBridge {
 func (b *BtcBridge) SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
 
-	switch strings.ToLower(*tokenCfg.NetID) {
+	networkID := strings.ToLower(*tokenCfg.NetID)
+	switch networkID {
 	case "mainnet", "testnet3":
 	case "custom":
 		return

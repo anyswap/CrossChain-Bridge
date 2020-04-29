@@ -147,3 +147,32 @@ func (b *CrossChainBridgeBase) SetTokenAndGateway(tokenCfg *TokenConfig, gateway
 		panic(err)
 	}
 }
+
+func GetTokenConfig(isSrc bool) *TokenConfig {
+	var token *TokenConfig
+	if isSrc {
+		token, _ = SrcBridge.GetTokenAndGateway()
+	} else {
+		token, _ = DstBridge.GetTokenAndGateway()
+	}
+	return token
+}
+
+func CheckSwapValue(value float64, isSrc bool) bool {
+	token := GetTokenConfig(isSrc)
+	return value >= *token.MinimumSwap && value <= *token.MaximumSwap
+}
+
+func CalcSwappedValue(value *big.Int, isSrc bool) *big.Int {
+	token := GetTokenConfig(isSrc)
+
+	swapFeeRate := new(big.Float).SetFloat64(*token.SwapFeeRate)
+	swapValue := new(big.Float).SetInt(value)
+	swapFee := new(big.Float).Mul(swapValue, swapFeeRate)
+
+	swappedValue := new(big.Float).Sub(swapValue, swapFee)
+
+	result := big.NewInt(0)
+	swappedValue.Int(result)
+	return result
+}
