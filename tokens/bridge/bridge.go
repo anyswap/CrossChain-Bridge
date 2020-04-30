@@ -2,7 +2,7 @@ package bridge
 
 import (
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	"github.com/fsn-dev/crossChain-Bridge/params/server"
+	"github.com/fsn-dev/crossChain-Bridge/params"
 	. "github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/btc"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/eth"
@@ -24,7 +24,7 @@ func NewCrossChainBridge(id string, isSrc bool) CrossChainBridge {
 }
 
 func InitCrossChainBridge() {
-	cfg := server.GetConfig()
+	cfg := params.GetConfig()
 	srcToken := cfg.SrcToken
 	dstToken := cfg.DestToken
 	srcGateway := cfg.SrcGateway

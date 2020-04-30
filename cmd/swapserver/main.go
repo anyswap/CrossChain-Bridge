@@ -9,7 +9,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/cmd/utils"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
-	"github.com/fsn-dev/crossChain-Bridge/params/server"
+	"github.com/fsn-dev/crossChain-Bridge/params"
 	rpcserver "github.com/fsn-dev/crossChain-Bridge/rpc/server"
 	"github.com/fsn-dev/crossChain-Bridge/worker"
 	"github.com/urfave/cli/v2"
@@ -58,7 +58,7 @@ func swapserver(ctx *cli.Context) error {
 	}
 	exitCh := make(chan struct{})
 	configFile := utils.GetConfigFilePath(ctx)
-	config := server.LoadConfig(configFile)
+	config := params.LoadConfig(configFile, true)
 
 	dbConfig := config.MongoDB
 	mongoURL := dbConfig.GetURL()

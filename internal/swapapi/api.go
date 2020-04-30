@@ -5,11 +5,11 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
-	"github.com/fsn-dev/crossChain-Bridge/params/server"
+	"github.com/fsn-dev/crossChain-Bridge/params"
 )
 
 func GetServerInfo() (*ServerInfo, error) {
-	config := server.GetConfig()
+	config := params.GetConfig()
 	if config == nil {
 		return nil, nil
 	}

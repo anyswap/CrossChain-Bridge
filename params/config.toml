@@ -39,3 +39,19 @@ ApiAddress = "http://5.189.139.168:8018"
 
 [ApiServer]
 Port = 11556
+
+[Dcrm]
+RpcAddress="http://127.0.0.1:9011"
+
+GroupID="6ab4f2a681bd73ba6328aaf196e19c62723f59c847b0a5cda93665dd610ac2cf87f0608ef5ea7f0c8368da62699ee4bf8eec8b33270b546e5481df1c99e05857"
+
+# NeededOracles=2,TotalOracles=3 represent '2/3' threshold
+NeededOracles=2
+TotalOracles=3
+
+# 0:managed 1:private
+Mode=0
+
+Pubkey="04908094331606866ee248bf9a802a2a881ab519ac1daf411ab8a69d2ba08af02ab413b93dba8eefacb8d4608b1c53fdf291a6f9b96b468e878fc4e851ecc34a2d"
+KeystoreFile="node1/keystore/keystore1"
+PasswordFile="password.txt"
