@@ -1,4 +1,4 @@
-package fsn
+package types
 
 import (
 	"github.com/fsn-dev/crossChain-Bridge/common"

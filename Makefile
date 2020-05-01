@@ -15,6 +15,7 @@ swaporacle:
 	@echo "Run \"$(GOBIN)/swaporacle\" to launch swaporacle."
 
 all:
+	$(GOCMD) build -v ./...
 	$(GOCMD) run build/ci.go install ./cmd/...
 	@echo "Done building."
 	@echo "Find binaries in \"$(GOBIN)\" directory."

@@ -2,6 +2,8 @@ package fsn
 
 import (
 	"errors"
+
+	. "github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 func (b *FsnBridge) SendTransaction(signedTx interface{}) (txHash string, err error) {

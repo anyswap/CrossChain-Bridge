@@ -2,6 +2,7 @@ package eth
 
 import (
 	"errors"
+	. "github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 func (b *EthBridge) SendTransaction(signedTx interface{}) (txHash string, err error) {

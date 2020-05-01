@@ -1,4 +1,4 @@
-package fsn
+package types
 
 import (
 	"encoding/json"

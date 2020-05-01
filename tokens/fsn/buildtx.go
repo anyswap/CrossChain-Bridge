@@ -5,6 +5,7 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	. "github.com/fsn-dev/crossChain-Bridge/tokens"
+	. "github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 func (b *FsnBridge) BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error) {
