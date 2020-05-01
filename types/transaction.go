@@ -8,7 +8,7 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
-	"github.com/fsn-dev/crossChain-Bridge/rlp"
+	"github.com/fsn-dev/crossChain-Bridge/tools/rlp"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -39,6 +39,10 @@ type txdata struct {
 
 func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
 	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, data)
+}
+
+func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
+	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, data)
 }
 
 func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {

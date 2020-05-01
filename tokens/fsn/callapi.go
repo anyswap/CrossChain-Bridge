@@ -5,8 +5,8 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
-	"github.com/fsn-dev/crossChain-Bridge/rlp"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
+	"github.com/fsn-dev/crossChain-Bridge/tools/rlp"
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 

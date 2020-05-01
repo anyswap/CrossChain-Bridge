@@ -30,7 +30,7 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/common/math"
-	"github.com/fsn-dev/crossChain-Bridge/rlp"
+	"github.com/fsn-dev/crossChain-Bridge/tools/rlp"
 	"golang.org/x/crypto/sha3"
 )
 
