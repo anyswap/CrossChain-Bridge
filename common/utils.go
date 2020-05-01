@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/big"
 
+	cmath "github.com/fsn-dev/crossChain-Bridge/common/math"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -17,33 +18,25 @@ func Keccak256Hash(data ...[]byte) (h Hash) {
 }
 
 func GetBigIntFromStr(str string) (*big.Int, error) {
-	bi, ok := new(big.Int).SetString(str, 0)
+	bi, ok := cmath.ParseBig256(str)
 	if !ok {
-		return nil, errors.New("GetBigIntFromStr: wrong format")
+		return nil, errors.New("invalid 256 bit integer: " + str)
 	}
 	return bi, nil
 }
 
 func GetIntFromStr(str string) (int, error) {
-	bi, ok := new(big.Int).SetString(str, 0)
-	if !ok || !bi.IsUint64() || bi.Uint64() > uint64(MaxInt) {
-		return 0, errors.New("GetIntFromStr: wrong format")
+	res, err := cmath.ParseInt(str)
+	if err != nil {
+		return 0, errors.New("invalid signed integer: " + str)
 	}
-	return int(bi.Uint64()), nil
+	return res, nil
 }
 
 func GetUint64FromStr(str string) (uint64, error) {
-	bi, ok := new(big.Int).SetString(str, 0)
-	if !ok || !bi.IsUint64() {
-		return 0, errors.New("GetUint64FromStr: wrong format")
+	res, ok := cmath.ParseUint64(str)
+	if !ok {
+		return 0, errors.New("invalid unsigned 64 bit integer: " + str)
 	}
-	return bi.Uint64(), nil
-}
-
-func GetInt64FromStr(str string) (int64, error) {
-	bi, ok := new(big.Int).SetString(str, 0)
-	if !ok || !bi.IsInt64() {
-		return 0, errors.New("GetInt64FromStr: wrong format")
-	}
-	return bi.Int64(), nil
+	return res, nil
 }
