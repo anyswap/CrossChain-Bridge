@@ -2,10 +2,10 @@ package electrs
 
 import (
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
-func GetLatestBlockNumber(b CrossChainBridge) (uint64, error) {
+func GetLatestBlockNumber(b tokens.CrossChainBridge) (uint64, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/blocks/tip/height"
 	var result uint64
@@ -13,7 +13,7 @@ func GetLatestBlockNumber(b CrossChainBridge) (uint64, error) {
 	return result, err
 }
 
-func GetTransaction(b CrossChainBridge, txHash string) (*ElectTx, error) {
+func GetTransaction(b tokens.CrossChainBridge, txHash string) (*ElectTx, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/tx/" + txHash
 	var result ElectTx
@@ -21,7 +21,7 @@ func GetTransaction(b CrossChainBridge, txHash string) (*ElectTx, error) {
 	return &result, err
 }
 
-func GetElectTransactionStatus(b CrossChainBridge, txHash string) (*ElectTxStatus, error) {
+func GetElectTransactionStatus(b tokens.CrossChainBridge, txHash string) (*ElectTxStatus, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/tx/" + txHash + "/status"
 	var result ElectTxStatus
@@ -29,7 +29,7 @@ func GetElectTransactionStatus(b CrossChainBridge, txHash string) (*ElectTxStatu
 	return &result, err
 }
 
-func FindUtxos(b CrossChainBridge, addr string) (*[]*ElectUtxo, error) {
+func FindUtxos(b tokens.CrossChainBridge, addr string) (*[]*ElectUtxo, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/address/" + addr + "/utxo"
 	var result []*ElectUtxo

@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 var (
@@ -72,12 +72,12 @@ func findSwapoutsToVerify() ([]*mongodb.MgoSwap, error) {
 
 func processSwapinVerify(swap *mongodb.MgoSwap) error {
 	txid := swap.TxId
-	swapInfo, err := SrcBridge.VerifyTransaction(txid)
+	swapInfo, err := tokens.SrcBridge.VerifyTransaction(txid)
 
 	switch err {
-	case ErrTxNotStable:
+	case tokens.ErrTxNotStable:
 		return err
-	case ErrTxWithWrongMemo:
+	case tokens.ErrTxWithWrongMemo:
 		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxCanRecall, now(), "")
 	case nil:
 		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxNotSwapped, now(), "")
@@ -93,12 +93,12 @@ func processSwapinVerify(swap *mongodb.MgoSwap) error {
 
 func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 	txid := swap.TxId
-	swapInfo, err := DstBridge.VerifyTransaction(txid)
+	swapInfo, err := tokens.DstBridge.VerifyTransaction(txid)
 
 	switch err {
-	case ErrTxNotStable:
+	case tokens.ErrTxNotStable:
 		return err
-	case ErrTxWithWrongMemo:
+	case tokens.ErrTxWithWrongMemo:
 		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxCanRecall, now(), "")
 	case nil:
 		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxNotSwapped, now(), "")

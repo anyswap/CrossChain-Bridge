@@ -6,12 +6,12 @@ import (
 	"strings"
 
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
 
-func (b *BtcBridge) GetTransactionStatus(txHash string) *TxStatus {
-	txStatus := &TxStatus{}
+func (b *BtcBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
+	txStatus := &tokens.TxStatus{}
 	elcstStatus, err := b.GetElectTransactionStatus(txHash)
 	if err != nil {
 		log.Debug("BtcBridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
@@ -37,7 +37,7 @@ func (b *BtcBridge) GetTransactionStatus(txHash string) *TxStatus {
 	return txStatus
 }
 
-func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *ElectTxStatus, isStable bool) {
+func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *electrs.ElectTxStatus, isStable bool) {
 	var err error
 	txStatus, err = b.GetElectTransactionStatus(txHash)
 	if err != nil {
@@ -60,22 +60,22 @@ func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *ElectTxStatus
 	return txStatus, true
 }
 
-func (b *BtcBridge) VerifyTransaction(txHash string) (*TxSwapInfo, error) {
+func (b *BtcBridge) VerifyTransaction(txHash string) (*tokens.TxSwapInfo, error) {
 	if b.IsSrc {
 		return b.verifySwapinTx(txHash)
 	}
-	return nil, ErrBridgeDestinationNotSupported
+	return nil, tokens.ErrBridgeDestinationNotSupported
 }
 
-func (b *BtcBridge) verifySwapinTx(txHash string) (*TxSwapInfo, error) {
+func (b *BtcBridge) verifySwapinTx(txHash string) (*tokens.TxSwapInfo, error) {
 	txStatus, isStable := b.getTransactionStatus(txHash)
 	if !isStable {
-		return nil, ErrTxNotStable
+		return nil, tokens.ErrTxNotStable
 	}
 	tx, err := b.GetTransaction(txHash)
 	if err != nil {
 		log.Debug("BtcBridge::GetTransaction fail", "tx", txHash, "err", err)
-		return nil, ErrTxNotStable
+		return nil, tokens.ErrTxNotStable
 	}
 	token, _ := b.GetTokenAndGateway()
 	dcrmAddress := *token.DcrmAddress
@@ -99,18 +99,18 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*TxSwapInfo, error) {
 		}
 	}
 	if !rightReceiver {
-		return nil, ErrTxWithWrongReceiver
+		return nil, tokens.ErrTxWithWrongReceiver
 	}
-	if !CheckSwapValue(float64(value), b.IsSrc) {
-		return nil, ErrTxWithWrongValue
+	if !tokens.CheckSwapValue(float64(value), b.IsSrc) {
+		return nil, tokens.ErrTxWithWrongValue
 	}
 	// NOTE: must verify memo at last step (as it can be recall)
 	bindAddress, ok := getBindAddressFromMemoScipt(memoScript)
 	if !ok {
-		return nil, ErrTxWithWrongMemo
+		return nil, tokens.ErrTxWithWrongMemo
 	}
-	if !DstBridge.IsValidAddress(bindAddress) {
-		return nil, ErrTxWithWrongMemo
+	if !tokens.DstBridge.IsValidAddress(bindAddress) {
+		return nil, tokens.ErrTxWithWrongMemo
 	}
 	for _, input := range tx.Vin {
 		if input != nil &&
@@ -120,7 +120,7 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*TxSwapInfo, error) {
 			break
 		}
 	}
-	return &TxSwapInfo{
+	return &tokens.TxSwapInfo{
 		Hash:      *tx.Txid,
 		Height:    *txStatus.Block_height,
 		Timestamp: *txStatus.Block_time,

@@ -4,11 +4,11 @@ import (
 	"math/big"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
-	. "github.com/fsn-dev/crossChain-Bridge/types"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-func (b *EthBridge) BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error) {
+func (b *EthBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	if args.IsSwapin && args.Input == nil {
 		b.buildSwapinTxInput(args)
 	}
@@ -28,12 +28,12 @@ func (b *EthBridge) BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, e
 		input = *args.Input
 	}
 
-	value = CalcSwappedValue(value, b.IsSrc)
+	value = tokens.CalcSwappedValue(value, b.IsSrc)
 
-	return NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
+	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
 }
 
-func (b *EthBridge) setDefaults(args *BuildTxArgs) error {
+func (b *EthBridge) setDefaults(args *tokens.BuildTxArgs) error {
 	if args.GasPrice == nil {
 		price, err := b.SuggestPrice()
 		if err != nil {
@@ -59,8 +59,8 @@ func (b *EthBridge) setDefaults(args *BuildTxArgs) error {
 }
 
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
-func (b *EthBridge) buildSwapinTxInput(args *BuildTxArgs) {
-	funcHash := SwapinFuncHash[:]
+func (b *EthBridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
+	funcHash := tokens.SwapinFuncHash[:]
 	txHash := common.HexToHash(args.Memo).Bytes()
 	address := common.LeftPadBytes(common.HexToAddress(args.To).Bytes(), 32)
 	amount := common.LeftPadBytes(args.Value.Bytes(), 32)

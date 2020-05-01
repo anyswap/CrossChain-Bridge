@@ -7,24 +7,24 @@ import (
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 type EthBridge struct {
-	CrossChainBridgeBase
+	tokens.CrossChainBridgeBase
 	IsSrc bool
 }
 
-func NewCrossChainBridge(isSrc bool) CrossChainBridge {
+func NewCrossChainBridge(isSrc bool) tokens.CrossChainBridge {
 	if isSrc {
-		panic(ErrTodo)
+		panic(tokens.ErrTodo)
 	}
 	return &EthBridge{
 		IsSrc: isSrc,
 	}
 }
 
-func (b *EthBridge) SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig) {
+func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
 
 	networkID := strings.ToLower(*tokenCfg.NetID)

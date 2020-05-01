@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 var (
@@ -72,15 +72,15 @@ func findSwapoutResultsToStable() ([]*mongodb.MgoSwapResult, error) {
 
 func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 	txid := swap.SwapTx
-	var txStatus *TxStatus
+	var txStatus *tokens.TxStatus
 	var confirmations uint64
 	if swap.Memo == RecallTxMemo {
-		txStatus = SrcBridge.GetTransactionStatus(txid)
-		token, _ := SrcBridge.GetTokenAndGateway()
+		txStatus = tokens.SrcBridge.GetTransactionStatus(txid)
+		token, _ := tokens.SrcBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
 	} else {
-		txStatus = DstBridge.GetTransactionStatus(txid)
-		token, _ := DstBridge.GetTokenAndGateway()
+		txStatus = tokens.DstBridge.GetTransactionStatus(txid)
+		token, _ := tokens.DstBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
 	}
 
@@ -105,11 +105,11 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 
 func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	txid := swap.SwapTx
-	var txStatus *TxStatus
+	var txStatus *tokens.TxStatus
 	var confirmations uint64
 
-	txStatus = SrcBridge.GetTransactionStatus(txid)
-	token, _ := SrcBridge.GetTokenAndGateway()
+	txStatus = tokens.SrcBridge.GetTransactionStatus(txid)
+	token, _ := tokens.SrcBridge.GetTokenAndGateway()
 	confirmations = *token.Confirmations
 
 	if txStatus.Block_height == 0 {

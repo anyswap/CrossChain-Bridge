@@ -7,7 +7,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
 	"github.com/fsn-dev/crossChain-Bridge/rlp"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
-	. "github.com/fsn-dev/crossChain-Bridge/types"
+	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 func (b *FsnBridge) GetLatestBlockNumber() (uint64, error) {
@@ -21,10 +21,10 @@ func (b *FsnBridge) GetLatestBlockNumber() (uint64, error) {
 	return common.GetUint64FromStr(result)
 }
 
-func (b *FsnBridge) GetBlockByHash(blockHash string) (*RPCBlock, error) {
+func (b *FsnBridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress
-	var result RPCBlock
+	var result types.RPCBlock
 	err := client.RpcPost(&result, url, "eth_getBlockByHash", blockHash, false)
 	if err != nil {
 		return nil, err
@@ -32,10 +32,10 @@ func (b *FsnBridge) GetBlockByHash(blockHash string) (*RPCBlock, error) {
 	return &result, nil
 }
 
-func (b *FsnBridge) GetTransaction(txHash string) (*RPCTransaction, error) {
+func (b *FsnBridge) GetTransaction(txHash string) (*types.RPCTransaction, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress
-	var result RPCTransaction
+	var result types.RPCTransaction
 	err := client.RpcPost(&result, url, "eth_getTransactionByHash", txHash)
 	if err != nil {
 		return nil, err
@@ -43,10 +43,10 @@ func (b *FsnBridge) GetTransaction(txHash string) (*RPCTransaction, error) {
 	return &result, nil
 }
 
-func (b *FsnBridge) GetTransactionReceipt(txHash string) (*RPCTxReceipt, error) {
+func (b *FsnBridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress
-	var result RPCTxReceipt
+	var result types.RPCTxReceipt
 	err := client.RpcPost(&result, url, "eth_getTransactionReceipt", txHash)
 	if err != nil {
 		return nil, err
@@ -54,10 +54,10 @@ func (b *FsnBridge) GetTransactionReceipt(txHash string) (*RPCTxReceipt, error) 
 	return &result, nil
 }
 
-func (b *FsnBridge) GetTransactionAndReceipt(txHash string) (*RPCTxAndReceipt, error) {
+func (b *FsnBridge) GetTransactionAndReceipt(txHash string) (*types.RPCTxAndReceipt, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress
-	var result RPCTxAndReceipt
+	var result types.RPCTxAndReceipt
 	err := client.RpcPost(&result, url, "fsn_getTransactionAndReceipt", txHash)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (b *FsnBridge) SuggestPrice() (*big.Int, error) {
 	return result.ToInt(), nil
 }
 
-func (b *FsnBridge) SendSignedTransaction(tx *Transaction) error {
+func (b *FsnBridge) SendSignedTransaction(tx *types.Transaction) error {
 	data, err := rlp.EncodeToBytes(tx)
 	if err != nil {
 		return err

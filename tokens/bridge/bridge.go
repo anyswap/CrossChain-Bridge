@@ -3,13 +3,13 @@ package bridge
 import (
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/params"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/btc"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/eth"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/fsn"
 )
 
-func NewCrossChainBridge(id string, isSrc bool) CrossChainBridge {
+func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 	switch id {
 	case "Bitcoin":
 		return btc.NewCrossChainBridge(isSrc)
@@ -35,13 +35,13 @@ func InitCrossChainBridge() {
 	srcNet := *srcToken.NetID
 	dstNet := *dstToken.NetID
 
-	SrcBridge = NewCrossChainBridge(srcID, true)
-	DstBridge = NewCrossChainBridge(dstID, false)
+	tokens.SrcBridge = NewCrossChainBridge(srcID, true)
+	tokens.DstBridge = NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
 
-	SrcBridge.SetTokenAndGateway(srcToken, srcGateway)
+	tokens.SrcBridge.SetTokenAndGateway(srcToken, srcGateway)
 	log.Info("Init bridge source", "token", srcToken.Symbol, "gateway", srcGateway)
 
-	DstBridge.SetTokenAndGateway(dstToken, dstGateway)
+	tokens.DstBridge.SetTokenAndGateway(dstToken, dstGateway)
 	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
 }

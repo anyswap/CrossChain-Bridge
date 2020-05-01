@@ -2,11 +2,12 @@ package eth
 
 import (
 	"errors"
-	. "github.com/fsn-dev/crossChain-Bridge/types"
+
+	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 func (b *EthBridge) SendTransaction(signedTx interface{}) (txHash string, err error) {
-	tx, ok := signedTx.(*Transaction)
+	tx, ok := signedTx.(*types.Transaction)
 	if !ok {
 		return "", errors.New("wrong signed transaction type")
 	}

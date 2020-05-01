@@ -7,7 +7,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
 	"github.com/fsn-dev/crossChain-Bridge/rlp"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
-	. "github.com/fsn-dev/crossChain-Bridge/types"
+	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 func (b *EthBridge) GetLatestBlockNumber() (uint64, error) {
@@ -21,10 +21,10 @@ func (b *EthBridge) GetLatestBlockNumber() (uint64, error) {
 	return common.GetUint64FromStr(result)
 }
 
-func (b *EthBridge) GetBlockByHash(blockHash string) (*RPCBlock, error) {
+func (b *EthBridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress
-	var result RPCBlock
+	var result types.RPCBlock
 	err := client.RpcPost(&result, url, "eth_getBlockByHash", blockHash, false)
 	if err != nil {
 		return nil, err
@@ -32,10 +32,10 @@ func (b *EthBridge) GetBlockByHash(blockHash string) (*RPCBlock, error) {
 	return &result, nil
 }
 
-func (b *EthBridge) GetTransaction(txHash string) (*RPCTransaction, error) {
+func (b *EthBridge) GetTransaction(txHash string) (*types.RPCTransaction, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress
-	var result RPCTransaction
+	var result types.RPCTransaction
 	err := client.RpcPost(&result, url, "eth_getTransactionByHash", txHash)
 	if err != nil {
 		return nil, err
@@ -43,10 +43,10 @@ func (b *EthBridge) GetTransaction(txHash string) (*RPCTransaction, error) {
 	return &result, nil
 }
 
-func (b *EthBridge) GetTransactionReceipt(txHash string) (*RPCTxReceipt, error) {
+func (b *EthBridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress
-	var result RPCTxReceipt
+	var result types.RPCTxReceipt
 	err := client.RpcPost(&result, url, "eth_getTransactionReceipt", txHash)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (b *EthBridge) SuggestPrice() (*big.Int, error) {
 	return result.ToInt(), nil
 }
 
-func (b *EthBridge) SendSignedTransaction(tx *Transaction) error {
+func (b *EthBridge) SendSignedTransaction(tx *types.Transaction) error {
 	data, err := rlp.EncodeToBytes(tx)
 	if err != nil {
 		return err

@@ -6,7 +6,7 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 var (
@@ -62,23 +62,23 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		return fmt.Errorf("wrong value %v", res.Value)
 	}
 
-	args := &BuildTxArgs{
+	args := &tokens.BuildTxArgs{
 		IsSwapin: false,
 		To:       res.Bind,
 		Value:    value,
 		Memo:     res.TxId,
 	}
-	rawTx, err := SrcBridge.BuildRawTransaction(args)
+	rawTx, err := tokens.SrcBridge.BuildRawTransaction(args)
 	if err != nil {
 		return err
 	}
 
-	signedTx, err := SrcBridge.DcrmSignTransaction(rawTx)
+	signedTx, err := tokens.SrcBridge.DcrmSignTransaction(rawTx)
 	if err != nil {
 		return err
 	}
 
-	txHash, err := SrcBridge.SendTransaction(signedTx)
+	txHash, err := tokens.SrcBridge.SendTransaction(signedTx)
 
 	if err != nil {
 		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxRecallFailed, now(), "")

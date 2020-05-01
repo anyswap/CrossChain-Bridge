@@ -9,7 +9,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 const (
@@ -25,10 +25,10 @@ var (
 type ServerConfig struct {
 	MongoDB     *MongoDBConfig   `toml:",omitempty"`
 	ApiServer   *ApiServerConfig `toml:",omitempty"`
-	SrcToken    *TokenConfig
-	SrcGateway  *GatewayConfig
-	DestToken   *TokenConfig
-	DestGateway *GatewayConfig
+	SrcToken    *tokens.TokenConfig
+	SrcGateway  *tokens.GatewayConfig
+	DestToken   *tokens.TokenConfig
+	DestGateway *tokens.GatewayConfig
 	Dcrm        *DcrmConfig
 }
 

@@ -1,9 +1,9 @@
 package btc
 
 import (
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
-func (b *BtcBridge) BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error) {
-	return nil, ErrTodo
+func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
+	return nil, tokens.ErrTodo
 }

@@ -2,7 +2,7 @@ package worker
 
 import (
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
-	. "github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 type MatchTx struct {
@@ -14,15 +14,15 @@ type MatchTx struct {
 
 const RecallTxMemo = "IsRecalled"
 
-func addInitialSwapinResult(tx *TxSwapInfo) error {
+func addInitialSwapinResult(tx *tokens.TxSwapInfo) error {
 	return addInitialSwapResult(tx, true)
 }
 
-func addInitialSwapoutResult(tx *TxSwapInfo) error {
+func addInitialSwapoutResult(tx *tokens.TxSwapInfo) error {
 	return addInitialSwapResult(tx, false)
 }
 
-func addInitialSwapResult(tx *TxSwapInfo, isSwapin bool) (err error) {
+func addInitialSwapResult(tx *tokens.TxSwapInfo, isSwapin bool) (err error) {
 	txid := tx.Hash
 	swapResult := &mongodb.MgoSwapResult{
 		Key:        txid,
