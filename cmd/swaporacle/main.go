@@ -8,6 +8,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/cmd/utils"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/params"
+	"github.com/fsn-dev/crossChain-Bridge/worker"
 	"github.com/urfave/cli/v2"
 )
 
@@ -54,9 +55,9 @@ func swaporacle(ctx *cli.Context) error {
 	}
 	exitCh := make(chan struct{})
 	configFile := utils.GetConfigFilePath(ctx)
-	config := params.LoadConfig(configFile, false)
-	log.Println("LoadConfig finished.", config)
-	log.Println("swap oracle stub")
+	params.LoadConfig(configFile, false)
+
+	worker.StartOracleWork()
 
 	<-exitCh
 	return nil

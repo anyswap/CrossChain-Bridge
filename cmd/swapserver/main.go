@@ -65,7 +65,7 @@ func swapserver(ctx *cli.Context) error {
 	dbName := dbConfig.DbName
 	mongodb.MongoServerInit(mongoURL, dbName)
 
-	worker.StartWork()
+	worker.StartServerWork()
 	time.Sleep(100 * time.Millisecond)
 	rpcserver.StartAPIServer()
 

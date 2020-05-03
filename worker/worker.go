@@ -9,8 +9,8 @@ import (
 
 const interval = 10 * time.Millisecond
 
-func StartWork() {
-	log.Println("start worker")
+func StartServerWork() {
+	log.Println("start server worker")
 
 	bridge.InitCrossChainBridge()
 
@@ -24,4 +24,12 @@ func StartWork() {
 	time.Sleep(interval)
 
 	go StartRecallJob()
+}
+
+func StartOracleWork() {
+	log.Println("start oracle worker")
+
+	bridge.InitCrossChainBridge()
+
+	go StartAcceptSignJob()
 }
