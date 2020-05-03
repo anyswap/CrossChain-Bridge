@@ -3,6 +3,8 @@ package common
 import (
 	"errors"
 	"math/big"
+	"strconv"
+	"time"
 
 	cmath "github.com/fsn-dev/crossChain-Bridge/common/math"
 	"golang.org/x/crypto/sha3"
@@ -39,4 +41,20 @@ func GetUint64FromStr(str string) (uint64, error) {
 		return 0, errors.New("invalid unsigned 64 bit integer: " + str)
 	}
 	return res, nil
+}
+
+func Now() int64 {
+	return time.Now().Unix()
+}
+
+func NowStr() string {
+	return strconv.FormatInt((time.Now().Unix()), 10)
+}
+
+func NowMilli() int64 {
+	return time.Now().UnixNano() / 1e6
+}
+
+func NowMilliStr() string {
+	return strconv.FormatInt((time.Now().UnixNano() / 1e6), 10)
 }
