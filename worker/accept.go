@@ -32,7 +32,8 @@ func acceptSign() error {
 		for _, info := range signInfo {
 			keyID := info.Key
 			agreeResult := "AGREE"
-			dcrm.DoAcceptSign(keyID, agreeResult)
+			res, err := dcrm.DoAcceptSign(keyID, agreeResult)
+			logWorker("accept", "start accept sign job", "result", res, "err", err)
 		}
 		time.Sleep(waitInterval)
 	}

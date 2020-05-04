@@ -24,12 +24,14 @@ func now() int64 {
 	return time.Now().Unix()
 }
 
-func logWorker(job, subject string) {
-	log.Printf("[%v] %v\n", job, subject)
+func logWorker(job, subject string, context ...interface{}) {
+	log.Info("["+job+"] "+subject, context...)
 }
 
-func logWorkerError(job, subject string, err error) {
-	log.Printf("[%v] %v, err=%v\n", job, subject, err)
+func logWorkerError(job, subject string, err error, context ...interface{}) {
+	fields := []interface{}{"err", err}
+	fields = append(fields, context...)
+	log.Error("["+job+"] "+subject, fields...)
 }
 
 func getSepTimeInFind(dist int64) int64 {

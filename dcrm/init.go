@@ -33,6 +33,10 @@ func SetDcrmRpcAddress(url string) {
 	dcrmRpcAddress = url
 }
 
+func DcrmFromAddress() common.Address {
+	return keyWrapper.Address
+}
+
 func LoadKeyStore(keyfile, passfile string) error {
 	keyjson, err := ioutil.ReadFile(keyfile)
 	if err != nil {
