@@ -3,10 +3,18 @@ package swapapi
 import (
 	"time"
 
-	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/params"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	rpcjson "github.com/gorilla/rpc/v2/json2"
 )
+
+func newRpcError(ec rpcjson.ErrorCode, message string) error {
+	return &rpcjson.Error{
+		Code:    ec,
+		Message: message,
+	}
+}
 
 func GetServerInfo() (*ServerInfo, error) {
 	config := params.GetConfig()
@@ -24,8 +32,8 @@ func GetSwapStatistics() (*SwapStatistics, error) {
 	return stat, nil
 }
 
-func GetSwapin(txid *common.Hash) (*SwapInfo, error) {
-	txidstr := txid.String()
+func GetSwapin(txid *string) (*SwapInfo, error) {
+	txidstr := *txid
 	result, err := mongodb.FindSwapinResult(txidstr)
 	if err == nil {
 		return ConvertMgoSwapResultToSwapInfo(result), nil
@@ -37,8 +45,8 @@ func GetSwapin(txid *common.Hash) (*SwapInfo, error) {
 	return nil, mongodb.ErrSwapNotFound
 }
 
-func GetSwapout(txid *common.Hash) (*SwapInfo, error) {
-	txidstr := txid.String()
+func GetSwapout(txid *string) (*SwapInfo, error) {
+	txidstr := *txid
 	result, err := mongodb.FindSwapoutResult(txidstr)
 	if err == nil {
 		return ConvertMgoSwapResultToSwapInfo(result), nil
@@ -77,40 +85,48 @@ func GetSwapoutHistory(address string, offset, limit int) ([]*SwapInfo, error) {
 	return ConvertMgoSwapResultsToSwapInfos(result), nil
 }
 
-func Swapin(txid *common.Hash) (*PostResult, error) {
-	txidstr := txid.String()
+func Swapin(txid *string) (*PostResult, error) {
+	txidstr := *txid
+	info, err := tokens.SrcBridge.VerifyTransaction(txidstr)
+	if err != nil {
+		return nil, newRpcError(-32099, "verify swapin failed! "+err.Error())
+	}
 	swap := &mongodb.MgoSwap{
 		Key:       txidstr,
 		TxId:      txidstr,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
-		Memo:      "",
+		Memo:      info.Bind,
 	}
-	err := mongodb.AddSwapin(swap)
+	err = mongodb.AddSwapin(swap)
 	if err != nil {
 		return nil, err
 	}
 	return &SuccessPostResult, nil
 }
 
-func Swapout(txid *common.Hash) (*PostResult, error) {
-	txidstr := txid.String()
+func Swapout(txid *string) (*PostResult, error) {
+	txidstr := *txid
+	info, err := tokens.DstBridge.VerifyTransaction(txidstr)
+	if err != nil {
+		return nil, newRpcError(-32098, "verify swapout failed! "+err.Error())
+	}
 	swap := &mongodb.MgoSwap{
 		Key:       txidstr,
 		TxId:      txidstr,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
-		Memo:      "",
+		Memo:      info.Bind,
 	}
-	err := mongodb.AddSwapout(swap)
+	err = mongodb.AddSwapout(swap)
 	if err != nil {
 		return nil, err
 	}
 	return &SuccessPostResult, nil
 }
 
-func RecallSwapin(txid *common.Hash) (*PostResult, error) {
-	txidstr := txid.String()
+func RecallSwapin(txid *string) (*PostResult, error) {
+	txidstr := *txid
 	err := mongodb.RecallSwapin(txidstr)
 	if err != nil {
 		return nil, err

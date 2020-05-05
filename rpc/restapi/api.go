@@ -35,7 +35,7 @@ func StatisticsHandler(w http.ResponseWriter, r *http.Request) {
 func GetSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
-	txid := common.HexToHash(vars["txid"])
+	txid := vars["txid"]
 	res, err := swapapi.GetSwapin(&txid)
 	writeResponse(w, res, err)
 }
@@ -43,7 +43,7 @@ func GetSwapinHandler(w http.ResponseWriter, r *http.Request) {
 func GetSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
-	txid := common.HexToHash(vars["txid"])
+	txid := vars["txid"]
 	res, err := swapapi.GetSwapout(&txid)
 	writeResponse(w, res, err)
 }
@@ -98,7 +98,7 @@ func SwapoutHistoryHandler(w http.ResponseWriter, r *http.Request) {
 func PostSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
-	txid := common.HexToHash(vars["txid"])
+	txid := vars["txid"]
 	res, err := swapapi.Swapin(&txid)
 	writeResponse(w, res, err)
 }
@@ -106,7 +106,7 @@ func PostSwapinHandler(w http.ResponseWriter, r *http.Request) {
 func PostSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
-	txid := common.HexToHash(vars["txid"])
+	txid := vars["txid"]
 	res, err := swapapi.Swapout(&txid)
 	writeResponse(w, res, err)
 }
@@ -114,7 +114,7 @@ func PostSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 func RecallSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
-	txid := common.HexToHash(vars["txid"])
+	txid := vars["txid"]
 	res, err := swapapi.RecallSwapin(&txid)
 	writeResponse(w, res, err)
 }
