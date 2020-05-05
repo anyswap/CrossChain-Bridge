@@ -1,6 +1,7 @@
 package dcrm
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
@@ -44,7 +45,7 @@ func GetSignNonce() (uint64, error) {
 }
 
 func GetSignStatus(key string) (*SignStatus, error) {
-	var result SignStatusResp
+	var result DataResultResp
 	err := httpPost(&result, "dcrm_getSignStatus", key)
 	if err != nil {
 		return nil, err
@@ -52,11 +53,13 @@ func GetSignStatus(key string) (*SignStatus, error) {
 	if result.Status != "Success" {
 		return nil, newWrongStatusError(result.Error)
 	}
-	return &SignStatus{
-		Rsv:       result.Rsv,
-		AllReply:  result.AllReply,
-		TimeStamp: result.TimeStamp,
-	}, nil
+	data := result.Data.Result
+	var signStatus SignStatus
+	json.Unmarshal([]byte(data), &signStatus)
+	if signStatus.Status != "Success" {
+		return nil, newWrongStatusError(signStatus.Error)
+	}
+	return &signStatus, nil
 }
 
 func GetCurNodeSignInfo() ([]*SignInfoData, error) {

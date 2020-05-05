@@ -22,18 +22,19 @@ type DataResultResp struct {
 	Data   *DataResult
 }
 
-type SignStatus struct {
-	Rsv       string
-	AllReply  interface{}
+type SignReply struct {
+	Enode     string
+	Status    string
 	TimeStamp string
+	Initiator string
 }
 
-type SignStatusResp struct {
+type SignStatus struct {
 	Status    string
 	Rsv       string
 	Tip       string
 	Error     string
-	AllReply  interface{}
+	AllReply  []*SignReply
 	TimeStamp string
 }
 

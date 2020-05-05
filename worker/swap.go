@@ -112,9 +112,14 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
+	if signedTx == nil {
+		return fmt.Errorf("signed tx of %v is empty", txid)
+	}
+
 	txHash, err := tokens.DstBridge.SendTransaction(signedTx)
 
 	if err != nil {
+		logWorkerError("swap", "update swapin status to TxSwapFailed", err, "txid", txid)
 		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), "")
 		return err
 	}
@@ -164,6 +169,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	txHash, err := tokens.SrcBridge.SendTransaction(signedTx)
 
 	if err != nil {
+		logWorkerError("swap", "update swapout status to TxSwapFailed", err, "txid", txid)
 		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), "")
 		return err
 	}

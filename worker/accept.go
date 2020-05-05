@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/dcrm"
+	"github.com/fsn-dev/crossChain-Bridge/log"
 )
 
 var (
@@ -29,14 +30,15 @@ func acceptSign() error {
 			time.Sleep(retryInterval)
 			continue
 		}
+		log.Debug("acceptSign", "count", len(signInfo))
 		for _, info := range signInfo {
 			keyID := info.Key
 			agreeResult := "AGREE"
 			res, err := dcrm.DoAcceptSign(keyID, agreeResult)
 			if err != nil {
-				logWorkerError("accept", "start accept sign job", err)
+				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID)
 			} else {
-				logWorker("accept", "start accept sign job", "result", res)
+				logWorker("accept", "accept sign job success", "keyID", keyID, "result", res)
 			}
 		}
 		time.Sleep(waitInterval)

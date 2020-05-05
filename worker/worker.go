@@ -12,7 +12,7 @@ const interval = 10 * time.Millisecond
 func StartServerWork() {
 	log.Println("start server worker")
 
-	bridge.InitCrossChainBridge()
+	bridge.InitCrossChainBridge(true)
 
 	go StartVerifyJob()
 	time.Sleep(interval)
@@ -29,7 +29,7 @@ func StartServerWork() {
 func StartOracleWork() {
 	log.Println("start oracle worker")
 
-	bridge.InitCrossChainBridge()
+	bridge.InitCrossChainBridge(false)
 
 	go StartAcceptSignJob()
 }

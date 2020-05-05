@@ -23,10 +23,10 @@ var (
 	keyWrapper     *keystore.Key
 	dcrmRpcAddress string
 
-	pubkey    string
-	groupID   string
-	threshold string
-	mode      string
+	signPubkey string
+	groupID    string
+	threshold  string
+	mode       string
 )
 
 func SetDcrmRpcAddress(url string) {
@@ -35,6 +35,16 @@ func SetDcrmRpcAddress(url string) {
 
 func DcrmFromAddress() common.Address {
 	return keyWrapper.Address
+}
+
+func SetSignPubkey(pubkey string) {
+	signPubkey = pubkey
+}
+
+func SetDcrmGroup(group_ string, threshold_ string, mode_ string) {
+	groupID = group_
+	threshold = threshold_
+	mode = mode_
 }
 
 func LoadKeyStore(keyfile, passfile string) error {

@@ -17,7 +17,7 @@ func DoSign(msgHash string) (string, error) {
 	}
 	txdata := SignData{
 		TxType:    "SIGN",
-		PubKey:    pubkey,
+		PubKey:    signPubkey,
 		MsgHash:   msgHash,
 		Keytype:   "ECDSA",
 		GroupID:   groupID,
@@ -31,25 +31,6 @@ func DoSign(msgHash string) (string, error) {
 		return "", err
 	}
 	return Sign(rawTX)
-}
-
-func DoAcceptSign(keyID string, agreeResult string) (string, error) {
-	nonce := uint64(0)
-	data := AcceptData{
-		TxType:    "ACCEPTSIGN",
-		Key:       keyID,
-		Accept:    agreeResult,
-		TimeStamp: common.NowMilliStr(),
-	}
-	payload, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	rawTX, err := BuildDcrmRawTx(nonce, payload)
-	if err != nil {
-		return "", err
-	}
-	return AcceptSign(rawTX)
 }
 
 func BuildDcrmRawTx(nonce uint64, payload []byte) (string, error) {

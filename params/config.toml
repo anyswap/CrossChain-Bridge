@@ -11,7 +11,7 @@ Name = "Bitcoin Coin"
 Symbol = "BTC"
 Decimals = 8
 Description = "Bitcoin Coin"
-DcrmAddress = "2MvK2LXz2jqE3tLFhU4dLb7SCWf2orPMvyF"
+DcrmAddress = "mnHtGtnwSiGBJCBjy8rAjzVgCZZqMfz6bC"
 Confirmations = 6
 MaximumSwap = 1000.0
 MinimumSwap = 0.0004
@@ -52,6 +52,6 @@ TotalOracles=3
 # 0:managed 1:private
 Mode=0
 
-Pubkey="04908094331606866ee248bf9a802a2a881ab519ac1daf411ab8a69d2ba08af02ab413b93dba8eefacb8d4608b1c53fdf291a6f9b96b468e878fc4e851ecc34a2d"
-KeystoreFile="node1/keystore/keystore1"
-PasswordFile="password.txt"
+Pubkey="04e06dcab9c8fbda0f04702aec0e10798ae6cfa84439a23da3b48ecf4a3e22dff3409bb8d2b730db516f940b680e015d8f1b50b34da41de4e919ef648bce83ecf0"
+KeystoreFile="/home/jowen/run/gdcrm/node1/keystore/keystore1"
+PasswordFile="/home/jowen/run/gdcrm/password.txt"

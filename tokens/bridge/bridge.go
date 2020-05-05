@@ -1,6 +1,10 @@
 package bridge
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/fsn-dev/crossChain-Bridge/dcrm"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
@@ -23,7 +27,7 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 	return nil
 }
 
-func InitCrossChainBridge() {
+func InitCrossChainBridge(isServer bool) {
 	cfg := params.GetConfig()
 	srcToken := cfg.SrcToken
 	dstToken := cfg.DestToken
@@ -44,4 +48,35 @@ func InitCrossChainBridge() {
 
 	tokens.DstBridge.SetTokenAndGateway(dstToken, dstGateway)
 	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
+
+	InitDcrm(cfg.Dcrm, isServer)
+}
+
+func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
+	dcrm.SetDcrmRpcAddress(*dcrmConfig.RpcAddress)
+	if isServer {
+		dcrm.SetSignPubkey(*dcrmConfig.Pubkey)
+		log.Info("Init dcrm pubkey", "pubkey", *dcrmConfig.Pubkey)
+	}
+	group := *dcrmConfig.GroupID
+	threshold := fmt.Sprintf("%d/%d", *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
+	mode := fmt.Sprintf("%d", dcrmConfig.Mode)
+	dcrm.SetDcrmGroup(group, threshold, mode)
+	log.Info("Init dcrm rpc adress", "rpcaddress", *dcrmConfig.RpcAddress)
+	log.Info("Init dcrm group", "group", group, "threshold", threshold, "mode", mode)
+
+	err := dcrm.LoadKeyStore(*dcrmConfig.KeystoreFile, *dcrmConfig.PasswordFile)
+	if err != nil {
+		panic(err)
+	}
+	for {
+		enode, err := dcrm.GetEnode()
+		if err != nil {
+			log.Error("InitDcrm can't get enode info", "err", err)
+			time.Sleep(3 * time.Second)
+		}
+		log.Info("get dcrm enode info success", "enode", enode)
+		break
+	}
+	log.Info("Init dcrm, load keystore success")
 }
