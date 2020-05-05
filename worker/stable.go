@@ -26,6 +26,9 @@ func startSwapinStableJob() error {
 			if err != nil {
 				logWorkerError("stable", "find swapin results error", err)
 			}
+			if len(res) > 0 {
+				logWorker("stable", "find swapin results to stable", "count", len(res))
+			}
 			for _, swap := range res {
 				err = processSwapinStable(swap)
 				if err != nil {
@@ -45,6 +48,9 @@ func startSwapoutStableJob() error {
 			res, err := findSwapoutResultsToStable()
 			if err != nil {
 				logWorkerError("stable", "find swapout results error", err)
+			}
+			if len(res) > 0 {
+				logWorker("stable", "find swapout results to stable", "count", len(res))
 			}
 			for _, swap := range res {
 				err = processSwapoutStable(swap)

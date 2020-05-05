@@ -28,6 +28,9 @@ func startSwapinSwapJob() error {
 			if err != nil {
 				logWorkerError("swap", "find swapins error", err)
 			}
+			if len(res) > 0 {
+				logWorker("swap", "find swapins to swap", "count", len(res))
+			}
 			for _, swap := range res {
 				err = processSwapinSwap(swap)
 				if err != nil {
@@ -47,6 +50,9 @@ func startSwapoutSwapJob() error {
 			res, err := findSwapoutsToSwap()
 			if err != nil {
 				logWorkerError("swap", "find swapouts error", err)
+			}
+			if len(res) > 0 {
+				logWorker("swap", "find swapouts to swap", "count", len(res))
 			}
 			for _, swap := range res {
 				err = processSwapoutSwap(swap)

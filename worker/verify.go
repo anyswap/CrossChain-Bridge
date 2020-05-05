@@ -3,6 +3,7 @@ package worker
 import (
 	"sync"
 
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
@@ -26,6 +27,9 @@ func startSwapinVerifyJob() error {
 			if err != nil {
 				logWorkerError("verify", "find swapins error", err)
 			}
+			if len(res) > 0 {
+				logWorker("verify", "find swapins to verify", "count", len(res))
+			}
 			for _, swap := range res {
 				err = processSwapinVerify(swap)
 				if err != nil {
@@ -45,6 +49,9 @@ func startSwapoutVerifyJob() error {
 			res, err := findSwapoutsToVerify()
 			if err != nil {
 				logWorkerError("verify", "find swapouts error", err)
+			}
+			if len(res) > 0 {
+				logWorker("verify", "find swapouts to verify", "count", len(res))
 			}
 			for _, swap := range res {
 				err = processSwapoutVerify(swap)
@@ -86,6 +93,7 @@ func processSwapinVerify(swap *mongodb.MgoSwap) error {
 	}
 
 	if err != nil {
+		log.Debug("processSwapinVerify", "txid", txid, "err", err)
 		return err
 	}
 	return addInitialSwapinResult(swapInfo)
@@ -107,6 +115,7 @@ func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 	}
 
 	if err != nil {
+		log.Debug("processSwapoutVerify", "txid", txid, "err", err)
 		return err
 	}
 	return addInitialSwapoutResult(swapInfo)

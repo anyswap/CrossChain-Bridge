@@ -26,6 +26,9 @@ func startSwapinRecallJob() error {
 			if err != nil {
 				logWorkerError("recall", "find recalls error", err)
 			}
+			if len(res) > 0 {
+				logWorker("recall", "find recalls to recall", "count", len(res))
+			}
 			for _, swap := range res {
 				err = processRecallSwapin(swap)
 				if err != nil {

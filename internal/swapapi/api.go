@@ -3,6 +3,7 @@ package swapapi
 import (
 	"time"
 
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
@@ -102,6 +103,7 @@ func Swapin(txid *string) (*PostResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Info("[api] add swapin", "swap", swap)
 	return &SuccessPostResult, nil
 }
 
@@ -122,6 +124,7 @@ func Swapout(txid *string) (*PostResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Info("[api] add swapout", "swap", swap)
 	return &SuccessPostResult, nil
 }
 
@@ -131,5 +134,6 @@ func RecallSwapin(txid *string) (*PostResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Info("[api] add recall swap", "txid", txidstr)
 	return &SuccessPostResult, nil
 }

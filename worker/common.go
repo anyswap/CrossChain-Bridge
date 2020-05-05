@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
@@ -45,6 +46,11 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, isSwapin bool) (err error) {
 	} else {
 		err = mongodb.AddSwapoutResult(swapResult)
 	}
+	if err != nil {
+		log.Debug("addInitialSwapResult", "txid", txid, "err", err)
+	} else {
+		log.Debug("addInitialSwapResult", "txid", txid)
+	}
 	return err
 }
 
@@ -74,6 +80,11 @@ func updateSwapResult(key string, mtx *MatchTx, isSwapin bool) (err error) {
 	} else {
 		err = mongodb.UpdateSwapoutResult(key, updates)
 	}
+	if err != nil {
+		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "memo", memo, "err", err)
+	} else {
+		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "memo", memo)
+	}
 	return err
 }
 
@@ -93,6 +104,11 @@ func markSwapResultStable(key string, isSwapin bool) (err error) {
 		err = mongodb.UpdateSwapinResultStatus(key, status, timestamp, memo)
 	} else {
 		err = mongodb.UpdateSwapoutResultStatus(key, status, timestamp, memo)
+	}
+	if err != nil {
+		log.Debug("markSwapResultStable", "txid", key, "isSwapin", isSwapin, "err", err)
+	} else {
+		log.Debug("markSwapResultStable", "txid", key, "isSwapin", isSwapin)
 	}
 	return err
 }

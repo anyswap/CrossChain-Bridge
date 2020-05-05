@@ -107,9 +107,11 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*tokens.TxSwapInfo, error) {
 	// NOTE: must verify memo at last step (as it can be recall)
 	bindAddress, ok := getBindAddressFromMemoScipt(memoScript)
 	if !ok {
+		log.Debug("wrong memo", "memo", memoScript)
 		return nil, tokens.ErrTxWithWrongMemo
 	}
 	if !tokens.DstBridge.IsValidAddress(bindAddress) {
+		log.Debug("wrong bind address", "bind", bindAddress)
 		return nil, tokens.ErrTxWithWrongMemo
 	}
 	for _, input := range tx.Vin {
@@ -120,6 +122,7 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*tokens.TxSwapInfo, error) {
 			break
 		}
 	}
+	log.Debug("verify swapin pass", "from", from, "to", dcrmAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", *txStatus.Block_height, "timestamp", *txStatus.Block_time)
 	return &tokens.TxSwapInfo{
 		Hash:      *tx.Txid,
 		Height:    *txStatus.Block_height,
