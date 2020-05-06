@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
@@ -24,34 +25,43 @@ func (b *EthBridge) GetLatestBlockNumber() (uint64, error) {
 func (b *EthBridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress
-	var result types.RPCBlock
+	var result *types.RPCBlock
 	err := client.RpcPost(&result, url, "eth_getBlockByHash", blockHash, false)
 	if err != nil {
 		return nil, err
 	}
-	return &result, nil
+	if result == nil {
+		return nil, errors.New("block not found")
+	}
+	return result, nil
 }
 
 func (b *EthBridge) GetTransaction(txHash string) (*types.RPCTransaction, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress
-	var result types.RPCTransaction
+	var result *types.RPCTransaction
 	err := client.RpcPost(&result, url, "eth_getTransactionByHash", txHash)
 	if err != nil {
 		return nil, err
 	}
-	return &result, nil
+	if result == nil {
+		return nil, errors.New("tx not found")
+	}
+	return result, nil
 }
 
 func (b *EthBridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress
-	var result types.RPCTxReceipt
+	var result *types.RPCTxReceipt
 	err := client.RpcPost(&result, url, "eth_getTransactionReceipt", txHash)
 	if err != nil {
 		return nil, err
 	}
-	return &result, nil
+	if result == nil {
+		return nil, errors.New("tx receipt not found")
+	}
+	return result, nil
 }
 
 func (b *EthBridge) GetPoolNonce(address string) (uint64, error) {

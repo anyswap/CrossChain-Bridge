@@ -13,14 +13,14 @@ func newError(ec rpcjson.ErrorCode, message string) error {
 
 func mgoError(err error) error {
 	if err != nil {
-		return newError(-32001, err.Error())
+		return newError(-32001, "mgoError: "+err.Error())
 	}
 	return nil
 }
 
 var (
-	ErrSwapNotFound              = newError(-32002, "Swap is not found")
-	ErrSwapinTxNotStable         = newError(-32003, "Swap in tx is not stable")
-	ErrSwapinRecallExist         = newError(-32004, "Swap in recall is exist")
-	ErrSwapinRecalledOrForbidden = newError(-32005, "Swap in is already recalled or can not recall")
+	ErrSwapNotFound              = newError(-32002, "mgoError: Swap is not found")
+	ErrSwapinTxNotStable         = newError(-32003, "mgoError: Swap in tx is not stable")
+	ErrSwapinRecallExist         = newError(-32004, "mgoError: Swap in recall is exist")
+	ErrSwapinRecalledOrForbidden = newError(-32005, "mgoError: Swap in is already recalled or can not recall")
 )

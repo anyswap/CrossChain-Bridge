@@ -78,21 +78,21 @@ func findSwapoutResultsToStable() ([]*mongodb.MgoSwapResult, error) {
 }
 
 func processSwapinStable(swap *mongodb.MgoSwapResult) error {
-	txid := swap.SwapTx
+	swapTxId := swap.SwapTx
 	var txStatus *tokens.TxStatus
 	var confirmations uint64
 	if swap.Memo == RecallTxMemo {
-		txStatus = tokens.SrcBridge.GetTransactionStatus(txid)
+		txStatus = tokens.SrcBridge.GetTransactionStatus(swapTxId)
 		token, _ := tokens.SrcBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
 	} else {
-		txStatus = tokens.DstBridge.GetTransactionStatus(txid)
+		txStatus = tokens.DstBridge.GetTransactionStatus(swapTxId)
 		token, _ := tokens.DstBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
 	}
 
 	if txStatus == nil {
-		return fmt.Errorf("[processSwapinStable] tx status is empty, txid=%v", txid)
+		return fmt.Errorf("[processSwapinStable] tx status is empty, swapTxId=%v", swapTxId)
 	}
 
 	if txStatus.Block_height == 0 {
@@ -101,30 +101,30 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 
 	if swap.SwapHeight != 0 {
 		if txStatus.Confirmations >= confirmations {
-			return markSwapinResultStable(txid)
+			return markSwapinResultStable(swap.Key)
 		}
 		return nil
 	}
 
 	matchTx := &MatchTx{
-		SwapTx:     txid,
+		SwapTx:     swapTxId,
 		SwapHeight: txStatus.Block_height,
 		SwapTime:   txStatus.Block_time,
 	}
-	return updateSwapinResult(txid, matchTx)
+	return updateSwapinResult(swap.Key, matchTx)
 }
 
 func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
-	txid := swap.SwapTx
+	swapTxId := swap.SwapTx
 	var txStatus *tokens.TxStatus
 	var confirmations uint64
 
-	txStatus = tokens.SrcBridge.GetTransactionStatus(txid)
+	txStatus = tokens.SrcBridge.GetTransactionStatus(swapTxId)
 	token, _ := tokens.SrcBridge.GetTokenAndGateway()
 	confirmations = *token.Confirmations
 
 	if txStatus == nil {
-		return fmt.Errorf("[processSwapoutStable] tx status is empty, txid=%v", txid)
+		return fmt.Errorf("[processSwapoutStable] tx status is empty, swapTxId=%v", swapTxId)
 	}
 
 	if txStatus.Block_height == 0 {
@@ -133,15 +133,15 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 
 	if swap.SwapHeight != 0 {
 		if txStatus.Confirmations >= confirmations {
-			return markSwapoutResultStable(txid)
+			return markSwapoutResultStable(swap.Key)
 		}
 		return nil
 	}
 
 	matchTx := &MatchTx{
-		SwapTx:     txid,
+		SwapTx:     swapTxId,
 		SwapHeight: txStatus.Block_height,
 		SwapTime:   txStatus.Block_time,
 	}
-	return updateSwapoutResult(txid, matchTx)
+	return updateSwapoutResult(swap.Key, matchTx)
 }
