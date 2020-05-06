@@ -71,12 +71,12 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	}
 	for {
 		enode, err := dcrm.GetEnode()
-		if err != nil {
-			log.Error("InitDcrm can't get enode info", "err", err)
-			time.Sleep(3 * time.Second)
+		if err == nil {
+			log.Info("get dcrm enode info success", "enode", enode)
+			break
 		}
-		log.Info("get dcrm enode info success", "enode", enode)
-		break
+		log.Error("InitDcrm can't get enode info", "err", err)
+		time.Sleep(3 * time.Second)
 	}
 	log.Info("Init dcrm, load keystore success")
 }

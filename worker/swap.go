@@ -113,7 +113,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 
 	if signedTx == nil {
-		return fmt.Errorf("signed tx of %v is empty", txid)
+		return fmt.Errorf("signed tx is empty, txid=%v", txid)
 	}
 
 	txHash, err := tokens.DstBridge.SendTransaction(signedTx)

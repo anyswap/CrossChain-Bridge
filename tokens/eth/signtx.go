@@ -11,6 +11,12 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
+var (
+	retryCount    = 30
+	retryInterval = 10 * time.Second
+	waitInterval  = 10 * time.Second
+)
+
 func (b *EthBridge) DcrmSignTransaction(rawTx interface{}) (interface{}, error) {
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {
@@ -21,25 +27,25 @@ func (b *EthBridge) DcrmSignTransaction(rawTx interface{}) (interface{}, error) 
 	if err != nil {
 		return nil, err
 	}
-	log.Info("DcrmSignTransaction start", "keyID", keyID, "txhash", msgHash.String())
+	log.Info("DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash.String())
+	time.Sleep(waitInterval)
 
 	var rsv string
-	retryCount := 10
-	retryInterval := 60 * time.Second
 	i := 0
 	for ; i < retryCount; i++ {
 		signStatus, err := dcrm.GetSignStatus(keyID)
-		if err != nil {
-			log.Debug("retry get sign status as error", "err", err)
-			time.Sleep(retryInterval)
-			continue
+		if err == nil {
+			rsv = signStatus.Rsv
+			break
 		}
-		rsv = signStatus.Rsv
-		break
+		log.Debug("retry get sign status as error", "err", err)
+		time.Sleep(retryInterval)
 	}
 	if i == retryCount {
 		return nil, errors.New("get sign status failed")
 	}
+
+	log.Trace("DcrmSignTransaction get rsv success", "rsv", rsv)
 
 	signature := common.FromHex(rsv)
 	signer := dcrm.Signer
@@ -59,9 +65,11 @@ func (b *EthBridge) DcrmSignTransaction(rawTx interface{}) (interface{}, error) 
 		return nil, err
 	}
 
-	if sender != dcrm.DcrmFromAddress() {
-		return nil, err
+	token, _ := b.GetTokenAndGateway()
+	if sender.String() != *token.DcrmAddress {
+		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", *token.DcrmAddress)
+		return nil, errors.New("wrong sender address")
 	}
-	log.Info("DcrmSignTransaction success", "keyID", keyID, "txhash", msgHash.String())
+	log.Info("DcrmSignTransaction success", "keyID", keyID, "txhash", signedTx.Hash().String())
 	return signedTx, err
 }

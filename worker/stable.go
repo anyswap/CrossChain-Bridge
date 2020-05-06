@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
@@ -90,6 +91,10 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 		confirmations = *token.Confirmations
 	}
 
+	if txStatus == nil {
+		return fmt.Errorf("[processSwapinStable] tx status is empty, txid=%v", txid)
+	}
+
 	if txStatus.Block_height == 0 {
 		return nil
 	}
@@ -117,6 +122,10 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	txStatus = tokens.SrcBridge.GetTransactionStatus(txid)
 	token, _ := tokens.SrcBridge.GetTokenAndGateway()
 	confirmations = *token.Confirmations
+
+	if txStatus == nil {
+		return fmt.Errorf("[processSwapoutStable] tx status is empty, txid=%v", txid)
+	}
 
 	if txStatus.Block_height == 0 {
 		return nil

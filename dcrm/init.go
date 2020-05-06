@@ -33,10 +33,6 @@ func SetDcrmRpcAddress(url string) {
 	dcrmRpcAddress = url
 }
 
-func DcrmFromAddress() common.Address {
-	return keyWrapper.Address
-}
-
 func SetSignPubkey(pubkey string) {
 	signPubkey = pubkey
 }

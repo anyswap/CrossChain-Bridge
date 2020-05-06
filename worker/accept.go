@@ -12,7 +12,7 @@ var (
 	acceptSignStarter sync.Once
 
 	retryInterval = 3 * time.Second
-	waitInterval  = 3 * time.Second
+	waitInterval  = 20 * time.Second
 )
 
 func StartAcceptSignJob() error {
