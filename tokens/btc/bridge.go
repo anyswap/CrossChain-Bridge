@@ -10,17 +10,14 @@ import (
 )
 
 type BtcBridge struct {
-	tokens.CrossChainBridgeBase
-	IsSrc bool
+	*tokens.CrossChainBridgeBase
 }
 
 func NewCrossChainBridge(isSrc bool) tokens.CrossChainBridge {
 	if !isSrc {
 		panic(tokens.ErrBridgeDestinationNotSupported)
 	}
-	return &BtcBridge{
-		IsSrc: isSrc,
-	}
+	return &BtcBridge{tokens.NewCrossChainBridgeBase(isSrc)}
 }
 
 func (b *BtcBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {

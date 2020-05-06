@@ -201,6 +201,7 @@ func updateSwapResult(tbName string, txid string, items *SwapResultUpdateItems) 
 	updates := bson.M{
 		"swapheight": items.SwapHeight,
 		"swaptime":   items.SwapTime,
+		"swapvalue":  items.SwapValue,
 		"status":     items.Status,
 		"timestamp":  items.Timestamp,
 	}

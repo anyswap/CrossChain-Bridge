@@ -11,17 +11,14 @@ import (
 )
 
 type FsnBridge struct {
-	tokens.CrossChainBridgeBase
-	IsSrc bool
+	*tokens.CrossChainBridgeBase
 }
 
 func NewCrossChainBridge(isSrc bool) tokens.CrossChainBridge {
 	if isSrc {
 		panic(tokens.ErrTodo)
 	}
-	return &FsnBridge{
-		IsSrc: isSrc,
-	}
+	return &FsnBridge{tokens.NewCrossChainBridgeBase(isSrc)}
 }
 
 func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {

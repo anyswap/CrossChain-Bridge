@@ -112,12 +112,13 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		Value:    value,
 		Memo:     res.TxId,
 	}
-	rawTx, err := tokens.DstBridge.BuildRawTransaction(args)
+	bridge := tokens.DstBridge
+	rawTx, err := bridge.BuildRawTransaction(args)
 	if err != nil {
 		return err
 	}
 
-	signedTx, err := tokens.DstBridge.DcrmSignTransaction(rawTx)
+	signedTx, err := bridge.DcrmSignTransaction(rawTx)
 	if err != nil {
 		return err
 	}
@@ -126,7 +127,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return fmt.Errorf("signed tx is empty, txid=%v", txid)
 	}
 
-	txHash, err := tokens.DstBridge.SendTransaction(signedTx)
+	txHash, err := bridge.SendTransaction(signedTx)
 
 	if err != nil {
 		logWorkerError("swapin", "update swapin status to TxSwapFailed", err, "txid", txid)
@@ -139,7 +140,8 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 
 	matchTx := &MatchTx{
-		SwapTx: txHash,
+		SwapTx:    txHash,
+		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
 	}
 	return updateSwapinResult(txid, matchTx)
 }
@@ -173,17 +175,18 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		Value:    value,
 		Memo:     res.TxId,
 	}
-	rawTx, err := tokens.SrcBridge.BuildRawTransaction(args)
+	bridge := tokens.SrcBridge
+	rawTx, err := bridge.BuildRawTransaction(args)
 	if err != nil {
 		return err
 	}
 
-	signedTx, err := tokens.SrcBridge.DcrmSignTransaction(rawTx)
+	signedTx, err := bridge.DcrmSignTransaction(rawTx)
 	if err != nil {
 		return err
 	}
 
-	txHash, err := tokens.SrcBridge.SendTransaction(signedTx)
+	txHash, err := bridge.SendTransaction(signedTx)
 
 	if err != nil {
 		logWorkerError("swapout", "update swapout status to TxSwapFailed", err, "txid", txid)
@@ -196,7 +199,8 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
 
 	matchTx := &MatchTx{
-		SwapTx: txHash,
+		SwapTx:    txHash,
+		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
 	}
 	return updateSwapoutResult(txid, matchTx)
 }

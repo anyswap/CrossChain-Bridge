@@ -52,7 +52,7 @@ func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *electrs.Elect
 		log.Debug("BtcBridge::GetLatestBlockNumber fail", "err", err)
 		return nil, false
 	}
-	token, _ := b.GetTokenAndGateway()
+	token := b.TokenConfig
 	confirmations := *token.Confirmations
 	if *txStatus.Block_height+confirmations > latest {
 		return nil, false
@@ -77,7 +77,7 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*tokens.TxSwapInfo, error) {
 		log.Debug("BtcBridge::GetTransaction fail", "tx", txHash, "err", err)
 		return nil, tokens.ErrTxNotStable
 	}
-	token, _ := b.GetTokenAndGateway()
+	token := b.TokenConfig
 	dcrmAddress := *token.DcrmAddress
 	var (
 		rightReceiver bool

@@ -12,7 +12,7 @@ import (
 )
 
 func (b *EthBridge) GetLatestBlockNumber() (uint64, error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GatewayConfig
 	url := gateway.ApiAddress
 	var result string
 	err := client.RpcPost(&result, url, "eth_blockNumber")
@@ -23,7 +23,7 @@ func (b *EthBridge) GetLatestBlockNumber() (uint64, error) {
 }
 
 func (b *EthBridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GatewayConfig
 	url := gateway.ApiAddress
 	var result *types.RPCBlock
 	err := client.RpcPost(&result, url, "eth_getBlockByHash", blockHash, false)
@@ -37,7 +37,7 @@ func (b *EthBridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
 }
 
 func (b *EthBridge) GetTransaction(txHash string) (*types.RPCTransaction, error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GatewayConfig
 	url := gateway.ApiAddress
 	var result *types.RPCTransaction
 	err := client.RpcPost(&result, url, "eth_getTransactionByHash", txHash)
@@ -51,7 +51,7 @@ func (b *EthBridge) GetTransaction(txHash string) (*types.RPCTransaction, error)
 }
 
 func (b *EthBridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GatewayConfig
 	url := gateway.ApiAddress
 	var result *types.RPCTxReceipt
 	err := client.RpcPost(&result, url, "eth_getTransactionReceipt", txHash)
@@ -65,7 +65,7 @@ func (b *EthBridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, e
 }
 
 func (b *EthBridge) GetPoolNonce(address string) (uint64, error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GatewayConfig
 	url := gateway.ApiAddress
 	account := common.HexToAddress(address)
 	var result hexutil.Uint64
@@ -74,7 +74,7 @@ func (b *EthBridge) GetPoolNonce(address string) (uint64, error) {
 }
 
 func (b *EthBridge) SuggestPrice() (*big.Int, error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GatewayConfig
 	url := gateway.ApiAddress
 	var result hexutil.Big
 	err := client.RpcPost(&result, url, "eth_gasPrice")
@@ -89,14 +89,14 @@ func (b *EthBridge) SendSignedTransaction(tx *types.Transaction) error {
 	if err != nil {
 		return err
 	}
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GatewayConfig
 	url := gateway.ApiAddress
 	var result interface{}
 	return client.RpcPost(&result, url, "eth_sendRawTransaction", common.ToHex(data))
 }
 
 func (b *EthBridge) ChainID() (*big.Int, error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GatewayConfig
 	url := gateway.ApiAddress
 	var result hexutil.Big
 	err := client.RpcPost(&result, url, "eth_chainId")

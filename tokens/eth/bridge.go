@@ -11,17 +11,14 @@ import (
 )
 
 type EthBridge struct {
-	tokens.CrossChainBridgeBase
-	IsSrc bool
+	*tokens.CrossChainBridgeBase
 }
 
 func NewCrossChainBridge(isSrc bool) tokens.CrossChainBridge {
 	if isSrc {
 		panic(tokens.ErrTodo)
 	}
-	return &EthBridge{
-		IsSrc: isSrc,
-	}
+	return &EthBridge{tokens.NewCrossChainBridgeBase(isSrc)}
 }
 
 func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {

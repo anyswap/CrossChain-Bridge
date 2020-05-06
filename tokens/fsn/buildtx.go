@@ -28,7 +28,9 @@ func (b *FsnBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 		input = *args.Input
 	}
 
-	value = tokens.CalcSwappedValue(value, b.IsSrc)
+	if !args.IsSwapin {
+		value = tokens.CalcSwappedValue(value, b.IsSrc)
+	}
 
 	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
 }
@@ -63,7 +65,7 @@ func (b *FsnBridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
 	funcHash := tokens.SwapinFuncHash[:]
 	txHash := common.HexToHash(args.Memo).Bytes()
 	address := common.LeftPadBytes(common.HexToAddress(args.To).Bytes(), 32)
-	amount := common.LeftPadBytes(args.Value.Bytes(), 32)
+	amount := common.LeftPadBytes(tokens.CalcSwappedValue(args.Value, b.IsSrc).Bytes(), 32)
 	input := make([]byte, 100)
 	copy(input[:4], funcHash)
 	copy(input[4:36], txHash)
@@ -71,7 +73,7 @@ func (b *FsnBridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
 	copy(input[68:100], amount)
 	args.Input = &input // input
 
-	token, _ := b.GetTokenAndGateway()
+	token := b.TokenConfig
 	args.From = *token.DcrmAddress   // from
 	args.To = *token.ContractAddress // to
 	args.Value = big.NewInt(0)       // value

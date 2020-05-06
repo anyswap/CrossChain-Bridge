@@ -10,6 +10,7 @@ type MatchTx struct {
 	SwapTx        string
 	SwapHeight    uint64
 	SwapTime      uint64
+	SwapValue     string
 	SetRecallMemo bool
 }
 
@@ -37,6 +38,7 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, isSwapin bool) (err error) {
 		SwapTx:     "",
 		SwapHeight: 0,
 		SwapTime:   0,
+		SwapValue:  "0",
 		Status:     mongodb.MatchTxEmpty,
 		Timestamp:  now(),
 		Memo:       "",
@@ -71,6 +73,7 @@ func updateSwapResult(key string, mtx *MatchTx, isSwapin bool) (err error) {
 		SwapTx:     mtx.SwapTx,
 		SwapHeight: mtx.SwapHeight,
 		SwapTime:   mtx.SwapTime,
+		SwapValue:  mtx.SwapValue,
 		Status:     mongodb.MatchTxNotStable,
 		Timestamp:  now(),
 		Memo:       memo,
@@ -81,9 +84,9 @@ func updateSwapResult(key string, mtx *MatchTx, isSwapin bool) (err error) {
 		err = mongodb.UpdateSwapoutResult(key, updates)
 	}
 	if err != nil {
-		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "memo", memo, "err", err)
+		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "memo", memo, "err", err)
 	} else {
-		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "memo", memo)
+		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "memo", memo)
 	}
 	return err
 }

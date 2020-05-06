@@ -117,6 +117,7 @@ type BuildTxArgs struct {
 }
 
 type CrossChainBridge interface {
+	IsSrcEndpoint() bool
 	GetTokenAndGateway() (*TokenConfig, *GatewayConfig)
 	SetTokenAndGateway(*TokenConfig, *GatewayConfig)
 
@@ -131,17 +132,26 @@ type CrossChainBridge interface {
 }
 
 type CrossChainBridgeBase struct {
-	tokenConfig   *TokenConfig
-	gatewayConfig *GatewayConfig
+	TokenConfig   *TokenConfig
+	GatewayConfig *GatewayConfig
+	IsSrc         bool
+}
+
+func NewCrossChainBridgeBase(isSrc bool) *CrossChainBridgeBase {
+	return &CrossChainBridgeBase{IsSrc: isSrc}
+}
+
+func (b *CrossChainBridgeBase) IsSrcEndpoint() bool {
+	return b.IsSrc
 }
 
 func (b *CrossChainBridgeBase) GetTokenAndGateway() (*TokenConfig, *GatewayConfig) {
-	return b.tokenConfig, b.gatewayConfig
+	return b.TokenConfig, b.GatewayConfig
 }
 
 func (b *CrossChainBridgeBase) SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig) {
-	b.tokenConfig = tokenCfg
-	b.gatewayConfig = gatewayCfg
+	b.TokenConfig = tokenCfg
+	b.GatewayConfig = gatewayCfg
 	err := tokenCfg.CheckConfig(true)
 	if err != nil {
 		panic(err)

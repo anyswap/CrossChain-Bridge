@@ -17,7 +17,7 @@ func (b *BtcBridge) IsValidAddress(addr string) bool {
 }
 
 func (b *BtcBridge) GetChainConfig() *chaincfg.Params {
-	token, _ := b.GetTokenAndGateway()
+	token := b.TokenConfig
 	networkID := strings.ToLower(*token.NetID)
 	switch networkID {
 	case "mainnet":
