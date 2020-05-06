@@ -1,12 +1,14 @@
 package eth
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/dcrm"
 	"github.com/fsn-dev/crossChain-Bridge/log"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/tools/crypto"
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
@@ -17,13 +19,19 @@ var (
 	waitInterval  = 10 * time.Second
 )
 
-func (b *EthBridge) DcrmSignTransaction(rawTx interface{}) (interface{}, error) {
+func (b *EthBridge) DcrmSignTransaction(rawTx, swapInfo interface{}) (interface{}, error) {
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {
 		return nil, errors.New("wrong raw tx param")
 	}
+	info, ok := swapInfo.(*tokens.SwapInfo)
+	if !ok {
+		return nil, errors.New("wrong swap into param")
+	}
 	msgHash := dcrm.Signer.Hash(tx)
-	keyID, err := dcrm.DoSign(msgHash.String())
+	jsondata, _ := json.Marshal(info)
+	msgContext := string(jsondata)
+	keyID, err := dcrm.DoSign(msgHash.String(), msgContext)
 	if err != nil {
 		return nil, err
 	}

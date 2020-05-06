@@ -39,16 +39,17 @@ type SignStatus struct {
 }
 
 type SignInfoData struct {
-	Account   string
-	GroupID   string
-	Key       string
-	KeyType   string
-	Mode      string
-	MsgHash   string
-	Nonce     string
-	PubKey    string
-	ThresHold string
-	TimeStamp string
+	Account    string
+	GroupID    string
+	Key        string
+	KeyType    string
+	Mode       string
+	MsgHash    string
+	MsgContext string
+	Nonce      string
+	PubKey     string
+	ThresHold  string
+	TimeStamp  string
 }
 
 type SignInfoResp struct {
@@ -59,14 +60,15 @@ type SignInfoResp struct {
 }
 
 type SignData struct {
-	TxType    string
-	PubKey    string
-	MsgHash   string
-	Keytype   string
-	GroupID   string
-	ThresHold string
-	Mode      string
-	TimeStamp string
+	TxType     string
+	PubKey     string
+	MsgHash    string
+	MsgContext string
+	Keytype    string
+	GroupID    string
+	ThresHold  string
+	Mode       string
+	TimeStamp  string
 }
 
 type AcceptData struct {

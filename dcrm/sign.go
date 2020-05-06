@@ -10,20 +10,21 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-func DoSign(msgHash string) (string, error) {
+func DoSign(msgHash, msgContext string) (string, error) {
 	nonce, err := GetSignNonce()
 	if err != nil {
 		return "", err
 	}
 	txdata := SignData{
-		TxType:    "SIGN",
-		PubKey:    signPubkey,
-		MsgHash:   msgHash,
-		Keytype:   "ECDSA",
-		GroupID:   groupID,
-		ThresHold: threshold,
-		Mode:      mode,
-		TimeStamp: common.NowMilliStr(),
+		TxType:     "SIGN",
+		PubKey:     signPubkey,
+		MsgHash:    msgHash,
+		MsgContext: msgContext,
+		Keytype:    "ECDSA",
+		GroupID:    groupID,
+		ThresHold:  threshold,
+		Mode:       mode,
+		TimeStamp:  common.NowMilliStr(),
 	}
 	payload, _ := json.Marshal(txdata)
 	rawTX, err := BuildDcrmRawTx(nonce, payload)

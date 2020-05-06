@@ -77,7 +77,11 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	signedTx, err := bridge.DcrmSignTransaction(rawTx)
+	swapInfo := &tokens.SwapInfo{
+		TxHash:   txid,
+		SwapType: tokens.Swap_Recall,
+	}
+	signedTx, err := bridge.DcrmSignTransaction(rawTx, swapInfo)
 	if err != nil {
 		return err
 	}

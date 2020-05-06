@@ -2,11 +2,17 @@ package worker
 
 import (
 	"container/ring"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/dcrm"
 	"github.com/fsn-dev/crossChain-Bridge/log"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 var (
@@ -44,6 +50,10 @@ func acceptSign() error {
 				continue
 			}
 			agreeResult := "AGREE"
+			if err := verifySignInfo(info); err != nil {
+				logWorkerError("accept", "disagree sign", err, "keyID", keyID)
+				agreeResult = "DISAGREE"
+			}
 			res, err := dcrm.DoAcceptSign(keyID, agreeResult)
 			if err != nil {
 				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID)
@@ -53,6 +63,57 @@ func acceptSign() error {
 			}
 		}
 		time.Sleep(waitInterval)
+	}
+	return nil
+}
+
+func verifySignInfo(signInfo *dcrm.SignInfoData) error {
+	msgHash := signInfo.MsgHash
+	msgContext := signInfo.MsgContext
+	log.Debug("verifySignInfo", "msgContext", msgContext)
+	var info tokens.SwapInfo
+	err := json.Unmarshal([]byte(msgContext), &info)
+	if err != nil {
+		return err
+	}
+	var (
+		srcBridge, dstBridge tokens.CrossChainBridge
+		isSwapIn             bool
+	)
+	switch info.SwapType {
+	case tokens.Swap_Swapin:
+		srcBridge = tokens.SrcBridge
+		dstBridge = tokens.DstBridge
+		isSwapIn = true
+	case tokens.Swap_Swapout:
+		srcBridge = tokens.DstBridge
+		dstBridge = tokens.SrcBridge
+	case tokens.Swap_Recall:
+		srcBridge = tokens.SrcBridge
+		dstBridge = tokens.SrcBridge
+	}
+	swapInfo, err := srcBridge.VerifyTransaction(info.TxHash)
+	value, err := common.GetBigIntFromStr(swapInfo.Value)
+	if err != nil {
+		return fmt.Errorf("wrong value %v", swapInfo.Value)
+	}
+	args := &tokens.BuildTxArgs{
+		IsSwapin: isSwapIn,
+		To:       swapInfo.Bind,
+		Value:    value,
+		Memo:     swapInfo.Hash,
+	}
+	rawTx, err := dstBridge.BuildRawTransaction(args)
+	if err != nil {
+		return err
+	}
+	tx, ok := rawTx.(*types.Transaction)
+	if !ok {
+		return errors.New("wrong raw tx")
+	}
+	sigHash := dcrm.Signer.Hash(tx)
+	if sigHash.String() != msgHash {
+		return errors.New("msg hash mismatch")
 	}
 	return nil
 }

@@ -84,6 +84,19 @@ type GatewayConfig struct {
 	ApiAddress string
 }
 
+type SwapType uint32
+
+const (
+	Swap_Swapin SwapType = iota
+	Swap_Swapout
+	Swap_Recall
+)
+
+type SwapInfo struct {
+	TxHash   string   `json:"txhash"`
+	SwapType SwapType `json:"swaptype"`
+}
+
 type TxSwapInfo struct {
 	Hash      string `json:"hash"`
 	Height    uint64 `json:"height"`
@@ -127,7 +140,7 @@ type CrossChainBridge interface {
 	VerifyTransaction(txHash string) (*TxSwapInfo, error)
 
 	BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error)
-	DcrmSignTransaction(rawTx interface{}) (signedTx interface{}, err error)
+	DcrmSignTransaction(rawTx, swapInfo interface{}) (signedTx interface{}, err error)
 	SendTransaction(signedTx interface{}) (txHash string, err error)
 }
 
