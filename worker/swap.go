@@ -88,7 +88,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	history := getSwapHistory(txid, true)
 	if history != nil {
 		logWorker("swapin", "ignore swapped swapin", "txid", txid, "matchTx", history.matchTx)
-		return fmt.Errorf("found swapped in history, txid=v%, matchTx=v%", txid, history.matchTx)
+		return fmt.Errorf("found swapped in history, txid=%v, matchTx=%v", txid, history.matchTx)
 	}
 	res, err := mongodb.FindSwapinResult(txid)
 	if err != nil {
@@ -155,7 +155,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	history := getSwapHistory(txid, false)
 	if history != nil {
 		logWorker("swapout", "ignore swapped swapout", "txid", txid, "matchTx", history.matchTx)
-		return fmt.Errorf("found swapped out history, txid=v%, matchTx=v%", txid, history.matchTx)
+		return fmt.Errorf("found swapped out history, txid=%v, matchTx=%v", txid, history.matchTx)
 	}
 	res, err := mongodb.FindSwapoutResult(txid)
 	if err != nil {

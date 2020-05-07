@@ -97,11 +97,16 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	if err != nil {
 		return fmt.Errorf("wrong value %v", swapInfo.Value)
 	}
+	gasPrice, err := common.GetBigIntFromStr(info.Extra)
+	if err != nil {
+		return fmt.Errorf("wrong gas price %v", info.Extra)
+	}
 	args := &tokens.BuildTxArgs{
 		IsSwapin: isSwapIn,
 		To:       swapInfo.Bind,
 		Value:    value,
 		Memo:     swapInfo.Hash,
+		GasPrice: gasPrice,
 	}
 	rawTx, err := dstBridge.BuildRawTransaction(args)
 	if err != nil {

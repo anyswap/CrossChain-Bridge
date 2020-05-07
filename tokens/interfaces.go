@@ -95,6 +95,7 @@ const (
 type SwapInfo struct {
 	TxHash   string   `json:"txhash"`
 	SwapType SwapType `json:"swaptype"`
+	Extra    string   `json:"extra,omitempty"` // record extra info to verify msghash (eg. gas price)
 }
 
 type TxSwapInfo struct {

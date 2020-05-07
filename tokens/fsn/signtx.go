@@ -30,6 +30,7 @@ func (b *FsnBridge) DcrmSignTransaction(rawTx, swapInfo interface{}) (interface{
 	}
 	signer := b.Signer
 	msgHash := signer.Hash(tx)
+	info.Extra = tx.GasPrice().String()
 	jsondata, _ := json.Marshal(info)
 	msgContext := string(jsondata)
 	keyID, err := dcrm.DoSign(msgHash.String(), msgContext)
