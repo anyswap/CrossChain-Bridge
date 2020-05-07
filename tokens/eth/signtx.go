@@ -28,7 +28,8 @@ func (b *EthBridge) DcrmSignTransaction(rawTx, swapInfo interface{}) (interface{
 	if !ok {
 		return nil, errors.New("wrong swap into param")
 	}
-	msgHash := dcrm.Signer.Hash(tx)
+	signer := b.Signer
+	msgHash := signer.Hash(tx)
 	jsondata, _ := json.Marshal(info)
 	msgContext := string(jsondata)
 	keyID, err := dcrm.DoSign(msgHash.String(), msgContext)
@@ -56,7 +57,6 @@ func (b *EthBridge) DcrmSignTransaction(rawTx, swapInfo interface{}) (interface{
 	log.Trace("DcrmSignTransaction get rsv success", "rsv", rsv)
 
 	signature := common.FromHex(rsv)
-	signer := dcrm.Signer
 
 	if len(signature) != crypto.SignatureLength {
 		log.Error("DcrmSignTransaction wrong length of signature")

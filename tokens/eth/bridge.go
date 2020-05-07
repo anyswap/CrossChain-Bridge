@@ -8,17 +8,19 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 type EthBridge struct {
 	*tokens.CrossChainBridgeBase
+	Signer types.Signer
 }
 
-func NewCrossChainBridge(isSrc bool) tokens.CrossChainBridge {
+func NewCrossChainBridge(isSrc bool) *EthBridge {
 	if isSrc {
 		panic(tokens.ErrTodo)
 	}
-	return &EthBridge{tokens.NewCrossChainBridgeBase(isSrc)}
+	return &EthBridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
 }
 
 func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
@@ -73,4 +75,6 @@ func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 	default:
 		panic("unsupported ethereum network")
 	}
+
+	b.Signer = types.MakeSigner("EIP155", chainID)
 }

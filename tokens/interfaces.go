@@ -50,10 +50,10 @@ type TokenConfig struct {
 }
 
 func (c *TokenConfig) CheckConfig(isSrc bool) error {
-	if c.BlockChain == nil {
+	if c.BlockChain == nil || *c.BlockChain == "" {
 		return errors.New("token must config 'BlockChain'")
 	}
-	if c.NetID == nil {
+	if c.NetID == nil || *c.NetID == "" {
 		return errors.New("token must config 'NetID'")
 	}
 	if c.Decimals == nil {
@@ -71,10 +71,10 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.SwapFeeRate == nil {
 		return errors.New("token must config 'SwapFeeRate'")
 	}
-	if c.DcrmAddress == nil {
+	if c.DcrmAddress == nil || *c.DcrmAddress == "" {
 		return errors.New("token must config 'DcrmAddress'")
 	}
-	if !isSrc && c.ContractAddress == nil {
+	if !isSrc && (c.ContractAddress == nil || *c.ContractAddress == "") {
 		return errors.New("token must config 'ContractAddress' for destination chain")
 	}
 	return nil

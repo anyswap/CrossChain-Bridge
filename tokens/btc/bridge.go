@@ -13,7 +13,7 @@ type BtcBridge struct {
 	*tokens.CrossChainBridgeBase
 }
 
-func NewCrossChainBridge(isSrc bool) tokens.CrossChainBridge {
+func NewCrossChainBridge(isSrc bool) *BtcBridge {
 	if !isSrc {
 		panic(tokens.ErrBridgeDestinationNotSupported)
 	}
