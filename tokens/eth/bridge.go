@@ -63,14 +63,18 @@ func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 		time.Sleep(3 * time.Second)
 	}
 
+	panicMismatchChainID := func() {
+		panic(fmt.Sprintf("gateway chainID %v is not %v", chainID, *tokenCfg.NetID))
+	}
+
 	switch networkID {
 	case "mainnet":
 		if chainID.Uint64() != 1 {
-			panic(fmt.Sprintf("gateway chainID %v is not %v", chainID, *tokenCfg.NetID))
+			panicMismatchChainID()
 		}
 	case "rinkeby":
 		if chainID.Uint64() != 4 {
-			panic(fmt.Sprintf("gateway chainID %v is not %v", chainID, *tokenCfg.NetID))
+			panicMismatchChainID()
 		}
 	default:
 		panic("unsupported ethereum network")

@@ -81,7 +81,7 @@ func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 			panicMismatchChainID()
 		}
 	default:
-		panic("unsupported ethereum network")
+		panic("unsupported fusion network")
 	}
 
 	b.Signer = types.MakeSigner("EIP155", chainID)
