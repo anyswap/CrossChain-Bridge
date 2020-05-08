@@ -22,6 +22,9 @@ var (
 var (
 	ErrBridgeSourceNotSupported      = errors.New("bridge source not supported")
 	ErrBridgeDestinationNotSupported = errors.New("bridge destination not supported")
+	ErrUnknownSwapType               = errors.New("unknown swap type")
+	ErrMsgHashMismatch               = errors.New("message hash mismatch")
+	ErrWrongRawTx                    = errors.New("wrong raw tx")
 
 	ErrTodo = errors.New("developing: TODO")
 
@@ -87,16 +90,11 @@ type GatewayConfig struct {
 type SwapType uint32
 
 const (
-	Swap_Swapin SwapType = iota
+	Swap_Unknown SwapType = iota
+	Swap_Swapin
 	Swap_Swapout
 	Swap_Recall
 )
-
-type SwapInfo struct {
-	TxHash   string   `json:"txhash"`
-	SwapType SwapType `json:"swaptype"`
-	Extra    string   `json:"extra,omitempty"` // record extra info to verify msghash (eg. gas price)
-}
 
 type TxSwapInfo struct {
 	Hash      string `json:"hash"`
@@ -116,7 +114,8 @@ type TxStatus struct {
 }
 
 type BuildTxArgs struct {
-	IsSwapin      bool     `json:"isSwapin,omitempty"`
+	SwapID        string   `json:"swapid"`
+	SwapType      SwapType `json:"swaptype"`
 	From          string   `json:"from"`
 	To            string   `json:"to"`
 	Value         *big.Int `json:"value"`
@@ -139,9 +138,10 @@ type CrossChainBridge interface {
 
 	GetTransactionStatus(txHash string) *TxStatus
 	VerifyTransaction(txHash string) (*TxSwapInfo, error)
+	VerifyMsgHash(rawTx interface{}, msgHash string) error
 
 	BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error)
-	DcrmSignTransaction(rawTx, swapInfo interface{}) (signedTx interface{}, err error)
+	DcrmSignTransaction(rawTx interface{}, args *BuildTxArgs) (signedTx interface{}, err error)
 	SendTransaction(signedTx interface{}) (txHash string, err error)
 }
 

@@ -19,19 +19,15 @@ var (
 	waitInterval  = 10 * time.Second
 )
 
-func (b *FsnBridge) DcrmSignTransaction(rawTx, swapInfo interface{}) (interface{}, error) {
+func (b *FsnBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (interface{}, error) {
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {
 		return nil, errors.New("wrong raw tx param")
 	}
-	info, ok := swapInfo.(*tokens.SwapInfo)
-	if !ok {
-		return nil, errors.New("wrong swap into param")
-	}
 	signer := b.Signer
 	msgHash := signer.Hash(tx)
-	info.Extra = tx.GasPrice().String()
-	jsondata, _ := json.Marshal(info)
+	updateBuildTxArgs(tx, args)
+	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
 	keyID, err := dcrm.DoSign(msgHash.String(), msgContext)
 	if err != nil {
@@ -81,4 +77,19 @@ func (b *FsnBridge) DcrmSignTransaction(rawTx, swapInfo interface{}) (interface{
 	}
 	log.Info("DcrmSignTransaction success", "keyID", keyID, "txhash", signedTx.Hash().String())
 	return signedTx, err
+}
+
+func updateBuildTxArgs(tx *types.Transaction, args *tokens.BuildTxArgs) {
+	if args.Gas == nil {
+		gas := tx.Gas()
+		args.Gas = &gas
+	}
+	if args.GasPrice == nil {
+		gasPrice := tx.GasPrice()
+		args.GasPrice = gasPrice
+	}
+	if args.Nonce == nil {
+		nonce := tx.Nonce()
+		args.Nonce = &nonce
+	}
 }

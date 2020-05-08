@@ -66,10 +66,10 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	}
 
 	args := &tokens.BuildTxArgs{
-		IsSwapin: false,
+		SwapID:   res.TxId,
+		SwapType: tokens.Swap_Recall,
 		To:       res.Bind,
 		Value:    value,
-		Memo:     res.TxId,
 	}
 	bridge := tokens.SrcBridge
 	rawTx, err := bridge.BuildRawTransaction(args)
@@ -77,11 +77,7 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	swapInfo := &tokens.SwapInfo{
-		TxHash:   txid,
-		SwapType: tokens.Swap_Recall,
-	}
-	signedTx, err := bridge.DcrmSignTransaction(rawTx, swapInfo)
+	signedTx, err := bridge.DcrmSignTransaction(rawTx, args)
 	if err != nil {
 		return err
 	}
@@ -96,9 +92,9 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 
 	matchTx := &MatchTx{
-		SwapTx:        txHash,
-		SwapValue:     tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
-		SetRecallMemo: true,
+		SwapTx:    txHash,
+		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
+		SwapType:  tokens.Swap_Recall,
 	}
 	return updateSwapinResult(txid, matchTx)
 }

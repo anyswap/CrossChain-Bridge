@@ -7,14 +7,12 @@ import (
 )
 
 type MatchTx struct {
-	SwapTx        string
-	SwapHeight    uint64
-	SwapTime      uint64
-	SwapValue     string
-	SetRecallMemo bool
+	SwapTx     string
+	SwapHeight uint64
+	SwapTime   uint64
+	SwapValue  string
+	SwapType   tokens.SwapType
 }
-
-const RecallTxMemo = "IsRecalled"
 
 func addInitialSwapinResult(tx *tokens.TxSwapInfo) error {
 	return addInitialSwapResult(tx, true)
@@ -57,36 +55,35 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, isSwapin bool) (err error) {
 }
 
 func updateSwapinResult(key string, mtx *MatchTx) error {
-	return updateSwapResult(key, mtx, true)
+	return updateSwapResult(key, mtx)
 }
 
 func updateSwapoutResult(key string, mtx *MatchTx) error {
-	return updateSwapResult(key, mtx, false)
+	return updateSwapResult(key, mtx)
 }
 
-func updateSwapResult(key string, mtx *MatchTx, isSwapin bool) (err error) {
-	memo := ""
-	if mtx.SetRecallMemo {
-		memo = RecallTxMemo
-	}
+func updateSwapResult(key string, mtx *MatchTx) (err error) {
 	updates := &mongodb.SwapResultUpdateItems{
 		SwapTx:     mtx.SwapTx,
 		SwapHeight: mtx.SwapHeight,
 		SwapTime:   mtx.SwapTime,
 		SwapValue:  mtx.SwapValue,
+		SwapType:   uint32(mtx.SwapType),
 		Status:     mongodb.MatchTxNotStable,
 		Timestamp:  now(),
-		Memo:       memo,
 	}
-	if isSwapin {
+	switch mtx.SwapType {
+	case tokens.Swap_Swapin, tokens.Swap_Recall:
 		err = mongodb.UpdateSwapinResult(key, updates)
-	} else {
+	case tokens.Swap_Swapout:
 		err = mongodb.UpdateSwapoutResult(key, updates)
+	default:
+		err = tokens.ErrUnknownSwapType
 	}
 	if err != nil {
-		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "memo", memo, "err", err)
+		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "swaptype", mtx.SwapType, "err", err)
 	} else {
-		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "memo", memo)
+		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "swaptype", mtx.SwapType)
 	}
 	return err
 }

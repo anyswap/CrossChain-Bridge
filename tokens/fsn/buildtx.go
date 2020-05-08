@@ -9,7 +9,8 @@ import (
 )
 
 func (b *FsnBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
-	if args.IsSwapin && args.Input == nil {
+	isSwapin := args.SwapType == tokens.Swap_Swapin
+	if isSwapin && args.Input == nil {
 		b.buildSwapinTxInput(args)
 	}
 	err = b.setDefaults(args)
@@ -28,7 +29,7 @@ func (b *FsnBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 		input = *args.Input
 	}
 
-	if !args.IsSwapin {
+	if !isSwapin {
 		value = tokens.CalcSwappedValue(value, b.IsSrc)
 	}
 
@@ -63,7 +64,7 @@ func (b *FsnBridge) setDefaults(args *tokens.BuildTxArgs) error {
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
 func (b *FsnBridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
 	funcHash := tokens.SwapinFuncHash[:]
-	txHash := common.HexToHash(args.Memo).Bytes()
+	txHash := common.HexToHash(args.SwapID).Bytes()
 	address := common.LeftPadBytes(common.HexToAddress(args.To).Bytes(), 32)
 	amount := common.LeftPadBytes(tokens.CalcSwappedValue(args.Value, b.IsSrc).Bytes(), 32)
 	input := make([]byte, 100)

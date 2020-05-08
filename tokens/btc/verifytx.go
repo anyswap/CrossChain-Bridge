@@ -60,6 +60,10 @@ func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *electrs.Elect
 	return txStatus, true
 }
 
+func (b *BtcBridge) VerifyMsgHash(rawTx interface{}, msgHash string) error {
+	return tokens.ErrTodo
+}
+
 func (b *BtcBridge) VerifyTransaction(txHash string) (*tokens.TxSwapInfo, error) {
 	if b.IsSrc {
 		return b.verifySwapinTx(txHash)

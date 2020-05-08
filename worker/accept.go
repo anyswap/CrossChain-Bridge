@@ -3,16 +3,13 @@ package worker
 import (
 	"container/ring"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/dcrm"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
-	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 var (
@@ -71,56 +68,34 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	msgHash := signInfo.MsgHash
 	msgContext := signInfo.MsgContext
 	log.Debug("verifySignInfo", "msgContext", msgContext)
-	var info tokens.SwapInfo
-	err := json.Unmarshal([]byte(msgContext), &info)
+	var args tokens.BuildTxArgs
+	err := json.Unmarshal([]byte(msgContext), &args)
 	if err != nil {
 		return err
 	}
-	var (
-		srcBridge, dstBridge tokens.CrossChainBridge
-		isSwapIn             bool
-	)
-	switch info.SwapType {
+	var srcBridge, dstBridge tokens.CrossChainBridge
+	switch args.SwapType {
 	case tokens.Swap_Swapin:
 		srcBridge = tokens.SrcBridge
 		dstBridge = tokens.DstBridge
-		isSwapIn = true
 	case tokens.Swap_Swapout:
 		srcBridge = tokens.DstBridge
 		dstBridge = tokens.SrcBridge
 	case tokens.Swap_Recall:
 		srcBridge = tokens.SrcBridge
 		dstBridge = tokens.SrcBridge
+	default:
+		return fmt.Errorf("unknown swap type %v", args.SwapType)
 	}
-	swapInfo, err := srcBridge.VerifyTransaction(info.TxHash)
-	value, err := common.GetBigIntFromStr(swapInfo.Value)
+	_, err = srcBridge.VerifyTransaction(args.SwapID)
 	if err != nil {
-		return fmt.Errorf("wrong value %v", swapInfo.Value)
+		return fmt.Errorf("verifySignInfo failed, %v", err)
 	}
-	gasPrice, err := common.GetBigIntFromStr(info.Extra)
-	if err != nil {
-		return fmt.Errorf("wrong gas price %v", info.Extra)
-	}
-	args := &tokens.BuildTxArgs{
-		IsSwapin: isSwapIn,
-		To:       swapInfo.Bind,
-		Value:    value,
-		Memo:     swapInfo.Hash,
-		GasPrice: gasPrice,
-	}
-	rawTx, err := dstBridge.BuildRawTransaction(args)
+	rawTx, err := dstBridge.BuildRawTransaction(&args)
 	if err != nil {
 		return err
 	}
-	tx, ok := rawTx.(*types.Transaction)
-	if !ok {
-		return errors.New("wrong raw tx")
-	}
-	sigHash := dcrm.Signer.Hash(tx)
-	if sigHash.String() != msgHash {
-		return errors.New("msg hash mismatch")
-	}
-	return nil
+	return dstBridge.VerifyMsgHash(rawTx, msgHash)
 }
 
 type acceptSignInfo struct {

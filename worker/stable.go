@@ -79,9 +79,11 @@ func findSwapoutResultsToStable() ([]*mongodb.MgoSwapResult, error) {
 
 func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 	swapTxId := swap.SwapTx
-	var txStatus *tokens.TxStatus
-	var confirmations uint64
-	if swap.Memo == RecallTxMemo {
+	var (
+		txStatus      *tokens.TxStatus
+		confirmations uint64
+	)
+	if swap.SwapType == uint32(tokens.Swap_Recall) {
 		txStatus = tokens.SrcBridge.GetTransactionStatus(swapTxId)
 		token, _ := tokens.SrcBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
@@ -107,7 +109,6 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 	}
 
 	matchTx := &MatchTx{
-		SwapTx:     swapTxId,
 		SwapHeight: txStatus.Block_height,
 		SwapTime:   txStatus.Block_time,
 	}
@@ -139,7 +140,6 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	}
 
 	matchTx := &MatchTx{
-		SwapTx:     swapTxId,
 		SwapHeight: txStatus.Block_height,
 		SwapTime:   txStatus.Block_time,
 	}

@@ -199,14 +199,23 @@ func addSwapResult(tbName string, ms *MgoSwapResult) error {
 
 func updateSwapResult(tbName string, txid string, items *SwapResultUpdateItems) error {
 	updates := bson.M{
-		"swapheight": items.SwapHeight,
-		"swaptime":   items.SwapTime,
-		"swapvalue":  items.SwapValue,
-		"status":     items.Status,
-		"timestamp":  items.Timestamp,
+		"status":    items.Status,
+		"timestamp": items.Timestamp,
 	}
 	if items.SwapTx != "" {
 		updates["swaptx"] = items.SwapTx
+	}
+	if items.SwapHeight != 0 {
+		updates["swapheight"] = items.SwapHeight
+	}
+	if items.SwapTime != 0 {
+		updates["swaptime"] = items.SwapTime
+	}
+	if items.SwapValue != "" {
+		updates["swapvalue"] = items.SwapValue
+	}
+	if items.SwapType != 0 {
+		updates["swaptype"] = items.SwapType
 	}
 	if items.Memo != "" {
 		updates["memo"] = items.Memo

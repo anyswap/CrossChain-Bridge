@@ -3,6 +3,7 @@ package fsn
 import (
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 func (b *FsnBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
@@ -29,6 +30,19 @@ func (b *FsnBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 		}
 	}
 	return &txStatus
+}
+
+func (b *FsnBridge) VerifyMsgHash(rawTx interface{}, msgHash string) error {
+	tx, ok := rawTx.(*types.Transaction)
+	if !ok {
+		return tokens.ErrWrongRawTx
+	}
+	signer := b.Signer
+	sigHash := signer.Hash(tx)
+	if sigHash.String() != msgHash {
+		return tokens.ErrMsgHashMismatch
+	}
+	return nil
 }
 
 func (b *FsnBridge) VerifyTransaction(txHash string) (*tokens.TxSwapInfo, error) {

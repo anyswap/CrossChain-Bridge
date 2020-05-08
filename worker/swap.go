@@ -107,10 +107,10 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 
 	args := &tokens.BuildTxArgs{
-		IsSwapin: true,
+		SwapID:   res.TxId,
+		SwapType: tokens.Swap_Swapin,
 		To:       res.Bind,
 		Value:    value,
-		Memo:     res.TxId,
 	}
 	bridge := tokens.DstBridge
 	rawTx, err := bridge.BuildRawTransaction(args)
@@ -118,11 +118,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	swapInfo := &tokens.SwapInfo{
-		TxHash:   txid,
-		SwapType: tokens.Swap_Swapin,
-	}
-	signedTx, err := bridge.DcrmSignTransaction(rawTx, swapInfo)
+	signedTx, err := bridge.DcrmSignTransaction(rawTx, args)
 	if err != nil {
 		return err
 	}
@@ -146,6 +142,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
+		SwapType:  tokens.Swap_Swapin,
 	}
 	return updateSwapinResult(txid, matchTx)
 }
@@ -174,10 +171,10 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 
 	args := &tokens.BuildTxArgs{
-		IsSwapin: false,
+		SwapID:   res.TxId,
+		SwapType: tokens.Swap_Swapout,
 		To:       res.Bind,
 		Value:    value,
-		Memo:     res.TxId,
 	}
 	bridge := tokens.SrcBridge
 	rawTx, err := bridge.BuildRawTransaction(args)
@@ -185,11 +182,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	swapInfo := &tokens.SwapInfo{
-		TxHash:   txid,
-		SwapType: tokens.Swap_Swapout,
-	}
-	signedTx, err := bridge.DcrmSignTransaction(rawTx, swapInfo)
+	signedTx, err := bridge.DcrmSignTransaction(rawTx, args)
 	if err != nil {
 		return err
 	}
@@ -209,6 +202,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
+		SwapType:  tokens.Swap_Swapout,
 	}
 	return updateSwapoutResult(txid, matchTx)
 }
