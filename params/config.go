@@ -35,6 +35,7 @@ type ServerConfig struct {
 type DcrmConfig struct {
 	RpcAddress    *string
 	GroupID       *string
+	SignGroups    []string
 	NeededOracles *uint32
 	TotalOracles  *uint32
 	Mode          uint32  // 0:managed 1:private (default 0)
@@ -123,6 +124,9 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	}
 	if c.GroupID == nil {
 		return errors.New("dcrm must config 'GroupID'")
+	}
+	if len(c.SignGroups) == 0 {
+		return errors.New("dcrm must config 'SignGroups'")
 	}
 	if c.NeededOracles == nil {
 		return errors.New("dcrm must config 'NeededOracles'")

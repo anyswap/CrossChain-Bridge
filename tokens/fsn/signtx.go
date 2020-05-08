@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	retryCount    = 30
+	retryCount    = 15
 	retryInterval = 10 * time.Second
 	waitInterval  = 10 * time.Second
 )

@@ -101,3 +101,15 @@ func AcceptSign(raw string) (string, error) {
 	}
 	return result.Data.Result, nil
 }
+
+func GetGroupByID(groupID string) (*GroupInfo, error) {
+	var result GetGroupByIDResp
+	err := httpPost(&result, "dcrm_getGroupByID", groupID)
+	if err != nil {
+		return nil, wrapPostError("dcrm_getGroupByID", err)
+	}
+	if result.Status != "Success" {
+		return nil, newWrongStatusError("GetGroupByID", result.Error)
+	}
+	return result.Data, nil
+}

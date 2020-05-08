@@ -44,6 +44,10 @@ Port = 11556
 RpcAddress="http://127.0.0.1:9011"
 
 GroupID="6ab4f2a681bd73ba6328aaf196e19c62723f59c847b0a5cda93665dd610ac2cf87f0608ef5ea7f0c8368da62699ee4bf8eec8b33270b546e5481df1c99e05857"
+SignGroups = [
+	"df3a38d9e25f4f716ef507b40cec5025eef631b481645cfe32d525dddc2c35751cffb1e865c90fcf7b00f865a30d73c32848d14e4ac050ab03a3f6b9e51e6689",
+	"37b7b04d204575b7ab863926f0f4c1bf5599635c79c6de4cfbc475f5ac7dc9dfb80c6103effef0bcf5a73f3354a7df03d7d9ea6d775a9bcadf66d6b43cfe0b44"
+]
 
 # NeededOracles=2,TotalOracles=3 represent '2/3' threshold
 NeededOracles=2

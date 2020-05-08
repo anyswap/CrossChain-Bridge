@@ -1,6 +1,7 @@
 package dcrm
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"math/big"
 
@@ -15,13 +16,16 @@ func DoSign(msgHash, msgContext string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// randomly pick sub-group to sign
+	randIndex, _ := rand.Int(rand.Reader, big.NewInt(int64(len(SignGroups))))
+	signGroup := SignGroups[randIndex.Int64()]
 	txdata := SignData{
 		TxType:     "SIGN",
 		PubKey:     signPubkey,
 		MsgHash:    msgHash,
 		MsgContext: msgContext,
 		Keytype:    "ECDSA",
-		GroupID:    groupID,
+		GroupID:    signGroup,
 		ThresHold:  threshold,
 		Mode:       mode,
 		TimeStamp:  common.NowMilliStr(),

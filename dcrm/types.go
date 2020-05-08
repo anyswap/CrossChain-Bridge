@@ -77,3 +77,16 @@ type AcceptData struct {
 	Accept    string
 	TimeStamp string
 }
+
+type GroupInfo struct {
+	Gid    string
+	Count  int
+	Enodes []string
+}
+
+type GetGroupByIDResp struct {
+	Status string
+	Tip    string
+	Error  string
+	Data   *GroupInfo
+}

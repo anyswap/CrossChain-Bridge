@@ -54,16 +54,22 @@ func InitCrossChainBridge(isServer bool) {
 
 func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	dcrm.SetDcrmRpcAddress(*dcrmConfig.RpcAddress)
+	log.Info("Init dcrm rpc adress", "rpcaddress", *dcrmConfig.RpcAddress)
+
 	if isServer {
 		dcrm.SetSignPubkey(*dcrmConfig.Pubkey)
 		log.Info("Init dcrm pubkey", "pubkey", *dcrmConfig.Pubkey)
 	}
+
 	group := *dcrmConfig.GroupID
 	threshold := fmt.Sprintf("%d/%d", *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
 	mode := fmt.Sprintf("%d", dcrmConfig.Mode)
 	dcrm.SetDcrmGroup(group, threshold, mode)
-	log.Info("Init dcrm rpc adress", "rpcaddress", *dcrmConfig.RpcAddress)
 	log.Info("Init dcrm group", "group", group, "threshold", threshold, "mode", mode)
+
+	signGroups := dcrmConfig.SignGroups
+	log.Info("Init dcrm sign groups", "sigGgroups", signGroups)
+	dcrm.SetSignGroups(signGroups)
 
 	err := dcrm.LoadKeyStore(*dcrmConfig.KeystoreFile, *dcrmConfig.PasswordFile)
 	if err != nil {

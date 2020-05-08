@@ -19,6 +19,7 @@ const (
 var (
 	Signer     = types.MakeSigner("EIP155", big.NewInt(DCRM_WALLET_SERVICE_ID))
 	DcrmToAddr = common.HexToAddress(DCRM_TO_ADDR)
+	SignGroups []string // sub groups for sign
 
 	keyWrapper     *keystore.Key
 	dcrmRpcAddress string
@@ -41,6 +42,10 @@ func SetDcrmGroup(group_ string, threshold_ string, mode_ string) {
 	groupID = group_
 	threshold = threshold_
 	mode = mode_
+}
+
+func SetSignGroups(signGroups []string) {
+	SignGroups = signGroups
 }
 
 func LoadKeyStore(keyfile, passfile string) error {
