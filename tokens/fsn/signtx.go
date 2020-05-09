@@ -44,10 +44,13 @@ func (b *FsnBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 			rsv = signStatus.Rsv
 			break
 		}
+		if err == dcrm.ErrGetSignStatusFailed {
+			return nil, err
+		}
 		log.Debug("retry get sign status as error", "err", err)
 		time.Sleep(retryInterval)
 	}
-	if i == retryCount {
+	if i == retryCount || rsv == "" {
 		return nil, errors.New("get sign status failed")
 	}
 

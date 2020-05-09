@@ -2,10 +2,15 @@ package dcrm
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
+)
+
+var (
+	ErrGetSignStatusFailed = errors.New("GetSignStatus timeout or failure")
 )
 
 func newWrongStatusError(subject, errInfo string) error {
@@ -60,10 +65,14 @@ func GetSignStatus(key string) (*SignStatus, error) {
 	data := result.Data.Result
 	var signStatus SignStatus
 	json.Unmarshal([]byte(data), &signStatus)
-	if signStatus.Status != "Success" {
+	switch signStatus.Status {
+	case "Timeout", "Failure":
+		return nil, ErrGetSignStatusFailed
+	case "Success":
+		return &signStatus, nil
+	default:
 		return nil, newWrongStatusError("GetSignStatus", "sign status error "+signStatus.Error)
 	}
-	return &signStatus, nil
 }
 
 func GetCurNodeSignInfo() ([]*SignInfoData, error) {
