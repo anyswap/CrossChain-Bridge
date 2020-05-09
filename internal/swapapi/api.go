@@ -18,6 +18,7 @@ func newRpcError(ec rpcjson.ErrorCode, message string) error {
 }
 
 func GetServerInfo() (*ServerInfo, error) {
+	log.Debug("[api] receive GetServerInfo")
 	config := params.GetConfig()
 	if config == nil {
 		return nil, nil
@@ -29,11 +30,13 @@ func GetServerInfo() (*ServerInfo, error) {
 }
 
 func GetSwapStatistics() (*SwapStatistics, error) {
+	log.Debug("[api] receive GetSwapStatistics")
 	stat := &SwapStatistics{}
 	return stat, nil
 }
 
 func GetSwapin(txid *string) (*SwapInfo, error) {
+	log.Debug("[api] receive GetSwapin", "txid", *txid)
 	txidstr := *txid
 	result, err := mongodb.FindSwapinResult(txidstr)
 	if err == nil {
@@ -47,6 +50,7 @@ func GetSwapin(txid *string) (*SwapInfo, error) {
 }
 
 func GetSwapout(txid *string) (*SwapInfo, error) {
+	log.Debug("[api] receive GetSwapout", "txid", *txid)
 	txidstr := *txid
 	result, err := mongodb.FindSwapoutResult(txidstr)
 	if err == nil {
@@ -69,6 +73,7 @@ func processHistoryLimit(limit int) int {
 }
 
 func GetSwapinHistory(address string, offset, limit int) ([]*SwapInfo, error) {
+	log.Debug("[api] receive GetSwapinHistory", "address", address, "offset", offset, "limit", limit)
 	limit = processHistoryLimit(limit)
 	result, err := mongodb.FindSwapinResults(address, offset, limit)
 	if err != nil {
@@ -78,6 +83,7 @@ func GetSwapinHistory(address string, offset, limit int) ([]*SwapInfo, error) {
 }
 
 func GetSwapoutHistory(address string, offset, limit int) ([]*SwapInfo, error) {
+	log.Debug("[api] receive GetSwapoutHistory", "address", address, "offset", offset, "limit", limit)
 	limit = processHistoryLimit(limit)
 	result, err := mongodb.FindSwapoutResults(address, offset, limit)
 	if err != nil {
@@ -87,6 +93,7 @@ func GetSwapoutHistory(address string, offset, limit int) ([]*SwapInfo, error) {
 }
 
 func Swapin(txid *string) (*PostResult, error) {
+	log.Debug("[api] receive Swapin", "txid", *txid)
 	txidstr := *txid
 	info, err := tokens.SrcBridge.VerifyTransaction(txidstr)
 	if err != nil {
@@ -108,6 +115,7 @@ func Swapin(txid *string) (*PostResult, error) {
 }
 
 func Swapout(txid *string) (*PostResult, error) {
+	log.Debug("[api] receive Swapout", "txid", *txid)
 	txidstr := *txid
 	info, err := tokens.DstBridge.VerifyTransaction(txidstr)
 	if err != nil {
@@ -129,6 +137,7 @@ func Swapout(txid *string) (*PostResult, error) {
 }
 
 func RecallSwapin(txid *string) (*PostResult, error) {
+	log.Debug("[api] receive RecallSwapin", "txid", *txid)
 	txidstr := *txid
 	err := mongodb.RecallSwapin(txidstr)
 	if err != nil {

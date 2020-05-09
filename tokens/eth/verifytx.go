@@ -46,5 +46,6 @@ func (b *EthBridge) VerifyMsgHash(rawTx interface{}, msgHash string) error {
 }
 
 func (b *EthBridge) VerifyTransaction(txHash string) (*tokens.TxSwapInfo, error) {
+	log.Debug("Eth VerifyTransaction", "txHash", txHash, "isSrc", b.IsSrc)
 	return nil, tokens.ErrTodo
 }

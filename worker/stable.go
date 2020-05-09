@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
@@ -79,6 +80,7 @@ func findSwapoutResultsToStable() ([]*mongodb.MgoSwapResult, error) {
 
 func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 	swapTxId := swap.SwapTx
+	log.Debug("start processSwapinStable", "swaptxid", swapTxId, "status", swap.Status)
 	var (
 		txStatus      *tokens.TxStatus
 		confirmations uint64
@@ -117,6 +119,8 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 
 func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	swapTxId := swap.SwapTx
+	log.Debug("start processSwapoutStable", "swaptxid", swapTxId, "status", swap.Status)
+
 	var txStatus *tokens.TxStatus
 	var confirmations uint64
 

@@ -51,6 +51,7 @@ func acceptSign() error {
 				logWorkerError("accept", "disagree sign", err, "keyID", keyID)
 				agreeResult = "DISAGREE"
 			}
+			log.Debug("dcrm DoAcceptSign", "keyID", keyID, "result", agreeResult)
 			res, err := dcrm.DoAcceptSign(keyID, agreeResult)
 			if err != nil {
 				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID)

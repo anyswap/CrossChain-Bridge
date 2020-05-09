@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
@@ -85,6 +86,7 @@ func findSwapoutsToSwap() ([]*mongodb.MgoSwap, error) {
 
 func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxId
+	log.Debug("start processSwapinSwap", "txid", txid, "status", swap.Status)
 	history := getSwapHistory(txid, true)
 	if history != nil {
 		logWorker("swapin", "ignore swapped swapin", "txid", txid, "matchTx", history.matchTx)
@@ -149,6 +151,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 
 func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxId
+	log.Debug("start processSwapoutSwap", "txid", txid, "status", swap.Status)
 	history := getSwapHistory(txid, false)
 	if history != nil {
 		logWorker("swapout", "ignore swapped swapout", "txid", txid, "matchTx", history.matchTx)

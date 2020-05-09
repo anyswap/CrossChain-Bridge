@@ -6,12 +6,14 @@ import (
 	"math/big"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tools/crypto"
 	"github.com/fsn-dev/crossChain-Bridge/tools/rlp"
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 func DoSign(msgHash, msgContext string) (string, error) {
+	log.Debug("dcrm DoSign", "msgHash", msgHash, "msgContext", msgContext)
 	nonce, err := GetSignNonce()
 	if err != nil {
 		return "", err
