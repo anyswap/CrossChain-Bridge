@@ -83,7 +83,7 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*tokens.TxSwapInfo, error) {
 		return nil, tokens.ErrTxNotStable
 	}
 	token := b.TokenConfig
-	dcrmAddress := *token.DcrmAddress
+	dcrmAddress := token.DcrmAddress
 	var (
 		rightReceiver bool
 		value         uint64

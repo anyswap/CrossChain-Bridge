@@ -34,10 +34,10 @@ func InitCrossChainBridge(isServer bool) {
 	srcGateway := cfg.SrcGateway
 	dstGateway := cfg.DestGateway
 
-	srcID := *srcToken.BlockChain
-	dstID := *dstToken.BlockChain
-	srcNet := *srcToken.NetID
-	dstNet := *dstToken.NetID
+	srcID := srcToken.BlockChain
+	dstID := dstToken.BlockChain
+	srcNet := srcToken.NetID
+	dstNet := dstToken.NetID
 
 	tokens.SrcBridge = NewCrossChainBridge(srcID, true)
 	tokens.DstBridge = NewCrossChainBridge(dstID, false)
@@ -75,14 +75,57 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	if err != nil {
 		panic(err)
 	}
+	log.Info("Init dcrm, load keystore success")
+
+	var selfEnode string
+
+	checkExist := func(enodes []string) bool {
+		for _, enode := range enodes {
+			if enode == selfEnode {
+				return true
+			}
+		}
+		return false
+	}
+
 	for {
-		enode, err := dcrm.GetEnode()
+		selfEnode, err = dcrm.GetEnode()
 		if err == nil {
-			log.Info("get dcrm enode info success", "enode", enode)
+			log.Info("get dcrm enode info success", "enode", selfEnode)
 			break
 		}
 		log.Error("InitDcrm can't get enode info", "err", err)
 		time.Sleep(3 * time.Second)
 	}
-	log.Info("Init dcrm, load keystore success")
+
+	for {
+		groupInfo, err := dcrm.GetGroupByID(group)
+		if err == nil {
+			log.Info("get dcrm group info success", "groupInfo", groupInfo)
+			if !checkExist(groupInfo.Enodes) {
+				panic(fmt.Sprintf("self enode %v not exist in group %v\n", selfEnode, group))
+			}
+			break
+		}
+		log.Error("InitDcrm can't get group info", "groupID", group, "err", err)
+		time.Sleep(3 * time.Second)
+	}
+
+	for _, signGroupID := range dcrm.SignGroups {
+		if !isServer {
+			break
+		}
+		for {
+			signGroupInfo, err := dcrm.GetGroupByID(signGroupID)
+			if err == nil {
+				log.Info("get dcrm sign group info success", "signGroupInfo", signGroupInfo)
+				if !checkExist(signGroupInfo.Enodes) {
+					panic(fmt.Sprintf("self enode %v not exist in group %v\n", selfEnode, signGroupID))
+				}
+				break
+			}
+			log.Error("InitDcrm can't get sign group info", "signGroupID", signGroupID, "err", err)
+			time.Sleep(3 * time.Second)
+		}
+	}
 }

@@ -26,14 +26,14 @@ func NewCrossChainBridge(isSrc bool) *FsnBridge {
 func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
 
-	networkID := strings.ToLower(*tokenCfg.NetID)
+	networkID := strings.ToLower(tokenCfg.NetID)
 
 	switch networkID {
 	case "mainnet", "testnet", "devnet":
 	case "custom":
 		return
 	default:
-		panic(fmt.Sprintf("unsupported fusion network: %v", *tokenCfg.NetID))
+		panic(fmt.Sprintf("unsupported fusion network: %v", tokenCfg.NetID))
 	}
 
 	var (
@@ -45,10 +45,10 @@ func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 	for {
 		latest, err = b.GetLatestBlockNumber()
 		if err == nil {
-			log.Info("get latst block number succeed.", "number", latest, "BlockChain", *tokenCfg.BlockChain, "NetID", *tokenCfg.NetID)
+			log.Info("get latst block number succeed.", "number", latest, "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID)
 			break
 		}
-		log.Error("get latst block number failed.", "BlockChain", *tokenCfg.BlockChain, "NetID", *tokenCfg.NetID, "err", err)
+		log.Error("get latst block number failed.", "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID, "err", err)
 		log.Println("retry query gateway", gatewayCfg.ApiAddress)
 		time.Sleep(3 * time.Second)
 	}
@@ -64,7 +64,7 @@ func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 	}
 
 	panicMismatchChainID := func() {
-		panic(fmt.Sprintf("gateway chainID %v is not %v", chainID, *tokenCfg.NetID))
+		panic(fmt.Sprintf("gateway chainID %v is not %v", chainID, tokenCfg.NetID))
 	}
 
 	switch networkID {

@@ -37,15 +37,15 @@ var (
 )
 
 type TokenConfig struct {
-	BlockChain      *string
-	NetID           *string
-	ID              string
+	BlockChain      string
+	NetID           string
+	ID              string `json:",omitempty"`
 	Name            string
 	Symbol          string
 	Decimals        *uint8
-	Description     string
-	DcrmAddress     *string
-	ContractAddress *string
+	Description     string `json:",omitempty"`
+	DcrmAddress     string
+	ContractAddress string `json:",omitempty"`
 	Confirmations   *uint64
 	MaximumSwap     *float64 // whole unit (eg. BTC, ETH, FSN), not Satoshi
 	MinimumSwap     *float64 // whole unit
@@ -53,10 +53,10 @@ type TokenConfig struct {
 }
 
 func (c *TokenConfig) CheckConfig(isSrc bool) error {
-	if c.BlockChain == nil || *c.BlockChain == "" {
+	if c.BlockChain == "" {
 		return errors.New("token must config 'BlockChain'")
 	}
-	if c.NetID == nil || *c.NetID == "" {
+	if c.NetID == "" {
 		return errors.New("token must config 'NetID'")
 	}
 	if c.Decimals == nil {
@@ -74,10 +74,10 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.SwapFeeRate == nil {
 		return errors.New("token must config 'SwapFeeRate'")
 	}
-	if c.DcrmAddress == nil || *c.DcrmAddress == "" {
+	if c.DcrmAddress == "" {
 		return errors.New("token must config 'DcrmAddress'")
 	}
-	if !isSrc && (c.ContractAddress == nil || *c.ContractAddress == "") {
+	if !isSrc && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for destination chain")
 	}
 	return nil

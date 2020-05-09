@@ -23,13 +23,13 @@ func NewCrossChainBridge(isSrc bool) *BtcBridge {
 func (b *BtcBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
 
-	networkID := strings.ToLower(*tokenCfg.NetID)
+	networkID := strings.ToLower(tokenCfg.NetID)
 	switch networkID {
 	case "mainnet", "testnet3":
 	case "custom":
 		return
 	default:
-		panic(fmt.Sprintf("unsupported bitcoin network: %v", *tokenCfg.NetID))
+		panic(fmt.Sprintf("unsupported bitcoin network: %v", tokenCfg.NetID))
 	}
 
 	var latest uint64
@@ -37,10 +37,10 @@ func (b *BtcBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 	for {
 		latest, err = b.GetLatestBlockNumber()
 		if err == nil {
-			log.Info("get latst block number succeed.", "number", latest, "BlockChain", *tokenCfg.BlockChain, "NetID", *tokenCfg.NetID)
+			log.Info("get latst block number succeed.", "number", latest, "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID)
 			break
 		}
-		log.Error("get latst block number failed.", "BlockChain", *tokenCfg.BlockChain, "NetID", *tokenCfg.NetID, "err", err)
+		log.Error("get latst block number failed.", "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID, "err", err)
 		log.Println("retry query gateway", gatewayCfg.ApiAddress)
 		time.Sleep(3 * time.Second)
 	}

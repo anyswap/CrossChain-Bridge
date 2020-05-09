@@ -74,8 +74,8 @@ func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 	}
 
 	token := b.TokenConfig
-	if sender.String() != *token.DcrmAddress {
-		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", *token.DcrmAddress)
+	if sender.String() != token.DcrmAddress {
+		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", token.DcrmAddress)
 		return nil, errors.New("wrong sender address")
 	}
 	log.Info("DcrmSignTransaction success", "keyID", keyID, "txhash", signedTx.Hash().String())

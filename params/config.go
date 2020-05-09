@@ -125,9 +125,6 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	if c.GroupID == nil {
 		return errors.New("dcrm must config 'GroupID'")
 	}
-	if len(c.SignGroups) == 0 {
-		return errors.New("dcrm must config 'SignGroups'")
-	}
 	if c.NeededOracles == nil {
 		return errors.New("dcrm must config 'NeededOracles'")
 	}
@@ -139,15 +136,17 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	}
 	if isServer {
 		if c.Pubkey == nil {
-			return errors.New("dcrm must config 'Pubkey'")
+			return errors.New("swap server dcrm must config 'Pubkey'")
 		}
-	} else {
-		if c.KeystoreFile == nil {
-			return errors.New("dcrm must config 'KeystoreFile'")
+		if len(c.SignGroups) == 0 {
+			return errors.New("swap server dcrm must config 'SignGroups'")
 		}
-		if c.PasswordFile == nil {
-			return errors.New("dcrm must config 'PasswordFile'")
-		}
+	}
+	if c.KeystoreFile == nil {
+		return errors.New("dcrm must config 'KeystoreFile'")
+	}
+	if c.PasswordFile == nil {
+		return errors.New("dcrm must config 'PasswordFile'")
 	}
 	return nil
 }

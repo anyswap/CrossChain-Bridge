@@ -75,7 +75,7 @@ func (b *EthBridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
 	args.Input = &input // input
 
 	token := b.TokenConfig
-	args.From = *token.DcrmAddress   // from
-	args.To = *token.ContractAddress // to
-	args.Value = big.NewInt(0)       // value
+	args.From = token.DcrmAddress   // from
+	args.To = token.ContractAddress // to
+	args.Value = big.NewInt(0)      // value
 }

@@ -1,9 +1,15 @@
+# server config
 [MongoDB]
-DbURL = "localhost:27917"
-DbName = "testdb"
-UserName = "test"
-Password = "test"
+DbURL = "localhost:27017"
+DbName = "databasename"
+UserName = "username"
+Password = "password"
 
+# server config
+[ApiServer]
+Port = 11556
+
+# server and oracle config
 [SrcToken]
 BlockChain = "Bitcoin"
 NetID = "TestNet3"
@@ -11,15 +17,17 @@ Name = "Bitcoin Coin"
 Symbol = "BTC"
 Decimals = 8
 Description = "Bitcoin Coin"
-DcrmAddress = "n2L8RAECfFuick63bLjAwiD7WXZ79PygAw"
-Confirmations = 6
+DcrmAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
+Confirmations = 2 # suggest >= 6 for Mainnet
 MaximumSwap = 1000.0
 MinimumSwap = 0.0004
 SwapFeeRate = 0.001
 
+# server and oracle config
 [SrcGateway]
 ApiAddress = "http://47.107.50.83:3002"
 
+# server and oracle config
 [DestToken]
 BlockChain = "Ethereum"
 NetID = "Rinkeby"
@@ -27,35 +35,40 @@ Name = "SMPC Bitcoin"
 Symbol = "mBTC"
 Decimals = 8
 Description = "cross chain bridge BTC with mBTC"
-ContractAddress = "0x26e3AB5f1930A0E4A75421743Eb11f298691675D"
-DcrmAddress = "0xa22F6D992BD6F0517478bF19105658b664524F45"
-Confirmations = 33
+ContractAddress = "0x61b8c4d6d28d5f7edadbea5456db3b4f7f836b64"
+DcrmAddress = "0xbF0A46d3700E23a98F38079cE217742c92Bb66bC"
+Confirmations = 3 # suggest >= 33 for Mainnet
 MaximumSwap = 100.0
 MinimumSwap = 0.0004
 SwapFeeRate = 0.001
 
+# server and oracle config
 [DestGateway]
 ApiAddress = "http://5.189.139.168:8018"
 
-[ApiServer]
-Port = 11556
-
+# server and oracle config
 [Dcrm]
-RpcAddress="http://127.0.0.1:9011"
+GroupID = "74245ef03937fa75b979bdaa6a5952a93f53e021e0832fca4c2ad8952572c9b70f49e291de7e024b0f7fc54ec5875210db2ac775dba44448b3972b75af074d17"
 
-GroupID="6ab4f2a681bd73ba6328aaf196e19c62723f59c847b0a5cda93665dd610ac2cf87f0608ef5ea7f0c8368da62699ee4bf8eec8b33270b546e5481df1c99e05857"
+# server config
+Pubkey = "045c8648793e4867af465691685000ae841dccab0b011283139d2eae454b569d5789f01632e13a75a5aad8480140e895dd671cae3639f935750bea7ae4b5a2512e"
+
+# server config
 SignGroups = [
-	"df3a38d9e25f4f716ef507b40cec5025eef631b481645cfe32d525dddc2c35751cffb1e865c90fcf7b00f865a30d73c32848d14e4ac050ab03a3f6b9e51e6689",
-	"37b7b04d204575b7ab863926f0f4c1bf5599635c79c6de4cfbc475f5ac7dc9dfb80c6103effef0bcf5a73f3354a7df03d7d9ea6d775a9bcadf66d6b43cfe0b44"
+	"38a93f457c793ac3ee242b2c050a403774738e6558cfaa620fe5577bb15a28f63c39adcc0778497e5009a9ee776a0778ffcad4e95827e69efa21b893b8a78793",
+	"bb1dfe1ec046cc3a3b88408ae03976aabffe459b40e5def09e76f5d4c7a917133241da9da7fc05e3e172fab54ce3129a9a492d52a5a09494d0b9c1e608f661bf"
 ]
 
 # NeededOracles=2,TotalOracles=3 represent '2/3' threshold
-NeededOracles=2
-TotalOracles=3
+NeededOracles = 2
+TotalOracles = 3
 
 # 0:managed 1:private
-Mode=0
+Mode = 0
 
-Pubkey="04e06dcab9c8fbda0f04702aec0e10798ae6cfa84439a23da3b48ecf4a3e22dff3409bb8d2b730db516f940b680e015d8f1b50b34da41de4e919ef648bce83ecf0"
-KeystoreFile="/home/jowen/run/gdcrm/node1/keystore/keystore1"
-PasswordFile="/home/jowen/run/gdcrm/password.txt"
+# server and oracle config (suggest using absolute path)
+KeystoreFile = "/home/xxx/accounts/keystore1"
+PasswordFile = "/home/xxx/accounts/password1"
+
+# server and oracle config (gdcrm node RPC address)
+RpcAddress = "http://127.0.0.1:2922"

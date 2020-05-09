@@ -19,6 +19,9 @@ all:
 	$(GOCMD) run build/ci.go install ./cmd/...
 	@echo "Done building."
 	@echo "Find binaries in \"$(GOBIN)\" directory."
+	@echo ""
+	@echo "Copy config file to \"$(GOBIN)\" directory."
+	cp params/config.toml $(GOBIN)
 
 test: all
 	$(GOCMD) test ./...
