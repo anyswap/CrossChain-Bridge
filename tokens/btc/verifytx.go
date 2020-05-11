@@ -48,15 +48,17 @@ func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *electrs.Elect
 	if txStatus.Confirmed != nil && !*txStatus.Confirmed {
 		return nil, false
 	}
-	latest, err := b.GetLatestBlockNumber()
-	if err != nil {
-		log.Debug("BtcBridge::GetLatestBlockNumber fail", "err", err)
-		return nil, false
-	}
 	token := b.TokenConfig
 	confirmations := *token.Confirmations
-	if *txStatus.Block_height+confirmations > latest {
-		return nil, false
+	if confirmations != 0 {
+		latest, err := b.GetLatestBlockNumber()
+		if err != nil {
+			log.Debug("BtcBridge::GetLatestBlockNumber fail", "err", err)
+			return nil, false
+		}
+		if *txStatus.Block_height+confirmations > latest {
+			return nil, false
+		}
 	}
 	return txStatus, true
 }
