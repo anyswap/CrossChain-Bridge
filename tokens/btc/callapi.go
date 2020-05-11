@@ -23,3 +23,7 @@ func (b *BtcBridge) FindUtxos(addr string) ([]*electrs.ElectUtxo, error) {
 func (b *BtcBridge) GetTransactionHistory(addr string, lastSeenTxid string) ([]*electrs.ElectTx, error) {
 	return electrs.GetTransactionHistory(b, addr, lastSeenTxid)
 }
+
+func (b *BtcBridge) PostTransaction(txHex string) (txHash string, err error) {
+	return electrs.PostTransaction(b, txHex)
+}

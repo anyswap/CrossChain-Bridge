@@ -18,11 +18,11 @@ func RpcGetWithTimeout(result interface{}, url string, timeout int) error {
 func RpcGetRequest(result interface{}, url string, params, headers map[string]string, timeout int) error {
 	resp, err := HttpGet(url, params, headers, timeout)
 	if err != nil {
-		return fmt.Errorf("post request error: %v", err)
+		return fmt.Errorf("GET request error: %v (url: %v, params: %v)", err, url, params)
 	}
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("error response status: %v", resp.StatusCode)
+		return fmt.Errorf("error response status: %v (url: %v)", resp.StatusCode, url)
 	}
 
 	defer resp.Body.Close()

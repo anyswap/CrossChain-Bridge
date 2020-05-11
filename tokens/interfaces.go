@@ -117,8 +117,8 @@ type TxStatus struct {
 }
 
 type BuildTxArgs struct {
-	SwapID        string   `json:"swapid"`
-	SwapType      SwapType `json:"swaptype"`
+	SwapID        string   `json:"swapid,omitempty"`
+	SwapType      SwapType `json:"swaptype,omitempty"`
 	From          string   `json:"from"`
 	To            string   `json:"to"`
 	Value         *big.Int `json:"value"`
@@ -127,7 +127,7 @@ type BuildTxArgs struct {
 	GasPrice      *big.Int `json:"gasPrice,omitempty"`      // eth
 	Nonce         *uint64  `json:"nonce,omitempty"`         // eth
 	Input         *[]byte  `json:"input,omitempty"`         // eth erc20 ...
-	FeeRate       *int64   `json:"feeRate,omitempty"`       // btc
+	RelayFeePerKb *int64   `json:"relayFeePerKb,omitempty"` // btc
 	ChangeAddress *string  `json:"changeAddress,omitempty"` // btc
 	FromPublicKey *string  `json:"fromPublickey,omitempty"` // btc
 }

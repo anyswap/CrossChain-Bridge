@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 )
 
 const (
@@ -80,18 +81,20 @@ func RpcPostRequest(url string, req *Request, result interface{}) error {
 	}
 	resp, err := HttpPost(url, reqBody, nil, nil, req.Timeout)
 	if err != nil {
-		return fmt.Errorf("post request error: %v", err)
+		return err
 	}
+	return getResultFromJsonResponse(result, resp)
+}
 
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("error response status: %v", resp.StatusCode)
-	}
-
+func getResultFromJsonResponse(result interface{}, resp *http.Response) error {
 	defer resp.Body.Close()
 	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
 	if err != nil {
 		return fmt.Errorf("read body error: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("wrong response status %v. message: %v", resp.StatusCode, string(body))
 	}
 
 	var jsonResp jsonrpcResponse
@@ -99,14 +102,33 @@ func RpcPostRequest(url string, req *Request, result interface{}) error {
 	if err != nil {
 		return fmt.Errorf("unmarshal body error: %v", err)
 	}
-
 	if jsonResp.Error != nil {
 		return fmt.Errorf("return error:  %v", jsonResp.Error.Error())
 	}
-
 	err = json.Unmarshal(jsonResp.Result, &result)
 	if err != nil {
 		return fmt.Errorf("unmarshal result error: %v", err)
 	}
 	return nil
+}
+
+func RpcRawPost(url string, body string) (string, error) {
+	return RpcRawPostWithTimeout(url, body, defaultTimeout)
+}
+
+func RpcRawPostWithTimeout(url string, reqBody string, timeout int) (string, error) {
+	resp, err := HttpRawPost(url, reqBody, nil, nil, timeout)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
+	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
+	if err != nil {
+		return "", fmt.Errorf("read body error: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("wrong response status %v. message: %v", resp.StatusCode, string(body))
+	}
+	return string(body), nil
 }

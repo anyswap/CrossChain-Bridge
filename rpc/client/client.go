@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -31,6 +32,22 @@ func HttpPost(url string, body interface{}, params, headers map[string]string, t
 	addParams(req, params)
 	addHeaders(req, headers)
 	if err := addPostBody(req, body); err != nil {
+		return nil, err
+	}
+	addTimeoutContext(req, timeout)
+
+	return http.DefaultClient.Do(req)
+}
+
+func HttpRawPost(url string, body string, params, headers map[string]string, timeout int) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPost, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	addParams(req, params)
+	addHeaders(req, headers)
+	if err := addRawPostBody(req, body); err != nil {
 		return nil, err
 	}
 	addTimeoutContext(req, timeout)
@@ -64,6 +81,14 @@ func addPostBody(req *http.Request, body interface{}) error {
 		}
 		req.Header.Set("Content-type", "application/json")
 		req.Body = ioutil.NopCloser(bytes.NewBuffer(jsonData))
+	}
+	return nil
+}
+
+func addRawPostBody(req *http.Request, body string) error {
+	if body != "" {
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Body = ioutil.NopCloser(strings.NewReader(body))
 	}
 	return nil
 }

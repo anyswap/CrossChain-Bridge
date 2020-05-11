@@ -44,3 +44,17 @@ type ElectUtxo struct {
 	Value  *uint64        `json:"value"`
 	Status *ElectTxStatus `json:"status"`
 }
+
+type SortableElectUtxoSlice []*ElectUtxo
+
+func (s SortableElectUtxoSlice) Len() int {
+	return len(s)
+}
+
+func (s SortableElectUtxoSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s SortableElectUtxoSlice) Less(i, j int) bool {
+	return *s[i].Value > *s[j].Value
+}
