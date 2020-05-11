@@ -137,7 +137,7 @@ type CrossChainBridge interface {
 
 	IsValidAddress(address string) bool
 
-	GetTransactionStatus(txHash string) (txStatus *TxStatus, found bool)
+	GetTransactionStatus(txHash string) *TxStatus
 	VerifyTransaction(txHash string) (*TxSwapInfo, error)
 	VerifyMsgHash(rawTx interface{}, msgHash string) error
 

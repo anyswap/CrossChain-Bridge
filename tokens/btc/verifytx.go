@@ -11,15 +11,13 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
 
-func (b *BtcBridge) GetTransactionStatus(txHash string) (txStatus *tokens.TxStatus, found bool) {
-	txStatus = &tokens.TxStatus{}
+func (b *BtcBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
+	txStatus := &tokens.TxStatus{}
 	elcstStatus, err := b.GetElectTransactionStatus(txHash)
 	if err != nil {
-		found = false
 		log.Debug("BtcBridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
-		return
+		return txStatus
 	}
-	found = true
 	if elcstStatus.Block_hash != nil {
 		txStatus.Block_hash = *elcstStatus.Block_hash
 	}
@@ -31,13 +29,13 @@ func (b *BtcBridge) GetTransactionStatus(txHash string) (txStatus *tokens.TxStat
 		latest, err := b.GetLatestBlockNumber()
 		if err != nil {
 			log.Debug("BtcBridge::GetLatestBlockNumber fail", "err", err)
-			return
+			return txStatus
 		}
 		if latest > txStatus.Block_height {
 			txStatus.Confirmations = latest - txStatus.Block_height
 		}
 	}
-	return
+	return txStatus
 }
 
 func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *electrs.ElectTxStatus, isStable bool) {

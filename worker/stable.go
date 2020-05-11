@@ -86,11 +86,11 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 		confirmations uint64
 	)
 	if swap.SwapType == uint32(tokens.Swap_Recall) {
-		txStatus, _ = tokens.SrcBridge.GetTransactionStatus(swapTxId)
+		txStatus = tokens.SrcBridge.GetTransactionStatus(swapTxId)
 		token, _ := tokens.SrcBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
 	} else {
-		txStatus, _ = tokens.DstBridge.GetTransactionStatus(swapTxId)
+		txStatus = tokens.DstBridge.GetTransactionStatus(swapTxId)
 		token, _ := tokens.DstBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
 	}
@@ -125,7 +125,7 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	var txStatus *tokens.TxStatus
 	var confirmations uint64
 
-	txStatus, _ = tokens.SrcBridge.GetTransactionStatus(swapTxId)
+	txStatus = tokens.SrcBridge.GetTransactionStatus(swapTxId)
 	token, _ := tokens.SrcBridge.GetTokenAndGateway()
 	confirmations = *token.Confirmations
 

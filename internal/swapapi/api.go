@@ -95,17 +95,18 @@ func GetSwapoutHistory(address string, offset, limit int) ([]*SwapInfo, error) {
 func Swapin(txid *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapin", "txid", *txid)
 	txidstr := *txid
-	_, exist := tokens.SrcBridge.GetTransactionStatus(txidstr)
-	if !exist {
-		return nil, newRpcError(-32099, "tx not found")
+	info, err := tokens.SrcBridge.VerifyTransaction(txidstr)
+	if err != nil {
+		return nil, newRpcError(-32099, "verify swapin failed! "+err.Error())
 	}
 	swap := &mongodb.MgoSwap{
 		Key:       txidstr,
 		TxId:      txidstr,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
+		Memo:      info.Bind,
 	}
-	err := mongodb.AddSwapin(swap)
+	err = mongodb.AddSwapin(swap)
 	if err != nil {
 		return nil, err
 	}
@@ -116,17 +117,18 @@ func Swapin(txid *string) (*PostResult, error) {
 func Swapout(txid *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapout", "txid", *txid)
 	txidstr := *txid
-	_, exist := tokens.DstBridge.GetTransactionStatus(txidstr)
-	if !exist {
-		return nil, newRpcError(-32099, "tx not found")
+	info, err := tokens.DstBridge.VerifyTransaction(txidstr)
+	if err != nil {
+		return nil, newRpcError(-32098, "verify swapout failed! "+err.Error())
 	}
 	swap := &mongodb.MgoSwap{
 		Key:       txidstr,
 		TxId:      txidstr,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
+		Memo:      info.Bind,
 	}
-	err := mongodb.AddSwapout(swap)
+	err = mongodb.AddSwapout(swap)
 	if err != nil {
 		return nil, err
 	}
