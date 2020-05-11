@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"errors"
+	"math"
 	"math/big"
 )
 
@@ -184,7 +185,8 @@ func GetTokenConfig(isSrc bool) *TokenConfig {
 
 func CheckSwapValue(value float64, isSrc bool) bool {
 	token := GetTokenConfig(isSrc)
-	return value >= *token.MinimumSwap && value <= *token.MaximumSwap
+	oneToken := math.Pow(10, float64(*token.Decimals))
+	return (value >= *token.MinimumSwap*oneToken) && (value <= *token.MaximumSwap*oneToken)
 }
 
 func CalcSwappedValue(value *big.Int, isSrc bool) *big.Int {
