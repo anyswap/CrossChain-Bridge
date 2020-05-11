@@ -34,6 +34,7 @@ func ConvertMgoSwapResultToSwapInfo(mr *mongodb.MgoSwapResult) *SwapInfo {
 		SwapHeight: mr.SwapHeight,
 		SwapTime:   mr.SwapTime,
 		SwapValue:  mr.SwapValue,
+		SwapType:   mr.SwapType,
 		Status:     mr.Status,
 		Timestamp:  mr.Timestamp,
 		Memo:       mr.Memo,

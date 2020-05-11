@@ -32,6 +32,7 @@ type SwapInfo struct {
 	SwapHeight uint64     `json:"swapheight"`
 	SwapTime   uint64     `json:"swaptime"`
 	SwapValue  string     `json:"swapvalue"`
+	SwapType   uint32     `json:"swaptype"`
 	Status     SwapStatus `json:"status"`
 	Timestamp  int64      `json:"timestamp"`
 	Memo       string     `json:"memo"`
