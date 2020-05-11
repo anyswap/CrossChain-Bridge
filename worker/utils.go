@@ -11,13 +11,13 @@ var (
 	restIntervalInRecallJob = 60 * time.Second
 
 	maxVerifyLifetime       = int64(7 * 24 * 3600)
-	restIntervalInVerifyJob = 3 * time.Second
+	restIntervalInVerifyJob = 60 * time.Second
 
 	maxDoSwapLifetime       = int64(7 * 24 * 3600)
-	restIntervalInDoSwapJob = 3 * time.Second
+	restIntervalInDoSwapJob = 60 * time.Second
 
 	maxStableLifetime       = int64(7 * 24 * 3600)
-	restIntervalInStableJob = 3 * time.Second
+	restIntervalInStableJob = 60 * time.Second
 )
 
 func now() int64 {
