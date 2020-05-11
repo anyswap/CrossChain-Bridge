@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
@@ -140,10 +141,19 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*tokens.TxSwapInfo, error) {
 }
 
 func getBindAddressFromMemoScipt(memoScript string) (bind string, ok bool) {
-	re := regexp.MustCompile("^OP_RETURN .*" + tokens.LockMemoPrefix)
+	re := regexp.MustCompile("^OP_RETURN OP_PUSHBYTES_[0-9]* ")
 	parts := re.Split(memoScript, -1)
-	if len(parts) == 2 {
-		return strings.TrimSpace(parts[1]), true
+	if len(parts) != 2 {
+		return "", false
 	}
-	return "", false
+	memoHex := strings.TrimSpace(parts[1])
+	memo := common.FromHex(memoHex)
+	if len(memo) <= len(tokens.LockMemoPrefix) {
+		return "", false
+	}
+	if !strings.HasPrefix(string(memo), tokens.LockMemoPrefix) {
+		return "", false
+	}
+	bind = string(memo[len(tokens.LockMemoPrefix):])
+	return bind, true
 }
