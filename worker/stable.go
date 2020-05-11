@@ -113,6 +113,7 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 	matchTx := &MatchTx{
 		SwapHeight: txStatus.Block_height,
 		SwapTime:   txStatus.Block_time,
+		SwapType:   tokens.Swap_Swapin,
 	}
 	return updateSwapinResult(swap.Key, matchTx)
 }
@@ -146,6 +147,7 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	matchTx := &MatchTx{
 		SwapHeight: txStatus.Block_height,
 		SwapTime:   txStatus.Block_time,
+		SwapType:   tokens.Swap_Swapout,
 	}
 	return updateSwapoutResult(swap.Key, matchTx)
 }
