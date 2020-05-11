@@ -130,6 +130,9 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*tokens.TxSwapInfo, error) {
 			break
 		}
 	}
+	if from == dcrmAddress {
+		return nil, tokens.ErrTxWithWrongSender
+	}
 	log.Debug("verify swapin pass", "from", from, "to", dcrmAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", *txStatus.Block_height, "timestamp", *txStatus.Block_time)
 	return &tokens.TxSwapInfo{
 		Hash:      *tx.Txid,

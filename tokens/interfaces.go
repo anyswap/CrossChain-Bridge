@@ -35,6 +35,7 @@ var (
 	ErrTxWithWrongMemo     = errors.New("tx with wrong memo")
 	ErrTxWithWrongStatus   = errors.New("tx with wrong status")
 	ErrTxWithWrongReceipt  = errors.New("tx with wrong receipt")
+	ErrTxWithWrongSender   = errors.New("tx with wrong sender")
 )
 
 type TokenConfig struct {
