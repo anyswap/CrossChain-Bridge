@@ -186,7 +186,9 @@ func GetTokenConfig(isSrc bool) *TokenConfig {
 func CheckSwapValue(value float64, isSrc bool) bool {
 	token := GetTokenConfig(isSrc)
 	oneToken := math.Pow(10, float64(*token.Decimals))
-	return (value >= *token.MinimumSwap*oneToken) && (value <= *token.MaximumSwap*oneToken)
+	toleranceBits := 100.0
+	return (value+toleranceBits >= *token.MinimumSwap*oneToken) &&
+		(value-toleranceBits <= *token.MaximumSwap*oneToken)
 }
 
 func CalcSwappedValue(value *big.Int, isSrc bool) *big.Int {
