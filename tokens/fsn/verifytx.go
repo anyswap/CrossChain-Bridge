@@ -6,12 +6,19 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-func (b *FsnBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
-	var txStatus tokens.TxStatus
+func (b *FsnBridge) GetTransactionStatus(txHash string) (txStatus *tokens.TxStatus, found bool) {
+	txStatus = &tokens.TxStatus{}
+	_, err := b.GetTransaction(txHash)
+	if err != nil {
+		found = false
+		log.Debug("GetTransaction fail", "hash", txHash, "err", err)
+		return
+	}
+	found = true
 	txr, err := b.GetTransactionReceipt(txHash)
 	if err != nil {
 		log.Debug("GetTransactionReceipt fail", "hash", txHash, "err", err)
-		return &txStatus
+		return
 	}
 	txStatus.Block_height = txr.BlockNumber.ToInt().Uint64()
 	txStatus.Block_hash = txr.BlockHash.String()
@@ -29,7 +36,7 @@ func (b *FsnBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 			log.Debug("GetLatestBlockNumber fail", "err", err)
 		}
 	}
-	return &txStatus
+	return
 }
 
 func (b *FsnBridge) VerifyMsgHash(rawTx interface{}, msgHash string) error {
