@@ -67,24 +67,27 @@ func (b *BtcBridge) VerifyMsgHash(rawTx interface{}, msgHash string) error {
 	return tokens.ErrTodo
 }
 
-func (b *BtcBridge) VerifyTransaction(txHash string) (*tokens.TxSwapInfo, error) {
-	log.Debug("Btc VerifyTransaction", "txHash", txHash, "isSrc", b.IsSrc)
+func (b *BtcBridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+	log.Debug("Btc VerifyTransaction", "txHash", txHash, "isSrc", b.IsSrc, "allowUnstable", allowUnstable)
 	if b.IsSrc {
-		return b.verifySwapinTx(txHash)
+		return b.verifySwapinTx(txHash, allowUnstable)
 	}
 	return nil, tokens.ErrBridgeDestinationNotSupported
 }
 
-func (b *BtcBridge) verifySwapinTx(txHash string) (*tokens.TxSwapInfo, error) {
-	txStatus, isStable := b.getTransactionStatus(txHash)
-	if !isStable {
-		return nil, tokens.ErrTxNotStable
+func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+	if !allowUnstable {
+		_, isStable := b.getTransactionStatus(txHash)
+		if !isStable {
+			return nil, tokens.ErrTxNotStable
+		}
 	}
 	tx, err := b.GetTransaction(txHash)
 	if err != nil {
 		log.Debug("BtcBridge::GetTransaction fail", "tx", txHash, "err", err)
-		return nil, tokens.ErrTxNotStable
+		return nil, tokens.ErrTxNotFound
 	}
+	txStatus := tx.Status
 	token := b.TokenConfig
 	dcrmAddress := token.DcrmAddress
 	var (
@@ -112,6 +115,19 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*tokens.TxSwapInfo, error) {
 	if !tokens.CheckSwapValue(float64(value), b.IsSrc) {
 		return nil, tokens.ErrTxWithWrongValue
 	}
+	for _, input := range tx.Vin {
+		if input != nil &&
+			input.Prevout != nil &&
+			input.Prevout.Scriptpubkey_address != nil {
+			from = *input.Prevout.Scriptpubkey_address
+			break
+		}
+	}
+	// check sender
+	if from == dcrmAddress {
+		return nil, tokens.ErrTxWithWrongSender
+	}
+
 	// NOTE: must verify memo at last step (as it can be recall)
 	bindAddress, ok := getBindAddressFromMemoScipt(memoScript)
 	if !ok {
@@ -122,22 +138,18 @@ func (b *BtcBridge) verifySwapinTx(txHash string) (*tokens.TxSwapInfo, error) {
 		log.Debug("wrong bind address", "bind", bindAddress)
 		return nil, tokens.ErrTxWithWrongMemo
 	}
-	for _, input := range tx.Vin {
-		if input != nil &&
-			input.Prevout != nil &&
-			input.Prevout.Scriptpubkey_address != nil {
-			from = *input.Prevout.Scriptpubkey_address
-			break
-		}
+	var blockHeight, blockTimestamp uint64
+	if txStatus.Block_height != nil {
+		blockHeight = *txStatus.Block_height
 	}
-	if from == dcrmAddress {
-		return nil, tokens.ErrTxWithWrongSender
+	if txStatus.Block_time != nil {
+		blockTimestamp = *txStatus.Block_time
 	}
-	log.Debug("verify swapin pass", "from", from, "to", dcrmAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", *txStatus.Block_height, "timestamp", *txStatus.Block_time)
+	log.Debug("verify swapin pass", "from", from, "to", dcrmAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", blockHeight, "timestamp", blockTimestamp)
 	return &tokens.TxSwapInfo{
 		Hash:      *tx.Txid,
-		Height:    *txStatus.Block_height,
-		Timestamp: *txStatus.Block_time,
+		Height:    blockHeight,
+		Timestamp: blockTimestamp,
 		From:      from,
 		To:        dcrmAddress,
 		Bind:      bindAddress,

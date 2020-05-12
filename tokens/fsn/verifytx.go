@@ -45,7 +45,7 @@ func (b *FsnBridge) VerifyMsgHash(rawTx interface{}, msgHash string) error {
 	return nil
 }
 
-func (b *FsnBridge) VerifyTransaction(txHash string) (*tokens.TxSwapInfo, error) {
-	log.Debug("Fsn VerifyTransaction", "txHash", txHash, "isSrc", b.IsSrc)
+func (b *FsnBridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+	log.Debug("Fsn VerifyTransaction", "txHash", txHash, "isSrc", b.IsSrc, "allowUnstable", allowUnstable)
 	return nil, tokens.ErrTodo
 }

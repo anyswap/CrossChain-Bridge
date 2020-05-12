@@ -29,6 +29,7 @@ var (
 
 	ErrTodo = errors.New("developing: TODO")
 
+	ErrTxNotFound          = errors.New("tx not found")
 	ErrTxNotStable         = errors.New("tx not stable")
 	ErrTxWithWrongValue    = errors.New("tx with wrong value")
 	ErrTxWithWrongReceiver = errors.New("tx with wrong receiver")
@@ -139,7 +140,7 @@ type CrossChainBridge interface {
 	IsValidAddress(address string) bool
 
 	GetTransactionStatus(txHash string) *TxStatus
-	VerifyTransaction(txHash string) (*TxSwapInfo, error)
+	VerifyTransaction(txHash string, allowUnstable bool) (*TxSwapInfo, error)
 	VerifyMsgHash(rawTx interface{}, msgHash string) error
 
 	BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error)
