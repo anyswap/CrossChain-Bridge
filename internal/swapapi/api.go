@@ -10,6 +10,10 @@ import (
 	rpcjson "github.com/gorilla/rpc/v2/json2"
 )
 
+var (
+	errSwapExist = newRpcError(-32098, "swap already exist")
+)
+
 func newRpcError(ec rpcjson.ErrorCode, message string) error {
 	return &rpcjson.Error{
 		Code:    ec,
@@ -95,6 +99,9 @@ func GetSwapoutHistory(address string, offset, limit int) ([]*SwapInfo, error) {
 func Swapin(txid *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapin", "txid", *txid)
 	txidstr := *txid
+	if swap, _ := mongodb.FindSwapin(txidstr); swap != nil {
+		return nil, errSwapExist
+	}
 	info, err := tokens.SrcBridge.VerifyTransaction(txidstr, true)
 	if err != nil {
 		return nil, newRpcError(-32099, "verify swapin failed! "+err.Error())
@@ -117,6 +124,9 @@ func Swapin(txid *string) (*PostResult, error) {
 func Swapout(txid *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapout", "txid", *txid)
 	txidstr := *txid
+	if swap, _ := mongodb.FindSwapout(txidstr); swap != nil {
+		return nil, errSwapExist
+	}
 	info, err := tokens.DstBridge.VerifyTransaction(txidstr, true)
 	if err != nil {
 		return nil, newRpcError(-32098, "verify swapout failed! "+err.Error())

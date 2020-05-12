@@ -18,6 +18,10 @@ var (
 
 	maxStableLifetime       = int64(7 * 24 * 3600)
 	restIntervalInStableJob = 60 * time.Second
+
+	maxScanLifetime        = int64(3 * 24 * 3600)
+	restIntervalInScanJob  = 10 * time.Second
+	retryIntervalInScanJob = 10 * time.Second
 )
 
 func now() int64 {

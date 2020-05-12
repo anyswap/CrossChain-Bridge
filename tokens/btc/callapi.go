@@ -16,6 +16,10 @@ func (b *BtcBridge) GetElectTransactionStatus(txHash string) (*electrs.ElectTxSt
 	return electrs.GetElectTransactionStatus(b, txHash)
 }
 
-func (b *BtcBridge) FindUtxos(addr string) (*[]*electrs.ElectUtxo, error) {
+func (b *BtcBridge) FindUtxos(addr string) ([]*electrs.ElectUtxo, error) {
 	return electrs.FindUtxos(b, addr)
+}
+
+func (b *BtcBridge) GetTransactionHistory(addr string, lastSeenTxid string) ([]*electrs.ElectTx, error) {
+	return electrs.GetTransactionHistory(b, addr, lastSeenTxid)
 }

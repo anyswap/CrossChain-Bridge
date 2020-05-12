@@ -29,10 +29,21 @@ func GetElectTransactionStatus(b tokens.CrossChainBridge, txHash string) (*Elect
 	return &result, err
 }
 
-func FindUtxos(b tokens.CrossChainBridge, addr string) (*[]*ElectUtxo, error) {
+func FindUtxos(b tokens.CrossChainBridge, addr string) ([]*ElectUtxo, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/address/" + addr + "/utxo"
 	var result []*ElectUtxo
 	err := client.RpcGet(&result, url)
-	return &result, err
+	return result, err
+}
+
+func GetTransactionHistory(b tokens.CrossChainBridge, addr string, lastSeenTxid string) ([]*ElectTx, error) {
+	_, gateway := b.GetTokenAndGateway()
+	url := gateway.ApiAddress + "/address/" + addr + "/txs/chain"
+	if lastSeenTxid != "" {
+		url = url + "/" + lastSeenTxid
+	}
+	var result []*ElectTx
+	err := client.RpcGet(&result, url)
+	return result, err
 }

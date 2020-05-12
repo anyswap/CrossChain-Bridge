@@ -30,6 +30,7 @@ type ServerConfig struct {
 	DestToken   *tokens.TokenConfig
 	DestGateway *tokens.GatewayConfig
 	Dcrm        *DcrmConfig
+	Oracle      *OracleConfig
 }
 
 type DcrmConfig struct {
@@ -42,6 +43,10 @@ type DcrmConfig struct {
 	Pubkey        *string `toml:",omitempty"`
 	KeystoreFile  *string `toml:",omitempty"`
 	PasswordFile  *string `toml:",omitempty"`
+}
+
+type OracleConfig struct {
+	ServerApiAddress string
 }
 
 type ApiServerConfig struct {
@@ -86,6 +91,13 @@ func CheckConfig(isServer bool) (err error) {
 		}
 		if config.ApiServer == nil {
 			return errors.New("server must config 'ApiServer'")
+		}
+	} else {
+		if config.Oracle != nil {
+			err = config.Oracle.CheckConfig(isServer)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if config.SrcToken == nil {
@@ -148,6 +160,10 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	if c.PasswordFile == nil {
 		return errors.New("dcrm must config 'PasswordFile'")
 	}
+	return nil
+}
+
+func (c *OracleConfig) CheckConfig(isServer bool) (err error) {
 	return nil
 }
 

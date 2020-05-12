@@ -14,6 +14,9 @@ func StartServerWork() {
 
 	bridge.InitCrossChainBridge(true)
 
+	go StartScanJob(true)
+	time.Sleep(interval)
+
 	go StartVerifyJob()
 	time.Sleep(interval)
 
@@ -30,6 +33,9 @@ func StartOracleWork() {
 	log.Println("start oracle worker")
 
 	bridge.InitCrossChainBridge(false)
+
+	go StartScanJob(false)
+	time.Sleep(interval)
 
 	go StartAcceptSignJob()
 }
