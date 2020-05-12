@@ -146,6 +146,11 @@ type CrossChainBridge interface {
 	BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error)
 	DcrmSignTransaction(rawTx interface{}, args *BuildTxArgs) (signedTx interface{}, err error)
 	SendTransaction(signedTx interface{}) (txHash string, err error)
+
+	StartSwapinScanJob(isServer bool) error
+	StartSwapoutScanJob(isServer bool) error
+	StartSwapinResultScanJob(isServer bool) error
+	StartSwapoutResultScanJob(isServer bool) error
 }
 
 type CrossChainBridgeBase struct {
