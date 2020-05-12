@@ -12,7 +12,7 @@ Port = 11556
 # oracle config
 [Oracle]
 # post swap register requests to this address
-ServerApiAddress = http://127.0.0.1:11556
+ServerApiAddress = "http://127.0.0.1:11556/rpc"
 
 # server and oracle config
 [SrcToken]
