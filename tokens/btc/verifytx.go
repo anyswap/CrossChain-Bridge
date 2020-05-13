@@ -132,11 +132,10 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 	bindAddress, ok := getBindAddressFromMemoScipt(memoScript)
 	if !ok {
 		log.Debug("wrong memo", "memo", memoScript)
-		return nil, tokens.ErrTxWithWrongMemo
-	}
-	if !tokens.DstBridge.IsValidAddress(bindAddress) {
+		err = tokens.ErrTxWithWrongMemo
+	} else if !tokens.DstBridge.IsValidAddress(bindAddress) {
 		log.Debug("wrong bind address", "bind", bindAddress)
-		return nil, tokens.ErrTxWithWrongMemo
+		err = tokens.ErrTxWithWrongMemo
 	}
 	var blockHeight, blockTimestamp uint64
 	if txStatus.Block_height != nil {
@@ -154,7 +153,7 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 		To:        dcrmAddress,
 		Bind:      bindAddress,
 		Value:     fmt.Sprintf("%d", value),
-	}, nil
+	}, err
 }
 
 func getBindAddressFromMemoScipt(memoScript string) (bind string, ok bool) {

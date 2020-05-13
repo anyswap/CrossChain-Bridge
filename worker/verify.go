@@ -82,7 +82,7 @@ func processSwapinVerify(swap *mongodb.MgoSwap) error {
 	swapInfo, err := tokens.SrcBridge.VerifyTransaction(txid, false)
 
 	switch err {
-	case tokens.ErrTxNotStable:
+	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
 		return err
 	case tokens.ErrTxWithWrongMemo:
 		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxCanRecall, now(), "")
@@ -104,7 +104,7 @@ func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 	swapInfo, err := tokens.DstBridge.VerifyTransaction(txid, false)
 
 	switch err {
-	case tokens.ErrTxNotStable:
+	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
 		return err
 	case tokens.ErrTxWithWrongMemo:
 		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxCanRecall, now(), "")

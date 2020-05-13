@@ -62,7 +62,9 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	}
 
 	group := *dcrmConfig.GroupID
-	threshold := fmt.Sprintf("%d/%d", *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
+	neededOracles := *dcrmConfig.NeededOracles
+	totalOracles := *dcrmConfig.TotalOracles
+	threshold := fmt.Sprintf("%d/%d", neededOracles, totalOracles)
 	mode := fmt.Sprintf("%d", dcrmConfig.Mode)
 	dcrm.SetDcrmGroup(group, threshold, mode)
 	log.Info("Init dcrm group", "group", group, "threshold", threshold, "mode", mode)
@@ -90,9 +92,9 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	}
 
 	// check after initing selfEnode
-	checkExist := func(enodes []string) bool {
+	checkExist := func(chekcedEnode string, enodes []string) bool {
 		for _, enode := range enodes {
-			if enode == selfEnode {
+			if enode == chekcedEnode {
 				return true
 			}
 		}
@@ -101,14 +103,21 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 
 	for {
 		groupInfo, err := dcrm.GetGroupByID(group)
-		if err == nil {
+		if err == nil && uint32(groupInfo.Count) != totalOracles {
+			panic(fmt.Sprintf("sig group %v member count is not %v", group, totalOracles))
+		}
+		if err == nil && uint32(len(groupInfo.Enodes)) == totalOracles {
 			log.Info("get dcrm group info success", "groupInfo", groupInfo)
-			if !checkExist(groupInfo.Enodes) {
-				panic(fmt.Sprintf("self enode %v not exist in group %v\n", selfEnode, group))
+			if !checkExist(selfEnode, groupInfo.Enodes) {
+				panic(fmt.Sprintf("self enode %v not exist in group %v, groupInfo is %v\n", selfEnode, group, groupInfo))
 			}
 			break
 		}
-		log.Error("InitDcrm can't get group info", "groupID", group, "err", err)
+		if err != nil {
+			log.Error("InitDcrm can't get right group info", "groupID", group, "groupInfo", groupInfo, "needCount", totalOracles, "err", err)
+		} else {
+			log.Error("InitDcrm can't get right group info", "groupID", group, "groupInfo", groupInfo, "needCount", totalOracles)
+		}
 		time.Sleep(3 * time.Second)
 	}
 
@@ -118,14 +127,21 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 		}
 		for {
 			signGroupInfo, err := dcrm.GetGroupByID(signGroupID)
-			if err == nil {
+			if err == nil && uint32(signGroupInfo.Count) != neededOracles {
+				panic(fmt.Sprintf("sig group %v member count is not %v", signGroupID, neededOracles))
+			}
+			if err == nil && uint32(len(signGroupInfo.Enodes)) == neededOracles {
 				log.Info("get dcrm sign group info success", "signGroupInfo", signGroupInfo)
-				if !checkExist(signGroupInfo.Enodes) {
-					panic(fmt.Sprintf("self enode %v not exist in group %v\n", selfEnode, signGroupID))
+				if !checkExist(selfEnode, signGroupInfo.Enodes) {
+					panic(fmt.Sprintf("self enode %v not exist in group %v, signGroupInfo is %v\n", selfEnode, signGroupID, signGroupInfo))
 				}
 				break
 			}
-			log.Error("InitDcrm can't get sign group info", "signGroupID", signGroupID, "err", err)
+			if err != nil {
+				log.Error("InitDcrm can't get right sign group info", "signGroupID", signGroupID, "signGroupInfo", signGroupInfo, "needCount", neededOracles, "err", err)
+			} else {
+				log.Error("InitDcrm can't get right sign group info", "signGroupID", signGroupID, "signGroupInfo", signGroupInfo, "needCount", neededOracles)
+			}
 			time.Sleep(3 * time.Second)
 		}
 	}

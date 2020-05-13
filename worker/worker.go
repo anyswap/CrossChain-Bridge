@@ -26,7 +26,7 @@ func StartServerWork() {
 	go StartStableJob()
 	time.Sleep(interval)
 
-	go StartRecallJob()
+	//go StartRecallJob()
 }
 
 func StartOracleWork() {
