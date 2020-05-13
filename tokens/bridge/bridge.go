@@ -106,7 +106,7 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	for {
 		groupInfo, err := dcrm.GetGroupByID(group)
 		if err == nil && uint32(groupInfo.Count) != totalOracles {
-			panic(fmt.Sprintf("sig group %v member count is not %v", group, totalOracles))
+			panic(fmt.Sprintf("dcrm account group %v member count is not %v", group, totalOracles))
 		}
 		if err == nil && uint32(len(groupInfo.Enodes)) == totalOracles {
 			log.Info("get dcrm group info success", "groupInfo", groupInfo)

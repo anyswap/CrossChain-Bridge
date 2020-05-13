@@ -23,6 +23,10 @@ func addInitialSwapoutResult(tx *tokens.TxSwapInfo) error {
 }
 
 func addInitialSwapResult(tx *tokens.TxSwapInfo, isSwapin bool) (err error) {
+	if tx == nil {
+		log.Warn("addInitialSwapoutResult add empty swap", "isSwapin", isSwapin)
+		return nil
+	}
 	txid := tx.Hash
 	swapResult := &mongodb.MgoSwapResult{
 		Key:        txid,
