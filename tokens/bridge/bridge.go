@@ -77,17 +77,8 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	}
 	log.Info("Init dcrm, load keystore success")
 
+	// init selfEnode
 	var selfEnode string
-
-	checkExist := func(enodes []string) bool {
-		for _, enode := range enodes {
-			if enode == selfEnode {
-				return true
-			}
-		}
-		return false
-	}
-
 	for {
 		selfEnode, err = dcrm.GetEnode()
 		if err == nil {
@@ -96,6 +87,16 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 		}
 		log.Error("InitDcrm can't get enode info", "err", err)
 		time.Sleep(3 * time.Second)
+	}
+
+	// check after initing selfEnode
+	checkExist := func(enodes []string) bool {
+		for _, enode := range enodes {
+			if enode == selfEnode {
+				return true
+			}
+		}
+		return false
 	}
 
 	for {
