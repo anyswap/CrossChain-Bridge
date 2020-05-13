@@ -91,11 +91,14 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 		log.Error("InitDcrm can't get enode info", "err", err)
 		time.Sleep(3 * time.Second)
 	}
+	sepIndex := strings.Index(selfEnode, "@")
+	if sepIndex == -1 {
+		panic("wrong enode, has no '@' char")
+	}
 
 	// check after initing selfEnode
 	checkExist := func(chekcedEnode string, enodes []string) bool {
 		for _, enode := range enodes {
-			sepIndex := strings.Index(chekcedEnode, "@")
 			if enode[:sepIndex] == chekcedEnode[:sepIndex] {
 				return true
 			}
