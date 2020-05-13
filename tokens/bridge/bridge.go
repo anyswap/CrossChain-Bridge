@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/dcrm"
@@ -94,7 +95,8 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	// check after initing selfEnode
 	checkExist := func(chekcedEnode string, enodes []string) bool {
 		for _, enode := range enodes {
-			if enode == chekcedEnode {
+			sepIndex := strings.Index(chekcedEnode, "@")
+			if enode[:sepIndex] == chekcedEnode[:sepIndex] {
 				return true
 			}
 		}
