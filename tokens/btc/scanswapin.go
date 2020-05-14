@@ -8,16 +8,16 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
-	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
 
 var (
 	swapinScanStarter    sync.Once
 	swapServerApiAddress string
+	oracleLatestSeenTx   string
 
 	maxScanLifetime        = int64(3 * 24 * 3600)
-	restIntervalInScanJob  = 10 * time.Second
 	retryIntervalInScanJob = 10 * time.Second
+	restIntervalInScanJob  = 10 * time.Second
 )
 
 func (b *BtcBridge) StartSwapinScanJob(isServer bool) error {
@@ -33,78 +33,28 @@ func (b *BtcBridge) StartSwapinScanJob(isServer bool) error {
 
 func (b *BtcBridge) StartSwapinScanJobOnServer() error {
 	log.Info("[scanswapin] start scan swapin job")
-	var (
-		token   = b.TokenConfig
-		nowTime = time.Now().Unix()
-		rescan  = true
 
-		lastSeenTxid string
-		txHistory    []*electrs.ElectTx
-		err          error
-	)
-	// first loop process all tx history no matter whether processed before
-	log.Info("[scanswapin] start first scan loop")
-FIRST_LOOP:
-	for {
-		txHistory, err = b.GetTransactionHistory(token.DcrmAddress, lastSeenTxid)
-		if err != nil {
-			log.Error("[scanswapin] get tx history error", "err", err)
-			time.Sleep(retryIntervalInScanJob)
-			continue
-		}
-		if len(txHistory) == 0 {
-			break
-		}
-		for _, tx := range txHistory {
-			if tx.Status.Block_time != nil &&
-				int64(*tx.Status.Block_time)+maxScanLifetime < nowTime { // too old
-				break FIRST_LOOP
-			}
-			if swap, _ := mongodb.FindSwapin(*tx.Txid); swap == nil {
-				b.registerSwapin(tx) // add if not exist
-			}
-		}
-		lastSeenTxid = *txHistory[len(txHistory)-1].Txid
+	go b.scanTransactionPool(true)
+
+	isProcessed := func(txid string) bool {
+		swap, _ := mongodb.FindSwapin(txid)
+		return swap != nil
 	}
 
-	// second loop only process unprocessed tx history
+	go b.scanFirstLoop(true, isProcessed)
+
 	log.Info("[scanswapin] start second scan loop")
-	lastSeenTxid = ""
-	for {
-		if rescan {
-			txHistory, err = b.GetPoolTransactions(token.DcrmAddress)
-		} else {
-			txHistory, err = b.GetTransactionHistory(token.DcrmAddress, lastSeenTxid)
-		}
-		if err != nil {
-			log.Error("[scanswapin] get tx history error", "err", err)
-			time.Sleep(retryIntervalInScanJob)
-			continue
-		}
-		if len(txHistory) == 0 {
-			rescan = true
-		} else if rescan {
-			rescan = false
-		}
-		for _, tx := range txHistory {
-			if swap, _ := mongodb.FindSwapin(*tx.Txid); swap != nil {
-				rescan = true
-				break // rescan if found exist
-			}
-			b.registerSwapin(tx)
-		}
-		if rescan {
-			lastSeenTxid = ""
-			time.Sleep(restIntervalInScanJob)
-		} else {
-			lastSeenTxid = *txHistory[len(txHistory)-1].Txid
-		}
-	}
-	return nil
+	return b.scanTransactionHistory(true, isProcessed)
 }
 
-func (b *BtcBridge) registerSwapin(tx *electrs.ElectTx) error {
-	txid := *tx.Txid
+func (b *BtcBridge) processSwapin(txid string, isServer bool) error {
+	if isServer {
+		return b.registerSwapin(txid)
+	}
+	return b.postRegisterSwapin(txid)
+}
+
+func (b *BtcBridge) registerSwapin(txid string) error {
 	log.Info("[scanswapin] register swapin", "tx", txid)
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
@@ -113,6 +63,12 @@ func (b *BtcBridge) registerSwapin(tx *electrs.ElectTx) error {
 		Timestamp: time.Now().Unix(),
 	}
 	return mongodb.AddSwapin(swap)
+}
+
+func (b *BtcBridge) postRegisterSwapin(txid string) error {
+	log.Info("[scanswapin] post register swapin", "tx", txid)
+	var result interface{}
+	return client.RpcPost(&result, swapServerApiAddress, "swap.Swapin", txid)
 }
 
 func getSwapServerApiAddress() string {
@@ -126,32 +82,82 @@ func getSwapServerApiAddress() string {
 func (b *BtcBridge) StartSwapinScanJobOnOracle() error {
 	log.Info("[scanswapin] start scan swapin job")
 
+	// init swapServerApiAddress
 	swapServerApiAddress = getSwapServerApiAddress()
 	if swapServerApiAddress == "" {
 		log.Info("[scanswapin] stop scan swapin job as no Oracle.ServerApiAddress configed")
 		return nil
 	}
 
-	var (
-		token  = b.TokenConfig
-		rescan = true
+	go b.scanTransactionPool(false)
 
-		txHistory       []*electrs.ElectTx
-		latestProcessed string
-		lastSeenTxid    string
-		first           string
-		err             error
+	// init oracleLatestSeenTx
+	for {
+		txHistory, err := b.GetTransactionHistory(b.TokenConfig.DcrmAddress, "")
+		if err != nil {
+			log.Error("[scanswapin] get tx history error", "err", err)
+			time.Sleep(retryIntervalInScanJob)
+			continue
+		}
+		if len(txHistory) != 0 {
+			oracleLatestSeenTx = *txHistory[len(txHistory)-1].Txid
+			break
+		}
+		time.Sleep(restIntervalInScanJob)
+	}
+
+	isProcessed := func(txid string) bool {
+		return txid == oracleLatestSeenTx
+	}
+	return b.scanTransactionHistory(false, isProcessed)
+}
+
+func (b *BtcBridge) scanFirstLoop(isServer bool, isProcessed func(string) bool) error {
+	// first loop process all tx history no matter whether processed before
+	log.Info("[scanswapin] start first scan loop")
+	var (
+		nowTime      = time.Now().Unix()
+		lastSeenTxid = ""
+	)
+
+	isTooOld := func(time *uint64) bool {
+		return time != nil && int64(*time)+maxScanLifetime < nowTime
+	}
+
+	for {
+		txHistory, err := b.GetTransactionHistory(b.TokenConfig.DcrmAddress, lastSeenTxid)
+		if err != nil {
+			log.Error("[scanswapin] get tx history error", "err", err)
+			time.Sleep(retryIntervalInScanJob)
+			continue
+		}
+		if len(txHistory) == 0 {
+			break
+		}
+		for _, tx := range txHistory {
+			if isTooOld(tx.Status.Block_time) {
+				return nil
+			}
+			txid := *tx.Txid
+			if !isProcessed(txid) {
+				b.processSwapin(txid, isServer)
+			}
+		}
+		lastSeenTxid = *txHistory[len(txHistory)-1].Txid
+	}
+	return nil
+}
+
+func (b *BtcBridge) scanTransactionHistory(isServer bool, isProcessed func(string) bool) error {
+	log.Info("[scanswapin] start scan tx history loop")
+	var (
+		lastSeenTxid  = ""
+		firstSeenTxid = ""
+		rescan        = true
 	)
 
 	for {
-		if rescan {
-			txHistory, err = b.GetPoolTransactions(token.DcrmAddress)
-		} else {
-			txHistory, err = b.GetTransactionHistory(token.DcrmAddress, lastSeenTxid)
-			if latestProcessed == "" && len(txHistory) > 0 {
-				latestProcessed = *txHistory[len(txHistory)-1].Txid
-			}
-		}
+		txHistory, err := b.GetTransactionHistory(b.TokenConfig.DcrmAddress, lastSeenTxid)
 		if err != nil {
 			log.Error("[scanswapin] get tx history error", "err", err)
 			time.Sleep(retryIntervalInScanJob)
@@ -159,26 +165,24 @@ func (b *BtcBridge) StartSwapinScanJobOnOracle() error {
 		}
 		if len(txHistory) == 0 {
 			rescan = true
-		} else {
-			if rescan {
-				rescan = false
-			}
-			if first == "" {
-				first = *txHistory[0].Txid
-			}
+		} else if rescan {
+			rescan = false
 		}
 		for _, tx := range txHistory {
-			if *tx.Txid == latestProcessed {
-				rescan = true
-				break
+			txid := *tx.Txid
+			if !isServer && firstSeenTxid == "" {
+				firstSeenTxid = txid
 			}
-			b.postRegisterSwapin(tx)
+			if isProcessed(txid) {
+				rescan = true
+				break // rescan if already processed
+			}
+			b.processSwapin(txid, isServer)
 		}
 		if rescan {
 			lastSeenTxid = ""
-			if first != "" {
-				latestProcessed = first
-				first = ""
+			if !isServer && firstSeenTxid != "" {
+				oracleLatestSeenTx = firstSeenTxid
 			}
 			time.Sleep(restIntervalInScanJob)
 		} else {
@@ -188,9 +192,24 @@ func (b *BtcBridge) StartSwapinScanJobOnOracle() error {
 	return nil
 }
 
-func (b *BtcBridge) postRegisterSwapin(tx *electrs.ElectTx) error {
-	txid := *tx.Txid
-	log.Info("[scanswapin] post register swapin", "tx", txid)
-	var result interface{}
-	return client.RpcPost(&result, swapServerApiAddress, "swap.Swapin", txid)
+func (b *BtcBridge) scanTransactionPool(isServer bool) error {
+	log.Info("[scanswapin] start scan tx pool loop")
+	for {
+		txids, err := b.GetPoolTxidList()
+		if err != nil {
+			log.Error("[scanswapin] get pool tx list error", "err", err)
+			time.Sleep(retryIntervalInScanJob)
+			continue
+		}
+		for _, txid := range txids {
+			_, err := b.VerifyTransaction(txid, true)
+			if err != nil {
+				log.Debug("[scanswapin] verify pool tx fail", "txid", txid, "err", err)
+				continue
+			}
+			b.processSwapin(txid, isServer)
+		}
+		time.Sleep(restIntervalInScanJob)
+	}
+	return nil
 }

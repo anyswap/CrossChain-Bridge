@@ -40,6 +40,14 @@ func FindUtxos(b tokens.CrossChainBridge, addr string) ([]*ElectUtxo, error) {
 	return result, err
 }
 
+func GetPoolTxidList(b tokens.CrossChainBridge) ([]string, error) {
+	_, gateway := b.GetTokenAndGateway()
+	url := gateway.ApiAddress + "/mempool/txids"
+	var result []string
+	err := client.RpcGet(&result, url)
+	return result, err
+}
+
 func GetPoolTransactions(b tokens.CrossChainBridge, addr string) ([]*ElectTx, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/address/" + addr + "/txs/mempool"

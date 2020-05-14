@@ -20,6 +20,10 @@ func (b *BtcBridge) FindUtxos(addr string) ([]*electrs.ElectUtxo, error) {
 	return electrs.FindUtxos(b, addr)
 }
 
+func (b *BtcBridge) GetPoolTxidList() ([]string, error) {
+	return electrs.GetPoolTxidList(b)
+}
+
 func (b *BtcBridge) GetPoolTransactions(addr string) ([]*electrs.ElectTx, error) {
 	return electrs.GetPoolTransactions(b, addr)
 }
