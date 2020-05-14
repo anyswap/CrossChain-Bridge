@@ -3,6 +3,7 @@ package mongodb
 import (
 	"time"
 
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -104,6 +105,11 @@ func FindSwapoutsWithStatus(status SwapStatus, septime int64) ([]*MgoSwap, error
 
 func addSwap(tbName string, ms *MgoSwap) error {
 	err := getCollection(tbName).Insert(ms)
+	if err == nil {
+		log.Info("mongodb add swap", "txid", ms.TxId, "isSwapin", tbName == tbSwapins)
+	} else {
+		log.Debug("mongodb add swap", "txid", ms.TxId, "isSwapin", tbName == tbSwapins, "err", err)
+	}
 	return mgoError(err)
 }
 
@@ -113,6 +119,11 @@ func updateSwapStatus(tbName string, txid string, status SwapStatus, timestamp i
 		updates["memo"] = memo
 	}
 	err := getCollection(tbName).UpdateId(txid, bson.M{"$set": updates})
+	if err == nil {
+		log.Info("mongodb update swap status", "txid", txid, "status", status, "isSwapin", tbName == tbSwapins)
+	} else {
+		log.Debug("mongodb update swap status", "txid", txid, "status", status, "isSwapin", tbName == tbSwapins, "err", err)
+	}
 	return mgoError(err)
 }
 
@@ -194,6 +205,11 @@ func FindSwapoutResults(address string, offset, limit int) ([]*MgoSwapResult, er
 
 func addSwapResult(tbName string, ms *MgoSwapResult) error {
 	err := getCollection(tbName).Insert(ms)
+	if err == nil {
+		log.Info("mongodb add swap result", "txid", ms.TxId, "swaptype", ms.SwapType, "isSwapin", tbName == tbSwapinResults)
+	} else {
+		log.Debug("mongodb add swap result", "txid", ms.TxId, "swaptype", ms.SwapType, "isSwapin", tbName == tbSwapinResults, "err", err)
+	}
 	return mgoError(err)
 }
 
@@ -221,6 +237,11 @@ func updateSwapResult(tbName string, txid string, items *SwapResultUpdateItems) 
 		updates["memo"] = items.Memo
 	}
 	err := getCollection(tbName).UpdateId(txid, bson.M{"$set": updates})
+	if err == nil {
+		log.Info("mongodb update swap result", "txid", txid, "updates", updates, "isSwapin", tbName == tbSwapinResults)
+	} else {
+		log.Debug("mongodb update swap result", "txid", txid, "updates", updates, "isSwapin", tbName == tbSwapinResults, "err", err)
+	}
 	return mgoError(err)
 }
 
@@ -230,6 +251,11 @@ func updateSwapResultStatus(tbName string, txid string, status SwapStatus, times
 		updates["memo"] = memo
 	}
 	err := getCollection(tbName).UpdateId(txid, bson.M{"$set": updates})
+	if err == nil {
+		log.Info("mongodb update swap result status", "txid", txid, "status", status, "isSwapin", tbName == tbSwapinResults)
+	} else {
+		log.Debug("mongodb update swap result status", "txid", txid, "status", status, "isSwapin", tbName == tbSwapinResults, "err", err)
+	}
 	return mgoError(err)
 }
 
