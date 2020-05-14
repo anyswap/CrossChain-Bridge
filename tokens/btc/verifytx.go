@@ -134,7 +134,7 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 		log.Debug("wrong memo", "memo", memoScript)
 		err = tokens.ErrTxWithWrongMemo
 	} else if !tokens.DstBridge.IsValidAddress(bindAddress) {
-		log.Debug("wrong bind address", "bind", bindAddress)
+		log.Debug("wrong bind address in memo", "bind", bindAddress)
 		err = tokens.ErrTxWithWrongMemo
 	}
 	var blockHeight, blockTimestamp uint64
