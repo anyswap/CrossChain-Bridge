@@ -33,14 +33,20 @@ func (b *BtcBridge) StartSwapinScanJob(isServer bool) error {
 
 func (b *BtcBridge) StartSwapinScanJobOnServer() error {
 	log.Info("[scanswapin] start scan swapin job")
-	token := b.TokenConfig
-	nowTime := time.Now().Unix()
-	var lastSeenTxid string
+	var (
+		token   = b.TokenConfig
+		nowTime = time.Now().Unix()
+		rescan  = true
+
+		lastSeenTxid string
+		txHistory    []*electrs.ElectTx
+		err          error
+	)
 	// first loop process all tx history no matter whether processed before
 	log.Info("[scanswapin] start first scan loop")
 FIRST_LOOP:
 	for {
-		txHistory, err := b.GetTransactionHistory(token.DcrmAddress, lastSeenTxid)
+		txHistory, err = b.GetTransactionHistory(token.DcrmAddress, lastSeenTxid)
 		if err != nil {
 			log.Error("[scanswapin] get tx history error", "err", err)
 			time.Sleep(retryIntervalInScanJob)
@@ -65,8 +71,11 @@ FIRST_LOOP:
 	log.Info("[scanswapin] start second scan loop")
 	lastSeenTxid = ""
 	for {
-		rescan := false
-		txHistory, err := b.GetTransactionHistory(token.DcrmAddress, lastSeenTxid)
+		if rescan {
+			txHistory, err = b.GetPoolTransactions(token.DcrmAddress)
+		} else {
+			txHistory, err = b.GetTransactionHistory(token.DcrmAddress, lastSeenTxid)
+		}
 		if err != nil {
 			log.Error("[scanswapin] get tx history error", "err", err)
 			time.Sleep(retryIntervalInScanJob)
@@ -74,6 +83,8 @@ FIRST_LOOP:
 		}
 		if len(txHistory) == 0 {
 			rescan = true
+		} else if rescan {
+			rescan = false
 		}
 		for _, tx := range txHistory {
 			if swap, _ := mongodb.FindSwapin(*tx.Txid); swap != nil {
@@ -122,16 +133,25 @@ func (b *BtcBridge) StartSwapinScanJobOnOracle() error {
 	}
 
 	var (
-		token = b.TokenConfig
+		token  = b.TokenConfig
+		rescan = true
 
+		txHistory       []*electrs.ElectTx
 		latestProcessed string
 		lastSeenTxid    string
 		first           string
+		err             error
 	)
 
 	for {
-		rescan := false
-		txHistory, err := b.GetTransactionHistory(token.DcrmAddress, lastSeenTxid)
+		if rescan {
+			txHistory, err = b.GetPoolTransactions(token.DcrmAddress)
+		} else {
+			txHistory, err = b.GetTransactionHistory(token.DcrmAddress, lastSeenTxid)
+			if latestProcessed == "" && len(txHistory) > 0 {
+				latestProcessed = *txHistory[len(txHistory)-1].Txid
+			}
+		}
 		if err != nil {
 			log.Error("[scanswapin] get tx history error", "err", err)
 			time.Sleep(retryIntervalInScanJob)
@@ -139,10 +159,12 @@ func (b *BtcBridge) StartSwapinScanJobOnOracle() error {
 		}
 		if len(txHistory) == 0 {
 			rescan = true
-		} else if first == "" {
-			first = *txHistory[0].Txid
-			if latestProcessed == "" {
-				latestProcessed = *txHistory[len(txHistory)-1].Txid
+		} else {
+			if rescan {
+				rescan = false
+			}
+			if first == "" {
+				first = *txHistory[0].Txid
 			}
 		}
 		for _, tx := range txHistory {
