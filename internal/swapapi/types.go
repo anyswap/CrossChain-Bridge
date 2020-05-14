@@ -10,6 +10,7 @@ type SwapStatus = mongodb.SwapStatus
 type ServerInfo struct {
 	SrcToken  *tokens.TokenConfig
 	DestToken *tokens.TokenConfig
+	Version   string
 }
 
 type SwapStatistics struct {

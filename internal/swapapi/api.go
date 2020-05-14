@@ -30,6 +30,7 @@ func GetServerInfo() (*ServerInfo, error) {
 	return &ServerInfo{
 		SrcToken:  config.SrcToken,
 		DestToken: config.DestToken,
+		Version:   params.VersionWithMeta,
 	}, nil
 }
 
