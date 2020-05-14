@@ -81,10 +81,13 @@ func processSwapinVerify(swap *mongodb.MgoSwap) error {
 	txid := swap.TxId
 	swapInfo, err := tokens.SrcBridge.VerifyTransaction(txid, false)
 
+	resultStatus := mongodb.MatchTxEmpty
+
 	switch err {
 	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
 		return err
 	case tokens.ErrTxWithWrongMemo:
+		resultStatus = mongodb.TxWithWrongMemo
 		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxCanRecall, now(), "")
 	case nil:
 		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxNotSwapped, now(), "")
@@ -96,17 +99,20 @@ func processSwapinVerify(swap *mongodb.MgoSwap) error {
 		log.Debug("processSwapinVerify", "txid", txid, "err", err)
 		return err
 	}
-	return addInitialSwapinResult(swapInfo)
+	return addInitialSwapinResult(swapInfo, resultStatus)
 }
 
 func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 	txid := swap.TxId
 	swapInfo, err := tokens.DstBridge.VerifyTransaction(txid, false)
 
+	resultStatus := mongodb.MatchTxEmpty
+
 	switch err {
 	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
 		return err
 	case tokens.ErrTxWithWrongMemo:
+		resultStatus = mongodb.TxWithWrongMemo
 		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxCanRecall, now(), "")
 	case nil:
 		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxNotSwapped, now(), "")
@@ -118,5 +124,5 @@ func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 		log.Debug("processSwapoutVerify", "txid", txid, "err", err)
 		return err
 	}
-	return addInitialSwapoutResult(swapInfo)
+	return addInitialSwapoutResult(swapInfo, resultStatus)
 }

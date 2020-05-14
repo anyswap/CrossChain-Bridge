@@ -14,15 +14,15 @@ type MatchTx struct {
 	SwapType   tokens.SwapType
 }
 
-func addInitialSwapinResult(tx *tokens.TxSwapInfo) error {
-	return addInitialSwapResult(tx, true)
+func addInitialSwapinResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus) error {
+	return addInitialSwapResult(tx, status, true)
 }
 
-func addInitialSwapoutResult(tx *tokens.TxSwapInfo) error {
-	return addInitialSwapResult(tx, false)
+func addInitialSwapoutResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus) error {
+	return addInitialSwapResult(tx, status, false)
 }
 
-func addInitialSwapResult(tx *tokens.TxSwapInfo, isSwapin bool) (err error) {
+func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSwapin bool) (err error) {
 	if tx == nil {
 		log.Warn("addInitialSwapoutResult add empty swap", "isSwapin", isSwapin)
 		return nil
@@ -41,7 +41,7 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, isSwapin bool) (err error) {
 		SwapHeight: 0,
 		SwapTime:   0,
 		SwapValue:  "0",
-		Status:     mongodb.MatchTxEmpty,
+		Status:     status,
 		Timestamp:  now(),
 		Memo:       "",
 	}

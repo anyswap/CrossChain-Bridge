@@ -11,7 +11,8 @@ package mongodb
 // -----------------------------------------------
 // swap result status change graph
 //
-// MatchTxEmpty -> MatchTxNotStable -> MatchTxStable
+// TxWithWrongMemo -> |
+// MatchTxEmpty    -> | MatchTxNotStable -> MatchTxStable
 // -----------------------------------------------
 
 type SwapStatus uint16
@@ -28,6 +29,7 @@ const (
 	MatchTxEmpty                       // 8
 	MatchTxNotStable                   // 9
 	MatchTxStable                      // 10
+	TxWithWrongMemo                    // 11
 )
 
 func (status SwapStatus) String() string {
@@ -54,6 +56,8 @@ func (status SwapStatus) String() string {
 		return "MatchTxNotStable"
 	case MatchTxStable:
 		return "MatchTxStable"
+	case TxWithWrongMemo:
+		return "TxWithWrongMemo"
 	default:
 		panic("unknown swap status")
 	}
