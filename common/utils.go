@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	cmath "github.com/fsn-dev/crossChain-Bridge/common/math"
@@ -17,6 +18,14 @@ func Keccak256Hash(data ...[]byte) (h Hash) {
 	}
 	d.Sum(h[:0])
 	return h
+}
+
+func IsEqualIgnoreCase(s1, s2 string) bool {
+	return strings.ToLower(s1) == strings.ToLower(s2)
+}
+
+func BigFromUint64(value uint64) *big.Int {
+	return new(big.Int).SetUint64(value)
 }
 
 func GetBigIntFromStr(str string) (*big.Int, error) {
@@ -57,4 +66,42 @@ func NowMilli() int64 {
 
 func NowMilliStr() string {
 	return strconv.FormatInt((time.Now().UnixNano() / 1e6), 10)
+}
+
+func MinUint64(x, y uint64) uint64 {
+	if x <= y {
+		return x
+	}
+	return y
+}
+
+func MaxUint64(x, y uint64) uint64 {
+	if x < y {
+		return y
+	}
+	return x
+}
+
+func GetData(data []byte, start uint64, size uint64) []byte {
+	length := uint64(len(data))
+	if start > length {
+		start = length
+	}
+	end := start + size
+	if end > length {
+		end = length
+	}
+	return RightPadBytes(data[start:end], int(size))
+}
+
+func BigUint64(v *big.Int) (uint64, bool) {
+	return v.Uint64(), !v.IsUint64()
+}
+
+func GetBigInt(data []byte, start uint64, size uint64) *big.Int {
+	return new(big.Int).SetBytes(GetData(data, start, size))
+}
+
+func GetUint64(data []byte, start uint64, size uint64) (uint64, bool) {
+	return BigUint64(GetBigInt(data, start, size))
 }

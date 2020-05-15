@@ -42,7 +42,7 @@ Decimals = 8
 Description = "cross chain bridge BTC with mBTC"
 ContractAddress = "0x61b8c4d6d28d5f7edadbea5456db3b4f7f836b64"
 DcrmAddress = "0xbF0A46d3700E23a98F38079cE217742c92Bb66bC"
-Confirmations = 1 # suggest >= 33 for Mainnet
+Confirmations = 0 # suggest >= 33 for Mainnet
 MaximumSwap = 100.0
 MinimumSwap = 0.00001
 SwapFeeRate = 0.001

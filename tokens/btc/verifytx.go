@@ -8,7 +8,6 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
-	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
 
 func (b *BtcBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
@@ -38,31 +37,6 @@ func (b *BtcBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	return txStatus
 }
 
-func (b *BtcBridge) getTransactionStatus(txHash string) (txStatus *electrs.ElectTxStatus, isStable bool) {
-	var err error
-	txStatus, err = b.GetElectTransactionStatus(txHash)
-	if err != nil {
-		log.Debug("BtcBridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
-		return nil, false
-	}
-	if txStatus.Confirmed != nil && !*txStatus.Confirmed {
-		return nil, false
-	}
-	token := b.TokenConfig
-	confirmations := *token.Confirmations
-	if confirmations != 0 {
-		latest, err := b.GetLatestBlockNumber()
-		if err != nil {
-			log.Debug("BtcBridge::GetLatestBlockNumber fail", "err", err)
-			return nil, false
-		}
-		if *txStatus.Block_height+confirmations > latest {
-			return nil, false
-		}
-	}
-	return txStatus, true
-}
-
 func (b *BtcBridge) VerifyMsgHash(rawTx interface{}, msgHash string) error {
 	return tokens.ErrTodo
 }
@@ -76,9 +50,11 @@ func (b *BtcBridge) VerifyTransaction(txHash string, allowUnstable bool) (*token
 }
 
 func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+	token := b.TokenConfig
 	if !allowUnstable {
-		_, isStable := b.getTransactionStatus(txHash)
-		if !isStable {
+		txStatus := b.GetTransactionStatus(txHash)
+		if txStatus.Block_height == 0 ||
+			txStatus.Confirmations < *token.Confirmations {
 			return nil, tokens.ErrTxNotStable
 		}
 	}
@@ -88,7 +64,6 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 		return nil, tokens.ErrTxNotFound
 	}
 	txStatus := tx.Status
-	token := b.TokenConfig
 	dcrmAddress := token.DcrmAddress
 	var (
 		rightReceiver bool
@@ -112,7 +87,7 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 	if !rightReceiver {
 		return nil, tokens.ErrTxWithWrongReceiver
 	}
-	if !tokens.CheckSwapValue(float64(value), b.IsSrc) {
+	if !tokens.CheckSwapValue(common.BigFromUint64(value), b.IsSrc) {
 		return nil, tokens.ErrTxWithWrongValue
 	}
 	for _, input := range tx.Vin {

@@ -53,6 +53,10 @@ Dcrm is used to config DCRM node info and group info.
 
 for the swap server, `Pubkey` and `SignGroups` is needed for dcrm signing (the swap oracle don't need it).
 
+#### Oracle
+
+Oracle is needed by the swap oracle (the swap server don't need it).
+
 Notice:
 If in test enviroment you may run more than one program of swap server and oracles on the same machine,
 please specify `different log file name` to clarify the outputs.

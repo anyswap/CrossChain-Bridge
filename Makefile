@@ -20,7 +20,7 @@ all:
 	@echo "Done building."
 	@echo "Find binaries in \"$(GOBIN)\" directory."
 	@echo ""
-	@echo "Copy example config file to \"$(GOBIN)\" directory (no overwrite if exist)."
+	@echo "Copy example config.toml to \"$(GOBIN)\" directory (no overwrite if exist)."
 	@cp -n params/config.toml $(GOBIN)
 
 test: all

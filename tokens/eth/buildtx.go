@@ -29,7 +29,8 @@ func (b *EthBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 		input = *args.Input
 	}
 
-	if !isSwapin {
+	switch args.SwapType {
+	case tokens.Swap_Swapout, tokens.Swap_Recall:
 		value = tokens.CalcSwappedValue(value, b.IsSrc)
 	}
 

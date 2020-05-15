@@ -18,6 +18,11 @@ var (
 
 	// first 4 bytes of `Keccak256Hash([]byte("Swapin(bytes32,address,uint256)"))`
 	SwapinFuncHash = [4]byte{0xec, 0x12, 0x6c, 0x77}
+	LogSwapinTopic = "0x05d0634fe981be85c22e2942a880821b70095d84e152c3ea3c17a4e4250d9d61"
+
+	// first 4 bytes of `Keccak256Hash([]byte("Swapout(uint256,string)"))`
+	SwapoutFuncHash = [4]byte{0xad, 0x54, 0x05, 0x6d}
+	LogSwapoutTopic = "0x9c92ad817e5474d30a4378deface765150479363a897b0590fbb12ae9d89396b"
 )
 
 var (
@@ -37,6 +42,7 @@ var (
 	ErrTxWithWrongStatus   = errors.New("tx with wrong status")
 	ErrTxWithWrongReceipt  = errors.New("tx with wrong receipt")
 	ErrTxWithWrongSender   = errors.New("tx with wrong sender")
+	ErrTxWithWrongInput    = errors.New("tx with wrong input data")
 )
 
 type TokenConfig struct {
@@ -110,10 +116,11 @@ type TxSwapInfo struct {
 }
 
 type TxStatus struct {
-	Confirmations uint64 `json:"confirmations"`
-	Block_height  uint64 `json:"block_height"`
-	Block_hash    string `json:"block_hash"`
-	Block_time    uint64 `json:"block_time"`
+	Receipt       interface{} `json:"receipt,omitempty"`
+	Confirmations uint64      `json:"confirmations"`
+	Block_height  uint64      `json:"block_height"`
+	Block_hash    string      `json:"block_hash"`
+	Block_time    uint64      `json:"block_time"`
 }
 
 type BuildTxArgs struct {
@@ -190,12 +197,39 @@ func GetTokenConfig(isSrc bool) *TokenConfig {
 	return token
 }
 
-func CheckSwapValue(value float64, isSrc bool) bool {
+func FromBits(value *big.Int, decimals uint8) float64 {
+	oneToken := math.Pow(10, float64(decimals))
+	fOneToken := new(big.Float).SetFloat64(oneToken)
+	fValue := new(big.Float).SetInt(value)
+	fTokens := new(big.Float).Quo(fValue, fOneToken)
+	result, _ := fTokens.Float64()
+	return result
+}
+
+func ToBits(value float64, decimals uint8) *big.Int {
+	oneToken := math.Pow(10, float64(decimals))
+	fOneToken := new(big.Float).SetFloat64(oneToken)
+	fValue := new(big.Float).SetFloat64(value)
+	fBits := new(big.Float).Mul(fValue, fOneToken)
+
+	result := big.NewInt(0)
+	fBits.Int(result)
+	return result
+}
+
+func CheckSwapValue(value *big.Int, isSrc bool) bool {
 	token := GetTokenConfig(isSrc)
-	oneToken := math.Pow(10, float64(*token.Decimals))
-	toleranceBits := 100.0
-	return (value+toleranceBits >= *token.MinimumSwap*oneToken) &&
-		(value-toleranceBits <= *token.MaximumSwap*oneToken)
+	decimals := *token.Decimals
+	minValue := ToBits(*token.MinimumSwap, decimals)
+	toleranceBits := big.NewInt(100)
+	if new(big.Int).Add(value, toleranceBits).Cmp(minValue) < 0 {
+		return false
+	}
+	maxValue := ToBits(*token.MaximumSwap, decimals)
+	if new(big.Int).Sub(value, toleranceBits).Cmp(maxValue) > 0 {
+		return false
+	}
+	return true
 }
 
 func CalcSwappedValue(value *big.Int, isSrc bool) *big.Int {
