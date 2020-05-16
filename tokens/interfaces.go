@@ -26,6 +26,7 @@ var (
 )
 
 var (
+	ErrSwapTypeNotSupported          = errors.New("swap type not supported in this endpoint")
 	ErrBridgeSourceNotSupported      = errors.New("bridge source not supported")
 	ErrBridgeDestinationNotSupported = errors.New("bridge destination not supported")
 	ErrUnknownSwapType               = errors.New("unknown swap type")

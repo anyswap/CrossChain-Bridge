@@ -20,15 +20,29 @@ var (
 
 func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var (
+		token         = b.TokenConfig
 		from          = args.From
 		to            = args.To
 		amount        = args.Value
 		memo          = args.Memo
-		changeAddress = from
 		relayFeePerKb = defRelayFeePerKb
+		changeAddress string
 		txOuts        []*wire.TxOut
 	)
 
+	switch args.SwapType {
+	case tokens.Swap_Swapin:
+		return nil, tokens.ErrSwapTypeNotSupported
+	case tokens.Swap_Swapout, tokens.Swap_Recall:
+		from = token.DcrmAddress
+		amount = tokens.CalcSwappedValue(amount, b.IsSrc)
+	}
+
+	if from == "" {
+		return nil, errors.New("no sender specified")
+	}
+
+	changeAddress = from
 	if args.ChangeAddress != nil {
 		changeAddress = *args.ChangeAddress
 	}

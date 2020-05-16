@@ -119,12 +119,14 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
+	if rawTx == nil {
+		return fmt.Errorf("build raw tx is empty, txid=%v", txid)
+	}
 
 	signedTx, err := bridge.DcrmSignTransaction(rawTx, args)
 	if err != nil {
 		return err
 	}
-
 	if signedTx == nil {
 		return fmt.Errorf("signed tx is empty, txid=%v", txid)
 	}
@@ -184,10 +186,16 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
+	if rawTx == nil {
+		return fmt.Errorf("build raw tx is empty, txid=%v", txid)
+	}
 
 	signedTx, err := bridge.DcrmSignTransaction(rawTx, args)
 	if err != nil {
 		return err
+	}
+	if signedTx == nil {
+		return fmt.Errorf("signed tx is empty, txid=%v", txid)
 	}
 
 	txHash, err := bridge.SendTransaction(signedTx)

@@ -59,6 +59,20 @@ func (b *BtcBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, args)
 }
 
+func (b *BtcBridge) verifyPublickeyData(pkData []byte, swapType tokens.SwapType) error {
+	switch swapType {
+	case tokens.Swap_Swapin:
+		return tokens.ErrSwapTypeNotSupported
+	case tokens.Swap_Swapout, tokens.Swap_Recall:
+		dcrmAddress := b.TokenConfig.DcrmAddress
+		address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkData), b.GetChainConfig())
+		if address.EncodeAddress() != b.TokenConfig.DcrmAddress {
+			return fmt.Errorf("sign public key %v is not the configed dcrm address %v", address, dcrmAddress)
+		}
+	}
+	return nil
+}
+
 func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash []string, rsv []string, args *tokens.BuildTxArgs) (signedTx interface{}, err error) {
 	txIn := authoredTx.Tx.TxIn
 	if len(txIn) != len(msgHash) {
@@ -67,6 +81,7 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 	if len(txIn) != len(rsv) {
 		return nil, errors.New("mismatch number of signatures and tx inputs")
 	}
+	log.Info("BtcBridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
 	for i, txin := range txIn {
 		l := len(rsv[i]) - 2
@@ -97,6 +112,10 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 			}
 			pk, _ := btcec.ParsePubKey(pkData, btcec.S256())
 			cPkData = pk.SerializeCompressed()
+		}
+
+		if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
+			return nil, err
 		}
 
 		sigScript, err := txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).Script()
