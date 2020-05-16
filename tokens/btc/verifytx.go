@@ -42,7 +42,6 @@ func (b *BtcBridge) VerifyMsgHash(rawTx interface{}, msgHash string) error {
 }
 
 func (b *BtcBridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	log.Debug("Btc VerifyTransaction", "txHash", txHash, "isSrc", b.IsSrc, "allowUnstable", allowUnstable)
 	if b.IsSrc {
 		return b.verifySwapinTx(txHash, allowUnstable)
 	}

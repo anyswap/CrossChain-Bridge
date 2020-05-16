@@ -204,7 +204,6 @@ func (b *BtcBridge) scanTransactionPool(isServer bool) error {
 		for _, txid := range txids {
 			_, err := b.VerifyTransaction(txid, true)
 			if err != nil {
-				log.Debug("[scanswapin] verify pool tx fail", "txid", txid, "err", err)
 				continue
 			}
 			b.processSwapin(txid, isServer)
