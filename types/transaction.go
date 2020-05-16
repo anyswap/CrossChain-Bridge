@@ -1,16 +1,17 @@
 package types
 
 import (
-	"encoding/json"
 	"io"
 	"math/big"
 	"sync/atomic"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
-	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
+	"github.com/fsn-dev/crossChain-Bridge/tools/crypto"
 	"github.com/fsn-dev/crossChain-Bridge/tools/rlp"
 	"golang.org/x/crypto/sha3"
 )
+
+type StorageSize float64
 
 type Transaction struct {
 	data txdata
@@ -94,22 +95,48 @@ func (tx *Transaction) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, &tx.data)
 }
 
-// WithSignature returns a new transaction with the given signature.
-// This signature needs to be in the [R || S || V] format where V is 0 or 1.
-func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
-	r, s, v, err := signer.SignatureValues(tx, sig)
-	if err != nil {
-		return nil, err
+// DecodeRLP implements rlp.Decoder
+func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
+	_, size, _ := s.Kind()
+	err := s.Decode(&tx.data)
+	if err == nil {
+		tx.size.Store(StorageSize(rlp.ListSize(size)))
 	}
-	cpy := &Transaction{data: tx.data}
-	cpy.data.R, cpy.data.S, cpy.data.V = r, s, v
-	return cpy, nil
+
+	return err
 }
 
-// RawSignatureValues returns the V, R, S signature values of the transaction.
-// The return values should not be modified by the caller.
-func (tx *Transaction) RawSignatureValues() (v, r, s *big.Int) {
-	return tx.data.V, tx.data.R, tx.data.S
+// MarshalJSON encodes the web3 RPC transaction format.
+func (tx *Transaction) MarshalJSON() ([]byte, error) {
+	hash := tx.Hash()
+	data := tx.data
+	data.Hash = &hash
+	return data.MarshalJSON()
+}
+
+// UnmarshalJSON decodes the web3 RPC transaction format.
+func (tx *Transaction) UnmarshalJSON(input []byte) error {
+	var dec txdata
+	if err := dec.UnmarshalJSON(input); err != nil {
+		return err
+	}
+
+	withSignature := dec.V.Sign() != 0 || dec.R.Sign() != 0 || dec.S.Sign() != 0
+	if withSignature {
+		var V byte
+		if isProtectedV(dec.V) {
+			chainID := deriveChainId(dec.V).Uint64()
+			V = byte(dec.V.Uint64() - 35 - 2*chainID)
+		} else {
+			V = byte(dec.V.Uint64() - 27)
+		}
+		if !crypto.ValidateSignatureValues(V, dec.R, dec.S, false) {
+			return ErrInvalidSig
+		}
+	}
+
+	*tx = Transaction{data: dec}
+	return nil
 }
 
 func (tx *Transaction) Data() []byte       { return common.CopyBytes(tx.data.Payload) }
@@ -147,38 +174,46 @@ func (tx *Transaction) Hash() common.Hash {
 	return v
 }
 
-// MarshalJSON encodes the web3 RPC transaction format.
-func (tx *Transaction) MarshalJSON() ([]byte, error) {
-	hash := tx.Hash()
-	data := tx.data
-	data.Hash = &hash
-	return data.MarshalJSON()
+type writeCounter StorageSize
+
+func (c *writeCounter) Write(b []byte) (int, error) {
+	*c += writeCounter(len(b))
+	return len(b), nil
 }
 
-// MarshalJSON marshals as JSON.
-func (t txdata) MarshalJSON() ([]byte, error) {
-	type txdata struct {
-		AccountNonce hexutil.Uint64  `json:"nonce"    gencodec:"required"`
-		Price        *hexutil.Big    `json:"gasPrice" gencodec:"required"`
-		GasLimit     hexutil.Uint64  `json:"gas"      gencodec:"required"`
-		Recipient    *common.Address `json:"to"       rlp:"nil"`
-		Amount       *hexutil.Big    `json:"value"    gencodec:"required"`
-		Payload      hexutil.Bytes   `json:"input"    gencodec:"required"`
-		V            *hexutil.Big    `json:"v"        gencodec:"required"`
-		R            *hexutil.Big    `json:"r"        gencodec:"required"`
-		S            *hexutil.Big    `json:"s"        gencodec:"required"`
-		Hash         *common.Hash    `json:"hash"     rlp:"-"`
+// Size returns the true RLP encoded storage size of the transaction, either by
+// encoding and returning it, or returning a previsouly cached value.
+func (tx *Transaction) Size() StorageSize {
+	if size := tx.size.Load(); size != nil {
+		return size.(StorageSize)
 	}
-	var enc txdata
-	enc.AccountNonce = hexutil.Uint64(t.AccountNonce)
-	enc.Price = (*hexutil.Big)(t.Price)
-	enc.GasLimit = hexutil.Uint64(t.GasLimit)
-	enc.Recipient = t.Recipient
-	enc.Amount = (*hexutil.Big)(t.Amount)
-	enc.Payload = t.Payload
-	enc.V = (*hexutil.Big)(t.V)
-	enc.R = (*hexutil.Big)(t.R)
-	enc.S = (*hexutil.Big)(t.S)
-	enc.Hash = t.Hash
-	return json.Marshal(&enc)
+	c := writeCounter(0)
+	rlp.Encode(&c, &tx.data)
+	tx.size.Store(StorageSize(c))
+	return StorageSize(c)
+}
+
+// WithSignature returns a new transaction with the given signature.
+// This signature needs to be in the [R || S || V] format where V is 0 or 1.
+func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
+	r, s, v, err := signer.SignatureValues(tx, sig)
+	if err != nil {
+		return nil, err
+	}
+	cpy := &Transaction{data: tx.data}
+	cpy.data.R, cpy.data.S, cpy.data.V = r, s, v
+	return cpy, nil
+}
+
+// Cost returns amount + gasprice * gaslimit.
+func (tx *Transaction) Cost() *big.Int {
+	total := new(big.Int).Mul(tx.data.Price, new(big.Int).SetUint64(tx.data.GasLimit))
+	total.Add(total, tx.data.Amount)
+	return total
+}
+
+// RawSignatureValues returns the V, R, S signature values of the transaction.
+// The return values should not be modified by the caller.
+func (tx *Transaction) RawSignatureValues() (v, r, s *big.Int) {
+	return tx.data.V, tx.data.R, tx.data.S
 }
