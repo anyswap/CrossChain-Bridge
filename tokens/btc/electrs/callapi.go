@@ -1,6 +1,7 @@
 package electrs
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
@@ -65,6 +66,14 @@ func GetTransactionHistory(b tokens.CrossChainBridge, addr string, lastSeenTxid 
 	var result []*ElectTx
 	err := client.RpcGet(&result, url)
 	return result, err
+}
+
+func GetOutspend(b tokens.CrossChainBridge, txHash string, vout uint32) (*ElectOutspend, error) {
+	_, gateway := b.GetTokenAndGateway()
+	url := gateway.ApiAddress + "/tx/" + txHash + "/outspend/" + fmt.Sprintf("%d", vout)
+	var result ElectOutspend
+	err := client.RpcGet(&result, url)
+	return &result, err
 }
 
 func PostTransaction(b tokens.CrossChainBridge, txHex string) (txHash string, err error) {

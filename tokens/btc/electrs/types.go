@@ -31,6 +31,13 @@ type ElectTxOut struct {
 	Value                *uint64 `json:"value"`
 }
 
+type ElectOutspend struct {
+	Spent  *bool          `json:"spent"`
+	Txid   *string        `json:"txid"`
+	Vin    *ElectTxin     `json:"vin"`
+	Status *ElectTxStatus `json:"status,omitempty"`
+}
+
 type ElectTxStatus struct {
 	Confirmed    *bool   `json:"confirmed"`
 	Block_height *uint64 `json:"block_height"`

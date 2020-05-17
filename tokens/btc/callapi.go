@@ -32,6 +32,10 @@ func (b *BtcBridge) GetTransactionHistory(addr string, lastSeenTxid string) ([]*
 	return electrs.GetTransactionHistory(b, addr, lastSeenTxid)
 }
 
+func (b *BtcBridge) GetOutspend(txHash string, vout uint32) (*electrs.ElectOutspend, error) {
+	return electrs.GetOutspend(b, txHash, vout)
+}
+
 func (b *BtcBridge) PostTransaction(txHex string) (txHash string, err error) {
 	return electrs.PostTransaction(b, txHex)
 }

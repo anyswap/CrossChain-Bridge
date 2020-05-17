@@ -41,7 +41,7 @@ func (b *EthBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	return &txStatus
 }
 
-func (b *EthBridge) VerifyMsgHash(rawTx interface{}, msgHash string) error {
+func (b *EthBridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) error {
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {
 		return tokens.ErrWrongRawTx

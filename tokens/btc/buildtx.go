@@ -2,6 +2,8 @@ package btc
 
 import (
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -11,6 +13,7 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
 
 var (
@@ -42,9 +45,16 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 		return nil, errors.New("no sender specified")
 	}
 
-	extra, ok := args.Extra.(*tokens.BtcExtraArgs)
-	if !ok {
-		return nil, tokens.ErrWrongExtraArgs
+	var extra *tokens.BtcExtraArgs
+	if args.Extra == nil {
+		extra = &tokens.BtcExtraArgs{}
+		args.Extra = extra
+	} else {
+		var ok bool
+		extra, ok = args.Extra.(*tokens.BtcExtraArgs)
+		if !ok {
+			return nil, tokens.ErrWrongExtraArgs
+		}
 	}
 
 	changeAddress = from
@@ -75,13 +85,36 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 	targetFee := txrules.FeeForSerializeSize(relayFeePerKb, estimatedSize)
 
 	inputSource := func(target btcutil.Amount) (
-		total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
-		return b.selectUtxos(from, target, targetFee, relayFeePerKb, txOuts)
+		total btcutil.Amount, inputs []*wire.TxIn,
+		inputValues []btcutil.Amount, scripts [][]byte, err error) {
+
+		if len(extra.PreviousOutPoints) != 0 {
+			return b.getUtxos(from, target, targetFee, relayFeePerKb, extra.PreviousOutPoints)
+		} else {
+			return b.selectUtxos(from, target, targetFee, relayFeePerKb)
+		}
 	}
+
 	changeSource := func() ([]byte, error) {
 		return b.getPayToAddrScript(changeAddress)
 	}
-	return NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource)
+
+	authoredTx, err := NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(extra.PreviousOutPoints) == 0 {
+		extra.PreviousOutPoints = make([]*tokens.BtcOutPoint, len(authoredTx.Tx.TxIn))
+		for i, txin := range authoredTx.Tx.TxIn {
+			point := txin.PreviousOutPoint
+			extra.PreviousOutPoints[i] = &tokens.BtcOutPoint{
+				Hash:  point.Hash.String(),
+				Index: point.Index,
+			}
+		}
+	}
+	return authoredTx, nil
 }
 
 func (b *BtcBridge) getPayToAddrScript(address string) ([]byte, error) {
@@ -93,7 +126,7 @@ func (b *BtcBridge) getPayToAddrScript(address string) ([]byte, error) {
 	return txscript.PayToAddrScript(toAddr)
 }
 
-func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb btcutil.Amount, txOuts []*wire.TxOut) (
+func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb btcutil.Amount) (
 	total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 
 	latest, err := b.GetLatestBlockNumber()
@@ -158,7 +191,7 @@ func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb bt
 		inputValues = append(inputValues, value)
 		scripts = append(scripts, p2pkhScript)
 
-		if total > target+targetFee+minReserveAmount {
+		if total >= target+targetFee+minReserveAmount {
 			success = true
 			break
 		}
@@ -170,6 +203,112 @@ func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb bt
 	}
 
 	return total, inputs, inputValues, scripts, nil
+}
+
+func (b *BtcBridge) getUtxos(from string, target, targetFee, relayFeePerKb btcutil.Amount,
+	prevOutPoints []*tokens.BtcOutPoint) (
+	total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
+
+	latest, err := b.GetLatestBlockNumber()
+	if err != nil {
+		return
+	}
+
+	p2pkhScript, err := b.getPayToAddrScript(from)
+	if err != nil {
+		return
+	}
+	var (
+		tx       *electrs.ElectTx
+		txStatus *electrs.ElectTxStatus
+		outspend *electrs.ElectOutspend
+		txHash   *chainhash.Hash
+		value    btcutil.Amount
+
+		needConfirmations = *b.TokenConfig.Confirmations
+		retryCount        = 3
+		retryInterval     = 1 * time.Second
+	)
+
+	for _, point := range prevOutPoints {
+		for i := 0; i < retryCount; i++ {
+			txStatus, err = b.GetElectTransactionStatus(point.Hash)
+			if err == nil {
+				break
+			}
+			time.Sleep(retryInterval)
+		}
+		if err != nil {
+			return
+		}
+		if !*txStatus.Confirmed {
+			err = tokens.ErrTxNotStable
+			return
+		}
+		if *txStatus.Block_height+needConfirmations > latest {
+			err = tokens.ErrTxNotStable
+			return
+		}
+		for i := 0; i < retryCount; i++ {
+			outspend, err = b.GetOutspend(point.Hash, point.Index)
+			if err == nil {
+				break
+			}
+			time.Sleep(retryInterval)
+		}
+		if err != nil {
+			return
+		}
+		if *outspend.Spent {
+			err = fmt.Errorf("out point (%v, %v) is spent before height %v", point.Hash, point.Index, latest)
+			return
+		}
+		for i := 0; i < retryCount; i++ {
+			tx, err = b.GetTransaction(point.Hash)
+			if err == nil {
+				break
+			}
+			time.Sleep(retryInterval)
+		}
+		if err != nil {
+			return
+		}
+		if point.Index >= uint32(len(tx.Vout)) {
+			err = fmt.Errorf("out point (%v, %v) index overflow", point.Hash, point.Index)
+			return
+		}
+		output := tx.Vout[point.Index]
+		if *output.Scriptpubkey_type != "p2pkh" {
+			err = fmt.Errorf("out point (%v, %v) script pubkey type %v is not p2pkh", point.Hash, point.Index, *output.Scriptpubkey_type)
+			return
+		}
+		if *output.Scriptpubkey_address != from {
+			err = fmt.Errorf("out point (%v, %v) script pubkey address %v is not %v", point.Hash, point.Index, *output.Scriptpubkey_address, from)
+			return
+		}
+		value = btcutil.Amount(*output.Value)
+		if value == 0 {
+			err = fmt.Errorf("out point (%v, %v) with zero value", point.Hash, point.Index)
+			return
+		}
+
+		txHash, _ = chainhash.NewHashFromStr(point.Hash)
+		prevOutPoint := wire.NewOutPoint(txHash, point.Index)
+		if txrules.IsDustAmount(value, len(p2pkhScript), relayFeePerKb) {
+			err = fmt.Errorf("out point (%v, %v) is dust amount %v", point.Hash, point.Index, value)
+			return
+		}
+		txIn := wire.NewTxIn(prevOutPoint, p2pkhScript, nil)
+
+		total += value
+		inputs = append(inputs, txIn)
+		inputValues = append(inputValues, value)
+		scripts = append(scripts, p2pkhScript)
+	}
+	if total < target+targetFee+minReserveAmount {
+		err = errors.New("Not enough balance")
+	}
+	return
 }
 
 type insufficientFundsError struct{}

@@ -184,6 +184,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		},
 		To:    res.Bind,
 		Value: value,
+		Memo:  fmt.Sprintf("%s%s", tokens.UnlockMemoPrefix, res.TxId),
 	}
 	bridge := tokens.SrcBridge
 	rawTx, err := bridge.BuildRawTransaction(args)

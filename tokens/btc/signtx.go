@@ -48,8 +48,8 @@ func (b *BtcBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 		msgHashes = append(msgHashes, msgHash)
 	}
 
-	for _, msgHash := range msgHashes {
-		rsv, err := b.DcrmSignMsgHash(msgHash, args)
+	for idx, msgHash := range msgHashes {
+		rsv, err := b.DcrmSignMsgHash(msgHash, args, idx)
 		if err != nil {
 			return nil, err
 		}
@@ -91,6 +91,9 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 			return nil, tokens.ErrWrongExtraArgs
 		}
 		cPkData = common.FromHex(*extra.FromPublicKey)
+		if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
+			return nil, err
+		}
 	}
 
 	for i, txin := range txIn {
@@ -119,10 +122,9 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 			}
 			pk, _ := btcec.ParsePubKey(pkData, btcec.S256())
 			cPkData = pk.SerializeCompressed()
-		}
-
-		if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
-			return nil, err
+			if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
+				return nil, err
+			}
 		}
 
 		sigScript, err := txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).Script()
@@ -134,7 +136,12 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 	return authoredTx, nil
 }
 
-func (b *BtcBridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs) (rsv string, err error) {
+func (b *BtcBridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, idx int) (rsv string, err error) {
+	extra, ok := args.Extra.(*tokens.BtcExtraArgs)
+	if !ok {
+		return "", tokens.ErrWrongExtraArgs
+	}
+	extra.SignIndex = &idx
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
 	keyID, err := dcrm.DoSign(msgHash, msgContext)

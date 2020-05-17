@@ -72,6 +72,7 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		},
 		To:    res.Bind,
 		Value: value,
+		Memo:  fmt.Sprintf("%s%s", tokens.RecallMemoPrefix, res.TxId),
 	}
 	bridge := tokens.SrcBridge
 	rawTx, err := bridge.BuildRawTransaction(args)
@@ -79,7 +80,7 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	signedTx, err := bridge.DcrmSignTransaction(rawTx, args)
+	signedTx, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	if err != nil {
 		return err
 	}

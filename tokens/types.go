@@ -113,8 +113,16 @@ type EthExtraArgs struct {
 
 type FsnExtraArgs EthExtraArgs
 
+type BtcOutPoint struct {
+	Hash  string `json:"hash"`
+	Index uint32 `json:"index"`
+}
+
 type BtcExtraArgs struct {
 	RelayFeePerKb *int64  `json:"relayFeePerKb,omitempty"`
 	ChangeAddress *string `json:"changeAddress,omitempty"`
 	FromPublicKey *string `json:"fromPublickey,omitempty"`
+
+	PreviousOutPoints []*BtcOutPoint `json:"previousOutPoints,omitempty"`
+	SignIndex         *int           `json:"signIndex,omitempty"`
 }

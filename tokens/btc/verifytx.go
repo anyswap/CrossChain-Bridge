@@ -1,9 +1,12 @@
 package btc
 
 import (
+	"encoding/hex"
 	"regexp"
 	"strings"
 
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
@@ -36,8 +39,33 @@ func (b *BtcBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	return txStatus
 }
 
-func (b *BtcBridge) VerifyMsgHash(rawTx interface{}, msgHash string) error {
-	return tokens.ErrTodo
+func (b *BtcBridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) error {
+	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
+	if !ok {
+		return tokens.ErrWrongRawTx
+	}
+	extras, ok := extra.(*tokens.AllExtras)
+	if !ok {
+		return tokens.ErrWrongExtraArgs
+	}
+	btcExtra := extras.BtcExtra
+	if btcExtra.SignIndex == nil {
+		return tokens.ErrWrongSignIndex
+	}
+	idx := *btcExtra.SignIndex
+	if idx >= len(authoredTx.PrevScripts) {
+		return tokens.ErrWrongSignIndex
+	}
+	tx := authoredTx.Tx
+	pkscript := authoredTx.PrevScripts[idx]
+	sigHash, err := txscript.CalcSignatureHash(pkscript, hashType, tx, idx)
+	if err != nil {
+		return err
+	}
+	if hex.EncodeToString(sigHash) != msgHash {
+		return tokens.ErrMsgHashMismatch
+	}
+	return nil
 }
 
 func (b *BtcBridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {

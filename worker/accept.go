@@ -74,7 +74,10 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	if err != nil {
 		return err
 	}
-	var srcBridge, dstBridge tokens.CrossChainBridge
+	var (
+		srcBridge, dstBridge tokens.CrossChainBridge
+		memo                 string
+	)
 	switch args.SwapType {
 	case tokens.Swap_Swapin:
 		srcBridge = tokens.SrcBridge
@@ -82,9 +85,11 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	case tokens.Swap_Swapout:
 		srcBridge = tokens.DstBridge
 		dstBridge = tokens.SrcBridge
+		memo = fmt.Sprintf("%s%s", tokens.UnlockMemoPrefix, args.SwapID)
 	case tokens.Swap_Recall:
 		srcBridge = tokens.SrcBridge
 		dstBridge = tokens.SrcBridge
+		memo = fmt.Sprintf("%s%s", tokens.RecallMemoPrefix, args.SwapID)
 	default:
 		return fmt.Errorf("unknown swap type %v", args.SwapType)
 	}
@@ -97,13 +102,14 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 		SwapInfo: args.SwapInfo,
 		To:       swap.Bind,
 		Value:    swap.Value,
+		Memo:     memo,
 		Extra:    args.Extra,
 	}
 	rawTx, err := dstBridge.BuildRawTransaction(buildTxArgs)
 	if err != nil {
 		return err
 	}
-	return dstBridge.VerifyMsgHash(rawTx, msgHash)
+	return dstBridge.VerifyMsgHash(rawTx, msgHash, args.Extra)
 }
 
 type acceptSignInfo struct {
