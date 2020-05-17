@@ -66,10 +66,12 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	}
 
 	args := &tokens.BuildTxArgs{
-		SwapID:   res.TxId,
-		SwapType: tokens.Swap_Recall,
-		To:       res.Bind,
-		Value:    value,
+		SwapInfo: &tokens.SwapInfo{
+			SwapID:   res.TxId,
+			SwapType: tokens.Swap_Recall,
+		},
+		To:    res.Bind,
+		Value: value,
 	}
 	bridge := tokens.SrcBridge
 	rawTx, err := bridge.BuildRawTransaction(args)

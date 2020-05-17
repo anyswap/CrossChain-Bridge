@@ -26,7 +26,6 @@ func (b *FsnBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 	}
 	signer := b.Signer
 	msgHash := signer.Hash(tx)
-	updateBuildTxArgs(tx, args)
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
 	keyID, err := dcrm.DoSign(msgHash.String(), msgContext)
@@ -80,19 +79,4 @@ func (b *FsnBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 	}
 	log.Info("DcrmSignTransaction success", "keyID", keyID, "txhash", signedTx.Hash().String())
 	return signedTx, err
-}
-
-func updateBuildTxArgs(tx *types.Transaction, args *tokens.BuildTxArgs) {
-	if args.Gas == nil {
-		gas := tx.Gas()
-		args.Gas = &gas
-	}
-	if args.GasPrice == nil {
-		gasPrice := tx.GasPrice()
-		args.GasPrice = gasPrice
-	}
-	if args.Nonce == nil {
-		nonce := tx.Nonce()
-		args.Nonce = &nonce
-	}
 }

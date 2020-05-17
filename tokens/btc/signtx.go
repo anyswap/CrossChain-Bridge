@@ -83,6 +83,16 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 	}
 	log.Info("BtcBridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
+	var cPkData []byte
+
+	if args != nil && args.Extra != nil {
+		extra, ok := args.Extra.(*tokens.BtcExtraArgs)
+		if !ok {
+			return nil, tokens.ErrWrongExtraArgs
+		}
+		cPkData = common.FromHex(*extra.FromPublicKey)
+	}
+
 	for i, txin := range txIn {
 		l := len(rsv[i]) - 2
 		rs := rsv[i][0:l]
@@ -100,10 +110,7 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 
 		signData := append(sign.Serialize(), byte(hashType))
 
-		var cPkData []byte
-		if args.FromPublicKey != nil {
-			cPkData = common.FromHex(*args.FromPublicKey)
-		} else {
+		if len(cPkData) == 0 {
 			rsvData := common.FromHex(rsv[i])
 			hashData := common.FromHex(msgHash[i])
 			pkData, err := crypto.Ecrecover(hashData, rsvData)
@@ -198,7 +205,9 @@ func (b *BtcBridge) SignTransaction(rawTx interface{}, wif string) (signedTx int
 	pk := (*btcec.PublicKey)(&privateKey.PublicKey).SerializeCompressed()
 	pubKey := hex.EncodeToString(pk)
 	args := &tokens.BuildTxArgs{
-		FromPublicKey: &pubKey,
+		Extra: &tokens.BtcExtraArgs{
+			FromPublicKey: &pubKey,
+		},
 	}
 	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, args)
 }

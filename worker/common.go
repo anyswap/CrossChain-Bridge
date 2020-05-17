@@ -36,7 +36,7 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 		From:       tx.From,
 		To:         tx.To,
 		Bind:       tx.Bind,
-		Value:      tx.Value,
+		Value:      tx.Value.String(),
 		SwapTx:     "",
 		SwapHeight: 0,
 		SwapTime:   0,

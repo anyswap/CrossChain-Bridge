@@ -13,52 +13,64 @@ func (b *FsnBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 	if isSwapin && args.Input == nil {
 		b.buildSwapinTxInput(args)
 	}
-	err = b.setDefaults(args)
+	extra, err := b.setDefaults(args)
 	if err != nil {
 		return nil, err
 	}
 	var (
 		to       = common.HexToAddress(args.To)
 		value    = args.Value
-		nonce    = *args.Nonce
-		gasLimit = *args.Gas
-		gasPrice = args.GasPrice
+		nonce    = *extra.Nonce
+		gasLimit = *extra.Gas
+		gasPrice = extra.GasPrice
 		input    []byte
 	)
 	if args.Input != nil {
 		input = *args.Input
 	}
 
-	if !isSwapin {
+	switch args.SwapType {
+	case tokens.Swap_Swapout, tokens.Swap_Recall:
 		value = tokens.CalcSwappedValue(value, b.IsSrc)
 	}
 
 	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
 }
 
-func (b *FsnBridge) setDefaults(args *tokens.BuildTxArgs) error {
-	if args.GasPrice == nil {
-		price, err := b.SuggestPrice()
-		if err != nil {
-			return err
-		}
-		args.GasPrice = price
-	}
+func (b *FsnBridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.FsnExtraArgs, error) {
 	if args.Value == nil {
 		args.Value = new(big.Int)
 	}
-	if args.Nonce == nil {
+	var extra *tokens.FsnExtraArgs
+	if args.Extra == nil {
+		extra = &tokens.FsnExtraArgs{}
+		args.Extra = extra
+	} else {
+		var ok bool
+		extra, ok = args.Extra.(*tokens.FsnExtraArgs)
+		if !ok {
+			return nil, tokens.ErrWrongExtraArgs
+		}
+	}
+	if extra.GasPrice == nil {
+		price, err := b.SuggestPrice()
+		if err != nil {
+			return nil, err
+		}
+		extra.GasPrice = price
+	}
+	if extra.Nonce == nil {
 		nonce, err := b.GetPoolNonce(args.From)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		args.Nonce = &nonce
+		extra.Nonce = &nonce
 	}
-	if args.Gas == nil {
-		args.Gas = new(uint64)
-		*args.Gas = 90000
+	if extra.Gas == nil {
+		extra.Gas = new(uint64)
+		*extra.Gas = 90000
 	}
-	return nil
+	return extra, nil
 }
 
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`

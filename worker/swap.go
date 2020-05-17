@@ -109,10 +109,12 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 
 	args := &tokens.BuildTxArgs{
-		SwapID:   res.TxId,
-		SwapType: tokens.Swap_Swapin,
-		To:       res.Bind,
-		Value:    value,
+		SwapInfo: &tokens.SwapInfo{
+			SwapID:   res.TxId,
+			SwapType: tokens.Swap_Swapin,
+		},
+		To:    res.Bind,
+		Value: value,
 	}
 	bridge := tokens.DstBridge
 	rawTx, err := bridge.BuildRawTransaction(args)
@@ -123,7 +125,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return fmt.Errorf("build raw tx is empty, txid=%v", txid)
 	}
 
-	signedTx, err := bridge.DcrmSignTransaction(rawTx, args)
+	signedTx, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	if err != nil {
 		return err
 	}
@@ -176,10 +178,12 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 
 	args := &tokens.BuildTxArgs{
-		SwapID:   res.TxId,
-		SwapType: tokens.Swap_Swapout,
-		To:       res.Bind,
-		Value:    value,
+		SwapInfo: &tokens.SwapInfo{
+			SwapID:   res.TxId,
+			SwapType: tokens.Swap_Swapout,
+		},
+		To:    res.Bind,
+		Value: value,
 	}
 	bridge := tokens.SrcBridge
 	rawTx, err := bridge.BuildRawTransaction(args)
@@ -190,7 +194,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		return fmt.Errorf("build raw tx is empty, txid=%v", txid)
 	}
 
-	signedTx, err := bridge.DcrmSignTransaction(rawTx, args)
+	signedTx, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	if err != nil {
 		return err
 	}

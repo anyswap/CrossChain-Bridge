@@ -34,20 +34,25 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 	case tokens.Swap_Swapin:
 		return nil, tokens.ErrSwapTypeNotSupported
 	case tokens.Swap_Swapout, tokens.Swap_Recall:
-		from = token.DcrmAddress
-		amount = tokens.CalcSwappedValue(amount, b.IsSrc)
+		from = token.DcrmAddress                          // from
+		amount = tokens.CalcSwappedValue(amount, b.IsSrc) // amount
 	}
 
 	if from == "" {
 		return nil, errors.New("no sender specified")
 	}
 
-	changeAddress = from
-	if args.ChangeAddress != nil {
-		changeAddress = *args.ChangeAddress
+	extra, ok := args.Extra.(*tokens.BtcExtraArgs)
+	if !ok {
+		return nil, tokens.ErrWrongExtraArgs
 	}
-	if args.RelayFeePerKb != nil {
-		relayFeePerKb = btcutil.Amount(*args.RelayFeePerKb)
+
+	changeAddress = from
+	if extra.ChangeAddress != nil {
+		changeAddress = *extra.ChangeAddress
+	}
+	if extra.RelayFeePerKb != nil {
+		relayFeePerKb = btcutil.Amount(*extra.RelayFeePerKb)
 	}
 
 	pkscript, err := b.getPayToAddrScript(to)

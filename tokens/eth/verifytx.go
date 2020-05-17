@@ -117,7 +117,7 @@ func (b *EthBridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, er
 		From:      from,
 		To:        contractAddress,
 		Bind:      bindAddress,
-		Value:     value.String(),
+		Value:     value,
 	}, err
 }
 
@@ -166,7 +166,7 @@ func (b *EthBridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, 
 		From:      from,
 		To:        contractAddress,
 		Bind:      bindAddress,
-		Value:     value.String(),
+		Value:     value,
 	}, err
 }
 

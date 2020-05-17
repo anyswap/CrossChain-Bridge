@@ -1,7 +1,6 @@
 package btc
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -126,7 +125,7 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 		From:      from,
 		To:        dcrmAddress,
 		Bind:      bindAddress,
-		Value:     fmt.Sprintf("%d", value),
+		Value:     common.BigFromUint64(value),
 	}, err
 }
 

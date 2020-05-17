@@ -13,16 +13,16 @@ func (b *EthBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 	if isSwapin && args.Input == nil {
 		b.buildSwapinTxInput(args)
 	}
-	err = b.setDefaults(args)
+	extra, err := b.setDefaults(args)
 	if err != nil {
 		return nil, err
 	}
 	var (
 		to       = common.HexToAddress(args.To)
 		value    = args.Value
-		nonce    = *args.Nonce
-		gasLimit = *args.Gas
-		gasPrice = args.GasPrice
+		nonce    = *extra.Nonce
+		gasLimit = *extra.Gas
+		gasPrice = extra.GasPrice
 		input    []byte
 	)
 	if args.Input != nil {
@@ -37,29 +37,40 @@ func (b *EthBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
 }
 
-func (b *EthBridge) setDefaults(args *tokens.BuildTxArgs) error {
-	if args.GasPrice == nil {
-		price, err := b.SuggestPrice()
-		if err != nil {
-			return err
-		}
-		args.GasPrice = price
-	}
+func (b *EthBridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs, error) {
 	if args.Value == nil {
 		args.Value = new(big.Int)
 	}
-	if args.Nonce == nil {
+	var extra *tokens.EthExtraArgs
+	if args.Extra == nil {
+		extra = &tokens.EthExtraArgs{}
+		args.Extra = extra
+	} else {
+		var ok bool
+		extra, ok = args.Extra.(*tokens.EthExtraArgs)
+		if !ok {
+			return nil, tokens.ErrWrongExtraArgs
+		}
+	}
+	if extra.GasPrice == nil {
+		price, err := b.SuggestPrice()
+		if err != nil {
+			return nil, err
+		}
+		extra.GasPrice = price
+	}
+	if extra.Nonce == nil {
 		nonce, err := b.GetPoolNonce(args.From)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		args.Nonce = &nonce
+		extra.Nonce = &nonce
 	}
-	if args.Gas == nil {
-		args.Gas = new(uint64)
-		*args.Gas = 90000
+	if extra.Gas == nil {
+		extra.Gas = new(uint64)
+		*extra.Gas = 90000
 	}
-	return nil
+	return extra, nil
 }
 
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
