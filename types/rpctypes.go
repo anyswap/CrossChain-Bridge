@@ -1,6 +1,9 @@
 package types
 
 import (
+	"fmt"
+	"math/big"
+
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
 )
@@ -80,4 +83,40 @@ type RPCTxAndReceipt struct {
 	Tx           *RPCTransaction `json:"tx"`
 	Receipt      *RPCTxReceipt   `json:"receipt"`
 	ReceiptFound *bool           `json:"receiptFound"`
+}
+
+type FilterQuery struct {
+	BlockHash *common.Hash
+	FromBlock *big.Int
+	ToBlock   *big.Int
+	Addresses []common.Address
+	Topics    [][]common.Hash
+}
+
+func ToFilterArg(q *FilterQuery) (interface{}, error) {
+	arg := map[string]interface{}{
+		"address": q.Addresses,
+		"topics":  q.Topics,
+	}
+	if q.BlockHash != nil {
+		arg["blockHash"] = *q.BlockHash
+		if q.FromBlock != nil || q.ToBlock != nil {
+			return nil, fmt.Errorf("cannot specify both BlockHash and FromBlock/ToBlock")
+		}
+	} else {
+		if q.FromBlock == nil {
+			arg["fromBlock"] = "0x0"
+		} else {
+			arg["fromBlock"] = ToBlockNumArg(q.FromBlock)
+		}
+		arg["toBlock"] = ToBlockNumArg(q.ToBlock)
+	}
+	return arg, nil
+}
+
+func ToBlockNumArg(number *big.Int) string {
+	if number == nil {
+		return "latest"
+	}
+	return hexutil.EncodeBig(number)
 }

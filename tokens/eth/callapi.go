@@ -64,6 +64,35 @@ func (b *EthBridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, e
 	return result, nil
 }
 
+func (b *EthBridge) GetContractLogs(contractAddress, logTopic string, blockHeight uint64) ([]*types.RPCLog, error) {
+	addresses := []common.Address{common.HexToAddress(contractAddress)}
+	topics := []common.Hash{common.HexToHash(logTopic)}
+	height := new(big.Int).SetUint64(blockHeight)
+
+	filter := &types.FilterQuery{
+		FromBlock: height,
+		ToBlock:   height,
+		Addresses: addresses,
+		Topics:    [][]common.Hash{topics},
+	}
+	return b.GetLogs(filter)
+}
+
+func (b *EthBridge) GetLogs(filterQuery *types.FilterQuery) ([]*types.RPCLog, error) {
+	gateway := b.GatewayConfig
+	url := gateway.ApiAddress
+	args, err := types.ToFilterArg(filterQuery)
+	if err != nil {
+		return nil, err
+	}
+	var result []*types.RPCLog
+	err = client.RpcPost(&result, url, "eth_getLogs", args)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (b *EthBridge) GetPoolNonce(address string) (uint64, error) {
 	gateway := b.GatewayConfig
 	url := gateway.ApiAddress
