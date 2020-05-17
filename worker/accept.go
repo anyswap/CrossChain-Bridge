@@ -88,11 +88,18 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	default:
 		return fmt.Errorf("unknown swap type %v", args.SwapType)
 	}
-	_, err = srcBridge.VerifyTransaction(args.SwapID, false)
+	swap, err := srcBridge.VerifyTransaction(args.SwapID, false)
 	if err != nil {
 		return fmt.Errorf("verifySignInfo failed, %v", err)
 	}
-	rawTx, err := dstBridge.BuildRawTransaction(&args)
+
+	buildTxArgs := &tokens.BuildTxArgs{
+		SwapInfo: args.SwapInfo,
+		To:       swap.Bind,
+		Value:    swap.Value,
+		Extra:    args.Extra,
+	}
+	rawTx, err := dstBridge.BuildRawTransaction(buildTxArgs)
 	if err != nil {
 		return err
 	}
