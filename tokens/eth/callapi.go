@@ -50,6 +50,17 @@ func (b *EthBridge) GetTransaction(txHash string) (*types.RPCTransaction, error)
 	return result, nil
 }
 
+func (b *EthBridge) GetPendingTransactions() ([]*types.RPCTransaction, error) {
+	gateway := b.GatewayConfig
+	url := gateway.ApiAddress
+	var result []*types.RPCTransaction
+	err := client.RpcPost(&result, url, "eth_pendingTransactions")
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (b *EthBridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, error) {
 	gateway := b.GatewayConfig
 	url := gateway.ApiAddress
