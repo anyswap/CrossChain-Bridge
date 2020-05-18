@@ -8,19 +8,16 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/eth"
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
 type FsnBridge struct {
-	*tokens.CrossChainBridgeBase
-	Signer types.Signer
+	*eth.EthBridge
 }
 
 func NewCrossChainBridge(isSrc bool) *FsnBridge {
-	if isSrc {
-		panic(tokens.ErrTodo)
-	}
-	return &FsnBridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
+	return &FsnBridge{EthBridge: eth.NewCrossChainBridge(isSrc)}
 }
 
 func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
