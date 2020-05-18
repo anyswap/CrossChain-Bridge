@@ -66,7 +66,7 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	}
 
 	args := &tokens.BuildTxArgs{
-		SwapInfo: &tokens.SwapInfo{
+		SwapInfo: tokens.SwapInfo{
 			SwapID:   res.TxId,
 			SwapType: tokens.Swap_Recall,
 		},

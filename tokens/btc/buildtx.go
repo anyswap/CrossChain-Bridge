@@ -12,6 +12,7 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
+	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
@@ -114,6 +115,11 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 			}
 		}
 	}
+
+	if args.SwapType != tokens.Swap_NotSwap {
+		args.Identifier = params.GetIdentifier()
+	}
+
 	return authoredTx, nil
 }
 

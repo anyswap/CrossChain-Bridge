@@ -3,12 +3,14 @@ package worker
 import (
 	"container/ring"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/dcrm"
 	"github.com/fsn-dev/crossChain-Bridge/log"
+	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
@@ -21,6 +23,8 @@ var (
 
 	retryInterval = 3 * time.Second
 	waitInterval  = 20 * time.Second
+
+	ErrIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
 )
 
 func StartAcceptSignJob() error {
@@ -47,7 +51,11 @@ func acceptSign() error {
 				continue
 			}
 			agreeResult := "AGREE"
-			if err := verifySignInfo(info); err != nil {
+			err := verifySignInfo(info)
+			if err == ErrIdentifierMismatch {
+				continue
+			}
+			if err != nil {
 				logWorkerError("accept", "disagree sign", err, "keyID", keyID)
 				agreeResult = "DISAGREE"
 			}
@@ -73,6 +81,9 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	err := json.Unmarshal([]byte(msgContext), &args)
 	if err != nil {
 		return err
+	}
+	if args.Identifier != params.GetIdentifier() {
+		return ErrIdentifierMismatch
 	}
 	var (
 		srcBridge, dstBridge tokens.CrossChainBridge

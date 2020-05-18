@@ -1,3 +1,6 @@
+# server and oracle config
+Identifier = "BTC2ETH"
+
 # server config
 [MongoDB]
 DbURL = "localhost:27017"

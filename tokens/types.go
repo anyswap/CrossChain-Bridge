@@ -59,7 +59,7 @@ type GatewayConfig struct {
 type SwapType uint32
 
 const (
-	Swap_Unknown SwapType = iota
+	Swap_NotSwap SwapType = iota
 	Swap_Swapin
 	Swap_Swapout
 	Swap_Recall
@@ -84,18 +84,19 @@ type TxStatus struct {
 }
 
 type SwapInfo struct {
-	SwapID   string   `json:"swapid,omitempty"`
-	SwapType SwapType `json:"swaptype,omitempty"`
+	SwapID     string   `json:"swapid,omitempty"`
+	SwapType   SwapType `json:"swaptype,omitempty"`
+	Identifier string   `json:"identifier,omitempty"`
 }
 
 type BuildTxArgs struct {
-	*SwapInfo `json:"swapInfo`
-	From      string      `json:"from"`
-	To        string      `json:"to"`
-	Value     *big.Int    `json:"value"`
-	Memo      string      `json:"memo"`
-	Input     *[]byte     `json:"input"`
-	Extra     interface{} `json:"extra"`
+	SwapInfo `json:"swapInfo`
+	From     string      `json:"from"`
+	To       string      `json:"to"`
+	Value    *big.Int    `json:"value"`
+	Memo     string      `json:"memo"`
+	Input    *[]byte     `json:"input"`
+	Extra    interface{} `json:"extra"`
 }
 
 func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {

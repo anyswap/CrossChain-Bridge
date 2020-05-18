@@ -23,6 +23,7 @@ var (
 )
 
 type ServerConfig struct {
+	Identifier  string
 	MongoDB     *MongoDBConfig   `toml:",omitempty"`
 	ApiServer   *ApiServerConfig `toml:",omitempty"`
 	SrcToken    *tokens.TokenConfig
@@ -75,6 +76,10 @@ func GetApiPort() int {
 	return apiPort
 }
 
+func GetIdentifier() string {
+	return GetConfig().Identifier
+}
+
 func GetConfig() *ServerConfig {
 	return serverConfig
 }
@@ -85,6 +90,9 @@ func SetConfig(config *ServerConfig) {
 
 func CheckConfig(isServer bool) (err error) {
 	config := GetConfig()
+	if config.Identifier == "" {
+		return errors.New("server must config non empty 'Identifier'")
+	}
 	if isServer {
 		if config.MongoDB == nil {
 			return errors.New("server must config 'MongoDB'")

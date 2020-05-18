@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
+	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
@@ -32,6 +33,10 @@ func (b *EthBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 	switch args.SwapType {
 	case tokens.Swap_Swapout, tokens.Swap_Recall:
 		value = tokens.CalcSwappedValue(value, b.IsSrc)
+	}
+
+	if args.SwapType != tokens.Swap_NotSwap {
+		args.Identifier = params.GetIdentifier()
 	}
 
 	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
