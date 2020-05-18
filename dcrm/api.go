@@ -13,8 +13,8 @@ var (
 	ErrGetSignStatusFailed = errors.New("GetSignStatus timeout or failure")
 )
 
-func newWrongStatusError(subject, errInfo string) error {
-	return fmt.Errorf("[%v] Wrong status, %v", subject, errInfo)
+func newWrongStatusError(subject, status, errInfo string) error {
+	return fmt.Errorf("[%v] Wrong status \"%v\", err=\"%v\"", subject, status, errInfo)
 }
 
 func wrapPostError(method string, err error) error {
@@ -32,7 +32,7 @@ func GetEnode() (string, error) {
 		return "", wrapPostError("dcrm_getEnode", err)
 	}
 	if result.Status != "Success" {
-		return "", newWrongStatusError("GetEnode", result.Error)
+		return "", newWrongStatusError("GetEnode", result.Status, result.Error)
 	}
 	return result.Data.Enode, nil
 }
@@ -44,11 +44,11 @@ func GetSignNonce() (uint64, error) {
 		return 0, wrapPostError("dcrm_getSignNonce", err)
 	}
 	if result.Status != "Success" {
-		return 0, newWrongStatusError("GetSignNonce", result.Error)
+		return 0, newWrongStatusError("GetSignNonce", result.Status, result.Error)
 	}
 	bi, err := common.GetBigIntFromStr(result.Data.Result)
 	if err != nil {
-		return 0, newWrongStatusError("GetSignNonce", err.Error())
+		return 0, fmt.Errorf("GetSignNonce can't parse result as big int, %v", err)
 	}
 	return bi.Uint64(), nil
 }
@@ -60,7 +60,7 @@ func GetSignStatus(key string) (*SignStatus, error) {
 		return nil, wrapPostError("dcrm_getSignStatus", err)
 	}
 	if result.Status != "Success" {
-		return nil, newWrongStatusError("GetSignStatus", "responce error "+result.Error)
+		return nil, newWrongStatusError("GetSignStatus", result.Status, "responce error "+result.Error)
 	}
 	data := result.Data.Result
 	var signStatus SignStatus
@@ -71,7 +71,7 @@ func GetSignStatus(key string) (*SignStatus, error) {
 	case "Success":
 		return &signStatus, nil
 	default:
-		return nil, newWrongStatusError("GetSignStatus", "sign status error "+signStatus.Error)
+		return nil, newWrongStatusError("GetSignStatus", signStatus.Status, "sign status error "+signStatus.Error)
 	}
 }
 
@@ -82,7 +82,7 @@ func GetCurNodeSignInfo() ([]*SignInfoData, error) {
 		return nil, wrapPostError("dcrm_getCurNodeSignInfo", err)
 	}
 	if result.Status != "Success" {
-		return nil, newWrongStatusError("GetCurNodeSignInfo", result.Error)
+		return nil, newWrongStatusError("GetCurNodeSignInfo", result.Status, result.Error)
 	}
 	return result.Data, nil
 }
@@ -94,7 +94,7 @@ func Sign(raw string) (string, error) {
 		return "", wrapPostError("dcrm_sign", err)
 	}
 	if result.Status != "Success" {
-		return "", newWrongStatusError("Sign", result.Error)
+		return "", newWrongStatusError("Sign", result.Status, result.Error)
 	}
 	return result.Data.Result, nil
 }
@@ -106,7 +106,7 @@ func AcceptSign(raw string) (string, error) {
 		return "", wrapPostError("dcrm_acceptSign", err)
 	}
 	if result.Status != "Success" {
-		return "", newWrongStatusError("AcceptSign", result.Error)
+		return "", newWrongStatusError("AcceptSign", result.Status, result.Error)
 	}
 	return result.Data.Result, nil
 }
@@ -118,7 +118,7 @@ func GetGroupByID(groupID string) (*GroupInfo, error) {
 		return nil, wrapPostError("dcrm_getGroupByID", err)
 	}
 	if result.Status != "Success" {
-		return nil, newWrongStatusError("GetGroupByID", result.Error)
+		return nil, newWrongStatusError("GetGroupByID", result.Status, result.Error)
 	}
 	return result.Data, nil
 }

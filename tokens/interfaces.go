@@ -90,7 +90,7 @@ func (b *CrossChainBridgeBase) GetTokenAndGateway() (*TokenConfig, *GatewayConfi
 func (b *CrossChainBridgeBase) SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig) {
 	b.TokenConfig = tokenCfg
 	b.GatewayConfig = gatewayCfg
-	err := tokenCfg.CheckConfig(true)
+	err := tokenCfg.CheckConfig(b.IsSrc)
 	if err != nil {
 		panic(err)
 	}
