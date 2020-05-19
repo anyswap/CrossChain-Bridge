@@ -86,13 +86,12 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 	var cPkData []byte
 
 	if args != nil && args.Extra != nil {
-		extra, ok := args.Extra.(*tokens.BtcExtraArgs)
-		if !ok {
-			return nil, tokens.ErrWrongExtraArgs
-		}
-		cPkData = common.FromHex(*extra.FromPublicKey)
-		if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
-			return nil, err
+		extra := args.Extra.BtcExtra
+		if extra != nil && extra.FromPublicKey != nil {
+			cPkData = common.FromHex(*extra.FromPublicKey)
+			if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -137,8 +136,8 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 }
 
 func (b *BtcBridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, idx int) (rsv string, err error) {
-	extra, ok := args.Extra.(*tokens.BtcExtraArgs)
-	if !ok {
+	extra := args.Extra.BtcExtra
+	if extra == nil {
 		return "", tokens.ErrWrongExtraArgs
 	}
 	extra.SignIndex = &idx
@@ -212,8 +211,10 @@ func (b *BtcBridge) SignTransaction(rawTx interface{}, wif string) (signedTx int
 	pk := (*btcec.PublicKey)(&privateKey.PublicKey).SerializeCompressed()
 	pubKey := hex.EncodeToString(pk)
 	args := &tokens.BuildTxArgs{
-		Extra: &tokens.BtcExtraArgs{
-			FromPublicKey: &pubKey,
+		Extra: &tokens.AllExtras{
+			BtcExtra: &tokens.BtcExtraArgs{
+				FromPublicKey: &pubKey,
+			},
 		},
 	}
 	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, args)

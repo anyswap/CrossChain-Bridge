@@ -40,7 +40,7 @@ func startSwapinSwapJob() error {
 			for _, swap := range res {
 				err = processSwapinSwap(swap)
 				if err != nil {
-					logWorkerError("swapin", "process swapin swap error", err)
+					logWorkerError("swapin", "process swapin swap error", err, "txid", swap.TxId)
 				}
 			}
 			restInJob(restIntervalInDoSwapJob)

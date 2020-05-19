@@ -49,11 +49,10 @@ func (b *EthBridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs,
 	var extra *tokens.EthExtraArgs
 	if args.Extra == nil {
 		extra = &tokens.EthExtraArgs{}
-		args.Extra = extra
+		args.Extra = &tokens.AllExtras{EthExtra: extra}
 	} else {
-		var ok bool
-		extra, ok = args.Extra.(*tokens.EthExtraArgs)
-		if !ok {
+		extra = args.Extra.EthExtra
+		if extra == nil {
 			return nil, tokens.ErrWrongExtraArgs
 		}
 	}

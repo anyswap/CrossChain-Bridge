@@ -90,13 +90,13 @@ type SwapInfo struct {
 }
 
 type BuildTxArgs struct {
-	SwapInfo `json:"swapInfo`
-	From     string      `json:"from"`
-	To       string      `json:"to"`
-	Value    *big.Int    `json:"value"`
-	Memo     string      `json:"memo"`
-	Input    *[]byte     `json:"input"`
-	Extra    interface{} `json:"extra"`
+	SwapInfo `json:"swapInfo,omitempty`
+	From     string     `json:"from,omitempty"`
+	To       string     `json:"to,omitempty"`
+	Value    *big.Int   `json:"value,omitempty"`
+	Memo     string     `json:"memo,omitempty"`
+	Input    *[]byte    `json:"input,omitempty"`
+	Extra    *AllExtras `json:"extra,omitempty"`
 }
 
 func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
@@ -106,13 +106,16 @@ func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 	}
 }
 
+type AllExtras struct {
+	BtcExtra *BtcExtraArgs `json:"btcExtra,omitempty`
+	EthExtra *EthExtraArgs `json:"ethExtra,omitempty`
+}
+
 type EthExtraArgs struct {
 	Gas      *uint64  `json:"gas,omitempty"`
 	GasPrice *big.Int `json:"gasPrice,omitempty"`
 	Nonce    *uint64  `json:"nonce,omitempty"`
 }
-
-type FsnExtraArgs EthExtraArgs
 
 type BtcOutPoint struct {
 	Hash  string `json:"hash"`

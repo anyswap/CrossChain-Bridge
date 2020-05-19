@@ -49,11 +49,10 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 	var extra *tokens.BtcExtraArgs
 	if args.Extra == nil {
 		extra = &tokens.BtcExtraArgs{}
-		args.Extra = extra
+		args.Extra = &tokens.AllExtras{BtcExtra: extra}
 	} else {
-		var ok bool
-		extra, ok = args.Extra.(*tokens.BtcExtraArgs)
-		if !ok {
+		extra = args.Extra.BtcExtra
+		if extra == nil {
 			return nil, tokens.ErrWrongExtraArgs
 		}
 	}

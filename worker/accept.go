@@ -62,9 +62,9 @@ func acceptSign() error {
 			log.Debug("dcrm DoAcceptSign", "keyID", keyID, "result", agreeResult)
 			res, err := dcrm.DoAcceptSign(keyID, agreeResult)
 			if err != nil {
-				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID)
+				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res)
 			} else {
-				logWorker("accept", "accept sign job success", "keyID", keyID, "result", res)
+				logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult)
 				addAcceptSignHistory(keyID, agreeResult)
 			}
 		}
