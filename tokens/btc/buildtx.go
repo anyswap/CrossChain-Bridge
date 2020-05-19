@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	minReserveAmount = btcutil.Amount(1000)
+	minReserveAmount = btcutil.Amount(100)
 	defRelayFeePerKb = btcutil.Amount(2000)
 )
 
@@ -203,7 +203,7 @@ func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb bt
 	}
 
 	if !success {
-		err = errors.New("Not enough balance")
+		err = fmt.Errorf("Not enough balance, total %v < %v = target %v + targetFee %v + minReserve %v", total, target+targetFee+minReserveAmount, target, targetFee, minReserveAmount)
 		return
 	}
 
@@ -311,7 +311,7 @@ func (b *BtcBridge) getUtxos(from string, target, targetFee, relayFeePerKb btcut
 		scripts = append(scripts, p2pkhScript)
 	}
 	if total < target+targetFee+minReserveAmount {
-		err = errors.New("Not enough balance")
+		err = fmt.Errorf("Not enough balance, total %v < %v = target %v + targetFee %v + minReserve %v", total, target+targetFee+minReserveAmount, target, targetFee, minReserveAmount)
 	}
 	return
 }
