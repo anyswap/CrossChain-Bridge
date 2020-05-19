@@ -41,7 +41,7 @@ func GetSwapStatistics() (*SwapStatistics, error) {
 }
 
 func GetSwapin(txid *string) (*SwapInfo, error) {
-	log.Debug("[api] receive GetSwapin", "txid", *txid)
+	//log.Debug("[api] receive GetSwapin", "txid", *txid)
 	txidstr := *txid
 	result, err := mongodb.FindSwapinResult(txidstr)
 	if err == nil {
@@ -55,7 +55,7 @@ func GetSwapin(txid *string) (*SwapInfo, error) {
 }
 
 func GetSwapout(txid *string) (*SwapInfo, error) {
-	log.Debug("[api] receive GetSwapout", "txid", *txid)
+	//log.Debug("[api] receive GetSwapout", "txid", *txid)
 	txidstr := *txid
 	result, err := mongodb.FindSwapoutResult(txidstr)
 	if err == nil {

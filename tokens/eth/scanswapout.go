@@ -36,12 +36,12 @@ func (b *EthBridge) StartSwapoutScanJob(isServer bool) error {
 func (b *EthBridge) StartSwapoutScanJobOnServer() error {
 	log.Info("[scanswapout] start scan swapout job")
 
-	go b.scanTransactionPool(true)
-
 	isProcessed := func(txid string, txheight uint64) bool {
 		swap, _ := mongodb.FindSwapout(txid)
 		return swap != nil
 	}
+
+	go b.scanTransactionPool(true)
 
 	go b.scanFirstLoop(true, isProcessed)
 
@@ -53,7 +53,16 @@ func (b *EthBridge) processSwapout(txid string, isServer bool) error {
 	if isServer {
 		return b.registerSwapout(txid)
 	}
-	return b.postRegisterSwapout(txid)
+	if !b.IsSwapoutExistByQuery(txid) {
+		return b.postRegisterSwapout(txid)
+	}
+	return nil
+}
+
+func (b *EthBridge) IsSwapoutExistByQuery(txid string) bool {
+	var result interface{}
+	client.RpcPost(&result, swapServerApiAddress, "swap.GetSwapout", txid)
+	return result != nil
 }
 
 func (b *EthBridge) registerSwapout(txid string) error {
@@ -117,7 +126,7 @@ func (b *EthBridge) StartSwapoutScanJobOnOracle() error {
 	oracleLatestScanned = latest - confirmations
 
 	isProcessed := func(txid string, txheight uint64) bool {
-		return txheight == oracleLatestScanned
+		return txheight <= oracleLatestScanned
 	}
 	return b.scanTransactionHistory(false, isProcessed)
 }

@@ -145,7 +145,9 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 	if txStatus.Block_time != nil {
 		blockTimestamp = *txStatus.Block_time
 	}
-	log.Debug("verify swapin pass", "from", from, "to", dcrmAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", blockHeight, "timestamp", blockTimestamp)
+	if !allowUnstable {
+		log.Debug("verify swapin pass", "from", from, "to", dcrmAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", blockHeight, "timestamp", blockTimestamp)
+	}
 	return &tokens.TxSwapInfo{
 		Hash:      *tx.Txid,
 		Height:    blockHeight,

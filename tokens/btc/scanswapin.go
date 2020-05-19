@@ -34,12 +34,12 @@ func (b *BtcBridge) StartSwapinScanJob(isServer bool) error {
 func (b *BtcBridge) StartSwapinScanJobOnServer() error {
 	log.Info("[scanswapin] start scan swapin job")
 
-	go b.scanTransactionPool(true)
-
 	isProcessed := func(txid string) bool {
 		swap, _ := mongodb.FindSwapin(txid)
 		return swap != nil
 	}
+
+	go b.scanTransactionPool(true)
 
 	go b.scanFirstLoop(true, isProcessed)
 
@@ -51,7 +51,16 @@ func (b *BtcBridge) processSwapin(txid string, isServer bool) error {
 	if isServer {
 		return b.registerSwapin(txid)
 	}
-	return b.postRegisterSwapin(txid)
+	if !b.IsSwapinExistByQuery(txid) {
+		return b.postRegisterSwapin(txid)
+	}
+	return nil
+}
+
+func (b *BtcBridge) IsSwapinExistByQuery(txid string) bool {
+	var result interface{}
+	client.RpcPost(&result, swapServerApiAddress, "swap.GetSwapin", txid)
+	return result != nil
 }
 
 func (b *BtcBridge) registerSwapin(txid string) error {

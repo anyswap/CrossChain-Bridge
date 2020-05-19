@@ -158,7 +158,7 @@ func (b *EthBridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, 
 	}
 
 	blockHeight := tx.BlockNumber.ToInt().Uint64()
-	log.Debug("verify swapout unstable pass", "from", from, "to", to, "bind", bindAddress, "value", value, "txid", txHash, "height", blockHeight)
+	//log.Debug("verify swapout unstable pass", "from", from, "to", to, "bind", bindAddress, "value", value, "txid", txHash, "height", blockHeight)
 	return &tokens.TxSwapInfo{
 		Hash:      txHash,
 		Height:    blockHeight,
