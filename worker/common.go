@@ -28,6 +28,12 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 		return nil
 	}
 	txid := tx.Hash
+	var swapType tokens.SwapType
+	if isSwapin {
+		swapType = tokens.Swap_Swapin
+	} else {
+		swapType = tokens.Swap_Swapout
+	}
 	swapResult := &mongodb.MgoSwapResult{
 		Key:        txid,
 		TxId:       txid,
@@ -41,6 +47,7 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 		SwapHeight: 0,
 		SwapTime:   0,
 		SwapValue:  "0",
+		SwapType:   uint32(swapType),
 		Status:     status,
 		Timestamp:  now(),
 		Memo:       "",
@@ -74,7 +81,9 @@ func updateSwapResult(key string, mtx *MatchTx) (err error) {
 	if mtx.SwapTx != "" {
 		updates.SwapTx = mtx.SwapTx
 		updates.SwapValue = mtx.SwapValue
-		updates.SwapType = uint32(mtx.SwapType)
+		if mtx.SwapType != tokens.Swap_NotSwap {
+			updates.SwapType = uint32(mtx.SwapType)
+		}
 	} else {
 		updates.SwapHeight = mtx.SwapHeight
 		updates.SwapTime = mtx.SwapTime

@@ -148,7 +148,6 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
-		SwapType:  tokens.Swap_Swapin,
 	}
 	return updateSwapinResult(txid, matchTx)
 }
@@ -218,7 +217,6 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
-		SwapType:  tokens.Swap_Swapout,
 	}
 	return updateSwapoutResult(txid, matchTx)
 }
