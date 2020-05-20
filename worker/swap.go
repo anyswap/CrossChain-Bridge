@@ -3,6 +3,7 @@ package worker
 import (
 	"container/ring"
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
@@ -86,9 +87,16 @@ func findSwapoutsToSwap() ([]*mongodb.MgoSwap, error) {
 
 func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxId
+	bridge := tokens.DstBridge
 	log.Debug("start processSwapinSwap", "txid", txid, "status", swap.Status)
 	history := getSwapHistory(txid, true)
 	if history != nil {
+		mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+		matchTx := &MatchTx{
+			SwapTx:    history.matchTx,
+			SwapValue: tokens.CalcSwappedValue(history.value, bridge.IsSrcEndpoint()).String(),
+		}
+		updateSwapinResult(txid, matchTx)
 		logWorker("swapin", "ignore swapped swapin", "txid", txid, "matchTx", history.matchTx)
 		return fmt.Errorf("found swapped in history, txid=%v, matchTx=%v", txid, history.matchTx)
 	}
@@ -116,7 +124,6 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		To:    res.Bind,
 		Value: value,
 	}
-	bridge := tokens.DstBridge
 	rawTx, err := bridge.BuildRawTransaction(args)
 	if err != nil {
 		return err
@@ -141,7 +148,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	addSwapHistory(txid, txHash, true)
+	addSwapHistory(txid, value, txHash, true)
 
 	mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 
@@ -154,9 +161,16 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 
 func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxId
+	bridge := tokens.SrcBridge
 	log.Debug("start processSwapoutSwap", "txid", txid, "status", swap.Status)
 	history := getSwapHistory(txid, false)
 	if history != nil {
+		mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
+		matchTx := &MatchTx{
+			SwapTx:    history.matchTx,
+			SwapValue: tokens.CalcSwappedValue(history.value, bridge.IsSrcEndpoint()).String(),
+		}
+		updateSwapoutResult(txid, matchTx)
 		logWorker("swapout", "ignore swapped swapout", "txid", txid, "matchTx", history.matchTx)
 		return fmt.Errorf("found swapped out history, txid=%v, matchTx=%v", txid, history.matchTx)
 	}
@@ -185,7 +199,6 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		Value: value,
 		Memo:  fmt.Sprintf("%s%s", tokens.UnlockMemoPrefix, res.TxId),
 	}
-	bridge := tokens.SrcBridge
 	rawTx, err := bridge.BuildRawTransaction(args)
 	if err != nil {
 		return err
@@ -210,7 +223,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	addSwapHistory(txid, txHash, false)
+	addSwapHistory(txid, value, txHash, false)
 
 	mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
 
@@ -223,15 +236,17 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 
 type swapInfo struct {
 	txid     string
+	value    *big.Int
 	matchTx  string
 	isSwapin bool
 }
 
-func addSwapHistory(txid, matchTx string, isSwapin bool) {
+func addSwapHistory(txid string, value *big.Int, matchTx string, isSwapin bool) {
 	// Create the new item as its own ring
 	item := ring.New(1)
 	item.Value = &swapInfo{
 		txid:     txid,
+		value:    value,
 		matchTx:  matchTx,
 		isSwapin: isSwapin,
 	}
@@ -243,7 +258,6 @@ func addSwapHistory(txid, matchTx string, isSwapin bool) {
 		swapRing = item
 	} else {
 		if swapRing.Len() == swapRingMaxSize {
-			// Drop the block out of the ring
 			swapRing = swapRing.Move(-1)
 			swapRing.Unlink(1)
 			swapRing = swapRing.Move(1)
