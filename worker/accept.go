@@ -48,6 +48,7 @@ func acceptSign() error {
 			history := getAcceptSignHistory(keyID)
 			if history != nil {
 				logWorker("accept", "ignore accepted sign", "keyID", keyID, "result", history.result)
+				dcrm.DoAcceptSign(keyID, history.result)
 				continue
 			}
 			agreeResult := "AGREE"
