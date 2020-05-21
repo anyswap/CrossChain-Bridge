@@ -83,6 +83,10 @@ func FindSwapinsWithStatus(status SwapStatus, septime int64) ([]*MgoSwap, error)
 	return findSwapsWithStatus(tbSwapins, status, septime)
 }
 
+func GetCountOfSwapinsWithStatus(status SwapStatus) (int, error) {
+	return getCountWithStatus(tbSwapins, status)
+}
+
 // --------------- swapout --------------------------------
 
 func AddSwapout(ms *MgoSwap) error {
@@ -99,6 +103,10 @@ func FindSwapout(txid string) (*MgoSwap, error) {
 
 func FindSwapoutsWithStatus(status SwapStatus, septime int64) ([]*MgoSwap, error) {
 	return findSwapsWithStatus(tbSwapouts, status, septime)
+}
+
+func GetCountOfSwapoutsWithStatus(status SwapStatus) (int, error) {
+	return getCountWithStatus(tbSwapouts, status)
 }
 
 // ------------------ swapin / swapout common ------------------------
@@ -175,6 +183,14 @@ func FindSwapinResults(address string, offset, limit int) ([]*MgoSwapResult, err
 	return findSwapResults(tbSwapinResults, address, offset, limit)
 }
 
+func GetCountOfSwapinResults() (int, error) {
+	return getCount(tbSwapinResults)
+}
+
+func GetCountOfSwapinResultsWithStatus(status SwapStatus) (int, error) {
+	return getCountWithStatus(tbSwapinResults, status)
+}
+
 // --------------- swapout result --------------------------------
 
 func AddSwapoutResult(mr *MgoSwapResult) error {
@@ -199,6 +215,14 @@ func FindSwapoutResultsWithStatus(status SwapStatus, septime int64) ([]*MgoSwapR
 
 func FindSwapoutResults(address string, offset, limit int) ([]*MgoSwapResult, error) {
 	return findSwapResults(tbSwapoutResults, address, offset, limit)
+}
+
+func GetCountOfSwapoutResults() (int, error) {
+	return getCount(tbSwapoutResults)
+}
+
+func GetCountOfSwapoutResultsWithStatus(status SwapStatus) (int, error) {
+	return getCountWithStatus(tbSwapoutResults, status)
 }
 
 // ------------------ swapin / swapout result common ------------------------
@@ -294,4 +318,28 @@ func findSwapResults(tbName string, address string, offset, limit int) ([]*MgoSw
 		return nil, mgoError(err)
 	}
 	return result, nil
+}
+
+func getCount(tbName string) (int, error) {
+	return getCollection(tbName).Find(nil).Count()
+}
+
+func getCountWithStatus(tbName string, status SwapStatus) (int, error) {
+	return getCollection(tbName).Find(bson.M{"status": status}).Count()
+}
+
+type SwapStatistics struct {
+	TotalSwapins    int
+	TotalSwapouts   int
+	PendingSwapins  int
+	PendingSwapouts int
+}
+
+func GetSwapStatistics() (*SwapStatistics, error) {
+	stat := &SwapStatistics{}
+	stat.TotalSwapins, _ = GetCountOfSwapinResults()
+	stat.TotalSwapouts, _ = GetCountOfSwapoutResults()
+	stat.PendingSwapins, _ = GetCountOfSwapinResultsWithStatus(MatchTxEmpty)
+	stat.PendingSwapouts, _ = GetCountOfSwapoutResultsWithStatus(MatchTxEmpty)
+	return stat, nil
 }

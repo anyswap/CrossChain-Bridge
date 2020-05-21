@@ -7,14 +7,13 @@ import (
 
 type SwapStatus = mongodb.SwapStatus
 
-type ServerInfo struct {
-	SrcToken  *tokens.TokenConfig
-	DestToken *tokens.TokenConfig
-	Version   string
-}
+type SwapStatistics = mongodb.SwapStatistics
 
-type SwapStatistics struct {
-	TotalValue string
+type ServerInfo struct {
+	Identifier string
+	SrcToken   *tokens.TokenConfig
+	DestToken  *tokens.TokenConfig
+	Version    string
 }
 
 type PostResult string

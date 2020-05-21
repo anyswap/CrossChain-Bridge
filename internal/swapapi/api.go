@@ -28,16 +28,16 @@ func GetServerInfo() (*ServerInfo, error) {
 		return nil, nil
 	}
 	return &ServerInfo{
-		SrcToken:  config.SrcToken,
-		DestToken: config.DestToken,
-		Version:   params.VersionWithMeta,
+		Identifier: config.Identifier,
+		SrcToken:   config.SrcToken,
+		DestToken:  config.DestToken,
+		Version:    params.VersionWithMeta,
 	}, nil
 }
 
 func GetSwapStatistics() (*SwapStatistics, error) {
 	log.Debug("[api] receive GetSwapStatistics")
-	stat := &SwapStatistics{}
-	return stat, nil
+	return mongodb.GetSwapStatistics()
 }
 
 func GetSwapin(txid *string) (*SwapInfo, error) {
