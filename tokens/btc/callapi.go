@@ -8,8 +8,8 @@ func (b *BtcBridge) GetLatestBlockNumber() (uint64, error) {
 	return electrs.GetLatestBlockNumber(b)
 }
 
-func (b *BtcBridge) GetTransaction(txHash string) (*electrs.ElectTx, error) {
-	return electrs.GetTransaction(b, txHash)
+func (b *BtcBridge) GetTransactionByHash(txHash string) (*electrs.ElectTx, error) {
+	return electrs.GetTransactionByHash(b, txHash)
 }
 
 func (b *BtcBridge) GetElectTransactionStatus(txHash string) (*electrs.ElectTxStatus, error) {

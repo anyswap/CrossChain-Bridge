@@ -167,7 +167,7 @@ func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb bt
 		if *status.Block_height+needConfirmations > latest {
 			continue
 		}
-		tx, err := b.GetTransaction(*utxo.Txid)
+		tx, err := b.GetTransactionByHash(*utxo.Txid)
 		if err != nil {
 			continue
 		}
@@ -269,7 +269,7 @@ func (b *BtcBridge) getUtxos(from string, target, targetFee, relayFeePerKb btcut
 			return
 		}
 		for i := 0; i < retryCount; i++ {
-			tx, err = b.GetTransaction(point.Hash)
+			tx, err = b.GetTransactionByHash(point.Hash)
 			if err == nil {
 				break
 			}

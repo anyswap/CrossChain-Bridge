@@ -12,6 +12,10 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
+func (b *BtcBridge) GetTransaction(txHash string) (interface{}, error) {
+	return b.GetTransactionByHash(txHash)
+}
+
 func (b *BtcBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	txStatus := &tokens.TxStatus{}
 	elcstStatus, err := b.GetElectTransactionStatus(txHash)
@@ -84,7 +88,7 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 			return nil, tokens.ErrTxNotStable
 		}
 	}
-	tx, err := b.GetTransaction(txHash)
+	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
 		log.Debug("BtcBridge::GetTransaction fail", "tx", txHash, "err", err)
 		return nil, tokens.ErrTxNotFound

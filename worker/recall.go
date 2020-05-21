@@ -80,24 +80,31 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	signedTx, _, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+	signedTx, txHash, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	if err != nil {
 		return err
 	}
 
-	txHash, err := bridge.SendTransaction(signedTx)
-
+	// update database before sending transaction
+	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 	if err != nil {
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxRecallFailed, now(), "")
 		return err
 	}
-
-	mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
-
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
 		SwapType:  tokens.Swap_Recall,
 	}
-	return updateSwapinResult(txid, matchTx)
+	err = updateSwapinResult(txid, matchTx)
+	if err != nil {
+		return err
+	}
+
+	_, err = bridge.SendTransaction(signedTx)
+	if err != nil {
+		mongodb.UpdateSwapinStatus(txid, mongodb.TxRecallFailed, now(), "")
+		mongodb.UpdateSwapinResultStatus(txid, mongodb.TxRecallFailed, now(), "")
+		return err
+	}
+	return nil
 }

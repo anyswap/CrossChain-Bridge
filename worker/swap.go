@@ -89,17 +89,6 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxId
 	bridge := tokens.DstBridge
 	log.Debug("start processSwapinSwap", "txid", txid, "status", swap.Status)
-	history := getSwapHistory(txid, true)
-	if history != nil {
-		mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
-		matchTx := &MatchTx{
-			SwapTx:    history.matchTx,
-			SwapValue: tokens.CalcSwappedValue(history.value, bridge.IsSrcEndpoint()).String(),
-		}
-		updateSwapinResult(txid, matchTx)
-		logWorker("swapin", "ignore swapped swapin", "txid", txid, "matchTx", history.matchTx)
-		return fmt.Errorf("found swapped in history, txid=%v, matchTx=%v", txid, history.matchTx)
-	}
 	res, err := mongodb.FindSwapinResult(txid)
 	if err != nil {
 		return err
@@ -109,6 +98,18 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 			mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 		}
 		return fmt.Errorf("%v already swapped to %v", txid, res.SwapTx)
+	}
+
+	history := getSwapHistory(txid, true)
+	if history != nil {
+		if _, err := bridge.GetTransaction(history.matchTx); err == nil {
+			matchTx := &MatchTx{
+				SwapTx: history.matchTx,
+			}
+			updateSwapinResult(txid, matchTx)
+			logWorker("swapin", "ignore swapped swapin", "txid", txid, "matchTx", history.matchTx)
+			return fmt.Errorf("found swapped in history, txid=%v, matchTx=%v", txid, history.matchTx)
+		}
 	}
 
 	value, err := common.GetBigIntFromStr(res.Value)
@@ -132,7 +133,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return fmt.Errorf("build raw tx is empty, txid=%v", txid)
 	}
 
-	signedTx, _, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+	signedTx, txHash, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	if err != nil {
 		return err
 	}
@@ -140,40 +141,35 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return fmt.Errorf("signed tx is empty, txid=%v", txid)
 	}
 
-	txHash, err := bridge.SendTransaction(signedTx)
-
+	// update database before sending transaction
+	addSwapHistory(txid, value, txHash, true)
+	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 	if err != nil {
-		logWorkerError("swapin", "update swapin status to TxSwapFailed", err, "txid", txid)
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), "")
 		return err
 	}
-
-	addSwapHistory(txid, value, txHash, true)
-
-	mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
-
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
 	}
-	return updateSwapinResult(txid, matchTx)
+	err = updateSwapinResult(txid, matchTx)
+	if err != nil {
+		return err
+	}
+
+	_, err = bridge.SendTransaction(signedTx)
+	if err != nil {
+		logWorkerError("swapin", "update swapin status to TxSwapFailed", err, "txid", txid)
+		mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), "")
+		mongodb.UpdateSwapinResultStatus(txid, mongodb.TxSwapFailed, now(), "")
+		return err
+	}
+	return nil
 }
 
 func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxId
 	bridge := tokens.SrcBridge
 	log.Debug("start processSwapoutSwap", "txid", txid, "status", swap.Status)
-	history := getSwapHistory(txid, false)
-	if history != nil {
-		mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
-		matchTx := &MatchTx{
-			SwapTx:    history.matchTx,
-			SwapValue: tokens.CalcSwappedValue(history.value, bridge.IsSrcEndpoint()).String(),
-		}
-		updateSwapoutResult(txid, matchTx)
-		logWorker("swapout", "ignore swapped swapout", "txid", txid, "matchTx", history.matchTx)
-		return fmt.Errorf("found swapped out history, txid=%v, matchTx=%v", txid, history.matchTx)
-	}
 	res, err := mongodb.FindSwapoutResult(txid)
 	if err != nil {
 		return err
@@ -183,6 +179,18 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 			mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
 		}
 		return fmt.Errorf("%v already swapped to %v", txid, res.SwapTx)
+	}
+
+	history := getSwapHistory(txid, false)
+	if history != nil {
+		if _, err := bridge.GetTransaction(history.matchTx); err == nil {
+			matchTx := &MatchTx{
+				SwapTx: history.matchTx,
+			}
+			updateSwapoutResult(txid, matchTx)
+			logWorker("swapout", "ignore swapped swapout", "txid", txid, "matchTx", history.matchTx)
+			return fmt.Errorf("found swapped out history, txid=%v, matchTx=%v", txid, history.matchTx)
+		}
 	}
 
 	value, err := common.GetBigIntFromStr(res.Value)
@@ -207,7 +215,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		return fmt.Errorf("build raw tx is empty, txid=%v", txid)
 	}
 
-	signedTx, _, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+	signedTx, txHash, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	if err != nil {
 		return err
 	}
@@ -215,23 +223,29 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		return fmt.Errorf("signed tx is empty, txid=%v", txid)
 	}
 
-	txHash, err := bridge.SendTransaction(signedTx)
-
+	// update database before sending transaction
+	addSwapHistory(txid, value, txHash, false)
+	err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
 	if err != nil {
-		logWorkerError("swapout", "update swapout status to TxSwapFailed", err, "txid", txid)
-		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), "")
 		return err
 	}
-
-	addSwapHistory(txid, value, txHash, false)
-
-	mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
-
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
 	}
-	return updateSwapoutResult(txid, matchTx)
+	err = updateSwapoutResult(txid, matchTx)
+	if err != nil {
+		return err
+	}
+
+	_, err = bridge.SendTransaction(signedTx)
+	if err != nil {
+		logWorkerError("swapout", "update swapout status to TxSwapFailed", err, "txid", txid)
+		mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), "")
+		mongodb.UpdateSwapoutResultStatus(txid, mongodb.TxSwapFailed, now(), "")
+	}
+	return err
+
 }
 
 type swapInfo struct {

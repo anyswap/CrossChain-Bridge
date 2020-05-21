@@ -16,7 +16,7 @@ func GetLatestBlockNumber(b tokens.CrossChainBridge) (uint64, error) {
 	return result, err
 }
 
-func GetTransaction(b tokens.CrossChainBridge, txHash string) (*ElectTx, error) {
+func GetTransactionByHash(b tokens.CrossChainBridge, txHash string) (*ElectTx, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.ApiAddress + "/tx/" + txHash
 	var result ElectTx

@@ -122,7 +122,7 @@ func (b *EthBridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, er
 }
 
 func (b *EthBridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, error) {
-	tx, err := b.GetTransaction(txHash)
+	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
 		log.Debug("EthBridge::GetTransaction fail", "tx", txHash, "err", err)
 		return nil, tokens.ErrTxNotFound
