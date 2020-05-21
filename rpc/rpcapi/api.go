@@ -102,3 +102,13 @@ func (s *RpcAPI) RecallSwapin(r *http.Request, txid *string, result *swapapi.Pos
 	}
 	return err
 }
+
+func (s *RpcAPI) IsValidSwapinBindAddress(r *http.Request, address *string, result *bool) error {
+	*result = swapapi.IsValidSwapinBindAddress(address)
+	return nil
+}
+
+func (s *RpcAPI) IsValidSwapoutBindAddress(r *http.Request, address *string, result *bool) error {
+	*result = swapapi.IsValidSwapoutBindAddress(address)
+	return nil
+}

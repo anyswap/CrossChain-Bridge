@@ -157,3 +157,11 @@ func RecallSwapin(txid *string) (*PostResult, error) {
 	log.Info("[api] add recall swap", "txid", txidstr)
 	return &SuccessPostResult, nil
 }
+
+func IsValidSwapinBindAddress(address *string) bool {
+	return tokens.DstBridge.IsValidAddress(*address)
+}
+
+func IsValidSwapoutBindAddress(address *string) bool {
+	return tokens.SrcBridge.IsValidAddress(*address)
+}

@@ -56,27 +56,51 @@ func CopyBytes(b []byte) (copiedBytes []byte) {
 	return
 }
 
-// hasHexPrefix validates str begins with '0x' or '0X'.
-func hasHexPrefix(str string) bool {
+// HasHexPrefix validates str begins with '0x' or '0X'.
+func HasHexPrefix(str string) bool {
 	return len(str) >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X')
 }
 
-// isHexCharacter returns bool of c being a valid hexadecimal.
-func isHexCharacter(c byte) bool {
+// IsHexCharacter returns bool of c being a valid hexadecimal.
+func IsHexCharacter(c byte) bool {
 	return ('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')
 }
 
-// isHex validates whether each byte is valid hexadecimal string.
-func isHex(str string) bool {
+func IsUpperHexCharacter(c byte) bool {
+	return 'A' <= c && c <= 'F'
+}
+
+// IsHex validates whether each byte is valid hexadecimal string.
+func IsHex(str string) bool {
 	if len(str)%2 != 0 {
 		return false
 	}
 	for _, c := range []byte(str) {
-		if !isHexCharacter(c) {
+		if !IsHexCharacter(c) {
 			return false
 		}
 	}
 	return true
+}
+
+func GetUnprefixedHex(str string) (unprefixedHex string, ok, hasUpperChar bool) {
+	if len(str)%2 != 0 {
+		return
+	}
+	if HasHexPrefix(str) {
+		str = str[2:]
+	}
+	for _, c := range []byte(str) {
+		if !IsHexCharacter(c) {
+			return
+		}
+		if !hasUpperChar && IsUpperHexCharacter(c) {
+			hasUpperChar = true
+		}
+	}
+	unprefixedHex = str
+	ok = true
+	return
 }
 
 // Bytes2Hex returns the hexadecimal encoding of d.

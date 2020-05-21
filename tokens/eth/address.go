@@ -5,5 +5,15 @@ import (
 )
 
 func (b *EthBridge) IsValidAddress(address string) bool {
-	return common.IsHexAddress(address)
+	if !common.IsHexAddress(address) {
+		return false
+	}
+	unprefixedHex, ok, hasUpperChar := common.GetUnprefixedHex(address)
+	if hasUpperChar {
+		// valid checksum
+		if unprefixedHex != common.HexToAddress(address).String() {
+			return false
+		}
+	}
+	return ok
 }
