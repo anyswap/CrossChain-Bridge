@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
@@ -144,10 +145,6 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 
 	// update database before sending transaction
 	addSwapHistory(txid, value, txHash, true)
-	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
-	if err != nil {
-		return err
-	}
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
@@ -157,8 +154,19 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
+	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+	if err != nil {
+		return err
+	}
 
-	_, err = bridge.SendTransaction(signedTx)
+	for i := 0; i < retrySendTxCount; i++ {
+		if _, err = bridge.SendTransaction(signedTx); err == nil {
+			if tx, _ := bridge.GetTransaction(txHash); tx != nil {
+				break
+			}
+		}
+		time.Sleep(retrySendTxInterval)
+	}
 	if err != nil {
 		logWorkerError("swapin", "update swapin status to TxSwapFailed", err, "txid", txid)
 		mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), "")
@@ -228,10 +236,6 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 
 	// update database before sending transaction
 	addSwapHistory(txid, value, txHash, false)
-	err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
-	if err != nil {
-		return err
-	}
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
@@ -241,8 +245,19 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
+	err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
+	if err != nil {
+		return err
+	}
 
-	_, err = bridge.SendTransaction(signedTx)
+	for i := 0; i < retrySendTxCount; i++ {
+		if _, err = bridge.SendTransaction(signedTx); err == nil {
+			if tx, _ := bridge.GetTransaction(txHash); tx != nil {
+				break
+			}
+		}
+		time.Sleep(retrySendTxInterval)
+	}
 	if err != nil {
 		logWorkerError("swapout", "update swapout status to TxSwapFailed", err, "txid", txid)
 		mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), "")

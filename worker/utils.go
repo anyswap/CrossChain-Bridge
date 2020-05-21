@@ -18,6 +18,9 @@ var (
 
 	maxStableLifetime       = int64(7 * 24 * 3600)
 	restIntervalInStableJob = 60 * time.Second
+
+	retrySendTxCount    = 10
+	retrySendTxInterval = 1 * time.Second
 )
 
 func now() int64 {

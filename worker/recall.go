@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
@@ -86,10 +87,6 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	}
 
 	// update database before sending transaction
-	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
-	if err != nil {
-		return err
-	}
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
@@ -99,8 +96,19 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
+	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+	if err != nil {
+		return err
+	}
 
-	_, err = bridge.SendTransaction(signedTx)
+	for i := 0; i < retrySendTxCount; i++ {
+		if _, err = bridge.SendTransaction(signedTx); err == nil {
+			if tx, _ := bridge.GetTransaction(txHash); tx != nil {
+				break
+			}
+		}
+		time.Sleep(retrySendTxInterval)
+	}
 	if err != nil {
 		mongodb.UpdateSwapinStatus(txid, mongodb.TxRecallFailed, now(), "")
 		mongodb.UpdateSwapinResultStatus(txid, mongodb.TxRecallFailed, now(), "")
