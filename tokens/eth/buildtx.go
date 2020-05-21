@@ -2,11 +2,19 @@ package eth
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/types"
+)
+
+var (
+	swapinNonce uint64
+
+	retryRpcCount    = 3
+	retryRpcInterval = 1 * time.Second
 )
 
 func (b *EthBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
@@ -56,17 +64,38 @@ func (b *EthBridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs,
 			return nil, tokens.ErrWrongExtraArgs
 		}
 	}
+	var err error
 	if extra.GasPrice == nil {
-		price, err := b.SuggestPrice()
-		if err != nil {
-			return nil, err
+		var price *big.Int
+		for i := 0; i < retryRpcCount; i++ {
+			price, err = b.SuggestPrice()
+			if err == nil {
+				break
+			}
+			if i+1 == retryRpcCount {
+				return nil, err
+			}
+			time.Sleep(retryRpcInterval)
 		}
 		extra.GasPrice = price
 	}
 	if extra.Nonce == nil {
-		nonce, err := b.GetPoolNonce(args.From)
-		if err != nil {
-			return nil, err
+		var nonce uint64
+		for i := 0; i < retryRpcCount; i++ {
+			nonce, err = b.GetPoolNonce(args.From)
+			if err == nil {
+				break
+			}
+			if i+1 == retryRpcCount {
+				return nil, err
+			}
+			time.Sleep(retryRpcInterval)
+		}
+		if swapinNonce >= nonce {
+			swapinNonce++
+			nonce = swapinNonce
+		} else {
+			swapinNonce = nonce
 		}
 		extra.Nonce = &nonce
 	}

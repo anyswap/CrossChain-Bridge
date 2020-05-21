@@ -20,6 +20,7 @@ var (
 )
 
 func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (interface{}, string, error) {
+	swapinNonce--
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {
 		return nil, "", errors.New("wrong raw tx param")
@@ -78,6 +79,7 @@ func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 		return nil, "", errors.New("wrong sender address")
 	}
 	txHash := signedTx.Hash().String()
-	log.Info("DcrmSignTransaction success", "keyID", keyID, "txhash", txHash)
+	swapinNonce++
+	log.Info("DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", swapinNonce)
 	return signedTx, txHash, err
 }
