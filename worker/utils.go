@@ -8,16 +8,16 @@ import (
 
 var (
 	maxRecallLifetime       = int64(10 * 24 * 3600)
-	restIntervalInRecallJob = 60 * time.Second
+	restIntervalInRecallJob = 10 * time.Second
 
 	maxVerifyLifetime       = int64(7 * 24 * 3600)
-	restIntervalInVerifyJob = 60 * time.Second
+	restIntervalInVerifyJob = 10 * time.Second
 
 	maxDoSwapLifetime       = int64(7 * 24 * 3600)
-	restIntervalInDoSwapJob = 60 * time.Second
+	restIntervalInDoSwapJob = 10 * time.Second
 
 	maxStableLifetime       = int64(7 * 24 * 3600)
-	restIntervalInStableJob = 60 * time.Second
+	restIntervalInStableJob = 10 * time.Second
 
 	retrySendTxCount    = 10
 	retrySendTxInterval = 1 * time.Second
