@@ -60,7 +60,7 @@ type CrossChainBridge interface {
 	VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) error
 
 	BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error)
-	DcrmSignTransaction(rawTx interface{}, args *BuildTxArgs) (signedTx interface{}, err error)
+	DcrmSignTransaction(rawTx interface{}, args *BuildTxArgs) (signedTx interface{}, txHash string, err error)
 	SendTransaction(signedTx interface{}) (txHash string, err error)
 
 	StartSwapinScanJob(isServer bool) error

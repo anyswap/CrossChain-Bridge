@@ -27,10 +27,10 @@ var (
 	hashType = txscript.SigHashAll
 )
 
-func (b *BtcBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, err error) {
+func (b *BtcBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
-		return nil, tokens.ErrWrongRawTx
+		return nil, "", tokens.ErrWrongRawTx
 	}
 
 	var (
@@ -42,7 +42,7 @@ func (b *BtcBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 	for i, pkscript := range authoredTx.PrevScripts {
 		sigHash, err := txscript.CalcSignatureHash(pkscript, hashType, tx, i)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		msgHash := hex.EncodeToString(sigHash)
 		msgHashes = append(msgHashes, msgHash)
@@ -51,7 +51,7 @@ func (b *BtcBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 	for idx, msgHash := range msgHashes {
 		rsv, err := b.DcrmSignMsgHash(msgHash, args, idx)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		rsvs = append(rsvs, rsv)
 	}
@@ -73,13 +73,13 @@ func (b *BtcBridge) verifyPublickeyData(pkData []byte, swapType tokens.SwapType)
 	return nil
 }
 
-func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash []string, rsv []string, args *tokens.BuildTxArgs) (signedTx interface{}, err error) {
+func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash []string, rsv []string, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
 	txIn := authoredTx.Tx.TxIn
 	if len(txIn) != len(msgHash) {
-		return nil, errors.New("mismatch number of msghashes and tx inputs")
+		return nil, "", errors.New("mismatch number of msghashes and tx inputs")
 	}
 	if len(txIn) != len(rsv) {
-		return nil, errors.New("mismatch number of signatures and tx inputs")
+		return nil, "", errors.New("mismatch number of signatures and tx inputs")
 	}
 	log.Info("BtcBridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
@@ -90,7 +90,7 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 		if extra != nil && extra.FromPublicKey != nil {
 			cPkData = common.FromHex(*extra.FromPublicKey)
 			if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
-				return nil, err
+				return nil, "", err
 			}
 		}
 	}
@@ -117,22 +117,23 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 			hashData := common.FromHex(msgHash[i])
 			pkData, err := crypto.Ecrecover(hashData, rsvData)
 			if err != nil {
-				return nil, err
+				return nil, "", err
 			}
 			pk, _ := btcec.ParsePubKey(pkData, btcec.S256())
 			cPkData = pk.SerializeCompressed()
 			if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
-				return nil, err
+				return nil, "", err
 			}
 		}
 
 		sigScript, err := txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).Script()
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		txin.SignatureScript = sigScript
 	}
-	return authoredTx, nil
+	txHash = authoredTx.Tx.TxHash().String()
+	return authoredTx, txHash, nil
 }
 
 func (b *BtcBridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, idx int) (rsv string, err error) {
@@ -171,14 +172,14 @@ func (b *BtcBridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, id
 	return rsv, nil
 }
 
-func (b *BtcBridge) SignTransaction(rawTx interface{}, wif string) (signedTx interface{}, err error) {
+func (b *BtcBridge) SignTransaction(rawTx interface{}, wif string) (signedTx interface{}, txHash string, err error) {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
-		return nil, tokens.ErrWrongRawTx
+		return nil, "", tokens.ErrWrongRawTx
 	}
 	pkwif, err := btcutil.DecodeWIF(wif)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	privateKey := pkwif.PrivKey
 
@@ -191,7 +192,7 @@ func (b *BtcBridge) SignTransaction(rawTx interface{}, wif string) (signedTx int
 	for i, pkscript := range authoredTx.PrevScripts {
 		sigHash, err := txscript.CalcSignatureHash(pkscript, hashType, tx, i)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		msgHash := hex.EncodeToString(sigHash)
 		msgHashes = append(msgHashes, msgHash)
@@ -200,7 +201,7 @@ func (b *BtcBridge) SignTransaction(rawTx interface{}, wif string) (signedTx int
 	for _, msgHash := range msgHashes {
 		signature, err := privateKey.Sign(common.FromHex(msgHash))
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		rr := fmt.Sprintf("%064X", signature.R)
 		ss := fmt.Sprintf("%064X", signature.S)

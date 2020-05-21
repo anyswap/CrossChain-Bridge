@@ -80,7 +80,7 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	signedTx, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+	signedTx, _, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	if err != nil {
 		return err
 	}

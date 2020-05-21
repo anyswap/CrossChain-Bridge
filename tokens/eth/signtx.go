@@ -19,10 +19,10 @@ var (
 	waitInterval  = 10 * time.Second
 )
 
-func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (interface{}, error) {
+func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (interface{}, string, error) {
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {
-		return nil, errors.New("wrong raw tx param")
+		return nil, "", errors.New("wrong raw tx param")
 	}
 	signer := b.Signer
 	msgHash := signer.Hash(tx)
@@ -30,7 +30,7 @@ func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 	msgContext := string(jsondata)
 	keyID, err := dcrm.DoSign(msgHash.String(), msgContext)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	log.Info("DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash.String())
 	time.Sleep(waitInterval)
@@ -44,13 +44,13 @@ func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 			break
 		}
 		if err == dcrm.ErrGetSignStatusFailed {
-			return nil, err
+			return nil, "", err
 		}
 		log.Debug("retry get sign status as error", "err", err)
 		time.Sleep(retryInterval)
 	}
 	if i == retryCount || rsv == "" {
-		return nil, errors.New("get sign status failed")
+		return nil, "", errors.New("get sign status failed")
 	}
 
 	log.Trace("DcrmSignTransaction get rsv success", "rsv", rsv)
@@ -59,24 +59,25 @@ func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 
 	if len(signature) != crypto.SignatureLength {
 		log.Error("DcrmSignTransaction wrong length of signature")
-		return nil, errors.New("wrong signature of keyID " + keyID)
+		return nil, "", errors.New("wrong signature of keyID " + keyID)
 	}
 
 	signedTx, err := tx.WithSignature(signer, signature)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	sender, err := types.Sender(signer, signedTx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	token := b.TokenConfig
 	if sender.String() != token.DcrmAddress {
 		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", token.DcrmAddress)
-		return nil, errors.New("wrong sender address")
+		return nil, "", errors.New("wrong sender address")
 	}
-	log.Info("DcrmSignTransaction success", "keyID", keyID, "txhash", signedTx.Hash().String())
-	return signedTx, err
+	txHash := signedTx.Hash().String()
+	log.Info("DcrmSignTransaction success", "keyID", keyID, "txhash", txHash)
+	return signedTx, txHash, err
 }
