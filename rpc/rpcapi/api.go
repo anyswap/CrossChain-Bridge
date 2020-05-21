@@ -26,8 +26,40 @@ func (s *RpcAPI) GetSwapStatistics(r *http.Request, args *RpcNullArgs, result *s
 	return err
 }
 
+func (s *RpcAPI) GetRawSwapin(r *http.Request, txid *string, result *swapapi.Swap) error {
+	res, err := swapapi.GetRawSwapin(txid)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+func (s *RpcAPI) GetRawSwapinResult(r *http.Request, txid *string, result *swapapi.SwapResult) error {
+	res, err := swapapi.GetRawSwapinResult(txid)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
 func (s *RpcAPI) GetSwapin(r *http.Request, txid *string, result *swapapi.SwapInfo) error {
 	res, err := swapapi.GetSwapin(txid)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+func (s *RpcAPI) GetRawSwapout(r *http.Request, txid *string, result *swapapi.Swap) error {
+	res, err := swapapi.GetRawSwapout(txid)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+func (s *RpcAPI) GetRawSwapoutResult(r *http.Request, txid *string, result *swapapi.SwapResult) error {
+	res, err := swapapi.GetRawSwapoutResult(txid)
 	if err == nil && res != nil {
 		*result = *res
 	}

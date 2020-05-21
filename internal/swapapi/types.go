@@ -6,7 +6,8 @@ import (
 )
 
 type SwapStatus = mongodb.SwapStatus
-
+type Swap = mongodb.MgoSwap
+type SwapResult = mongodb.MgoSwapResult
 type SwapStatistics = mongodb.SwapStatistics
 
 type ServerInfo struct {

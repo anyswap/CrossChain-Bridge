@@ -32,11 +32,43 @@ func StatisticsHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+func GetRawSwapinHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	txid := vars["txid"]
+	res, err := swapapi.GetRawSwapin(&txid)
+	writeResponse(w, res, err)
+}
+
+func GetRawSwapinResultHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	txid := vars["txid"]
+	res, err := swapapi.GetRawSwapinResult(&txid)
+	writeResponse(w, res, err)
+}
+
 func GetSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
 	txid := vars["txid"]
 	res, err := swapapi.GetSwapin(&txid)
+	writeResponse(w, res, err)
+}
+
+func GetRawSwapoutHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	txid := vars["txid"]
+	res, err := swapapi.GetRawSwapout(&txid)
+	writeResponse(w, res, err)
+}
+
+func GetRawSwapoutResultHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	txid := vars["txid"]
+	res, err := swapapi.GetRawSwapoutResult(&txid)
 	writeResponse(w, res, err)
 }
 

@@ -29,6 +29,10 @@ func StartAPIServer() {
 	r.HandleFunc("/swapin/recall/{txid}", restapi.RecallSwapinHandler).Methods("POST")
 	r.HandleFunc("/swapin/{txid}", restapi.GetSwapinHandler).Methods("GET")
 	r.HandleFunc("/swapout/{txid}", restapi.GetSwapoutHandler).Methods("GET")
+	r.HandleFunc("/swapin/{txid}/raw", restapi.GetRawSwapinHandler).Methods("GET")
+	r.HandleFunc("/swapout/{txid}/raw", restapi.GetRawSwapoutHandler).Methods("GET")
+	r.HandleFunc("/swapin/{txid}/rawresult", restapi.GetRawSwapinResultHandler).Methods("GET")
+	r.HandleFunc("/swapout/{txid}/rawresult", restapi.GetRawSwapoutResultHandler).Methods("GET")
 	r.HandleFunc("/swapin/history/{address}", restapi.SwapinHistoryHandler).Methods("GET")
 	r.HandleFunc("/swapout/history/{address}", restapi.SwapoutHistoryHandler).Methods("GET")
 
@@ -42,6 +46,10 @@ func StartAPIServer() {
 	r.HandleFunc("/swapin/recall/{txid}", warnHandler).Methods(methodsExcluesPost...)
 	r.HandleFunc("/swapin/{txid}", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/swapout/{txid}", warnHandler).Methods(methodsExcluesGet...)
+	r.HandleFunc("/swapin/{txid}/raw", warnHandler).Methods(methodsExcluesGet...)
+	r.HandleFunc("/swapout/{txid}/raw", warnHandler).Methods(methodsExcluesGet...)
+	r.HandleFunc("/swapin/{txid}/rawresult", warnHandler).Methods(methodsExcluesGet...)
+	r.HandleFunc("/swapout/{txid}/rawresult", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/swapin/history/{address}", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/swapout/history/{address}", warnHandler).Methods(methodsExcluesGet...)
 
