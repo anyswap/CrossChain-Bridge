@@ -11,6 +11,10 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
+func (b *EthBridge) GetTransaction(txHash string) (interface{}, error) {
+	return b.GetTransactionByHash(txHash)
+}
+
 func (b *EthBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	var txStatus tokens.TxStatus
 	txr, err := b.GetTransactionReceipt(txHash)

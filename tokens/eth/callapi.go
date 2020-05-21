@@ -36,10 +36,6 @@ func (b *EthBridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
 	return result, nil
 }
 
-func (b *EthBridge) GetTransaction(txHash string) (interface{}, error) {
-	return b.GetTransactionByHash(txHash)
-}
-
 func (b *EthBridge) GetTransactionByHash(txHash string) (*types.RPCTransaction, error) {
 	gateway := b.GatewayConfig
 	url := gateway.ApiAddress

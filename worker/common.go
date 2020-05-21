@@ -81,15 +81,15 @@ func updateSwapResult(key string, mtx *MatchTx) (err error) {
 	if mtx.SwapTx != "" {
 		updates.SwapTx = mtx.SwapTx
 		updates.SwapValue = mtx.SwapValue
-		if mtx.SwapType != tokens.Swap_NotSwap {
-			updates.SwapType = uint32(mtx.SwapType)
-		}
 	} else {
 		updates.SwapHeight = mtx.SwapHeight
 		updates.SwapTime = mtx.SwapTime
 	}
 	switch mtx.SwapType {
-	case tokens.Swap_Swapin, tokens.Swap_Recall:
+	case tokens.Swap_Recall:
+		updates.SwapType = uint32(mtx.SwapType)
+		fallthrough
+	case tokens.Swap_Swapin:
 		err = mongodb.UpdateSwapinResult(key, updates)
 	case tokens.Swap_Swapout:
 		err = mongodb.UpdateSwapoutResult(key, updates)
