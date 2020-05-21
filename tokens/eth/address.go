@@ -11,7 +11,7 @@ func (b *EthBridge) IsValidAddress(address string) bool {
 	unprefixedHex, ok, hasUpperChar := common.GetUnprefixedHex(address)
 	if hasUpperChar {
 		// valid checksum
-		if unprefixedHex != common.HexToAddress(address).String() {
+		if unprefixedHex != common.HexToAddress(address).String()[2:] {
 			return false
 		}
 	}
