@@ -232,7 +232,12 @@ func (b *BtcBridge) getUtxos(from string, target, targetFee, relayFeePerKb btcut
 			return
 		}
 		if *outspend.Spent {
-			err = fmt.Errorf("out point (%v, %v) is spent before height %v", point.Hash, point.Index, latest)
+			if outspend.Status != nil && outspend.Status.Block_height != nil {
+				spentHeight := *outspend.Status.Block_height
+				err = fmt.Errorf("out point (%v, %v) is spent at %v (latest %v)", point.Hash, point.Index, spentHeight, latest)
+			} else {
+				err = fmt.Errorf("out point (%v, %v) is spent at txpool (latest %v)", point.Hash, point.Index, latest)
+			}
 			return
 		}
 		for i := 0; i < retryCount; i++ {
