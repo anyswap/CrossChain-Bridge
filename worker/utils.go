@@ -8,18 +8,18 @@ import (
 
 var (
 	maxRecallLifetime       = int64(10 * 24 * 3600)
-	restIntervalInRecallJob = 10 * time.Second
+	restIntervalInRecallJob = 3 * time.Second
 
 	maxVerifyLifetime       = int64(7 * 24 * 3600)
-	restIntervalInVerifyJob = 10 * time.Second
+	restIntervalInVerifyJob = 3 * time.Second
 
 	maxDoSwapLifetime       = int64(7 * 24 * 3600)
-	restIntervalInDoSwapJob = 10 * time.Second
+	restIntervalInDoSwapJob = 3 * time.Second
 
 	maxStableLifetime       = int64(7 * 24 * 3600)
-	restIntervalInStableJob = 10 * time.Second
+	restIntervalInStableJob = 3 * time.Second
 
-	retrySendTxCount    = 10
+	retrySendTxCount    = 3
 	retrySendTxInterval = 1 * time.Second
 )
 
@@ -35,6 +35,10 @@ func logWorkerError(job, subject string, err error, context ...interface{}) {
 	fields := []interface{}{"err", err}
 	fields = append(fields, context...)
 	log.Error("["+job+"] "+subject, fields...)
+}
+
+func logWorkerTrace(job, subject string, context ...interface{}) {
+	log.Trace("["+job+"] "+subject, context...)
 }
 
 func getSepTimeInFind(dist int64) int64 {

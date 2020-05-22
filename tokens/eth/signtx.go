@@ -33,7 +33,7 @@ func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 	if err != nil {
 		return nil, "", err
 	}
-	log.Info("DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash.String())
+	log.Info("DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash.String(), "txid", args.SwapID)
 	time.Sleep(waitInterval)
 
 	var rsv string
@@ -47,7 +47,7 @@ func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 		if err == dcrm.ErrGetSignStatusFailed {
 			return nil, "", err
 		}
-		log.Debug("retry get sign status as error", "err", err)
+		log.Debug("retry get sign status as error", "err", err, "txid", args.SwapID)
 		time.Sleep(retryInterval)
 	}
 	if i == retryCount || rsv == "" {

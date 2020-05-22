@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
@@ -23,10 +22,6 @@ func addInitialSwapoutResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus) e
 }
 
 func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSwapin bool) (err error) {
-	if tx == nil {
-		log.Warn("addInitialSwapoutResult add empty swap", "isSwapin", isSwapin)
-		return nil
-	}
 	txid := tx.Hash
 	var swapType tokens.SwapType
 	if isSwapin {
@@ -58,9 +53,9 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 		err = mongodb.AddSwapoutResult(swapResult)
 	}
 	if err != nil {
-		log.Debug("addInitialSwapResult", "txid", txid, "err", err)
+		logWorkerError("add", "addInitialSwapResult", err, "txid", txid)
 	} else {
-		log.Debug("addInitialSwapResult", "txid", txid)
+		logWorker("add", "addInitialSwapResult", "txid", txid)
 	}
 	return err
 }
@@ -97,9 +92,9 @@ func updateSwapResult(key string, mtx *MatchTx) (err error) {
 		err = tokens.ErrUnknownSwapType
 	}
 	if err != nil {
-		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "swaptype", mtx.SwapType, "err", err)
+		logWorkerError("update", "updateSwapResult", err, "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "swaptype", mtx.SwapType)
 	} else {
-		log.Debug("updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "swaptype", mtx.SwapType)
+		logWorker("update", "updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "swaptype", mtx.SwapType)
 	}
 	return err
 }
@@ -122,9 +117,9 @@ func markSwapResultStable(key string, isSwapin bool) (err error) {
 		err = mongodb.UpdateSwapoutResultStatus(key, status, timestamp, memo)
 	}
 	if err != nil {
-		log.Debug("markSwapResultStable", "txid", key, "isSwapin", isSwapin, "err", err)
+		logWorkerError("stable", "markSwapResultStable", err, "txid", key, "isSwapin", isSwapin)
 	} else {
-		log.Debug("markSwapResultStable", "txid", key, "isSwapin", isSwapin)
+		logWorker("stable", "markSwapResultStable", "txid", key, "isSwapin", isSwapin)
 	}
 	return err
 }

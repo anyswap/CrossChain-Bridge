@@ -78,11 +78,13 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	bridge := tokens.SrcBridge
 	rawTx, err := bridge.BuildRawTransaction(args)
 	if err != nil {
+		logWorkerError("recall", "BuildRawTransaction failed", err, "txid", txid)
 		return err
 	}
 
 	signedTx, txHash, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	if err != nil {
+		logWorkerError("recall", "DcrmSignTransaction failed", err, "txid", txid)
 		return err
 	}
 

@@ -16,8 +16,8 @@ var (
 	oracleLatestSeenTx   string
 
 	maxScanLifetime        = int64(3 * 24 * 3600)
-	retryIntervalInScanJob = 10 * time.Second
-	restIntervalInScanJob  = 10 * time.Second
+	retryIntervalInScanJob = 1 * time.Second
+	restIntervalInScanJob  = 3 * time.Second
 )
 
 func (b *BtcBridge) StartSwapinScanJob(isServer bool) error {

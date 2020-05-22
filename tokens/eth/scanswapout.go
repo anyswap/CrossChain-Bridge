@@ -18,8 +18,8 @@ var (
 	oracleLatestScanned  uint64
 
 	maxScanHeight          = uint64(15000)
-	retryIntervalInScanJob = 10 * time.Second
-	restIntervalInScanJob  = 10 * time.Second
+	retryIntervalInScanJob = 1 * time.Second
+	restIntervalInScanJob  = 3 * time.Second
 )
 
 func (b *EthBridge) StartSwapoutScanJob(isServer bool) error {

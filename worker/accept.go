@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/dcrm"
-	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
@@ -42,7 +41,7 @@ func acceptSign() error {
 			time.Sleep(retryInterval)
 			continue
 		}
-		log.Debug("acceptSign", "count", len(signInfo))
+		logWorker("accept", "acceptSign", "count", len(signInfo))
 		for _, info := range signInfo {
 			keyID := info.Key
 			history := getAcceptSignHistory(keyID)
@@ -57,13 +56,14 @@ func acceptSign() error {
 			case ErrIdentifierMismatch,
 				tokens.ErrTxNotStable,
 				tokens.ErrTxNotFound:
+				logWorkerTrace("accept", "ignore sign info", "keyID", keyID, "err", err)
 				continue
 			}
 			if err != nil {
 				logWorkerError("accept", "disagree sign", err, "keyID", keyID)
 				agreeResult = "DISAGREE"
 			}
-			log.Debug("dcrm DoAcceptSign", "keyID", keyID, "result", agreeResult)
+			logWorker("accept", "dcrm DoAcceptSign", "keyID", keyID, "result", agreeResult)
 			res, err := dcrm.DoAcceptSign(keyID, agreeResult)
 			if err != nil {
 				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res)
@@ -80,7 +80,7 @@ func acceptSign() error {
 func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	msgHash := signInfo.MsgHash
 	msgContext := signInfo.MsgContext
-	log.Debug("verifySignInfo", "msgContext", msgContext)
+	logWorker("accept", "verifySignInfo", "msgContext", msgContext)
 	var args tokens.BuildTxArgs
 	err := json.Unmarshal([]byte(msgContext), &args)
 	if err != nil {
@@ -110,7 +110,7 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	}
 	swap, err := srcBridge.VerifyTransaction(args.SwapID, false)
 	if err != nil {
-		log.Info("verifySignInfo failed", "txid", args.SwapID, "swaptype", args.SwapType, "err", err)
+		logWorkerError("accept", "verifySignInfo failed", err, "txid", args.SwapID, "swaptype", args.SwapType)
 		return err
 	}
 

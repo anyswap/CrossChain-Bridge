@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
-	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
@@ -89,7 +88,7 @@ func findSwapoutsToSwap() ([]*mongodb.MgoSwap, error) {
 func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxId
 	bridge := tokens.DstBridge
-	log.Debug("start processSwapinSwap", "txid", txid, "status", swap.Status)
+	logWorker("swapin", "start processSwapinSwap", "txid", txid, "status", swap.Status)
 	res, err := mongodb.FindSwapinResult(txid)
 	if err != nil {
 		return err
@@ -129,18 +128,14 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	rawTx, err := bridge.BuildRawTransaction(args)
 	if err != nil {
+		logWorkerError("swapin", "BuildRawTransaction failed", err, "txid", txid)
 		return err
-	}
-	if rawTx == nil {
-		return fmt.Errorf("build raw tx is empty, txid=%v", txid)
 	}
 
 	signedTx, txHash, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	if err != nil {
+		logWorkerError("swapin", "DcrmSignTransaction failed", err, "txid", txid)
 		return err
-	}
-	if signedTx == nil {
-		return fmt.Errorf("signed tx is empty, txid=%v", txid)
 	}
 
 	// update database before sending transaction
@@ -152,10 +147,12 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	err = updateSwapinResult(txid, matchTx)
 	if err != nil {
+		logWorkerError("swapin", "updateSwapinResult failed", err, "txid", txid)
 		return err
 	}
 	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 	if err != nil {
+		logWorkerError("swapin", "UpdateSwapinStatus failed", err, "txid", txid)
 		return err
 	}
 
@@ -179,7 +176,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxId
 	bridge := tokens.SrcBridge
-	log.Debug("start processSwapoutSwap", "txid", txid, "status", swap.Status)
+	logWorker("swapout", "start processSwapoutSwap", "txid", txid, "status", swap.Status)
 	res, err := mongodb.FindSwapoutResult(txid)
 	if err != nil {
 		return err
@@ -220,18 +217,14 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	rawTx, err := bridge.BuildRawTransaction(args)
 	if err != nil {
+		logWorkerError("swapout", "BuildRawTransaction failed", err, "txid", txid)
 		return err
-	}
-	if rawTx == nil {
-		return fmt.Errorf("build raw tx is empty, txid=%v", txid)
 	}
 
 	signedTx, txHash, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	if err != nil {
+		logWorkerError("swapout", "DcrmSignTransaction failed", err, "txid", txid)
 		return err
-	}
-	if signedTx == nil {
-		return fmt.Errorf("signed tx is empty, txid=%v", txid)
 	}
 
 	// update database before sending transaction
@@ -243,10 +236,12 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	err = updateSwapoutResult(txid, matchTx)
 	if err != nil {
+		logWorkerError("swapout", "updateSwapoutResult failed", err, "txid", txid)
 		return err
 	}
 	err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
 	if err != nil {
+		logWorkerError("swapout", "UpdateSwapoutStatus failed", err, "txid", txid)
 		return err
 	}
 

@@ -3,7 +3,6 @@ package worker
 import (
 	"sync"
 
-	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
@@ -85,6 +84,7 @@ func processSwapinVerify(swap *mongodb.MgoSwap) error {
 
 	switch err {
 	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+		logWorkerError("verify", "processSwapinVerify", err, "txid", txid)
 		return err
 	case tokens.ErrTxWithWrongMemo:
 		resultStatus = mongodb.TxWithWrongMemo
@@ -96,7 +96,7 @@ func processSwapinVerify(swap *mongodb.MgoSwap) error {
 	}
 
 	if err != nil {
-		log.Debug("processSwapinVerify", "txid", txid, "err", err)
+		logWorkerError("verify", "processSwapinVerify", err, "txid", txid)
 		return err
 	}
 	return addInitialSwapinResult(swapInfo, resultStatus)
@@ -110,6 +110,7 @@ func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 
 	switch err {
 	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+		logWorkerError("verify", "processSwapoutVerify", err, "txid", txid)
 		return err
 	case tokens.ErrTxWithWrongMemo:
 		resultStatus = mongodb.TxWithWrongMemo
@@ -121,7 +122,7 @@ func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 	}
 
 	if err != nil {
-		log.Debug("processSwapoutVerify", "txid", txid, "err", err)
+		logWorkerError("verify", "processSwapoutVerify", err, "txid", txid)
 		return err
 	}
 	return addInitialSwapoutResult(swapInfo, resultStatus)

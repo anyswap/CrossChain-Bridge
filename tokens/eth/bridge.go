@@ -23,11 +23,6 @@ func NewCrossChainBridge(isSrc bool) *EthBridge {
 	return &EthBridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
 }
 
-func (b *EthBridge) SetTokenAndGatewayWithoutCheck(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
-	b.TokenConfig = tokenCfg
-	b.GatewayConfig = gatewayCfg
-}
-
 func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
 

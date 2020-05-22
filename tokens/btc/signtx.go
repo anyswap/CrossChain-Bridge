@@ -148,7 +148,7 @@ func (b *BtcBridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, id
 	if err != nil {
 		return "", err
 	}
-	log.Info("DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash)
+	log.Info("DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
 	time.Sleep(waitInterval)
 
 	i := 0
@@ -161,7 +161,7 @@ func (b *BtcBridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, id
 		if err == dcrm.ErrGetSignStatusFailed {
 			return "", err
 		}
-		log.Debug("retry get sign status as error", "err", err)
+		log.Debug("retry get sign status as error", "err", err, "txid", args.SwapID)
 		time.Sleep(retryInterval)
 	}
 	if i == retryCount || rsv == "" {
