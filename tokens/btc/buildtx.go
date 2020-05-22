@@ -134,11 +134,6 @@ func (b *BtcBridge) getPayToAddrScript(address string) ([]byte, error) {
 func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb btcutil.Amount) (
 	total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 
-	latest, err := b.GetLatestBlockNumber()
-	if err != nil {
-		return
-	}
-
 	utxos, err := b.FindUtxos(from)
 	if err != nil {
 		return
@@ -149,7 +144,6 @@ func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb bt
 		return
 	}
 
-	needConfirmations := *b.TokenConfig.Confirmations
 	success := false
 
 	for _, utxo := range utxos {
@@ -158,13 +152,6 @@ func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb bt
 			continue
 		}
 		if value > btcutil.MaxSatoshi {
-			continue
-		}
-		status := utxo.Status
-		if !*status.Confirmed {
-			continue
-		}
-		if *status.Block_height+needConfirmations > latest {
 			continue
 		}
 		tx, err := b.GetTransactionByHash(*utxo.Txid)
@@ -225,35 +212,15 @@ func (b *BtcBridge) getUtxos(from string, target, targetFee, relayFeePerKb btcut
 	}
 	var (
 		tx       *electrs.ElectTx
-		txStatus *electrs.ElectTxStatus
 		outspend *electrs.ElectOutspend
 		txHash   *chainhash.Hash
 		value    btcutil.Amount
 
-		needConfirmations = *b.TokenConfig.Confirmations
-		retryCount        = 3
-		retryInterval     = 1 * time.Second
+		retryCount    = 3
+		retryInterval = 1 * time.Second
 	)
 
 	for _, point := range prevOutPoints {
-		for i := 0; i < retryCount; i++ {
-			txStatus, err = b.GetElectTransactionStatus(point.Hash)
-			if err == nil {
-				break
-			}
-			time.Sleep(retryInterval)
-		}
-		if err != nil {
-			return
-		}
-		if !*txStatus.Confirmed {
-			err = tokens.ErrTxNotStable
-			return
-		}
-		if *txStatus.Block_height+needConfirmations > latest {
-			err = tokens.ErrTxNotStable
-			return
-		}
 		for i := 0; i < retryCount; i++ {
 			outspend, err = b.GetOutspend(point.Hash, point.Index)
 			if err == nil {
