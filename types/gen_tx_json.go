@@ -3,10 +3,12 @@ package types
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
+	"github.com/fsn-dev/crossChain-Bridge/tools/rlp"
 )
 
 // MarshalJSON marshals as JSON.
@@ -94,4 +96,14 @@ func (t *txdata) UnmarshalJSON(input []byte) error {
 		t.Hash = dec.Hash
 	}
 	return nil
+}
+
+func (tx *Transaction) PrintPretty() {
+	bs, _ := json.MarshalIndent(tx, "", "  ")
+	fmt.Println(string(bs))
+}
+
+func (tx *Transaction) PrintRaw() {
+	bs, _ := rlp.EncodeToBytes(tx)
+	fmt.Println(hexutil.Bytes(bs))
 }

@@ -1,12 +1,10 @@
 package dcrm
 
 import (
-	"fmt"
-	"io/ioutil"
 	"math/big"
-	"strings"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
+	"github.com/fsn-dev/crossChain-Bridge/tools"
 	"github.com/fsn-dev/crossChain-Bridge/tools/keystore"
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
@@ -49,18 +47,9 @@ func SetSignGroups(signGroups []string) {
 }
 
 func LoadKeyStore(keyfile, passfile string) error {
-	keyjson, err := ioutil.ReadFile(keyfile)
+	key, err := tools.LoadKeyStore(keyfile, passfile)
 	if err != nil {
-		return fmt.Errorf("Read keystore fail %v", err)
-	}
-	passdata, err := ioutil.ReadFile(passfile)
-	if err != nil {
-		return fmt.Errorf("Read password fail %v", err)
-	}
-	passwd := strings.TrimSpace(string(passdata))
-	key, err := keystore.DecryptKey(keyjson, passwd)
-	if err != nil {
-		return fmt.Errorf("Decrypt key fail %v", err)
+		return err
 	}
 	keyWrapper = key
 	return nil
