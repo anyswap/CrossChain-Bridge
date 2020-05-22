@@ -1,23 +1,32 @@
 package eth
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
 	"github.com/fsn-dev/crossChain-Bridge/log"
+	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-func (b *EthBridge) BuildSwapoutTx(from, to string, extraArgs *tokens.EthExtraArgs, swapoutVal *big.Int, bindAddr string) (*types.Transaction, error) {
+func (b *EthBridge) BuildSwapoutTx(from, contract string, extraArgs *tokens.EthExtraArgs, swapoutVal *big.Int, bindAddr string) (*types.Transaction, error) {
+	balance, err := b.GetMBtcBalance(contract, from)
+	if err != nil {
+		return nil, err
+	}
+	if balance.Cmp(swapoutVal) < 0 {
+		return nil, fmt.Errorf("not enough balance, %v < %v", balance, swapoutVal)
+	}
 	input, err := BuildSwapoutTxInput(swapoutVal, bindAddr)
 	if err != nil {
 		return nil, err
 	}
 	args := &tokens.BuildTxArgs{
 		From:  from,
-		To:    to,
+		To:    contract,
 		Value: big.NewInt(0),
 		Input: &input,
 	}
@@ -66,4 +75,23 @@ func BuildSwapoutTxInput(swapoutVal *big.Int, bindAddr string) ([]byte, error) {
 	log.Info("ParseSwapoutTxInput", "bindAddress", bindAddress, "swapoutvalue", swapoutvalue)
 
 	return input, nil
+}
+
+func (b *EthBridge) GetMBtcBalance(contract string, address string) (*big.Int, error) {
+	balanceOfFuncHash := common.FromHex("0x70a08231")
+	addr := common.HexToAddress(address)
+	data := make(hexutil.Bytes, 36)
+	copy(data[:4], balanceOfFuncHash)
+	copy(data[4:], common.LeftPadBytes(addr[:], 32))
+	reqArgs := map[string]interface{}{
+		"to":   contract,
+		"data": data,
+	}
+	var result string
+	url := b.GatewayConfig.ApiAddress
+	err := client.RpcPost(&result, url, "eth_call", reqArgs, "pending")
+	if err != nil {
+		return nil, err
+	}
+	return common.GetBigIntFromStr(result)
 }
