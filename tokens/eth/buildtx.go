@@ -55,14 +55,11 @@ func (b *EthBridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs,
 		args.Value = new(big.Int)
 	}
 	var extra *tokens.EthExtraArgs
-	if args.Extra == nil {
+	if args.Extra == nil || args.Extra.EthExtra == nil {
 		extra = &tokens.EthExtraArgs{}
 		args.Extra = &tokens.AllExtras{EthExtra: extra}
 	} else {
 		extra = args.Extra.EthExtra
-		if extra == nil {
-			return nil, tokens.ErrWrongExtraArgs
-		}
 	}
 	var err error
 	if extra.GasPrice == nil {

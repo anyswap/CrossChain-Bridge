@@ -49,7 +49,7 @@ func (b *BtcBridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra inter
 		return tokens.ErrWrongRawTx
 	}
 	extras, ok := extra.(*tokens.AllExtras)
-	if !ok {
+	if !ok || extras.BtcExtra == nil {
 		return tokens.ErrWrongExtraArgs
 	}
 	btcExtra := extras.BtcExtra

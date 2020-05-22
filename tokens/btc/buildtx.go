@@ -47,14 +47,11 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 	}
 
 	var extra *tokens.BtcExtraArgs
-	if args.Extra == nil {
+	if args.Extra == nil || args.Extra.BtcExtra == nil {
 		extra = &tokens.BtcExtraArgs{}
 		args.Extra = &tokens.AllExtras{BtcExtra: extra}
 	} else {
 		extra = args.Extra.BtcExtra
-		if extra == nil {
-			return nil, tokens.ErrWrongExtraArgs
-		}
 	}
 
 	changeAddress = from
