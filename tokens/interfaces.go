@@ -16,6 +16,9 @@ var (
 	SrcBridge CrossChainBridge
 	DstBridge CrossChainBridge
 
+	SrcLatestBlockHeight uint64
+	DstLatestBlockHeight uint64
+
 	// first 4 bytes of `Keccak256Hash([]byte("Swapin(bytes32,address,uint256)"))`
 	SwapinFuncHash = [4]byte{0xec, 0x12, 0x6c, 0x77}
 	LogSwapinTopic = "0x05d0634fe981be85c22e2942a880821b70095d84e152c3ea3c17a4e4250d9d61"
@@ -63,10 +66,20 @@ type CrossChainBridge interface {
 	DcrmSignTransaction(rawTx interface{}, args *BuildTxArgs) (signedTx interface{}, txHash string, err error)
 	SendTransaction(signedTx interface{}) (txHash string, err error)
 
+	GetLatestBlockNumber() (uint64, error)
+
 	StartSwapinScanJob(isServer bool) error
 	StartSwapoutScanJob(isServer bool) error
 	StartSwapinResultScanJob(isServer bool) error
 	StartSwapoutResultScanJob(isServer bool) error
+}
+
+func SetLatestBlockHeight(latest uint64, isSrc bool) {
+	if isSrc {
+		SrcLatestBlockHeight = latest
+	} else {
+		DstLatestBlockHeight = latest
+	}
 }
 
 type CrossChainBridgeBase struct {

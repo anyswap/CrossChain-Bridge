@@ -26,6 +26,9 @@ func StartServerWork() {
 	go StartStableJob()
 	time.Sleep(interval)
 
+	go StartUpdateLatestBlockHeightJob()
+	time.Sleep(interval)
+
 	//go StartRecallJob()
 }
 

@@ -42,6 +42,7 @@ func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 	for {
 		latest, err = b.GetLatestBlockNumber()
 		if err == nil {
+			tokens.SetLatestBlockHeight(latest, b.IsSrc)
 			log.Info("get latst block number succeed.", "number", latest, "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID)
 			break
 		}
