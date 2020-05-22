@@ -53,7 +53,10 @@ func acceptSign() error {
 			}
 			agreeResult := "AGREE"
 			err := verifySignInfo(info)
-			if err == ErrIdentifierMismatch {
+			switch err {
+			case ErrIdentifierMismatch,
+				tokens.ErrTxNotStable,
+				tokens.ErrTxNotFound:
 				continue
 			}
 			if err != nil {
@@ -107,7 +110,8 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	}
 	swap, err := srcBridge.VerifyTransaction(args.SwapID, false)
 	if err != nil {
-		return fmt.Errorf("verifySignInfo failed, %v", err)
+		log.Info("verifySignInfo failed", "txid", args.SwapID, "swaptype", args.SwapType, "err", err)
+		return err
 	}
 
 	buildTxArgs := &tokens.BuildTxArgs{

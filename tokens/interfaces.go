@@ -42,7 +42,6 @@ var (
 	ErrTxWithWrongValue    = errors.New("tx with wrong value")
 	ErrTxWithWrongReceiver = errors.New("tx with wrong receiver")
 	ErrTxWithWrongMemo     = errors.New("tx with wrong memo")
-	ErrTxWithWrongStatus   = errors.New("tx with wrong status")
 	ErrTxWithWrongReceipt  = errors.New("tx with wrong receipt")
 	ErrTxWithWrongSender   = errors.New("tx with wrong sender")
 	ErrTxWithWrongInput    = errors.New("tx with wrong input data")
