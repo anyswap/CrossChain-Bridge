@@ -13,6 +13,9 @@ import (
 )
 
 func (b *EthBridge) BuildSwapoutTx(from, contract string, extraArgs *tokens.EthExtraArgs, swapoutVal *big.Int, bindAddr string) (*types.Transaction, error) {
+	if swapoutVal == nil || swapoutVal.Sign() == 0 {
+		return nil, fmt.Errorf("swapout value must be greater than zero")
+	}
 	balance, err := b.GetMBtcBalance(contract, from)
 	if err != nil {
 		return nil, err

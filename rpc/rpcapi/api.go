@@ -75,9 +75,9 @@ func (s *RpcAPI) GetSwapout(r *http.Request, txid *string, result *swapapi.SwapI
 }
 
 type RpcQueryHistoryArgs struct {
-	Address string
-	Offset  int
-	Limit   int
+	Address string `json:"address"`
+	Offset  int    `json:"offset"`
+	Limit   int    `json:"limit"`
 }
 
 func (args *RpcQueryHistoryArgs) getQueryArgs() (address string, offset int, limit int, err error) {
