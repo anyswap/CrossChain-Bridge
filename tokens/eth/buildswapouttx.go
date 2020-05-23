@@ -20,6 +20,9 @@ func (b *EthBridge) BuildSwapoutTx(from, contract string, extraArgs *tokens.EthE
 	if balance.Cmp(swapoutVal) < 0 {
 		return nil, fmt.Errorf("not enough balance, %v < %v", balance, swapoutVal)
 	}
+	if tokens.SrcBridge != nil && !tokens.SrcBridge.IsValidAddress(bindAddr) {
+		return nil, fmt.Errorf("wrong swapout bind address %v", bindAddr)
+	}
 	input, err := BuildSwapoutTxInput(swapoutVal, bindAddr)
 	if err != nil {
 		return nil, err
