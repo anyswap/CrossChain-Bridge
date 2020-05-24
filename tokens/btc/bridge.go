@@ -1,7 +1,6 @@
 package btc
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -29,7 +28,11 @@ func (b *BtcBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 	case "custom":
 		return
 	default:
-		panic(fmt.Sprintf("unsupported bitcoin network: %v", tokenCfg.NetID))
+		log.Fatal("unsupported bitcoin network", "netID", tokenCfg.NetID)
+	}
+
+	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
+		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
 	}
 
 	var latest uint64

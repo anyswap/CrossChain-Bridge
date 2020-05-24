@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/btcsuite/btcutil"
+	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/dcrm"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/params"
@@ -14,10 +16,13 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens/fsn"
 )
 
+var btcBridge *btc.BtcBridge
+
 func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 	switch id {
 	case "Bitcoin":
-		return btc.NewCrossChainBridge(isSrc)
+		btcBridge = btc.NewCrossChainBridge(isSrc)
+		return btcBridge
 	case "Ethereum":
 		return eth.NewCrossChainBridge(isSrc)
 	case "Fusion":
@@ -56,12 +61,38 @@ func InitCrossChainBridge(isServer bool) {
 }
 
 func InitBtcExtra(btcExtra *tokens.BtcExtraConfig) {
-	if btcExtra == nil {
+	if btcBridge == nil || btcExtra == nil {
 		return
 	}
+
 	tokens.BtcMinRelayFee = btcExtra.MinRelayFee
 	tokens.BtcRelayFeePerKb = btcExtra.RelayFeePerKb
 	tokens.BtcFromPublicKey = btcExtra.FromPublicKey
+	log.Info("Init Btc extra", "MinRelayFee", tokens.BtcMinRelayFee, "RelayFeePerKb", tokens.BtcRelayFeePerKb)
+
+	maxMinRelayFee, _ := btcutil.NewAmount(0.001)
+	minRelayFee := btcutil.Amount(tokens.BtcMinRelayFee)
+	if minRelayFee > maxMinRelayFee {
+		log.Fatal("BtcMinRelayFee is too large", "value", minRelayFee, "max", maxMinRelayFee)
+	}
+
+	maxRelayFeePerKb, _ := btcutil.NewAmount(0.001)
+	relayFeePerKb := btcutil.Amount(tokens.BtcRelayFeePerKb)
+	if relayFeePerKb > maxRelayFeePerKb {
+		log.Fatal("BtcRelayFeePerKb is too large", "value", relayFeePerKb, "max", maxRelayFeePerKb)
+	}
+
+	if tokens.BtcFromPublicKey != "" {
+		pk := common.FromHex(tokens.BtcFromPublicKey)
+		address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pk), btcBridge.GetChainConfig())
+		pubkeyAddress := address.EncodeAddress()
+		log.Info("Init Btc extra", "FromPublicKey", tokens.BtcFromPublicKey, "address", pubkeyAddress)
+
+		btcDcrmAddress := btcBridge.TokenConfig.DcrmAddress
+		if pubkeyAddress != btcDcrmAddress {
+			log.Fatal("BtcFromPublicKey's address mismatch dcrm address", "pubkeyAddress", pubkeyAddress, "dcrmAddress", btcDcrmAddress)
+		}
+	}
 }
 
 func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {

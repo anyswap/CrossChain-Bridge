@@ -36,6 +36,13 @@ func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 		panic(fmt.Sprintf("unsupported ethereum network: %v", tokenCfg.NetID))
 	}
 
+	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
+		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
+	}
+	if !b.IsSrc && !b.IsValidAddress(tokenCfg.ContractAddress) {
+		log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)
+	}
+
 	var (
 		latest  uint64
 		chainID *big.Int
