@@ -120,7 +120,7 @@ func Swapin(txid *string) (*PostResult, error) {
 		return nil, errSwapExist
 	}
 	info, err := tokens.SrcBridge.VerifyTransaction(txidstr, true)
-	if err != nil {
+	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRpcError(-32099, "verify swapin failed! "+err.Error())
 	}
 	swap := &mongodb.MgoSwap{
@@ -145,7 +145,7 @@ func Swapout(txid *string) (*PostResult, error) {
 		return nil, errSwapExist
 	}
 	info, err := tokens.DstBridge.VerifyTransaction(txidstr, true)
-	if err != nil {
+	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRpcError(-32098, "verify swapout failed! "+err.Error())
 	}
 	swap := &mongodb.MgoSwap{

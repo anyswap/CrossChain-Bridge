@@ -50,6 +50,19 @@ var (
 	ErrTxWithWrongInput    = errors.New("tx with wrong input data")
 )
 
+func ShouldRegisterSwapForError(err error) bool {
+	switch err {
+	case nil,
+		ErrTxWithWrongMemo,
+		ErrTxWithWrongValue,
+		ErrTxWithWrongReceipt,
+		ErrTxWithWrongSender,
+		ErrTxWithWrongInput:
+		return true
+	}
+	return false
+}
+
 type CrossChainBridge interface {
 	IsSrcEndpoint() bool
 	GetTokenAndGateway() (*TokenConfig, *GatewayConfig)

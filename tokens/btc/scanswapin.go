@@ -8,6 +8,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
 var (
@@ -212,7 +213,7 @@ func (b *BtcBridge) scanTransactionPool(isServer bool) error {
 		}
 		for _, txid := range txids {
 			_, err := b.VerifyTransaction(txid, true)
-			if err != nil {
+			if !tokens.ShouldRegisterSwapForError(err) {
 				continue
 			}
 			b.processSwapin(txid, isServer)

@@ -206,7 +206,7 @@ func (b *EthBridge) scanTransactionPool(isServer bool) error {
 		for _, tx := range txs {
 			txid := tx.Hash.String()
 			_, err := b.VerifyTransaction(txid, true)
-			if err != nil {
+			if !tokens.ShouldRegisterSwapForError(err) {
 				continue
 			}
 			b.processSwapout(txid, isServer)
