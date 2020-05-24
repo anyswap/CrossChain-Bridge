@@ -23,6 +23,13 @@ func (b *EthBridge) BuildSwapoutTx(from, contract string, extraArgs *tokens.EthE
 	if balance.Cmp(swapoutVal) < 0 {
 		return nil, fmt.Errorf("not enough balance, %v < %v", balance, swapoutVal)
 	}
+	token := b.TokenConfig
+	if token != nil && !tokens.CheckSwapValue(swapoutVal, b.IsSrc) {
+		decimals := *token.Decimals
+		minValue := tokens.ToBits(*token.MinimumSwap, decimals)
+		maxValue := tokens.ToBits(*token.MaximumSwap, decimals)
+		return nil, fmt.Errorf("wrong swapout value, not in range [%v, %v]", minValue, maxValue)
+	}
 	if tokens.SrcBridge != nil && !tokens.SrcBridge.IsValidAddress(bindAddr) {
 		return nil, fmt.Errorf("wrong swapout bind address %v", bindAddr)
 	}
