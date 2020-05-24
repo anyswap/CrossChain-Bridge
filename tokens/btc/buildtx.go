@@ -12,14 +12,10 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
-)
-
-var (
-	minReserveAmount = btcutil.Amount(100)
-	defRelayFeePerKb = btcutil.Amount(2000)
 )
 
 func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
@@ -29,7 +25,7 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 		to            = args.To
 		amount        = args.Value
 		memo          = args.Memo
-		relayFeePerKb = defRelayFeePerKb
+		relayFeePerKb btcutil.Amount
 		changeAddress string
 		txOuts        []*wire.TxOut
 	)
@@ -54,12 +50,16 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 		extra = args.Extra.BtcExtra
 	}
 
-	changeAddress = from
 	if extra.ChangeAddress != nil {
 		changeAddress = *extra.ChangeAddress
+	} else {
+		changeAddress = from
 	}
+
 	if extra.RelayFeePerKb != nil {
 		relayFeePerKb = btcutil.Amount(*extra.RelayFeePerKb)
+	} else {
+		relayFeePerKb = btcutil.Amount(tokens.BtcRelayFeePerKb)
 	}
 
 	pkscript, err := b.getPayToAddrScript(to)
@@ -78,17 +78,14 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 		txOuts = append(txOuts, txOut)
 	}
 
-	estimatedSize := txsizes.EstimateVirtualSize(0, 1, 0, txOuts, true)
-	targetFee := txrules.FeeForSerializeSize(relayFeePerKb, estimatedSize)
-
 	inputSource := func(target btcutil.Amount) (
 		total btcutil.Amount, inputs []*wire.TxIn,
 		inputValues []btcutil.Amount, scripts [][]byte, err error) {
 
 		if len(extra.PreviousOutPoints) != 0 {
-			return b.getUtxos(from, target, targetFee, relayFeePerKb, extra.PreviousOutPoints)
+			return b.getUtxos(from, target, extra.PreviousOutPoints)
 		} else {
-			return b.selectUtxos(from, target, targetFee, relayFeePerKb)
+			return b.selectUtxos(from, target)
 		}
 	}
 
@@ -128,7 +125,7 @@ func (b *BtcBridge) getPayToAddrScript(address string) ([]byte, error) {
 	return txscript.PayToAddrScript(toAddr)
 }
 
-func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb btcutil.Amount) (
+func (b *BtcBridge) selectUtxos(from string, target btcutil.Amount) (
 	total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 
 	utxos, err := b.FindUtxos(from)
@@ -170,9 +167,6 @@ func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb bt
 			continue
 		}
 		preOut := wire.NewOutPoint(txHash, *utxo.Vout)
-		if txrules.IsDustAmount(value, len(p2pkhScript), relayFeePerKb) {
-			continue
-		}
 		txIn := wire.NewTxIn(preOut, p2pkhScript, nil)
 
 		total += value
@@ -180,22 +174,21 @@ func (b *BtcBridge) selectUtxos(from string, target, targetFee, relayFeePerKb bt
 		inputValues = append(inputValues, value)
 		scripts = append(scripts, p2pkhScript)
 
-		if total >= target+targetFee+minReserveAmount {
+		if total >= target {
 			success = true
 			break
 		}
 	}
 
 	if !success {
-		err = fmt.Errorf("Not enough balance, total %v < %v = target %v + targetFee %v + minReserve %v", total, target+targetFee+minReserveAmount, target, targetFee, minReserveAmount)
+		err = fmt.Errorf("Not enough balance, total %v < target %v", total, target)
 		return
 	}
 
 	return total, inputs, inputValues, scripts, nil
 }
 
-func (b *BtcBridge) getUtxos(from string, target, targetFee, relayFeePerKb btcutil.Amount,
-	prevOutPoints []*tokens.BtcOutPoint) (
+func (b *BtcBridge) getUtxos(from string, target btcutil.Amount, prevOutPoints []*tokens.BtcOutPoint) (
 	total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 
 	latest, err := b.GetLatestBlockNumber()
@@ -268,10 +261,6 @@ func (b *BtcBridge) getUtxos(from string, target, targetFee, relayFeePerKb btcut
 
 		txHash, _ = chainhash.NewHashFromStr(point.Hash)
 		prevOutPoint := wire.NewOutPoint(txHash, point.Index)
-		if txrules.IsDustAmount(value, len(p2pkhScript), relayFeePerKb) {
-			err = fmt.Errorf("out point (%v, %v) is dust amount %v", point.Hash, point.Index, value)
-			return
-		}
 		txIn := wire.NewTxIn(prevOutPoint, p2pkhScript, nil)
 
 		total += value
@@ -279,8 +268,8 @@ func (b *BtcBridge) getUtxos(from string, target, targetFee, relayFeePerKb btcut
 		inputValues = append(inputValues, value)
 		scripts = append(scripts, p2pkhScript)
 	}
-	if total < target+targetFee+minReserveAmount {
-		err = fmt.Errorf("Not enough balance, total %v < %v = target %v + targetFee %v + minReserve %v", total, target+targetFee+minReserveAmount, target, targetFee, minReserveAmount)
+	if total < target {
+		err = fmt.Errorf("Not enough balance, total %v < target %v", total, target)
 	}
 	return
 }
@@ -326,9 +315,11 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount,
 			}
 		}
 
-		maxSignedSize := txsizes.EstimateVirtualSize(p2pkh, p2wpkh,
-			nested, outputs, true)
+		maxSignedSize := txsizes.EstimateVirtualSize(p2pkh, p2wpkh, nested, outputs, true)
 		maxRequiredFee := txrules.FeeForSerializeSize(relayFeePerKb, maxSignedSize)
+		if maxRequiredFee < btcutil.Amount(tokens.BtcMinRelayFee) {
+			maxRequiredFee = btcutil.Amount(tokens.BtcMinRelayFee)
+		}
 		remainingAmount := inputAmount - targetAmount
 		if remainingAmount < maxRequiredFee {
 			targetFee = maxRequiredFee
@@ -343,8 +334,7 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount,
 		}
 		changeIndex := -1
 		changeAmount := inputAmount - targetAmount - maxRequiredFee
-		if changeAmount != 0 && !txrules.IsDustAmount(changeAmount,
-			txsizes.P2WPKHPkScriptSize, relayFeePerKb) {
+		if changeAmount != 0 {
 			changeScript, err := fetchChange()
 			if err != nil {
 				return nil, err
@@ -354,10 +344,15 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount,
 			//	return nil, errors.New("fee estimation requires change " +
 			//		"scripts no larger than P2WPKH output scripts")
 			//}
-			change := wire.NewTxOut(int64(changeAmount), changeScript)
-			l := len(outputs)
-			unsignedTransaction.TxOut = append(outputs[:l:l], change)
-			changeIndex = l
+			threshold := txrules.GetDustThreshold(len(changeScript), txrules.DefaultRelayFeePerKb)
+			if changeAmount < threshold {
+				log.Debug("get rid of dust change", "amount", changeAmount, "threshold", threshold, "scriptsize", len(changeScript))
+			} else {
+				change := wire.NewTxOut(int64(changeAmount), changeScript)
+				l := len(outputs)
+				unsignedTransaction.TxOut = append(outputs[:l:l], change)
+				changeIndex = l
+			}
 		}
 
 		return &txauthor.AuthoredTx{

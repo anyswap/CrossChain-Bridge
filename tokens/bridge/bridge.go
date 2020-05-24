@@ -50,7 +50,18 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge.SetTokenAndGateway(dstToken, dstGateway)
 	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
 
+	InitBtcExtra(cfg.BtcExtra)
+
 	InitDcrm(cfg.Dcrm, isServer)
+}
+
+func InitBtcExtra(btcExtra *tokens.BtcExtraConfig) {
+	if btcExtra == nil {
+		return
+	}
+	tokens.BtcMinRelayFee = btcExtra.MinRelayFee
+	tokens.BtcRelayFeePerKb = btcExtra.RelayFeePerKb
+	tokens.BtcFromPublicKey = btcExtra.FromPublicKey
 }
 
 func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {

@@ -31,7 +31,8 @@ type ServerConfig struct {
 	DestToken   *tokens.TokenConfig
 	DestGateway *tokens.GatewayConfig
 	Dcrm        *DcrmConfig
-	Oracle      *OracleConfig
+	Oracle      *OracleConfig          `toml:",omitempty"`
+	BtcExtra    *tokens.BtcExtraConfig `toml:",omitempty"`
 }
 
 type DcrmConfig struct {

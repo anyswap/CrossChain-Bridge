@@ -85,13 +85,17 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 
 	var cPkData []byte
 
+	fromPublicKey := tokens.BtcFromPublicKey
 	if args != nil && args.Extra != nil {
 		extra := args.Extra.BtcExtra
 		if extra != nil && extra.FromPublicKey != nil {
-			cPkData = common.FromHex(*extra.FromPublicKey)
-			if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
-				return nil, "", err
-			}
+			fromPublicKey = *extra.FromPublicKey
+		}
+	}
+	if fromPublicKey != "" {
+		cPkData = common.FromHex(fromPublicKey)
+		if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
+			return nil, "", err
 		}
 	}
 

@@ -5,6 +5,12 @@ import (
 	"math/big"
 )
 
+var (
+	BtcMinRelayFee   int64 = 300
+	BtcRelayFeePerKb int64 = 1000
+	BtcFromPublicKey string
+)
+
 type TokenConfig struct {
 	BlockChain      string
 	NetID           string
@@ -129,4 +135,11 @@ type BtcExtraArgs struct {
 
 	PreviousOutPoints []*BtcOutPoint `json:"previousOutPoints,omitempty"`
 	SignIndex         *int           `json:"signIndex,omitempty"`
+}
+
+// used to build swpout to btc tx
+type BtcExtraConfig struct {
+	MinRelayFee   int64
+	RelayFeePerKb int64
+	FromPublicKey string
 }

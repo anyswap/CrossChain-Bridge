@@ -17,6 +17,12 @@ Port = 11556
 # post swap register requests to this address
 ServerApiAddress = "http://127.0.0.1:11556/rpc"
 
+# server config
+[BtcExtra]
+MinRelayFee   = 300
+RelayFeePerKb = 1000
+FromPublicKey = ""
+
 # server and oracle config
 [SrcToken]
 BlockChain = "Bitcoin"
