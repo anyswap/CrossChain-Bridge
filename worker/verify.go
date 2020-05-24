@@ -88,11 +88,11 @@ func processSwapinVerify(swap *mongodb.MgoSwap) error {
 		return err
 	case tokens.ErrTxWithWrongMemo:
 		resultStatus = mongodb.TxWithWrongMemo
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxCanRecall, now(), "")
+		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxCanRecall, now(), err.Error())
 	case nil:
 		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxNotSwapped, now(), "")
 	default:
-		return mongodb.UpdateSwapinStatus(txid, mongodb.TxVerifyFailed, now(), "")
+		return mongodb.UpdateSwapinStatus(txid, mongodb.TxVerifyFailed, now(), err.Error())
 	}
 
 	if err != nil {
