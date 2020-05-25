@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/rpc/v2"
 	rpcjson "github.com/gorilla/rpc/v2/json2"
@@ -54,16 +55,29 @@ func StartAPIServer() {
 	r.HandleFunc("/swapout/history/{address}", warnHandler).Methods(methodsExcluesGet...)
 
 	apiPort := params.GetApiPort()
-	log.Println("JSON RPC service listen and serving on port", apiPort)
+	apiServer := params.GetConfig().ApiServer
+	allowedOrigins := apiServer.AllowedOrigins
+
+	corsOptions := []handlers.CORSOption{
+		handlers.AllowedMethods([]string{"GET", "POST"}),
+	}
+	if len(allowedOrigins) != 0 {
+		corsOptions = append(corsOptions,
+			handlers.AllowedHeaders([]string{"X-Requested-With"}),
+			handlers.AllowedOrigins(allowedOrigins),
+		)
+	}
+
+	log.Info("JSON RPC service listen and serving", "port", apiPort, "allowedOrigins", allowedOrigins)
 	svr := http.Server{
 		Addr:         fmt.Sprintf(":%v", apiPort),
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 60 * time.Second,
-		Handler:      r,
+		Handler:      handlers.CORS(corsOptions...)(r),
 	}
 	go func() {
 		if err := svr.ListenAndServe(); err != nil {
-			log.Errorf("Error serving: %s", err)
+			log.Error("ListenAndServe error", "err", err)
 		}
 	}()
 }

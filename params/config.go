@@ -52,7 +52,8 @@ type OracleConfig struct {
 }
 
 type ApiServerConfig struct {
-	Port int
+	Port           int
+	AllowedOrigins []string
 }
 
 type MongoDBConfig struct {

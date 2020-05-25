@@ -11,6 +11,7 @@ Password = "password"
 # server config
 [ApiServer]
 Port = 11556
+AllowedOrigins = []
 
 # oracle config
 [Oracle]
