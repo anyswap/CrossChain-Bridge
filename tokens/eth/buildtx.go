@@ -88,11 +88,14 @@ func (b *EthBridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs,
 			}
 			time.Sleep(retryRpcInterval)
 		}
-		if swapinNonce >= nonce {
-			swapinNonce++
-			nonce = swapinNonce
-		} else {
-			swapinNonce = nonce
+		if args.SwapType == tokens.Swap_Swapin &&
+			args.From == b.TokenConfig.DcrmAddress {
+			if swapinNonce >= nonce {
+				swapinNonce++
+				nonce = swapinNonce
+			} else {
+				swapinNonce = nonce
+			}
 		}
 		extra.Nonce = &nonce
 	}
