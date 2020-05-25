@@ -4,11 +4,17 @@ import (
 	"net/http"
 
 	"github.com/fsn-dev/crossChain-Bridge/internal/swapapi"
+	"github.com/fsn-dev/crossChain-Bridge/params"
 )
 
 type RpcAPI struct{}
 
 type RpcNullArgs struct{}
+
+func (s *RpcAPI) GetVersionInfo(r *http.Request, args *RpcNullArgs, result *string) error {
+	*result = params.VersionWithMeta + "-rev1"
+	return nil
+}
 
 func (s *RpcAPI) GetServerInfo(r *http.Request, args *RpcNullArgs, result *swapapi.ServerInfo) error {
 	res, err := swapapi.GetServerInfo()
