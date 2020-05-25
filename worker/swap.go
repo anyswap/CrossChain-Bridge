@@ -166,8 +166,8 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	if err != nil {
 		logWorkerError("swapin", "update swapin status to TxSwapFailed", err, "txid", txid)
-		mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), "")
-		mongodb.UpdateSwapinResultStatus(txid, mongodb.TxSwapFailed, now(), "")
+		mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
+		mongodb.UpdateSwapinResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
 		return err
 	}
 	return nil
@@ -255,8 +255,8 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	if err != nil {
 		logWorkerError("swapout", "update swapout status to TxSwapFailed", err, "txid", txid)
-		mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), "")
-		mongodb.UpdateSwapoutResultStatus(txid, mongodb.TxSwapFailed, now(), "")
+		mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
+		mongodb.UpdateSwapoutResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
 	}
 	return err
 

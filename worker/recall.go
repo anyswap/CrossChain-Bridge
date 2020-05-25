@@ -112,8 +112,8 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		time.Sleep(retrySendTxInterval)
 	}
 	if err != nil {
-		mongodb.UpdateSwapinStatus(txid, mongodb.TxRecallFailed, now(), "")
-		mongodb.UpdateSwapinResultStatus(txid, mongodb.TxRecallFailed, now(), "")
+		mongodb.UpdateSwapinStatus(txid, mongodb.TxRecallFailed, now(), err.Error())
+		mongodb.UpdateSwapinResultStatus(txid, mongodb.TxRecallFailed, now(), err.Error())
 		return err
 	}
 	return nil
