@@ -125,6 +125,8 @@ func updateSwapStatus(tbName string, txid string, status SwapStatus, timestamp i
 	updates := bson.M{"status": status, "timestamp": timestamp}
 	if memo != "" {
 		updates["memo"] = memo
+	} else if status == TxNotSwapped {
+		updates["memo"] = ""
 	}
 	err := getCollection(tbName).UpdateId(txid, bson.M{"$set": updates})
 	if err == nil {
@@ -259,6 +261,8 @@ func updateSwapResult(tbName string, txid string, items *SwapResultUpdateItems) 
 	}
 	if items.Memo != "" {
 		updates["memo"] = items.Memo
+	} else if items.Status == MatchTxNotStable {
+		updates["memo"] = ""
 	}
 	err := getCollection(tbName).UpdateId(txid, bson.M{"$set": updates})
 	if err == nil {

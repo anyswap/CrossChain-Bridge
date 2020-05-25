@@ -119,16 +119,20 @@ func Swapin(txid *string) (*PostResult, error) {
 	if swap, _ := mongodb.FindSwapin(txidstr); swap != nil {
 		return nil, errSwapExist
 	}
-	info, err := tokens.SrcBridge.VerifyTransaction(txidstr, true)
+	_, err := tokens.SrcBridge.VerifyTransaction(txidstr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRpcError(-32099, "verify swapin failed! "+err.Error())
+	}
+	var memo string
+	if err != nil {
+		memo = err.Error()
 	}
 	swap := &mongodb.MgoSwap{
 		Key:       txidstr,
 		TxId:      txidstr,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
-		Memo:      info.Bind,
+		Memo:      memo,
 	}
 	err = mongodb.AddSwapin(swap)
 	if err != nil {
@@ -144,16 +148,20 @@ func Swapout(txid *string) (*PostResult, error) {
 	if swap, _ := mongodb.FindSwapout(txidstr); swap != nil {
 		return nil, errSwapExist
 	}
-	info, err := tokens.DstBridge.VerifyTransaction(txidstr, true)
+	_, err := tokens.DstBridge.VerifyTransaction(txidstr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRpcError(-32098, "verify swapout failed! "+err.Error())
+	}
+	var memo string
+	if err != nil {
+		memo = err.Error()
 	}
 	swap := &mongodb.MgoSwap{
 		Key:       txidstr,
 		TxId:      txidstr,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
-		Memo:      info.Bind,
+		Memo:      memo,
 	}
 	err = mongodb.AddSwapout(swap)
 	if err != nil {

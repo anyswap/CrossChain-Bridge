@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	BtcMinRelayFee   int64 = 300
-	BtcRelayFeePerKb int64 = 1000
+	BtcMinRelayFee   int64 = 400
+	BtcRelayFeePerKb int64 = 2000
 	BtcFromPublicKey string
 )
 
