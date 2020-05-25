@@ -62,6 +62,14 @@ func (s SortableElectUtxoSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
+// sort utxos
+// 1. confirmed fisrt
+// 2. value first
 func (s SortableElectUtxoSlice) Less(i, j int) bool {
+	confirmed1 := *s[i].Status.Confirmed
+	confirmed2 := *s[j].Status.Confirmed
+	if confirmed1 != confirmed2 {
+		return confirmed1
+	}
 	return *s[i].Value > *s[j].Value
 }
