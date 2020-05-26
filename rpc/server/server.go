@@ -63,7 +63,7 @@ func StartAPIServer() {
 	}
 	if len(allowedOrigins) != 0 {
 		corsOptions = append(corsOptions,
-			handlers.AllowedHeaders([]string{"X-Requested-With"}),
+			handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"}),
 			handlers.AllowedOrigins(allowedOrigins),
 		)
 	}
