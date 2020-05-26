@@ -20,8 +20,8 @@ ServerApiAddress = "http://127.0.0.1:11556/rpc"
 
 # server config
 [BtcExtra]
-MinRelayFee   = 300
-RelayFeePerKb = 1000
+MinRelayFee   = 400
+RelayFeePerKb = 2000
 FromPublicKey = ""
 
 # server and oracle config
