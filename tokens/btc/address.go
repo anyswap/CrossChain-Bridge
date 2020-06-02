@@ -16,6 +16,20 @@ func (b *BtcBridge) IsValidAddress(addr string) bool {
 	return address.IsForNet(chainConfig)
 }
 
+func (b *BtcBridge) IsP2pkhAddress(addr string) bool {
+	chainConfig := b.GetChainConfig()
+	address, err := btcutil.DecodeAddress(addr, chainConfig)
+	if err != nil {
+		return false
+	}
+	if !address.IsForNet(chainConfig) {
+		return false
+	}
+	_, ok := address.(*btcutil.AddressPubKeyHash)
+	return ok
+
+}
+
 func (b *BtcBridge) GetChainConfig() *chaincfg.Params {
 	token := b.TokenConfig
 	networkID := strings.ToLower(token.NetID)

@@ -122,6 +122,13 @@ func (b *CrossChainBridgeBase) SetTokenAndGateway(tokenCfg *TokenConfig, gateway
 	}
 }
 
+func GetCrossChainBridge(isSrc bool) CrossChainBridge {
+	if isSrc {
+		return SrcBridge
+	}
+	return DstBridge
+}
+
 func GetTokenConfig(isSrc bool) *TokenConfig {
 	var token *TokenConfig
 	if isSrc {

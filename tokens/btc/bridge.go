@@ -31,8 +31,8 @@ func (b *BtcBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 		log.Fatal("unsupported bitcoin network", "netID", tokenCfg.NetID)
 	}
 
-	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
-		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
+	if !b.IsP2pkhAddress(tokenCfg.DcrmAddress) {
+		log.Fatal("invalid dcrm address (not p2pkh)", "address", tokenCfg.DcrmAddress)
 	}
 
 	var latest uint64
