@@ -150,3 +150,19 @@ func RecallSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	res, err := swapapi.RecallSwapin(&txid)
 	writeResponse(w, res, err)
 }
+
+func RegisterP2shAddress(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	address := vars["address"]
+	res, err := swapapi.RegisterP2shAddress(address)
+	writeResponse(w, res, err)
+}
+
+func GetP2shAddressInfo(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	address := vars["address"]
+	res, err := swapapi.GetP2shAddressInfo(address)
+	writeResponse(w, res, err)
+}

@@ -36,9 +36,12 @@ func StartAPIServer() {
 	r.HandleFunc("/swapout/{txid}/rawresult", restapi.GetRawSwapoutResultHandler).Methods("GET")
 	r.HandleFunc("/swapin/history/{address}", restapi.SwapinHistoryHandler).Methods("GET")
 	r.HandleFunc("/swapout/history/{address}", restapi.SwapoutHistoryHandler).Methods("GET")
+	r.HandleFunc("/p2sh/{address}", restapi.GetP2shAddressInfo).Methods("GET", "POST")
+	r.HandleFunc("/p2sh/bind/{address}", restapi.RegisterP2shAddress).Methods("GET", "POST")
 
 	methodsExcluesGet := []string{"POST", "HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
 	methodsExcluesPost := []string{"GET", "HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
+	methodsExcluesGetAndPost := []string{"HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
 
 	r.HandleFunc("/serverinfo", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/statistics", warnHandler).Methods(methodsExcluesGet...)
@@ -53,6 +56,8 @@ func StartAPIServer() {
 	r.HandleFunc("/swapout/{txid}/rawresult", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/swapin/history/{address}", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/swapout/history/{address}", warnHandler).Methods(methodsExcluesGet...)
+	r.HandleFunc("/p2sh/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
+	r.HandleFunc("/p2sh/bind/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
 
 	apiPort := params.GetApiPort()
 	apiServer := params.GetConfig().ApiServer

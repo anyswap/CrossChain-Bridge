@@ -39,3 +39,10 @@ type SwapInfo struct {
 	Memo          string     `json:"memo"`
 	Confirmations uint64     `json:"confirmations"`
 }
+
+type P2shAddressInfo struct {
+	BindAddress        string
+	P2shAddress        string
+	RedeemScript       string
+	RedeemScriptDisasm string
+}

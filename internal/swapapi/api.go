@@ -1,17 +1,21 @@
 package swapapi
 
 import (
+	"encoding/hex"
 	"time"
 
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/btc"
 	rpcjson "github.com/gorilla/rpc/v2/json2"
 )
 
 var (
-	errSwapExist = newRpcError(-32098, "swap already exist")
+	errSwapExist    = newRpcError(-32097, "swap already exist")
+	errNotBtcBridge = newRpcError(-32096, "bridge is not btc")
 )
 
 func newRpcError(ec rpcjson.ErrorCode, message string) error {
@@ -19,6 +23,10 @@ func newRpcError(ec rpcjson.ErrorCode, message string) error {
 		Code:    ec,
 		Message: message,
 	}
+}
+
+func newRpcInternalError(err error) error {
+	return newRpcError(-32000, "rpcError: "+err.Error())
 }
 
 func GetServerInfo() (*ServerInfo, error) {
@@ -188,4 +196,46 @@ func IsValidSwapinBindAddress(address *string) bool {
 
 func IsValidSwapoutBindAddress(address *string) bool {
 	return tokens.SrcBridge.IsValidAddress(*address)
+}
+
+func RegisterP2shAddress(bindAddress string) (*P2shAddressInfo, error) {
+	return CalcP2shAddress(bindAddress, true)
+}
+
+func GetP2shAddressInfo(p2shAddress string) (*P2shAddressInfo, error) {
+	bindAddress, err := mongodb.FindP2shBindAddress(p2shAddress)
+	if err != nil {
+		return nil, err
+	}
+	return CalcP2shAddress(bindAddress, false)
+}
+
+func CalcP2shAddress(bindAddress string, addToDatabase bool) (*P2shAddressInfo, error) {
+	btcBridge, ok := tokens.SrcBridge.(*btc.BtcBridge)
+	if !ok {
+		return nil, errNotBtcBridge
+	}
+	p2shAddr, redeemScript, err := btcBridge.GetP2shAddress(bindAddress)
+	if err != nil {
+		return nil, newRpcInternalError(err)
+	}
+	disasm, err := txscript.DisasmString(redeemScript)
+	if err != nil {
+		return nil, newRpcInternalError(err)
+	}
+	if addToDatabase {
+		result, _ := mongodb.FindP2shAddress(bindAddress)
+		if result == nil {
+			mongodb.AddP2shAddress(&mongodb.MgoP2shAddress{
+				Key:         bindAddress,
+				P2shAddress: p2shAddr,
+			})
+		}
+	}
+	return &P2shAddressInfo{
+		BindAddress:        bindAddress,
+		P2shAddress:        p2shAddr,
+		RedeemScript:       hex.EncodeToString(redeemScript),
+		RedeemScriptDisasm: disasm,
+	}, nil
 }

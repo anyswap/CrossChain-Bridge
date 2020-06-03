@@ -152,3 +152,19 @@ func (s *RpcAPI) IsValidSwapoutBindAddress(r *http.Request, address *string, res
 	*result = swapapi.IsValidSwapoutBindAddress(address)
 	return nil
 }
+
+func (s *RpcAPI) RegisterP2shAddress(r *http.Request, bindAddress *string, result *swapapi.P2shAddressInfo) error {
+	res, err := swapapi.RegisterP2shAddress(*bindAddress)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+func (s *RpcAPI) GetP2shAddressInfo(r *http.Request, p2shAddress *string, result *swapapi.P2shAddressInfo) error {
+	res, err := swapapi.GetP2shAddressInfo(*p2shAddress)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
