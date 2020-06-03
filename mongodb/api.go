@@ -13,6 +13,7 @@ var (
 	collSwapout       *mgo.Collection
 	collSwapinResult  *mgo.Collection
 	collSwapoutResult *mgo.Collection
+	collP2shAddress   *mgo.Collection
 )
 
 const (
@@ -39,6 +40,8 @@ func getCollection(table string) *mgo.Collection {
 		return getOrInitCollection(table, &collSwapinResult, "from", "timestamp")
 	case tbSwapoutResults:
 		return getOrInitCollection(table, &collSwapoutResult, "from", "timestamp")
+	case tbP2shAddresses:
+		return getOrInitCollection(table, &collP2shAddress, "p2shaddress")
 	default:
 		panic("unknown talbe " + table)
 	}
@@ -346,4 +349,34 @@ func GetSwapStatistics() (*SwapStatistics, error) {
 	stat.PendingSwapins, _ = GetCountOfSwapinResultsWithStatus(MatchTxEmpty)
 	stat.PendingSwapouts, _ = GetCountOfSwapoutResultsWithStatus(MatchTxEmpty)
 	return stat, nil
+}
+
+// ------------------ p2sh address ------------------------
+
+func AddP2shAddress(ma *MgoP2shAddress) error {
+	err := getCollection(tbP2shAddresses).Insert(ma)
+	if err == nil {
+		log.Info("mongodb add p2sh address", "key", ma.Key, "p2shaddress", ma.P2shAddress)
+	} else {
+		log.Debug("mongodb add p2sh address", "key", ma.Key, "p2shaddress", ma.P2shAddress, "err", err)
+	}
+	return mgoError(err)
+}
+
+func FindP2shAddress(key string) (*MgoP2shAddress, error) {
+	var result MgoP2shAddress
+	err := getCollection(tbP2shAddresses).FindId(key).One(&result)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+	return &result, nil
+}
+
+func FindP2shBindAddress(p2shAddress string) (string, error) {
+	var result MgoP2shAddress
+	err := getCollection(tbP2shAddresses).Find(bson.M{"p2shaddress": p2shAddress}).One(&result)
+	if err != nil {
+		return "", mgoError(err)
+	}
+	return result.Key, nil
 }

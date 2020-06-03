@@ -5,6 +5,7 @@ const (
 	tbSwapouts       string = "Swapouts"
 	tbSwapinResults  string = "SwapinResults"
 	tbSwapoutResults string = "SwapoutResults"
+	tbP2shAddresses  string = "P2shAddresses"
 )
 
 type MgoSwap struct {
@@ -43,4 +44,9 @@ type SwapResultUpdateItems struct {
 	Status     SwapStatus
 	Timestamp  int64
 	Memo       string
+}
+
+type MgoP2shAddress struct {
+	Key         string `bson:"_id"`
+	P2shAddress string `bson:"p2shaddress"`
 }
