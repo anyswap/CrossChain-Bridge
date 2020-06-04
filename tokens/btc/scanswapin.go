@@ -17,7 +17,7 @@ var (
 	oracleLatestSeenTx   string
 
 	maxScanLifetime        = int64(3 * 24 * 3600)
-	retryIntervalInScanJob = 1 * time.Second
+	retryIntervalInScanJob = 3 * time.Second
 	restIntervalInScanJob  = 3 * time.Second
 )
 

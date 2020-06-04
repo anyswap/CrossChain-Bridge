@@ -18,7 +18,7 @@ var (
 	oracleLatestScanned  uint64
 
 	maxScanHeight          = uint64(15000)
-	retryIntervalInScanJob = 1 * time.Second
+	retryIntervalInScanJob = 3 * time.Second
 	restIntervalInScanJob  = 3 * time.Second
 )
 
@@ -138,7 +138,7 @@ func (b *EthBridge) scanFirstLoop(isServer bool, isProcessed func(string, uint64
 	for height := latest; height+maxScanHeight > latest; {
 		logs, err := b.getSwapoutLogs(height)
 		if err != nil {
-			log.Error("[scanswapout] get swapout logs error", "height", height, "err", err)
+			log.Error("[scanswapout] first scan get swapout logs error", "height", height, "err", err)
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}

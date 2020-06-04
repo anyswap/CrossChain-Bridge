@@ -39,3 +39,11 @@ func (b *BtcBridge) GetOutspend(txHash string, vout uint32) (*electrs.ElectOutsp
 func (b *BtcBridge) PostTransaction(txHex string) (txHash string, err error) {
 	return electrs.PostTransaction(b, txHex)
 }
+
+func (b *BtcBridge) GetBlockHash(height uint64) (string, error) {
+	return electrs.GetBlockHash(b, height)
+}
+
+func (b *BtcBridge) GetBlockTxids(blockHash string) ([]string, error) {
+	return electrs.GetBlockTxids(b, blockHash)
+}

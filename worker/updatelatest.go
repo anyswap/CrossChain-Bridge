@@ -40,7 +40,7 @@ func updateSrcLatestBlockHeight() error {
 func updateDstLatestBlockHeight() error {
 	dstLatest, err := tokens.DstBridge.GetLatestBlockNumber()
 	if err != nil {
-		logWorkerError("updatelatest", "geti dest latest block number error", err)
+		logWorkerError("updatelatest", "get dest latest block number error", err)
 		return err
 	}
 	if tokens.DstLatestBlockHeight != dstLatest {

@@ -81,3 +81,17 @@ func PostTransaction(b tokens.CrossChainBridge, txHex string) (txHash string, er
 	url := gateway.ApiAddress + "/tx"
 	return client.RpcRawPost(url, txHex)
 }
+
+func GetBlockHash(b tokens.CrossChainBridge, height uint64) (string, error) {
+	_, gateway := b.GetTokenAndGateway()
+	url := gateway.ApiAddress + "/block-height/" + fmt.Sprintf("%d", height)
+	return client.RpcRawGet(url)
+}
+
+func GetBlockTxids(b tokens.CrossChainBridge, blockHash string) ([]string, error) {
+	_, gateway := b.GetTokenAndGateway()
+	url := gateway.ApiAddress + "/block/" + blockHash + "/txids"
+	var result []string
+	err := client.RpcGet(&result, url)
+	return result, err
+}
