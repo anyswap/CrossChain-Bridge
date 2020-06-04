@@ -239,3 +239,36 @@ func CalcP2shAddress(bindAddress string, addToDatabase bool) (*P2shAddressInfo, 
 		RedeemScriptDisasm: disasm,
 	}, nil
 }
+
+func P2shSwapin(txid *string, bindAddr *string) (*PostResult, error) {
+	log.Debug("[api] receive P2shSwapin", "txid", *txid, "bindAddress", *bindAddr)
+	btcBridge, ok := tokens.SrcBridge.(*btc.BtcBridge)
+	if !ok {
+		return nil, errNotBtcBridge
+	}
+	txidstr := *txid
+	if swap, _ := mongodb.FindSwapin(txidstr); swap != nil {
+		return nil, errSwapExist
+	}
+	_, err := btcBridge.VerifyP2shTransaction(txidstr, *bindAddr, true)
+	if !tokens.ShouldRegisterSwapForError(err) {
+		return nil, newRpcError(-32099, "verify p2sh swapin failed! "+err.Error())
+	}
+	var memo string
+	if err != nil {
+		memo = err.Error()
+	}
+	swap := &mongodb.MgoSwap{
+		Key:       txidstr,
+		TxId:      txidstr,
+		Status:    mongodb.TxNotStable,
+		Timestamp: time.Now().Unix(),
+		Memo:      memo,
+	}
+	err = mongodb.AddSwapin(swap)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("[api] add p2sh swapin", "swap", swap)
+	return &SuccessPostResult, nil
+}

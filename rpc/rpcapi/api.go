@@ -127,6 +127,19 @@ func (s *RpcAPI) Swapin(r *http.Request, txid *string, result *swapapi.PostResul
 	return err
 }
 
+type RpcP2shSwapinArgs struct {
+	TxID string `json:"txid"`
+	Bind string `json:"bind"`
+}
+
+func (s *RpcAPI) P2shSwapin(r *http.Request, args *RpcP2shSwapinArgs, result *swapapi.PostResult) error {
+	res, err := swapapi.P2shSwapin(&args.TxID, &args.Bind)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
 func (s *RpcAPI) Swapout(r *http.Request, txid *string, result *swapapi.PostResult) error {
 	res, err := swapapi.Swapout(txid)
 	if err == nil && res != nil {
