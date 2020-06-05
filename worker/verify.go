@@ -5,6 +5,7 @@ import (
 
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/btc"
 )
 
 var (
@@ -76,9 +77,21 @@ func findSwapoutsToVerify() ([]*mongodb.MgoSwap, error) {
 	return mongodb.FindSwapoutsWithStatus(status, septime)
 }
 
-func processSwapinVerify(swap *mongodb.MgoSwap) error {
+func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxId
-	swapInfo, err := tokens.SrcBridge.VerifyTransaction(txid, false)
+	var swapInfo *tokens.TxSwapInfo
+	switch swap.TxType {
+	case mongodb.SwapinTx:
+		swapInfo, err = tokens.SrcBridge.VerifyTransaction(txid, false)
+	case mongodb.P2shSwapinTx:
+		btcBridge, ok := tokens.SrcBridge.(*btc.BtcBridge)
+		if !ok {
+			return tokens.ErrWrongP2shSwapin
+		}
+		swapInfo, err = btcBridge.VerifyP2shTransaction(txid, swap.Bind, false)
+	default:
+		return tokens.ErrWrongSwapinTxType
+	}
 
 	resultStatus := mongodb.MatchTxEmpty
 
