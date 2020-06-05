@@ -8,6 +8,7 @@ import (
 func ConvertMgoSwapToSwapInfo(ms *mongodb.MgoSwap) *SwapInfo {
 	return &SwapInfo{
 		TxId:      ms.TxId,
+		Bind:      ms.Bind,
 		Status:    ms.Status,
 		Timestamp: ms.Timestamp,
 		Memo:      ms.Memo,

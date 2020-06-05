@@ -58,21 +58,27 @@ func (b *BtcBridge) StartP2shSwapinScanJobOnOracle() error {
 	return b.scanP2shTransactionHistory(false)
 }
 
-func (b *BtcBridge) processP2shSwapin(txid string, bind string, isServer bool) error {
+func (b *BtcBridge) processP2shSwapin(txid string, isServer bool) error {
+	swapInfo, err := b.CheckP2shTransaction(txid, true)
+	if !tokens.ShouldRegisterSwapForError(err) {
+		return err
+	}
 	if isServer {
-		return b.registerP2shSwapin(txid)
+		return b.registerP2shSwapin(txid, swapInfo.Bind)
 	}
 	if !b.IsSwapinExistByQuery(txid) {
-		return b.postRegisterP2shSwapin(txid, bind)
+		return b.postRegisterP2shSwapin(txid, swapInfo.Bind)
 	}
 	return nil
 }
 
-func (b *BtcBridge) registerP2shSwapin(txid string) error {
-	log.Info("[scanp2sh] register swapin", "tx", txid)
+func (b *BtcBridge) registerP2shSwapin(txid string, bind string) error {
+	log.Info("[scanp2sh] register swapin", "tx", txid, "bind", bind)
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
 		TxId:      txid,
+		TxType:    mongodb.P2shSwapinTx,
+		Bind:      bind,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
 	}
@@ -96,7 +102,7 @@ func OpenScanStatusFile() {
 	}
 	var err error
 	execDir, _ := common.ExecuteDir()
-	scanStatusFilePath := common.AbsolutePath(execDir, "scanstatus")
+	scanStatusFilePath := common.AbsolutePath(execDir, "btcscanstatus")
 	scanStatusFile, err = os.OpenFile(scanStatusFilePath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		panic(err)
@@ -174,11 +180,7 @@ func (b *BtcBridge) scanP2shTransactionHistory(isServer bool) error {
 				continue
 			}
 			for _, txid := range txids {
-				swapInfo, err := b.CheckP2shTransaction(txid, true)
-				if !tokens.ShouldRegisterSwapForError(err) {
-					continue
-				}
-				b.processP2shSwapin(txid, swapInfo.Bind, isServer)
+				b.processP2shSwapin(txid, isServer)
 			}
 			scannedBlocks.cacheScannedBlock(blockHash, h)
 			log.Info("[scanp2sh] scanned tx history", "blockHash", blockHash, "height", h)
@@ -206,11 +208,7 @@ func (b *BtcBridge) scanP2shInTransactionPool(isServer bool) error {
 			continue
 		}
 		for _, txid := range txids {
-			swapInfo, err := b.CheckP2shTransaction(txid, true)
-			if !tokens.ShouldRegisterSwapForError(err) {
-				continue
-			}
-			b.processP2shSwapin(txid, swapInfo.Bind, isServer)
+			b.processP2shSwapin(txid, isServer)
 		}
 		time.Sleep(restIntervalInScanJob)
 	}

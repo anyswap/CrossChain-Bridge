@@ -50,8 +50,12 @@ func (b *EthBridge) StartSwapoutScanJobOnServer() error {
 }
 
 func (b *EthBridge) processSwapout(txid string, isServer bool) error {
+	swapInfo, err := b.VerifyTransaction(txid, true)
+	if !tokens.ShouldRegisterSwapForError(err) {
+		return err
+	}
 	if isServer {
-		return b.registerSwapout(txid)
+		return b.registerSwapout(txid, swapInfo.Bind)
 	}
 	if !b.IsSwapoutExistByQuery(txid) {
 		return b.postRegisterSwapout(txid)
@@ -65,11 +69,13 @@ func (b *EthBridge) IsSwapoutExistByQuery(txid string) bool {
 	return result != nil
 }
 
-func (b *EthBridge) registerSwapout(txid string) error {
+func (b *EthBridge) registerSwapout(txid string, bind string) error {
 	log.Info("[scanswapout] register swapout", "tx", txid)
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
 		TxId:      txid,
+		TxType:    mongodb.SwapoutTx,
+		Bind:      bind,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
 	}
@@ -205,10 +211,6 @@ func (b *EthBridge) scanTransactionPool(isServer bool) error {
 		}
 		for _, tx := range txs {
 			txid := tx.Hash.String()
-			_, err := b.VerifyTransaction(txid, true)
-			if !tokens.ShouldRegisterSwapForError(err) {
-				continue
-			}
 			b.processSwapout(txid, isServer)
 		}
 		time.Sleep(restIntervalInScanJob)

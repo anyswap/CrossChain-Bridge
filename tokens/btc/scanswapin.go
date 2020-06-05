@@ -49,8 +49,12 @@ func (b *BtcBridge) StartSwapinScanJobOnServer() error {
 }
 
 func (b *BtcBridge) processSwapin(txid string, isServer bool) error {
+	swapInfo, err := b.VerifyTransaction(txid, true)
+	if !tokens.ShouldRegisterSwapForError(err) {
+		return err
+	}
 	if isServer {
-		return b.registerSwapin(txid)
+		return b.registerSwapin(txid, swapInfo.Bind)
 	}
 	if !b.IsSwapinExistByQuery(txid) {
 		return b.postRegisterSwapin(txid)
@@ -64,10 +68,12 @@ func (b *BtcBridge) IsSwapinExistByQuery(txid string) bool {
 	return result != nil
 }
 
-func (b *BtcBridge) registerSwapin(txid string) error {
+func (b *BtcBridge) registerSwapin(txid string, bind string) error {
 	log.Info("[scanswapin] register swapin", "tx", txid)
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
+		TxType:    mongodb.SwapinTx,
+		Bind:      bind,
 		TxId:      txid,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
@@ -212,10 +218,6 @@ func (b *BtcBridge) scanTransactionPool(isServer bool) error {
 			continue
 		}
 		for _, txid := range txids {
-			_, err := b.VerifyTransaction(txid, true)
-			if !tokens.ShouldRegisterSwapForError(err) {
-				continue
-			}
 			b.processSwapin(txid, isServer)
 		}
 		time.Sleep(restIntervalInScanJob)
