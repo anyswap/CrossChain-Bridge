@@ -76,6 +76,8 @@ func updateSwapResult(key string, mtx *MatchTx) (err error) {
 	if mtx.SwapTx != "" {
 		updates.SwapTx = mtx.SwapTx
 		updates.SwapValue = mtx.SwapValue
+		updates.SwapHeight = 0
+		updates.SwapTime = 0
 	} else {
 		updates.SwapHeight = mtx.SwapHeight
 		updates.SwapTime = mtx.SwapTime

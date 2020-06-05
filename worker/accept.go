@@ -84,7 +84,7 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	var args tokens.BuildTxArgs
 	err := json.Unmarshal([]byte(msgContext), &args)
 	if err != nil {
-		return err
+		return ErrIdentifierMismatch
 	}
 	if args.Identifier != params.GetIdentifier() {
 		return ErrIdentifierMismatch
