@@ -96,11 +96,14 @@ func getResultFromJsonResponse(result interface{}, resp *http.Response) error {
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("wrong response status %v. message: %v", resp.StatusCode, string(body))
 	}
+	if len(body) == 0 {
+		return fmt.Errorf("empty response body.")
+	}
 
 	var jsonResp jsonrpcResponse
 	err = json.Unmarshal(body, &jsonResp)
 	if err != nil {
-		return fmt.Errorf("unmarshal body error: %v", err)
+		return fmt.Errorf("unmarshal body error, body is \"%v\" err=\"%v\"", string(body), err)
 	}
 	if jsonResp.Error != nil {
 		return fmt.Errorf("return error:  %v", jsonResp.Error.Error())

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -80,7 +81,10 @@ func addPostBody(req *http.Request, body interface{}) error {
 			return err
 		}
 		req.Header.Set("Content-type", "application/json")
-		req.Body = ioutil.NopCloser(bytes.NewBuffer(jsonData))
+		req.GetBody = func() (io.ReadCloser, error) {
+			return ioutil.NopCloser(bytes.NewBuffer(jsonData)), nil
+		}
+		req.Body, _ = req.GetBody()
 	}
 	return nil
 }
@@ -88,7 +92,10 @@ func addPostBody(req *http.Request, body interface{}) error {
 func addRawPostBody(req *http.Request, body string) error {
 	if body != "" {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		req.Body = ioutil.NopCloser(strings.NewReader(body))
+		req.GetBody = func() (io.ReadCloser, error) {
+			return ioutil.NopCloser(strings.NewReader(body)), nil
+		}
+		req.Body, _ = req.GetBody()
 	}
 	return nil
 }
