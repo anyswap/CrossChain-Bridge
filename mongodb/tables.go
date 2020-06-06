@@ -11,7 +11,7 @@ const (
 type MgoSwap struct {
 	Key       string     `bson:"_id"`
 	TxId      string     `bson:"txid"`
-	TxType    SwapTxType `bson:"txtype"`
+	TxType    uint32     `bson:"txtype"`
 	Bind      string     `bson:"bind"`
 	Status    SwapStatus `bson:"status"`
 	Timestamp int64      `bson:"timestamp"`

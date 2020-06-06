@@ -138,7 +138,7 @@ func Swapin(txid *string) (*PostResult, error) {
 	swap := &mongodb.MgoSwap{
 		Key:       txidstr,
 		TxId:      txidstr,
-		TxType:    mongodb.SwapinTx,
+		TxType:    uint32(tokens.SwapinTx),
 		Bind:      swapInfo.Bind,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
@@ -169,7 +169,7 @@ func Swapout(txid *string) (*PostResult, error) {
 	swap := &mongodb.MgoSwap{
 		Key:       txidstr,
 		TxId:      txidstr,
-		TxType:    mongodb.SwapoutTx,
+		TxType:    uint32(tokens.SwapoutTx),
 		Bind:      swapInfo.Bind,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
@@ -202,11 +202,11 @@ func IsValidSwapoutBindAddress(address *string) bool {
 	return tokens.SrcBridge.IsValidAddress(*address)
 }
 
-func RegisterP2shAddress(bindAddress string) (*P2shAddressInfo, error) {
+func RegisterP2shAddress(bindAddress string) (*tokens.P2shAddressInfo, error) {
 	return CalcP2shAddress(bindAddress, true)
 }
 
-func GetP2shAddressInfo(p2shAddress string) (*P2shAddressInfo, error) {
+func GetP2shAddressInfo(p2shAddress string) (*tokens.P2shAddressInfo, error) {
 	bindAddress, err := mongodb.FindP2shBindAddress(p2shAddress)
 	if err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func GetP2shAddressInfo(p2shAddress string) (*P2shAddressInfo, error) {
 	return CalcP2shAddress(bindAddress, false)
 }
 
-func CalcP2shAddress(bindAddress string, addToDatabase bool) (*P2shAddressInfo, error) {
+func CalcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddressInfo, error) {
 	btcBridge, ok := tokens.SrcBridge.(*btc.BtcBridge)
 	if !ok {
 		return nil, errNotBtcBridge
@@ -236,7 +236,7 @@ func CalcP2shAddress(bindAddress string, addToDatabase bool) (*P2shAddressInfo, 
 			})
 		}
 	}
-	return &P2shAddressInfo{
+	return &tokens.P2shAddressInfo{
 		BindAddress:        bindAddress,
 		P2shAddress:        p2shAddr,
 		RedeemScript:       hex.EncodeToString(redeemScript),
@@ -265,7 +265,7 @@ func P2shSwapin(txid *string, bindAddr *string) (*PostResult, error) {
 	swap := &mongodb.MgoSwap{
 		Key:       txidstr,
 		TxId:      txidstr,
-		TxType:    mongodb.P2shSwapinTx,
+		TxType:    uint32(tokens.P2shSwapinTx),
 		Bind:      *bindAddr,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),

@@ -74,7 +74,7 @@ func (b *EthBridge) registerSwapout(txid string, bind string) error {
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
 		TxId:      txid,
-		TxType:    mongodb.SwapoutTx,
+		TxType:    uint32(tokens.SwapoutTx),
 		Bind:      bind,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),

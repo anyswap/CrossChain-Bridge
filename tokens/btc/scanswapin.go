@@ -72,7 +72,7 @@ func (b *BtcBridge) registerSwapin(txid string, bind string) error {
 	log.Info("[scanswapin] register swapin", "tx", txid)
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
-		TxType:    mongodb.SwapinTx,
+		TxType:    uint32(tokens.SwapinTx),
 		Bind:      bind,
 		TxId:      txid,
 		Status:    mongodb.TxNotStable,

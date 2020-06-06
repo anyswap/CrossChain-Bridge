@@ -71,6 +71,14 @@ const (
 	Swap_Recall
 )
 
+type SwapTxType uint32
+
+const (
+	SwapinTx     SwapTxType = iota // 0
+	SwapoutTx                      // 1
+	P2shSwapinTx                   // 2
+)
+
 type TxSwapInfo struct {
 	Hash      string   `json:"hash"`
 	Height    uint64   `json:"height"`
@@ -90,9 +98,11 @@ type TxStatus struct {
 }
 
 type SwapInfo struct {
-	SwapID     string   `json:"swapid,omitempty"`
-	SwapType   SwapType `json:"swaptype,omitempty"`
-	Identifier string   `json:"identifier,omitempty"`
+	SwapID     string     `json:"swapid,omitempty"`
+	SwapType   SwapType   `json:"swaptype,omitempty"`
+	TxType     SwapTxType `json:"txtype,omitempty"`
+	Bind       string     `json:"bind,omitempty"`
+	Identifier string     `json:"identifier,omitempty"`
 }
 
 type BuildTxArgs struct {
@@ -142,4 +152,11 @@ type BtcExtraConfig struct {
 	MinRelayFee   int64
 	RelayFeePerKb int64
 	FromPublicKey string
+}
+
+type P2shAddressInfo struct {
+	BindAddress        string
+	P2shAddress        string
+	RedeemScript       string
+	RedeemScriptDisasm string
 }

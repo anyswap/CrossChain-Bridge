@@ -70,6 +70,8 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		SwapInfo: tokens.SwapInfo{
 			SwapID:   res.TxId,
 			SwapType: tokens.Swap_Recall,
+			TxType:   tokens.SwapTxType(swap.TxType),
+			Bind:     swap.Bind,
 		},
 		To:    res.Bind,
 		Value: value,

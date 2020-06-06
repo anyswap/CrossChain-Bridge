@@ -65,7 +65,7 @@ func (b *BtcBridge) processP2shSwapin(txid string, isServer bool) error {
 			return nil
 		}
 	}
-	swapInfo, err := b.CheckP2shTransaction(txid, true)
+	swapInfo, err := b.CheckP2shTransaction(txid, isServer, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return err
 	}
@@ -82,7 +82,7 @@ func (b *BtcBridge) registerP2shSwapin(txid string, bind string) error {
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
 		TxId:      txid,
-		TxType:    mongodb.P2shSwapinTx,
+		TxType:    uint32(tokens.P2shSwapinTx),
 		Bind:      bind,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
@@ -220,7 +220,20 @@ func (b *BtcBridge) scanP2shInTransactionPool(isServer bool) error {
 	return nil
 }
 
-func (b *BtcBridge) CheckP2shTransaction(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+func getBindAddress(p2shAddress string, isServer bool) (bindAddress string) {
+	if isServer {
+		bindAddress, _ = mongodb.FindP2shBindAddress(p2shAddress)
+	} else {
+		var info tokens.P2shAddressInfo
+		err := client.RpcPost(&info, swapServerApiAddress, "swap.GetP2shAddressInfo", p2shAddress)
+		if err == nil {
+			bindAddress = info.BindAddress
+		}
+	}
+	return bindAddress
+}
+
+func (b *BtcBridge) CheckP2shTransaction(txHash string, isServer bool, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
 		log.Debug("BtcBridge::GetTransaction fail", "tx", txHash, "err", err)
@@ -231,7 +244,7 @@ func (b *BtcBridge) CheckP2shTransaction(txHash string, allowUnstable bool) (*to
 		switch *output.Scriptpubkey_type {
 		case "p2sh":
 			p2shAddress = *output.Scriptpubkey_address
-			bindAddress, _ = mongodb.FindP2shBindAddress(p2shAddress)
+			bindAddress = getBindAddress(p2shAddress, isServer)
 			if bindAddress != "" {
 				break
 			}

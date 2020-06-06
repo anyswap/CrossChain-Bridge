@@ -84,10 +84,10 @@ func findSwapoutsToVerify() ([]*mongodb.MgoSwap, error) {
 func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxId
 	var swapInfo *tokens.TxSwapInfo
-	switch swap.TxType {
-	case mongodb.SwapinTx:
+	switch tokens.SwapTxType(swap.TxType) {
+	case tokens.SwapinTx:
 		swapInfo, err = tokens.SrcBridge.VerifyTransaction(txid, false)
-	case mongodb.P2shSwapinTx:
+	case tokens.P2shSwapinTx:
 		btcBridge, ok := tokens.SrcBridge.(*btc.BtcBridge)
 		if !ok {
 			return tokens.ErrWrongP2shSwapin

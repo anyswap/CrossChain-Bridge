@@ -11,6 +11,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/dcrm"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/btc"
 )
 
 var (
@@ -108,7 +109,17 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	default:
 		return fmt.Errorf("unknown swap type %v", args.SwapType)
 	}
-	swap, err := srcBridge.VerifyTransaction(args.SwapID, false)
+	var swap *tokens.TxSwapInfo
+	switch args.TxType {
+	case tokens.P2shSwapinTx:
+		btcBridge, ok := srcBridge.(*btc.BtcBridge)
+		if !ok {
+			return tokens.ErrWrongP2shSwapin
+		}
+		swap, err = btcBridge.VerifyP2shTransaction(args.SwapID, args.Bind, false)
+	default:
+		swap, err = srcBridge.VerifyTransaction(args.SwapID, false)
+	}
 	if err != nil {
 		logWorkerError("accept", "verifySignInfo failed", err, "txid", args.SwapID, "swaptype", args.SwapType)
 		return err
