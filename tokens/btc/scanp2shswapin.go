@@ -36,7 +36,7 @@ func (b *BtcBridge) StartP2shSwapinScanJob(isServer bool) error {
 }
 
 func (b *BtcBridge) StartP2shSwapinScanJobOnServer() error {
-	log.Info("[scanp2sh] start scan p2sh swapin job")
+	log.Info("[scanp2sh] server start scan p2sh swapin job")
 
 	go b.scanP2shInTransactionPool(true)
 
@@ -44,7 +44,7 @@ func (b *BtcBridge) StartP2shSwapinScanJobOnServer() error {
 }
 
 func (b *BtcBridge) StartP2shSwapinScanJobOnOracle() error {
-	log.Info("[scanp2sh] start scan p2sh swapin job")
+	log.Info("[scanp2sh] oracle start scan p2sh swapin job")
 
 	// init p2shSwapServerApiAddress
 	p2shSwapServerApiAddress = getSwapServerApiAddress()
@@ -59,21 +59,26 @@ func (b *BtcBridge) StartP2shSwapinScanJobOnOracle() error {
 }
 
 func (b *BtcBridge) processP2shSwapin(txid string, isServer bool) error {
+	if isServer {
+		swap, _ := mongodb.FindSwapin(txid)
+		if swap != nil {
+			return nil
+		}
+	}
 	swapInfo, err := b.CheckP2shTransaction(txid, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return err
 	}
 	if isServer {
 		return b.registerP2shSwapin(txid, swapInfo.Bind)
-	}
-	if !b.IsSwapinExistByQuery(txid) {
+	} else if !b.IsSwapinExistByQuery(txid) {
 		return b.postRegisterP2shSwapin(txid, swapInfo.Bind)
 	}
 	return nil
 }
 
 func (b *BtcBridge) registerP2shSwapin(txid string, bind string) error {
-	log.Info("[scanp2sh] register swapin", "tx", txid, "bind", bind)
+	log.Info("[scanp2sh] register p2sh swapin", "tx", txid, "bind", bind)
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
 		TxId:      txid,

@@ -33,7 +33,7 @@ func (b *BtcBridge) StartSwapinScanJob(isServer bool) error {
 }
 
 func (b *BtcBridge) StartSwapinScanJobOnServer() error {
-	log.Info("[scanswapin] start scan swapin job")
+	log.Info("[scanswapin] server start scan swapin job")
 
 	isProcessed := func(txid string) bool {
 		swap, _ := mongodb.FindSwapin(txid)
@@ -44,7 +44,7 @@ func (b *BtcBridge) StartSwapinScanJobOnServer() error {
 
 	go b.scanFirstLoop(true, isProcessed)
 
-	log.Info("[scanswapin] start second scan loop")
+	log.Info("[scanswapin] server start second scan loop")
 	return b.scanTransactionHistory(true, isProcessed)
 }
 
@@ -96,7 +96,7 @@ func getSwapServerApiAddress() string {
 }
 
 func (b *BtcBridge) StartSwapinScanJobOnOracle() error {
-	log.Info("[scanswapin] start scan swapin job")
+	log.Info("[scanswapin] oracle start scan swapin job")
 
 	// init swapServerApiAddress
 	swapServerApiAddress = getSwapServerApiAddress()

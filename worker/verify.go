@@ -32,8 +32,10 @@ func startSwapinVerifyJob() error {
 			}
 			for _, swap := range res {
 				err = processSwapinVerify(swap)
-				if err != nil {
-					logWorkerError("verify", "process swapin verify error", err)
+				switch err {
+				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+				default:
+					logWorkerError("verify", "process swapin verify error", err, "txid", swap.TxId)
 				}
 			}
 			restInJob(restIntervalInVerifyJob)
@@ -55,8 +57,10 @@ func startSwapoutVerifyJob() error {
 			}
 			for _, swap := range res {
 				err = processSwapoutVerify(swap)
-				if err != nil {
-					logWorkerError("recall", "process swapout verify error", err)
+				switch err {
+				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+				default:
+					logWorkerError("verify", "process swapout verify error", err, "txid", swap.TxId)
 				}
 			}
 			restInJob(restIntervalInVerifyJob)

@@ -33,7 +33,7 @@ func startSwapinRecallJob() error {
 			for _, swap := range res {
 				err = processRecallSwapin(swap)
 				if err != nil {
-					logWorkerError("recall", "process recall error", err)
+					logWorkerError("recall", "process recall error", err, "txid", swap.TxId)
 				}
 			}
 			restInJob(restIntervalInRecallJob)
