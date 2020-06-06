@@ -6,11 +6,13 @@ import (
 	"fmt"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
+	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
 )
 
 var (
-	ErrGetSignStatusFailed = errors.New("GetSignStatus timeout or failure")
+	ErrGetSignStatusTimeout = errors.New("GetSignStatus timeout")
+	ErrGetSignStatusFailed  = errors.New("GetSignStatus failure")
 )
 
 func newWrongStatusError(subject, status, errInfo string) error {
@@ -64,10 +66,17 @@ func GetSignStatus(key string) (*SignStatus, error) {
 	}
 	data := result.Data.Result
 	var signStatus SignStatus
-	json.Unmarshal([]byte(data), &signStatus)
+	err = json.Unmarshal([]byte(data), &signStatus)
+	if err != nil {
+		return nil, wrapPostError("dcrm_getSignStatus", err)
+	}
 	switch signStatus.Status {
-	case "Timeout", "Failure":
+	case "Failure":
+		log.Info("GetSignStatus Failure", "keyID", key, "status", data)
 		return nil, ErrGetSignStatusFailed
+	case "Timeout":
+		log.Info("GetSignStatus Timeout", "keyID", key, "status", data)
+		return nil, ErrGetSignStatusTimeout
 	case "Success":
 		return &signStatus, nil
 	default:

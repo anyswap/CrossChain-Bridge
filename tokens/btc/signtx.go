@@ -162,7 +162,8 @@ func (b *BtcBridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, id
 			rsv = signStatus.Rsv
 			break
 		}
-		if err == dcrm.ErrGetSignStatusFailed {
+		switch err {
+		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
 			return "", err
 		}
 		log.Debug("retry get sign status as error", "err", err, "txid", args.SwapID)

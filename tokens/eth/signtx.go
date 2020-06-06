@@ -44,7 +44,8 @@ func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 			rsv = signStatus.Rsv
 			break
 		}
-		if err == dcrm.ErrGetSignStatusFailed {
+		switch err {
+		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
 			return nil, "", err
 		}
 		log.Debug("retry get sign status as error", "err", err, "txid", args.SwapID)
