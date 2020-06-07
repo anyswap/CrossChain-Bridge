@@ -33,6 +33,17 @@ func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 		panic(fmt.Sprintf("unsupported fusion network: %v", tokenCfg.NetID))
 	}
 
+	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
+		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
+	}
+	if !b.IsSrc && !b.IsValidAddress(tokenCfg.ContractAddress) {
+		log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)
+	}
+	if err := b.VerifyContractAddress(tokenCfg.ContractAddress); err != nil {
+		log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
+	}
+	log.Info("verify contract address pass", "address", tokenCfg.ContractAddress)
+
 	var (
 		latest  uint64
 		chainID *big.Int

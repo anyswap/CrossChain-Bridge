@@ -42,6 +42,10 @@ func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 	if !b.IsSrc && !b.IsValidAddress(tokenCfg.ContractAddress) {
 		log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)
 	}
+	if err := b.VerifyContractAddress(tokenCfg.ContractAddress); err != nil {
+		log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
+	}
+	log.Info("verify contract address pass", "address", tokenCfg.ContractAddress)
 
 	var (
 		latest  uint64

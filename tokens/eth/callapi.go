@@ -145,3 +145,11 @@ func (b *EthBridge) ChainID() (*big.Int, error) {
 	}
 	return result.ToInt(), nil
 }
+
+func (b *EthBridge) GetCode(contract string) ([]byte, error) {
+	gateway := b.GatewayConfig
+	url := gateway.ApiAddress
+	var result hexutil.Bytes
+	err := client.RpcPost(&result, url, "eth_getCode", contract, "latest")
+	return []byte(result), err
+}
