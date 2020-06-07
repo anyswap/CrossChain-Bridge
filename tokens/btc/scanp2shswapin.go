@@ -10,6 +10,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
+	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
@@ -18,8 +19,9 @@ var (
 	p2shSwapinScanStarter    sync.Once
 	p2shSwapServerApiAddress string
 
-	scannedBlocks  = newCachedScannedBlocks(10)
-	scanStatusFile *os.File
+	scannedBlocks      = newCachedScannedBlocks(10)
+	scanStatusFileName = "btcscanstatus"
+	scanStatusFile     *os.File
 
 	restIntervalInP2shScanJob = 10 * time.Second
 )
@@ -101,18 +103,17 @@ func (b *BtcBridge) postRegisterP2shSwapin(txid string, bind string) error {
 	return client.RpcPost(&result, p2shSwapServerApiAddress, "swap.P2shSwapin", args)
 }
 
-func OpenScanStatusFile() {
+func OpenBtcScanStatusFile() (err error) {
 	if scanStatusFile != nil {
 		return
 	}
-	var err error
-	execDir, _ := common.ExecuteDir()
-	scanStatusFilePath := common.AbsolutePath(execDir, "btcscanstatus")
+	scanStatusFilePath := common.AbsolutePath(params.DataDir, scanStatusFileName)
 	scanStatusFile, err = os.OpenFile(scanStatusFilePath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	log.Info("[scanp2sh] OpenScanStatusFile", "path", scanStatusFilePath)
+	log.Info("[scanp2sh] OpenBtcScanStatusFile succeed", "path", scanStatusFilePath)
+	return nil
 }
 
 func GetLatestScanHeight() uint64 {
@@ -129,7 +130,7 @@ func GetLatestScanHeight() uint64 {
 }
 
 func UpdateLatestScanHeight(height uint64) error {
-	fileContent := fmt.Sprintf("%d", height)
+	fileContent := fmt.Sprintf("%d\n", height)
 	scanStatusFile.Seek(0, 0)
 	scanStatusFile.WriteString(fileContent)
 	scanStatusFile.Sync()
@@ -150,7 +151,12 @@ func (b *BtcBridge) getLatestBlock() uint64 {
 }
 
 func (b *BtcBridge) scanP2shTransactionHistory(isServer bool) error {
-	OpenScanStatusFile()
+	err := OpenBtcScanStatusFile()
+	if err != nil {
+		log.Error("OpenBtcScanStatusFile failed", "err", err)
+		return err
+	}
+
 	startHeight := GetLatestScanHeight()
 	confirmations := *b.TokenConfig.Confirmations
 

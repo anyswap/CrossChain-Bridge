@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/BurntSushi/toml"
@@ -20,6 +21,8 @@ const (
 var (
 	serverConfig      *ServerConfig
 	loadConfigStarter sync.Once
+
+	DataDir = "datadir"
 )
 
 type ServerConfig struct {
@@ -209,4 +212,11 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 		}
 	})
 	return serverConfig
+}
+
+func SetDataDir(datadir string) {
+	if datadir != "" {
+		DataDir = datadir
+	}
+	os.MkdirAll(DataDir, os.ModePerm)
 }

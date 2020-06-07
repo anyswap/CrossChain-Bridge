@@ -6,6 +6,11 @@ import (
 )
 
 var (
+	DataDirFlag = &cli.StringFlag{
+		Name:  "datadir",
+		Usage: "Data directory (default in the execute directory)",
+		Value: "",
+	}
 	ConfigFileFlag = &cli.StringFlag{
 		Name:    "config",
 		Aliases: []string{"c"},

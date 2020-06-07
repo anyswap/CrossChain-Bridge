@@ -33,6 +33,7 @@ func init() {
 		utils.VersionCommand,
 	}
 	app.Flags = []cli.Flag{
+		utils.DataDirFlag,
 		utils.ConfigFileFlag,
 		utils.LogFileFlag,
 		utils.LogRotationFlag,
@@ -59,6 +60,8 @@ func swapserver(ctx *cli.Context) error {
 	exitCh := make(chan struct{})
 	configFile := utils.GetConfigFilePath(ctx)
 	config := params.LoadConfig(configFile, true)
+
+	params.SetDataDir(ctx.String(utils.DataDirFlag.Name))
 
 	dbConfig := config.MongoDB
 	mongoURL := dbConfig.GetURL()
