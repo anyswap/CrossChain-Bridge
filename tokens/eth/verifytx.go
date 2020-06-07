@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
@@ -73,105 +74,103 @@ func (b *EthBridge) verifySwapoutTx(txHash string, allowUnstable bool) (*tokens.
 }
 
 func (b *EthBridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error) {
+	swapInfo := &tokens.TxSwapInfo{}
+	swapInfo.Hash = txHash // Hash
 	token := b.TokenConfig
 	txStatus := b.GetTransactionStatus(txHash)
-	receipt, _ := txStatus.Receipt.(*types.RPCTxReceipt)
-	if *receipt.Status != 1 {
-		return nil, tokens.ErrTxWithWrongReceipt
+	swapInfo.Height = txStatus.Block_height  // Height
+	swapInfo.Timestamp = txStatus.Block_time // Timestamp
+	receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
+	if !ok || *receipt.Status != 1 {
+		return swapInfo, tokens.ErrTxWithWrongReceipt
 	}
 	if txStatus.Block_height == 0 ||
 		txStatus.Confirmations < *token.Confirmations {
-		return nil, tokens.ErrTxNotStable
+		return swapInfo, tokens.ErrTxNotStable
 	}
 
 	contractAddress := token.ContractAddress
 	to := receipt.Recipient
 	if to == nil || !common.IsEqualIgnoreCase(to.String(), contractAddress) {
-		return nil, tokens.ErrTxWithWrongReceiver
+		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
+	swapInfo.To = strings.ToLower(to.String()) // To
 
 	dcrmAddress := token.DcrmAddress
 	from := receipt.From.String()
-	if common.IsEqualIgnoreCase(from, dcrmAddress) {
-		return nil, tokens.ErrTxWithWrongSender
-	}
+	swapInfo.From = strings.ToLower(from) // From
 
 	bindAddress, value, err := ParseSwapoutTxLogs(receipt.Logs)
 	if err != nil {
 		log.Debug("EthBridge ParseSwapoutTxLogs fail", "tx", txHash, "err", err)
-		return nil, tokens.ErrTxWithWrongInput
+		return swapInfo, tokens.ErrTxWithWrongInput
+	}
+	swapInfo.Bind = bindAddress // Bind
+	swapInfo.Value = value      // Value
+
+	// check sender
+	if common.IsEqualIgnoreCase(from, dcrmAddress) {
+		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 
 	if !tokens.CheckSwapValue(value, b.IsSrc) {
-		return nil, tokens.ErrTxWithWrongValue
+		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
+	// NOTE: must verify memo at last step (as it can be recall)
 	if !tokens.SrcBridge.IsValidAddress(bindAddress) {
 		log.Debug("wrong bind address in swapout", "bind", bindAddress)
-		err = tokens.ErrTxWithWrongMemo
+		return swapInfo, tokens.ErrTxWithWrongMemo
 	}
 
-	blockHeight := txStatus.Block_height
-	blockTimestamp := txStatus.Block_time
-	log.Debug("verify swapout stable pass", "from", from, "to", to, "bind", bindAddress, "value", value, "txid", txHash, "height", blockHeight, "timestamp", blockTimestamp)
-	return &tokens.TxSwapInfo{
-		Hash:      txHash,
-		Height:    blockHeight,
-		Timestamp: blockTimestamp,
-		From:      from,
-		To:        contractAddress,
-		Bind:      bindAddress,
-		Value:     value,
-	}, err
+	log.Debug("verify swapout stable pass", "from", from, "to", to, "bind", bindAddress, "value", value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+	return swapInfo, nil
 }
 
 func (b *EthBridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, error) {
+	swapInfo := &tokens.TxSwapInfo{}
+	swapInfo.Hash = txHash // Hash
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
 		log.Debug("EthBridge::GetTransaction fail", "tx", txHash, "err", err)
-		return nil, tokens.ErrTxNotFound
+		return swapInfo, tokens.ErrTxNotFound
 	}
+	swapInfo.Height = tx.BlockNumber.ToInt().Uint64() // Height
 
 	token := b.TokenConfig
 	contractAddress := token.ContractAddress
 	to := tx.Recipient
 	if to == nil || !common.IsEqualIgnoreCase(to.String(), contractAddress) {
-		return nil, tokens.ErrTxWithWrongReceiver
+		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
+	swapInfo.To = strings.ToLower(to.String()) // To
 
 	dcrmAddress := token.DcrmAddress
 	from := tx.From.String()
 	if common.IsEqualIgnoreCase(from, dcrmAddress) {
-		return nil, tokens.ErrTxWithWrongSender
+		return swapInfo, tokens.ErrTxWithWrongSender
 	}
+	swapInfo.From = strings.ToLower(from) // From
 
 	input := (*[]byte)(tx.Payload)
 	bindAddress, value, err := ParseSwapoutTxInput(input)
 	if err != nil {
 		log.Debug("EthBridge ParseSwapoutTxInput fail", "tx", txHash, "input", input, "err", err)
-		return nil, tokens.ErrTxWithWrongInput
+		return swapInfo, tokens.ErrTxWithWrongInput
 	}
+	swapInfo.Bind = bindAddress // Bind
+	swapInfo.Value = value      // Value
 
 	if !tokens.CheckSwapValue(value, b.IsSrc) {
-		return nil, tokens.ErrTxWithWrongValue
+		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
 	if !tokens.SrcBridge.IsValidAddress(bindAddress) {
 		log.Debug("wrong bind address in swapout", "bind", bindAddress)
-		err = tokens.ErrTxWithWrongMemo
+		return swapInfo, tokens.ErrTxWithWrongMemo
 	}
 
-	blockHeight := tx.BlockNumber.ToInt().Uint64()
-	//log.Debug("verify swapout unstable pass", "from", from, "to", to, "bind", bindAddress, "value", value, "txid", txHash, "height", blockHeight)
-	return &tokens.TxSwapInfo{
-		Hash:      txHash,
-		Height:    blockHeight,
-		Timestamp: 0,
-		From:      from,
-		To:        contractAddress,
-		Bind:      bindAddress,
-		Value:     value,
-	}, err
+	return swapInfo, nil
 }
 
 func ParseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {

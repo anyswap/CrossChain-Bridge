@@ -69,7 +69,7 @@ func (b *BtcBridge) IsSwapinExistByQuery(txid string) bool {
 }
 
 func (b *BtcBridge) registerSwapin(txid string, bind string) error {
-	log.Info("[scanswapin] register swapin", "tx", txid)
+	log.Info("[scanswapin] register swapin", "tx", txid, "bind", bind)
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
 		TxType:    uint32(tokens.SwapinTx),

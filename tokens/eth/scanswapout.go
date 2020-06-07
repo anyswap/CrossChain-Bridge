@@ -70,7 +70,7 @@ func (b *EthBridge) IsSwapoutExistByQuery(txid string) bool {
 }
 
 func (b *EthBridge) registerSwapout(txid string, bind string) error {
-	log.Info("[scanswapout] register swapout", "tx", txid)
+	log.Info("[scanswapout] register swapout", "tx", txid, "bind", bind)
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
 		TxId:      txid,

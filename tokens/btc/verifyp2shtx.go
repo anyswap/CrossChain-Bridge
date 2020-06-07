@@ -9,25 +9,34 @@ import (
 )
 
 func (b *BtcBridge) VerifyP2shTransaction(txHash string, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+	swapInfo := &tokens.TxSwapInfo{}
+	swapInfo.Hash = txHash // Hash
 	if !b.IsSrc {
-		return nil, tokens.ErrBridgeDestinationNotSupported
+		return swapInfo, tokens.ErrBridgeDestinationNotSupported
 	}
 	p2shAddress, _, err := b.GetP2shAddress(bindAddress)
 	if err != nil {
-		return nil, fmt.Errorf("verify p2sh tx, wrong bind address %v", bindAddress)
+		return swapInfo, fmt.Errorf("verify p2sh tx, wrong bind address %v", bindAddress)
 	}
 	token := b.TokenConfig
 	if !allowUnstable {
 		txStatus := b.GetTransactionStatus(txHash)
 		if txStatus.Block_height == 0 ||
 			txStatus.Confirmations < *token.Confirmations {
-			return nil, tokens.ErrTxNotStable
+			return swapInfo, tokens.ErrTxNotStable
 		}
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
 		log.Debug("BtcBridge::GetTransaction fail", "tx", txHash, "err", err)
-		return nil, tokens.ErrTxNotFound
+		return swapInfo, tokens.ErrTxNotFound
+	}
+	txStatus := tx.Status
+	if txStatus.Block_height != nil {
+		swapInfo.Height = *txStatus.Block_height // Height
+	}
+	if txStatus.Block_time != nil {
+		swapInfo.Timestamp = *txStatus.Block_time // Timestamp
 	}
 	var (
 		rightReceiver bool
@@ -45,11 +54,12 @@ func (b *BtcBridge) VerifyP2shTransaction(txHash string, bindAddress string, all
 		}
 	}
 	if !rightReceiver {
-		return nil, tokens.ErrTxWithWrongReceiver
+		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
-	if !tokens.CheckSwapValue(common.BigFromUint64(value), b.IsSrc) {
-		return nil, tokens.ErrTxWithWrongValue
-	}
+	swapInfo.To = p2shAddress                    // To
+	swapInfo.Bind = bindAddress                  // Bind
+	swapInfo.Value = common.BigFromUint64(value) // Value
+
 	for _, input := range tx.Vin {
 		if input != nil &&
 			input.Prevout != nil &&
@@ -58,29 +68,19 @@ func (b *BtcBridge) VerifyP2shTransaction(txHash string, bindAddress string, all
 			break
 		}
 	}
+	swapInfo.From = from // From
+
 	// check sender
 	if from == b.TokenConfig.DcrmAddress {
-		return nil, tokens.ErrTxWithWrongSender
+		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 
-	var blockHeight, blockTimestamp uint64
-	txStatus := tx.Status
-	if txStatus.Block_height != nil {
-		blockHeight = *txStatus.Block_height
+	if !tokens.CheckSwapValue(common.BigFromUint64(value), b.IsSrc) {
+		return swapInfo, tokens.ErrTxWithWrongValue
 	}
-	if txStatus.Block_time != nil {
-		blockTimestamp = *txStatus.Block_time
-	}
+
 	if !allowUnstable {
-		log.Debug("verify p2sh swapin pass", "from", from, "to", p2shAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", blockHeight, "timestamp", blockTimestamp)
+		log.Debug("verify p2sh swapin pass", "from", from, "to", p2shAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
-	return &tokens.TxSwapInfo{
-		Hash:      *tx.Txid,
-		Height:    blockHeight,
-		Timestamp: blockTimestamp,
-		From:      from,
-		To:        p2shAddress,
-		Bind:      bindAddress,
-		Value:     common.BigFromUint64(value),
-	}, err
+	return swapInfo, nil
 }

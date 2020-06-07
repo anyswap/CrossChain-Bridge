@@ -80,21 +80,29 @@ func (b *BtcBridge) VerifyTransaction(txHash string, allowUnstable bool) (*token
 }
 
 func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+	swapInfo := &tokens.TxSwapInfo{}
+	swapInfo.Hash = txHash // Hash
 	token := b.TokenConfig
 	if !allowUnstable {
 		txStatus := b.GetTransactionStatus(txHash)
 		if txStatus.Block_height == 0 ||
 			txStatus.Confirmations < *token.Confirmations {
-			return nil, tokens.ErrTxNotStable
+			return swapInfo, tokens.ErrTxNotStable
 		}
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
 		log.Debug("BtcBridge::GetTransaction fail", "tx", txHash, "err", err)
-		return nil, tokens.ErrTxNotFound
+		return swapInfo, tokens.ErrTxNotFound
 	}
 	txStatus := tx.Status
 	dcrmAddress := token.DcrmAddress
+	if txStatus.Block_height != nil {
+		swapInfo.Height = *txStatus.Block_height // Height
+	}
+	if txStatus.Block_time != nil {
+		swapInfo.Timestamp = *txStatus.Block_time // Timestamp
+	}
 	var (
 		rightReceiver bool
 		value         uint64
@@ -115,11 +123,14 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 		}
 	}
 	if !rightReceiver {
-		return nil, tokens.ErrTxWithWrongReceiver
+		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
-	if !tokens.CheckSwapValue(common.BigFromUint64(value), b.IsSrc) {
-		return nil, tokens.ErrTxWithWrongValue
-	}
+	swapInfo.To = dcrmAddress                    // To
+	swapInfo.Value = common.BigFromUint64(value) // Value
+
+	bindAddress, bindOk := getBindAddressFromMemoScipt(memoScript)
+	swapInfo.Bind = bindAddress // Bind
+
 	for _, input := range tx.Vin {
 		if input != nil &&
 			input.Prevout != nil &&
@@ -128,39 +139,30 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 			break
 		}
 	}
+	swapInfo.From = from // From
+
 	// check sender
 	if from == dcrmAddress {
-		return nil, tokens.ErrTxWithWrongSender
+		return swapInfo, tokens.ErrTxWithWrongSender
+	}
+
+	if !tokens.CheckSwapValue(common.BigFromUint64(value), b.IsSrc) {
+		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
 	// NOTE: must verify memo at last step (as it can be recall)
-	bindAddress, ok := getBindAddressFromMemoScipt(memoScript)
-	if !ok {
+	if !bindOk {
 		log.Debug("wrong memo", "memo", memoScript)
-		err = tokens.ErrTxWithWrongMemo
+		return swapInfo, tokens.ErrTxWithWrongMemo
 	} else if !tokens.DstBridge.IsValidAddress(bindAddress) {
 		log.Debug("wrong bind address in memo", "bind", bindAddress)
-		err = tokens.ErrTxWithWrongMemo
+		return swapInfo, tokens.ErrTxWithWrongMemo
 	}
-	var blockHeight, blockTimestamp uint64
-	if txStatus.Block_height != nil {
-		blockHeight = *txStatus.Block_height
-	}
-	if txStatus.Block_time != nil {
-		blockTimestamp = *txStatus.Block_time
-	}
+
 	if !allowUnstable {
-		log.Debug("verify swapin pass", "from", from, "to", dcrmAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", blockHeight, "timestamp", blockTimestamp)
+		log.Debug("verify swapin pass", "from", from, "to", dcrmAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
-	return &tokens.TxSwapInfo{
-		Hash:      *tx.Txid,
-		Height:    blockHeight,
-		Timestamp: blockTimestamp,
-		From:      from,
-		To:        dcrmAddress,
-		Bind:      bindAddress,
-		Value:     common.BigFromUint64(value),
-	}, err
+	return swapInfo, nil
 }
 
 func getBindAddressFromMemoScipt(memoScript string) (bind string, ok bool) {
