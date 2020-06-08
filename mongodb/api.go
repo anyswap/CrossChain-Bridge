@@ -22,6 +22,16 @@ const (
 	maxCountOfResults = 5000
 )
 
+// do this when reconnect to the database
+func deinintCollections() {
+	collSwapin = nil
+	collSwapout = nil
+	collSwapinResult = nil
+	collSwapoutResult = nil
+	collP2shAddress = nil
+	collSwapStatistics = nil
+}
+
 func getOrInitCollection(table string, collection **mgo.Collection, indexKey ...string) *mgo.Collection {
 	if *collection == nil {
 		*collection = database.C(table)
