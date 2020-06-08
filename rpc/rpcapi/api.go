@@ -14,7 +14,7 @@ type RpcNullArgs struct{}
 
 func (s *RpcAPI) GetVersionInfo(r *http.Request, args *RpcNullArgs, result *string) error {
 	ver := params.VersionWithMeta
-	ver += "-rev5"
+	//ver += "-rev5"
 	*result = ver
 	return nil
 }
