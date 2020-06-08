@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/log"
@@ -9,11 +10,12 @@ import (
 )
 
 var (
-	collSwapin        *mgo.Collection
-	collSwapout       *mgo.Collection
-	collSwapinResult  *mgo.Collection
-	collSwapoutResult *mgo.Collection
-	collP2shAddress   *mgo.Collection
+	collSwapin         *mgo.Collection
+	collSwapout        *mgo.Collection
+	collSwapinResult   *mgo.Collection
+	collSwapoutResult  *mgo.Collection
+	collP2shAddress    *mgo.Collection
+	collSwapStatistics *mgo.Collection
 )
 
 const (
@@ -42,6 +44,8 @@ func getCollection(table string) *mgo.Collection {
 		return getOrInitCollection(table, &collSwapoutResult, "from", "timestamp")
 	case tbP2shAddresses:
 		return getOrInitCollection(table, &collP2shAddress, "p2shaddress")
+	case tbSwapStatistics:
+		return getOrInitCollection(table, &collSwapStatistics)
 	default:
 		panic("unknown talbe " + table)
 	}
@@ -282,10 +286,17 @@ func updateSwapResultStatus(tbName string, txid string, status SwapStatus, times
 		updates["memo"] = memo
 	}
 	err := getCollection(tbName).UpdateId(txid, bson.M{"$set": updates})
+	isSwapin := tbName == tbSwapinResults
 	if err == nil {
-		log.Info("mongodb update swap result status", "txid", txid, "status", status, "isSwapin", tbName == tbSwapinResults)
+		log.Info("mongodb update swap result status", "txid", txid, "status", status, "isSwapin", isSwapin)
 	} else {
-		log.Debug("mongodb update swap result status", "txid", txid, "status", status, "isSwapin", tbName == tbSwapinResults, "err", err)
+		log.Debug("mongodb update swap result status", "txid", txid, "status", status, "isSwapin", isSwapin, "err", err)
+	}
+	if status == MatchTxStable {
+		swapResult, err := findSwapResult(tbName, txid)
+		if err == nil {
+			UpdateSwapStatistics(swapResult.Value, swapResult.SwapValue, isSwapin)
+		}
 	}
 	return mgoError(err)
 }
@@ -335,19 +346,94 @@ func getCountWithStatus(tbName string, status SwapStatus) (int, error) {
 	return getCollection(tbName).Find(bson.M{"status": status}).Count()
 }
 
+// ------------------ statistics ------------------------
+
+func AddSwapStatistics(ms *MgoSwapStatistics) error {
+	return getCollection(tbSwapStatistics).Insert(ms)
+}
+
+func UpdateSwapStatistics(value string, swapValue string, isSwapin bool) error {
+	curr, err := FindSwapStatistics()
+	if err != nil {
+		ms := &MgoSwapStatistics{
+			Key: KeyOfSwapStatistics,
+		}
+		err = AddSwapStatistics(ms)
+		if err != nil {
+			return mgoError(err)
+		}
+	}
+
+	addVal, _ := new(big.Int).SetString(value, 0)
+	addSwapVal, _ := new(big.Int).SetString(swapValue, 0)
+	addSwapFee := new(big.Int).Sub(addVal, addSwapVal)
+
+	curVal := big.NewInt(0)
+	curFee := big.NewInt(0)
+
+	updates := bson.M{}
+	if isSwapin {
+		curVal.SetString(curr.TotalSwapinValue, 0)
+		curFee.SetString(curr.TotalSwapinFee, 0)
+		curVal.Add(curVal, addSwapVal)
+		curFee.Add(curFee, addSwapFee)
+		updates["swapincount"] = curr.StableSwapinCount + 1
+		updates["totalswapinvalue"] = curVal.String()
+		updates["totalswapinfee"] = curFee.String()
+	} else {
+		curVal.SetString(curr.TotalSwapinValue, 0)
+		curFee.SetString(curr.TotalSwapinFee, 0)
+		curVal.Add(curVal, addSwapVal)
+		curFee.Add(curFee, addSwapFee)
+		updates["swapoutcount"] = curr.StableSwapoutCount + 1
+		updates["totalswapoutvalue"] = curVal.String()
+		updates["totalswapoutfee"] = curFee.String()
+	}
+	err = getCollection(tbSwapStatistics).UpdateId(KeyOfSwapStatistics, bson.M{"$set": updates})
+	if err == nil {
+		log.Info("mongodb update swap statistics", "updates", updates)
+	} else {
+		log.Debug("mongodb update swap statistics", "updates", updates, "err", err)
+	}
+	return mgoError(err)
+}
+
+func FindSwapStatistics() (*MgoSwapStatistics, error) {
+	var result MgoSwapStatistics
+	err := getCollection(tbSwapStatistics).FindId(KeyOfSwapStatistics).One(&result)
+	return &result, mgoError(err)
+}
+
 type SwapStatistics struct {
-	TotalSwapins    int
-	TotalSwapouts   int
-	PendingSwapins  int
-	PendingSwapouts int
+	TotalSwapinCount    int
+	TotalSwapoutCount   int
+	PendingSwapinCount  int
+	PendingSwapoutCount int
+	StableSwapinCount   int
+	TotalSwapinValue    string
+	TotalSwapinFee      string
+	StableSwapoutCount  int
+	TotalSwapoutValue   string
+	TotalSwapoutFee     string
 }
 
 func GetSwapStatistics() (*SwapStatistics, error) {
 	stat := &SwapStatistics{}
-	stat.TotalSwapins, _ = GetCountOfSwapinResults()
-	stat.TotalSwapouts, _ = GetCountOfSwapoutResults()
-	stat.PendingSwapins, _ = GetCountOfSwapinResultsWithStatus(MatchTxEmpty)
-	stat.PendingSwapouts, _ = GetCountOfSwapoutResultsWithStatus(MatchTxEmpty)
+
+	if curr, _ := FindSwapStatistics(); curr != nil {
+		stat.StableSwapinCount = curr.StableSwapinCount
+		stat.TotalSwapinValue = curr.TotalSwapinValue
+		stat.TotalSwapinFee = curr.TotalSwapinFee
+		stat.StableSwapoutCount = curr.StableSwapoutCount
+		stat.TotalSwapoutValue = curr.TotalSwapoutValue
+		stat.TotalSwapoutFee = curr.TotalSwapoutFee
+	}
+
+	stat.TotalSwapinCount, _ = GetCountOfSwapinResults()
+	stat.TotalSwapoutCount, _ = GetCountOfSwapoutResults()
+	stat.PendingSwapinCount, _ = GetCountOfSwapinResultsWithStatus(MatchTxEmpty)
+	stat.PendingSwapoutCount, _ = GetCountOfSwapoutResultsWithStatus(MatchTxEmpty)
+
 	return stat, nil
 }
 

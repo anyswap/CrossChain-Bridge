@@ -6,6 +6,9 @@ const (
 	tbSwapinResults  string = "SwapinResults"
 	tbSwapoutResults string = "SwapoutResults"
 	tbP2shAddresses  string = "P2shAddresses"
+	tbSwapStatistics string = "SwapStatistics"
+
+	KeyOfSwapStatistics string = "latest"
 )
 
 type MgoSwap struct {
@@ -51,4 +54,14 @@ type SwapResultUpdateItems struct {
 type MgoP2shAddress struct {
 	Key         string `bson:"_id"`
 	P2shAddress string `bson:"p2shaddress"`
+}
+
+type MgoSwapStatistics struct {
+	Key                string `bson:"_id"`
+	StableSwapinCount  int    `bson:"swapincount"`
+	TotalSwapinValue   string `bson:"totalswapinvalue"`
+	TotalSwapinFee     string `bson:"totalswapinfee"`
+	StableSwapoutCount int    `bson:"swapoutcount"`
+	TotalSwapoutValue  string `bson:"totalswapoutvalue"`
+	TotalSwapoutFee    string `bson:"totalswapoutfee"`
 }
