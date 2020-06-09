@@ -25,6 +25,14 @@ func NewCrossChainBridge(isSrc bool) *EthBridge {
 
 func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
+	b.VerifyChainID()
+	b.VerifyTokenCofig()
+	b.InitLatestBlockNumber()
+}
+
+func (b *EthBridge) VerifyChainID() {
+	tokenCfg := b.TokenConfig
+	gatewayCfg := b.GatewayConfig
 
 	networkID := strings.ToLower(tokenCfg.NetID)
 
@@ -36,34 +44,10 @@ func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 		panic(fmt.Sprintf("unsupported ethereum network: %v", tokenCfg.NetID))
 	}
 
-	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
-		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
-	}
-	if !b.IsSrc && !b.IsValidAddress(tokenCfg.ContractAddress) {
-		log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)
-	}
-	if err := b.VerifyContractAddress(tokenCfg.ContractAddress); err != nil {
-		log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
-	}
-	log.Info("verify contract address pass", "address", tokenCfg.ContractAddress)
-
 	var (
-		latest  uint64
 		chainID *big.Int
 		err     error
 	)
-
-	for {
-		latest, err = b.GetLatestBlockNumber()
-		if err == nil {
-			tokens.SetLatestBlockHeight(latest, b.IsSrc)
-			log.Info("get latst block number succeed.", "number", latest, "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID)
-			break
-		}
-		log.Error("get latst block number failed.", "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID, "err", err)
-		log.Println("retry query gateway", gatewayCfg.ApiAddress)
-		time.Sleep(3 * time.Second)
-	}
 
 	for {
 		chainID, err = b.ChainID()
@@ -93,4 +77,51 @@ func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 	}
 
 	b.Signer = types.MakeSigner("EIP155", chainID)
+
+	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
+}
+
+func (b *EthBridge) VerifyTokenCofig() {
+	tokenCfg := b.TokenConfig
+	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
+		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
+	}
+	if tokenCfg.ContractAddress != "" {
+		if !b.IsValidAddress(tokenCfg.ContractAddress) {
+			log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)
+		}
+		if !b.IsSrc {
+			if err := b.VerifyMappingAssetContractAddress(tokenCfg.ContractAddress); err != nil {
+				log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
+			}
+		} else if tokenCfg.IsErc20() {
+			if err := b.VerifyErc20ContractAddress(tokenCfg.ContractAddress); err != nil {
+				log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
+			}
+		} else {
+			log.Fatal("unsupported type of contract address in source chain, please assign SrcToken.ID (eg. ERC20) in config file", "address", tokenCfg.ContractAddress)
+		}
+		log.Info("verify contract address pass", "address", tokenCfg.ContractAddress)
+	}
+}
+
+func (b *EthBridge) InitLatestBlockNumber() {
+	var (
+		tokenCfg   = b.TokenConfig
+		gatewayCfg = b.GatewayConfig
+		latest     uint64
+		err        error
+	)
+
+	for {
+		latest, err = b.GetLatestBlockNumber()
+		if err == nil {
+			tokens.SetLatestBlockHeight(latest, b.IsSrc)
+			log.Info("get latst block number succeed.", "number", latest, "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID)
+			break
+		}
+		log.Error("get latst block number failed.", "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID, "err", err)
+		log.Println("retry query gateway", gatewayCfg.ApiAddress)
+		time.Sleep(3 * time.Second)
+	}
 }

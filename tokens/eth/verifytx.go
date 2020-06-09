@@ -196,16 +196,13 @@ func ParseSwapoutTxLogs(logs []*types.RPCLog) (string, *big.Int, error) {
 		if log.Removed != nil && *log.Removed {
 			continue
 		}
-		if len(log.Topics) != 2 {
+		if len(log.Topics) != 2 || log.Data == nil {
 			continue
 		}
 		if log.Topics[0].String() != tokens.LogSwapoutTopic {
 			continue
 		}
-		if log.Data != nil {
-			data := ([]byte)(*log.Data)
-			return ParseEncodedData(data)
-		}
+		return ParseEncodedData(*log.Data)
 	}
 	return "", nil, fmt.Errorf("swapout log not found or removed")
 }
@@ -228,6 +225,10 @@ func ParseEncodedData(encData []byte) (string, *big.Int, error) {
 }
 
 func (b *EthBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+	if b.TokenConfig.ID == "ERC20" {
+		return b.verifyErc20SwapinTx(txHash, allowUnstable)
+	}
+
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
 	token := b.TokenConfig

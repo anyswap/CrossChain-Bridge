@@ -27,6 +27,10 @@ type TokenConfig struct {
 	SwapFeeRate     *float64
 }
 
+func (c *TokenConfig) IsErc20() bool {
+	return c.ID == "ERC20"
+}
+
 func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.BlockChain == "" {
 		return errors.New("token must config 'BlockChain'")
@@ -54,6 +58,9 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	}
 	if !isSrc && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for destination chain")
+	}
+	if isSrc && c.IsErc20() && c.ContractAddress == "" {
+		return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
 	}
 	return nil
 }

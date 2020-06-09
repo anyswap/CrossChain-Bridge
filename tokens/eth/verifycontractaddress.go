@@ -10,12 +10,15 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
-var codeParts = map[string][]byte{
+var extendedCodeParts = map[string][]byte{
 	// Extended interfaces
 	"SwapinFuncHash":  tokens.SwapinFuncHash[:],
 	"LogSwapinTopic":  common.FromHex(tokens.LogSwapinTopic),
 	"SwapoutFuncHash": tokens.SwapoutFuncHash[:],
 	"LogSwapoutTopic": common.FromHex(tokens.LogSwapoutTopic),
+}
+
+var erc20CodeParts = map[string][]byte{
 	// Erc20 interfaces
 	"name":         common.FromHex("0x06fdde03"),
 	"symbol":       common.FromHex("0x95d89b41"),
@@ -30,7 +33,7 @@ var codeParts = map[string][]byte{
 	"LogApproval":  common.FromHex("0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"),
 }
 
-func (b *EthBridge) VerifyContractAddress(contract string) (err error) {
+func (b *EthBridge) VerifyContractCode(contract string, codePartsSlice ...map[string][]byte) (err error) {
 	var code []byte
 	retryCount := 3
 	for i := 0; i < retryCount; i++ {
@@ -41,10 +44,20 @@ func (b *EthBridge) VerifyContractAddress(contract string) (err error) {
 		log.Warn("get contract code failed", "contract", contract, "err", err)
 		time.Sleep(1 * time.Second)
 	}
-	for key, part := range codeParts {
-		if bytes.Index(code, part) == -1 {
-			return fmt.Errorf("code miss '%v' bytes '%x'", key, part)
+	for _, codeParts := range codePartsSlice {
+		for key, part := range codeParts {
+			if bytes.Index(code, part) == -1 {
+				return fmt.Errorf("contract byte code miss '%v' bytes '%x'", key, part)
+			}
 		}
 	}
 	return nil
+}
+
+func (b *EthBridge) VerifyErc20ContractAddress(contract string) (err error) {
+	return b.VerifyContractCode(contract, erc20CodeParts)
+}
+
+func (b *EthBridge) VerifyMappingAssetContractAddress(contract string) (err error) {
+	return b.VerifyContractCode(contract, extendedCodeParts, erc20CodeParts)
 }

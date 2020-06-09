@@ -22,6 +22,14 @@ func NewCrossChainBridge(isSrc bool) *FsnBridge {
 
 func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
+	b.VerifyChainID()
+	b.VerifyTokenCofig()
+	b.InitLatestBlockNumber()
+}
+
+func (b *FsnBridge) VerifyChainID() {
+	tokenCfg := b.TokenConfig
+	gatewayCfg := b.GatewayConfig
 
 	networkID := strings.ToLower(tokenCfg.NetID)
 
@@ -33,34 +41,10 @@ func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 		panic(fmt.Sprintf("unsupported fusion network: %v", tokenCfg.NetID))
 	}
 
-	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
-		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
-	}
-	if !b.IsSrc && !b.IsValidAddress(tokenCfg.ContractAddress) {
-		log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)
-	}
-	if err := b.VerifyContractAddress(tokenCfg.ContractAddress); err != nil {
-		log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
-	}
-	log.Info("verify contract address pass", "address", tokenCfg.ContractAddress)
-
 	var (
-		latest  uint64
 		chainID *big.Int
 		err     error
 	)
-
-	for {
-		latest, err = b.GetLatestBlockNumber()
-		if err == nil {
-			tokens.SetLatestBlockHeight(latest, b.IsSrc)
-			log.Info("get latst block number succeed.", "number", latest, "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID)
-			break
-		}
-		log.Error("get latst block number failed.", "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID, "err", err)
-		log.Println("retry query gateway", gatewayCfg.ApiAddress)
-		time.Sleep(3 * time.Second)
-	}
 
 	for {
 		chainID, err = b.ChainID()
@@ -94,4 +78,6 @@ func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 	}
 
 	b.Signer = types.MakeSigner("EIP155", chainID)
+
+	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
 }
