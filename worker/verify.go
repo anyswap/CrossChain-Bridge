@@ -101,7 +101,7 @@ func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
 
 	switch err {
 	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
-		logWorkerError("verify", "processSwapinVerify", err, "txid", txid)
+		//logWorkerError("verify", "processSwapinVerify", err, "txid", txid)
 		return err
 	case tokens.ErrTxWithWrongMemo:
 		resultStatus = mongodb.TxWithWrongMemo
@@ -127,7 +127,7 @@ func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 
 	switch err {
 	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
-		logWorkerError("verify", "processSwapoutVerify", err, "txid", txid)
+		//logWorkerError("verify", "processSwapoutVerify", err, "txid", txid)
 		return err
 	case tokens.ErrTxWithWrongMemo:
 		resultStatus = mongodb.TxWithWrongMemo

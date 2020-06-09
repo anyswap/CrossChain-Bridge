@@ -69,14 +69,18 @@ func (b *BtcBridge) processP2shSwapin(txid string, isServer bool) error {
 	}
 	swapInfo, err := b.CheckP2shTransaction(txid, isServer, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
+		log.Trace("[scanp2sh] CheckP2shTransaction", "txid", txid, "isServer", isServer, "err", err)
 		return err
 	}
 	if isServer {
-		return b.registerP2shSwapin(txid, swapInfo.Bind)
+		err = b.registerP2shSwapin(txid, swapInfo.Bind)
 	} else if !b.IsSwapinExistByQuery(txid) {
-		return b.postRegisterP2shSwapin(txid, swapInfo.Bind)
+		err = b.postRegisterP2shSwapin(txid, swapInfo.Bind)
 	}
-	return nil
+	if err != nil {
+		log.Trace("[scanp2sh] processP2shSwapin", "txid", txid, "isServer", isServer, "err", err)
+	}
+	return err
 }
 
 func (b *BtcBridge) registerP2shSwapin(txid string, bind string) error {
@@ -100,7 +104,11 @@ func (b *BtcBridge) postRegisterP2shSwapin(txid string, bind string) error {
 		"bind": bind,
 	}
 	var result interface{}
-	return client.RpcPost(&result, p2shSwapServerApiAddress, "swap.P2shSwapin", args)
+	err := client.RpcPost(&result, p2shSwapServerApiAddress, "swap.P2shSwapin", args)
+	if err != nil {
+		log.Debug("rpc call swap.P2shSwapin failed", "args", args, "err", err)
+	}
+	return err
 }
 
 func OpenBtcScanStatusFile() (err error) {
@@ -194,7 +202,7 @@ func (b *BtcBridge) scanP2shTransactionHistory(isServer bool) error {
 				b.processP2shSwapin(txid, isServer)
 			}
 			scannedBlocks.cacheScannedBlock(blockHash, h)
-			log.Info("[scanp2sh] scanned tx history", "blockHash", blockHash, "height", h)
+			log.Info("[scanp2sh] scanned tx history", "blockHash", blockHash, "height", h, "txs", len(txids))
 			h++
 		}
 		if latest > confirmations {
@@ -234,6 +242,8 @@ func getBindAddress(p2shAddress string, isServer bool) (bindAddress string) {
 		err := client.RpcPost(&info, swapServerApiAddress, "swap.GetP2shAddressInfo", p2shAddress)
 		if err == nil {
 			bindAddress = info.BindAddress
+		} else {
+			log.Debug("rpc call swap.GetP2shAddressInfo failed", "p2shAddress", p2shAddress, "err", err)
 		}
 	}
 	return bindAddress
