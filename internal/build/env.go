@@ -26,6 +26,7 @@ import (
 	"time"
 )
 
+// build flags
 var (
 	// These flags override values in build env.
 	GitCommitFlag   = flag.String("git-commit", "", `Overrides git commit hash embedded into executables`)

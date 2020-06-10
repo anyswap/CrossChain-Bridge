@@ -4,7 +4,8 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common"
 )
 
-func (b *EthBridge) IsValidAddress(address string) bool {
+// IsValidAddress check address
+func (b *Bridge) IsValidAddress(address string) bool {
 	if !common.IsHexAddress(address) {
 		return false
 	}

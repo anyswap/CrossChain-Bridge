@@ -8,6 +8,7 @@ import (
 
 const interval = 10 * time.Millisecond
 
+// StartServerWork start swap server work
 func StartServerWork() {
 	logWorker("worker", "start server worker")
 
@@ -31,6 +32,7 @@ func StartServerWork() {
 	//go StartRecallJob()
 }
 
+// StartOracleWork start swap oracle work
 func StartOracleWork() {
 	logWorker("worker", "start oracle worker")
 

@@ -12,7 +12,8 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-func (b *EthBridge) BuildSwapoutTx(from, contract string, extraArgs *tokens.EthExtraArgs, swapoutVal *big.Int, bindAddr string) (*types.Transaction, error) {
+// BuildSwapoutTx build swapout tx
+func (b *Bridge) BuildSwapoutTx(from, contract string, extraArgs *tokens.EthExtraArgs, swapoutVal *big.Int, bindAddr string) (*types.Transaction, error) {
 	if swapoutVal == nil || swapoutVal.Sign() == 0 {
 		return nil, fmt.Errorf("swapout value must be greater than zero")
 	}
@@ -59,6 +60,7 @@ func (b *EthBridge) BuildSwapoutTx(from, contract string, extraArgs *tokens.EthE
 	return tx, nil
 }
 
+// BuildSwapoutTxInput build swapout tx input
 func BuildSwapoutTxInput(swapoutVal *big.Int, bindAddr string) ([]byte, error) {
 	strLen := len(bindAddr)
 
@@ -80,17 +82,18 @@ func BuildSwapoutTxInput(swapoutVal *big.Int, bindAddr string) ([]byte, error) {
 	copy(input[4:], bs)
 
 	// verify input
-	bindAddress, swapoutvalue, err := ParseSwapoutTxInput(&input)
+	bindAddress, swapoutvalue, err := parseSwapoutTxInput(&input)
 	if err != nil {
-		log.Error("ParseSwapoutTxInput error", "err", err)
+		log.Error("parseSwapoutTxInput error", "err", err)
 		return nil, err
 	}
-	log.Info("ParseSwapoutTxInput", "bindAddress", bindAddress, "swapoutvalue", swapoutvalue)
+	log.Info("parseSwapoutTxInput", "bindAddress", bindAddress, "swapoutvalue", swapoutvalue)
 
 	return input, nil
 }
 
-func (b *EthBridge) GetMBtcBalance(contract string, address string) (*big.Int, error) {
+// GetMBtcBalance get mbtc balacne
+func (b *Bridge) GetMBtcBalance(contract string, address string) (*big.Int, error) {
 	balanceOfFuncHash := common.FromHex("0x70a08231")
 	addr := common.HexToAddress(address)
 	data := make(hexutil.Bytes, 36)
@@ -101,8 +104,8 @@ func (b *EthBridge) GetMBtcBalance(contract string, address string) (*big.Int, e
 		"data": data,
 	}
 	var result string
-	url := b.GatewayConfig.ApiAddress
-	err := client.RpcPost(&result, url, "eth_call", reqArgs, "pending")
+	url := b.GatewayConfig.APIAddress
+	err := client.RPCPost(&result, url, "eth_call", reqArgs, "pending")
 	if err != nil {
 		return nil, err
 	}

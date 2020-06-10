@@ -18,6 +18,7 @@ func mgoError(err error) error {
 	return nil
 }
 
+// mongodb special errors
 var (
 	ErrSwapNotFound              = newError(-32002, "mgoError: Swap is not found")
 	ErrSwapinTxNotStable         = newError(-32003, "mgoError: Swap in tx is not stable")

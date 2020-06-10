@@ -13,12 +13,13 @@ import (
 var (
 	swapinNonce uint64
 
-	retryRpcCount    = 3
-	retryRpcInterval = 1 * time.Second
+	retryRPCCount    = 3
+	retryRPCInterval = 1 * time.Second
 )
 
-func (b *EthBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
-	isSwapin := args.SwapType == tokens.Swap_Swapin
+// BuildRawTransaction build raw tx
+func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
+	isSwapin := args.SwapType == tokens.SwapinType
 	if isSwapin && args.Input == nil {
 		b.buildSwapinTxInput(args)
 	}
@@ -39,18 +40,18 @@ func (b *EthBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 	}
 
 	switch args.SwapType {
-	case tokens.Swap_Swapout, tokens.Swap_Recall:
+	case tokens.SwapoutType, tokens.SwapRecallType:
 		value = tokens.CalcSwappedValue(value, b.IsSrc)
 	}
 
-	if args.SwapType != tokens.Swap_NotSwap {
+	if args.SwapType != tokens.NoSwapType {
 		args.Identifier = params.GetIdentifier()
 	}
 
 	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
 }
 
-func (b *EthBridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs, error) {
+func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs, error) {
 	if args.Value == nil {
 		args.Value = new(big.Int)
 	}
@@ -64,31 +65,31 @@ func (b *EthBridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs,
 	var err error
 	if extra.GasPrice == nil {
 		var price *big.Int
-		for i := 0; i < retryRpcCount; i++ {
+		for i := 0; i < retryRPCCount; i++ {
 			price, err = b.SuggestPrice()
 			if err == nil {
 				break
 			}
-			if i+1 == retryRpcCount {
+			if i+1 == retryRPCCount {
 				return nil, err
 			}
-			time.Sleep(retryRpcInterval)
+			time.Sleep(retryRPCInterval)
 		}
 		extra.GasPrice = price
 	}
 	if extra.Nonce == nil {
 		var nonce uint64
-		for i := 0; i < retryRpcCount; i++ {
+		for i := 0; i < retryRPCCount; i++ {
 			nonce, err = b.GetPoolNonce(args.From)
 			if err == nil {
 				break
 			}
-			if i+1 == retryRpcCount {
+			if i+1 == retryRPCCount {
 				return nil, err
 			}
-			time.Sleep(retryRpcInterval)
+			time.Sleep(retryRPCInterval)
 		}
-		if args.SwapType == tokens.Swap_Swapin &&
+		if args.SwapType == tokens.SwapinType &&
 			args.From == b.TokenConfig.DcrmAddress {
 			if swapinNonce >= nonce {
 				swapinNonce++
@@ -107,7 +108,7 @@ func (b *EthBridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs,
 }
 
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
-func (b *EthBridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
+func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
 	funcHash := tokens.SwapinFuncHash[:]
 	txHash := common.HexToHash(args.SwapID).Bytes()
 	address := common.LeftPadBytes(common.HexToAddress(args.To).Bytes(), 32)

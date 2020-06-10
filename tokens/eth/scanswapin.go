@@ -1,5 +1,6 @@
 package eth
 
-func (b *EthBridge) StartSwapinScanJob(isServer bool) error {
+// StartSwapinScanJob scan job
+func (b *Bridge) StartSwapinScanJob(isServer bool) error {
 	return nil
 }

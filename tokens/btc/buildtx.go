@@ -18,7 +18,8 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
 
-func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
+// BuildRawTransaction build raw tx
+func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var (
 		token         = b.TokenConfig
 		from          = args.From
@@ -31,9 +32,9 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 	)
 
 	switch args.SwapType {
-	case tokens.Swap_Swapin:
+	case tokens.SwapinType:
 		return nil, tokens.ErrSwapTypeNotSupported
-	case tokens.Swap_Swapout, tokens.Swap_Recall:
+	case tokens.SwapoutType, tokens.SwapRecallType:
 		from = token.DcrmAddress                          // from
 		amount = tokens.CalcSwappedValue(amount, b.IsSrc) // amount
 	}
@@ -84,9 +85,8 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 
 		if len(extra.PreviousOutPoints) != 0 {
 			return b.getUtxos(from, target, extra.PreviousOutPoints)
-		} else {
-			return b.selectUtxos(from, target)
 		}
+		return b.selectUtxos(from, target)
 	}
 
 	changeSource := func() ([]byte, error) {
@@ -109,14 +109,14 @@ func (b *BtcBridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interfa
 		}
 	}
 
-	if args.SwapType != tokens.Swap_NotSwap {
+	if args.SwapType != tokens.NoSwapType {
 		args.Identifier = params.GetIdentifier()
 	}
 
 	return authoredTx, nil
 }
 
-func (b *BtcBridge) getPayToAddrScript(address string) ([]byte, error) {
+func (b *Bridge) getPayToAddrScript(address string) ([]byte, error) {
 	chainConfig := b.GetChainConfig()
 	toAddr, err := btcutil.DecodeAddress(address, chainConfig)
 	if err != nil {
@@ -125,7 +125,7 @@ func (b *BtcBridge) getPayToAddrScript(address string) ([]byte, error) {
 	return txscript.PayToAddrScript(toAddr)
 }
 
-func (b *BtcBridge) selectUtxos(from string, target btcutil.Amount) (
+func (b *Bridge) selectUtxos(from string, target btcutil.Amount) (
 	total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 
 	utxos, err := b.FindUtxos(from)
@@ -156,10 +156,10 @@ func (b *BtcBridge) selectUtxos(from string, target btcutil.Amount) (
 			continue
 		}
 		output := tx.Vout[*utxo.Vout]
-		if *output.Scriptpubkey_type != "p2pkh" {
+		if *output.ScriptpubkeyType != "p2pkh" {
 			continue
 		}
-		if *output.Scriptpubkey_address != from {
+		if *output.ScriptpubkeyAddress != from {
 			continue
 		}
 		txHash, err := chainhash.NewHashFromStr(*utxo.Txid)
@@ -188,7 +188,7 @@ func (b *BtcBridge) selectUtxos(from string, target btcutil.Amount) (
 	return total, inputs, inputValues, scripts, nil
 }
 
-func (b *BtcBridge) getUtxos(from string, target btcutil.Amount, prevOutPoints []*tokens.BtcOutPoint) (
+func (b *Bridge) getUtxos(from string, target btcutil.Amount, prevOutPoints []*tokens.BtcOutPoint) (
 	total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 
 	latest, err := b.GetLatestBlockNumber()
@@ -222,8 +222,8 @@ func (b *BtcBridge) getUtxos(from string, target btcutil.Amount, prevOutPoints [
 			return
 		}
 		if *outspend.Spent {
-			if outspend.Status != nil && outspend.Status.Block_height != nil {
-				spentHeight := *outspend.Status.Block_height
+			if outspend.Status != nil && outspend.Status.BlockHeight != nil {
+				spentHeight := *outspend.Status.BlockHeight
 				err = fmt.Errorf("out point (%v, %v) is spent at %v (latest %v)", point.Hash, point.Index, spentHeight, latest)
 			} else {
 				err = fmt.Errorf("out point (%v, %v) is spent at txpool (latest %v)", point.Hash, point.Index, latest)
@@ -245,12 +245,12 @@ func (b *BtcBridge) getUtxos(from string, target btcutil.Amount, prevOutPoints [
 			return
 		}
 		output := tx.Vout[point.Index]
-		if *output.Scriptpubkey_type != "p2pkh" {
-			err = fmt.Errorf("out point (%v, %v) script pubkey type %v is not p2pkh", point.Hash, point.Index, *output.Scriptpubkey_type)
+		if *output.ScriptpubkeyType != "p2pkh" {
+			err = fmt.Errorf("out point (%v, %v) script pubkey type %v is not p2pkh", point.Hash, point.Index, *output.ScriptpubkeyType)
 			return
 		}
-		if *output.Scriptpubkey_address != from {
-			err = fmt.Errorf("out point (%v, %v) script pubkey address %v is not %v", point.Hash, point.Index, *output.Scriptpubkey_address, from)
+		if *output.ScriptpubkeyAddress != from {
+			err = fmt.Errorf("out point (%v, %v) script pubkey address %v is not %v", point.Hash, point.Index, *output.ScriptpubkeyAddress, from)
 			return
 		}
 		value = btcutil.Amount(*output.Value)
@@ -281,6 +281,7 @@ func (insufficientFundsError) Error() string {
 	return "insufficient funds available to construct transaction"
 }
 
+// NewUnsignedTransaction ref btcwallet
 // ref. https://github.com/btcsuite/btcwallet/blob/b07494fc2d662fdda2b8a9db2a3eacde3e1ef347/wallet/txauthor/author.go
 // we only modify it to support P2PKH change script (the origin only support P2WPKH change script)
 func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount,

@@ -11,26 +11,30 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-type EthBridge struct {
+// Bridge eth bridge
+type Bridge struct {
 	*tokens.CrossChainBridgeBase
 	Signer types.Signer
 }
 
-func NewCrossChainBridge(isSrc bool) *EthBridge {
+// NewCrossChainBridge new bridge
+func NewCrossChainBridge(isSrc bool) *Bridge {
 	if isSrc {
 		panic(tokens.ErrTodo)
 	}
-	return &EthBridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
+	return &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
 }
 
-func (b *EthBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
+// SetTokenAndGateway set token and gateway config
+func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
 	b.VerifyChainID()
 	b.VerifyTokenCofig()
 	b.InitLatestBlockNumber()
 }
 
-func (b *EthBridge) VerifyChainID() {
+// VerifyChainID verify chain id
+func (b *Bridge) VerifyChainID() {
 	tokenCfg := b.TokenConfig
 	gatewayCfg := b.GatewayConfig
 
@@ -55,7 +59,7 @@ func (b *EthBridge) VerifyChainID() {
 			break
 		}
 		log.Errorf("can not get gateway chainID. %v", err)
-		log.Println("retry query gateway", gatewayCfg.ApiAddress)
+		log.Println("retry query gateway", gatewayCfg.APIAddress)
 		time.Sleep(3 * time.Second)
 	}
 
@@ -81,7 +85,8 @@ func (b *EthBridge) VerifyChainID() {
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
 }
 
-func (b *EthBridge) VerifyTokenCofig() {
+// VerifyTokenCofig verify token config
+func (b *Bridge) VerifyTokenCofig() {
 	tokenCfg := b.TokenConfig
 	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
 		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
@@ -91,7 +96,7 @@ func (b *EthBridge) VerifyTokenCofig() {
 			log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)
 		}
 		if !b.IsSrc {
-			if err := b.VerifyMappingAssetContractAddress(tokenCfg.ContractAddress); err != nil {
+			if err := b.VerifyMbtcContractAddress(tokenCfg.ContractAddress); err != nil {
 				log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
 			}
 		} else if tokenCfg.IsErc20() {
@@ -105,7 +110,8 @@ func (b *EthBridge) VerifyTokenCofig() {
 	}
 }
 
-func (b *EthBridge) InitLatestBlockNumber() {
+// InitLatestBlockNumber init latest block number
+func (b *Bridge) InitLatestBlockNumber() {
 	var (
 		tokenCfg   = b.TokenConfig
 		gatewayCfg = b.GatewayConfig
@@ -121,7 +127,7 @@ func (b *EthBridge) InitLatestBlockNumber() {
 			break
 		}
 		log.Error("get latst block number failed.", "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID, "err", err)
-		log.Println("retry query gateway", gatewayCfg.ApiAddress)
+		log.Println("retry query gateway", gatewayCfg.APIAddress)
 		time.Sleep(3 * time.Second)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
 )
 
+// RPCBlock struct
 type RPCBlock struct {
 	Hash            *common.Hash    `json:"hash"`
 	ParentHash      *common.Hash    `json:"parentHash"`
@@ -31,6 +32,7 @@ type RPCBlock struct {
 	Uncles          []*common.Hash  `json:"uncles"`
 }
 
+// RPCTransaction struct
 type RPCTransaction struct {
 	Hash             *common.Hash    `json:"hash"`
 	TransactionIndex *hexutil.Uint   `json:"transactionIndex"`
@@ -48,6 +50,7 @@ type RPCTransaction struct {
 	S                *hexutil.Big    `json:"s"`
 }
 
+// RPCLog struct
 type RPCLog struct {
 	Address     *common.Address `json:"address"`
 	Topics      []common.Hash   `json:"topics"`
@@ -60,6 +63,7 @@ type RPCLog struct {
 	Removed     *bool           `json:"removed"`
 }
 
+// RPCTxReceipt struct
 type RPCTxReceipt struct {
 	TxHash            *common.Hash    `json:"transactionHash"`
 	TxIndex           *hexutil.Uint   `json:"transactionIndex"`
@@ -78,6 +82,7 @@ type RPCTxReceipt struct {
 	Logs              []*RPCLog       `json:"logs"`
 }
 
+// RPCTxAndReceipt struct
 type RPCTxAndReceipt struct {
 	FsnTxInput   interface{}     `json:"fsnTxInput,omitempty"`
 	Tx           *RPCTransaction `json:"tx"`
@@ -85,6 +90,7 @@ type RPCTxAndReceipt struct {
 	ReceiptFound *bool           `json:"receiptFound"`
 }
 
+// FilterQuery struct
 type FilterQuery struct {
 	BlockHash *common.Hash
 	FromBlock *big.Int
@@ -93,6 +99,7 @@ type FilterQuery struct {
 	Topics    [][]common.Hash
 }
 
+// ToFilterArg query to filter arg
 func ToFilterArg(q *FilterQuery) (interface{}, error) {
 	arg := map[string]interface{}{
 		"address": q.Addresses,
@@ -114,6 +121,7 @@ func ToFilterArg(q *FilterQuery) (interface{}, error) {
 	return arg, nil
 }
 
+// ToBlockNumArg to block number arg
 func ToBlockNumArg(number *big.Int) string {
 	if number == nil {
 		return "latest"

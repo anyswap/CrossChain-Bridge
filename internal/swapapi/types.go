@@ -5,11 +5,19 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
+// SwapStatus type alias
 type SwapStatus = mongodb.SwapStatus
+
+// Swap type alias
 type Swap = mongodb.MgoSwap
+
+// SwapResult type alias
 type SwapResult = mongodb.MgoSwapResult
+
+// SwapStatistics type alias
 type SwapStatistics = mongodb.SwapStatistics
 
+// ServerInfo server info
 type ServerInfo struct {
 	Identifier string
 	SrcToken   *tokens.TokenConfig
@@ -17,12 +25,15 @@ type ServerInfo struct {
 	Version    string
 }
 
+// PostResult post result
 type PostResult string
 
+// SuccessPostResult success post result
 var SuccessPostResult PostResult = "Success"
 
+// SwapInfo swap info
 type SwapInfo struct {
-	TxId          string     `json:"txid"`
+	TxID          string     `json:"txid"`
 	TxHeight      uint64     `json:"txheight"`
 	TxTime        uint64     `json:"txtime"`
 	From          string     `json:"from"`

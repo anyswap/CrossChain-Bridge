@@ -12,22 +12,26 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-type FsnBridge struct {
-	*eth.EthBridge
+// Bridge fsn bridge inherit from eth bridge
+type Bridge struct {
+	*eth.Bridge
 }
 
-func NewCrossChainBridge(isSrc bool) *FsnBridge {
-	return &FsnBridge{EthBridge: eth.NewCrossChainBridge(isSrc)}
+// NewCrossChainBridge new fsn bridge
+func NewCrossChainBridge(isSrc bool) *Bridge {
+	return &Bridge{Bridge: eth.NewCrossChainBridge(isSrc)}
 }
 
-func (b *FsnBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
+// SetTokenAndGateway set token and gateway config
+func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
 	b.VerifyChainID()
 	b.VerifyTokenCofig()
 	b.InitLatestBlockNumber()
 }
 
-func (b *FsnBridge) VerifyChainID() {
+// VerifyChainID verify chain id
+func (b *Bridge) VerifyChainID() {
 	tokenCfg := b.TokenConfig
 	gatewayCfg := b.GatewayConfig
 
@@ -52,7 +56,7 @@ func (b *FsnBridge) VerifyChainID() {
 			break
 		}
 		log.Errorf("can not get gateway chainID. %v", err)
-		log.Println("retry query gateway", gatewayCfg.ApiAddress)
+		log.Println("retry query gateway", gatewayCfg.APIAddress)
 		time.Sleep(3 * time.Second)
 	}
 

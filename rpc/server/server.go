@@ -16,10 +16,11 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/rpc/rpcapi"
 )
 
+// StartAPIServer start api server
 func StartAPIServer() {
 	rpcserver := rpc.NewServer()
 	rpcserver.RegisterCodec(rpcjson.NewCodec(), "application/json")
-	rpcserver.RegisterService(new(rpcapi.RpcAPI), "swap")
+	rpcserver.RegisterService(new(rpcapi.RPCAPI), "swap")
 
 	r := mux.NewRouter()
 	r.Handle("/rpc", rpcserver)
@@ -61,8 +62,8 @@ func StartAPIServer() {
 	r.HandleFunc("/p2sh/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
 	r.HandleFunc("/p2sh/bind/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
 
-	apiPort := params.GetApiPort()
-	apiServer := params.GetConfig().ApiServer
+	apiPort := params.GetAPIPort()
+	apiServer := params.GetConfig().APIServer
 	allowedOrigins := apiServer.AllowedOrigins
 
 	corsOptions := []handlers.CORSOption{

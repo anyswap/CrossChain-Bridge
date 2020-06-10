@@ -10,7 +10,8 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
 )
 
-func MarshalToJson(obj interface{}, pretty bool) string {
+// MarshalToJSON marshal to json
+func MarshalToJSON(obj interface{}, pretty bool) string {
 	var jsdata []byte
 	if pretty {
 		jsdata, _ = json.MarshalIndent(obj, "", "  ")
@@ -20,10 +21,11 @@ func MarshalToJson(obj interface{}, pretty bool) string {
 	return string(jsdata)
 }
 
+// AuthoredTxToString AuthoredTx to string
 func AuthoredTxToString(authtx interface{}, pretty bool) string {
 	authoredTx, ok := authtx.(*txauthor.AuthoredTx)
 	if !ok {
-		return MarshalToJson(authtx, pretty)
+		return MarshalToJSON(authtx, pretty)
 	}
 
 	var encAuthTx EncAuthoredTx
@@ -33,7 +35,7 @@ func AuthoredTxToString(authtx interface{}, pretty bool) string {
 
 	tx := authoredTx.Tx
 	if tx == nil {
-		return MarshalToJson(encAuthTx, pretty)
+		return MarshalToJSON(encAuthTx, pretty)
 	}
 
 	buf := bytes.NewBuffer(make([]byte, 0, tx.SerializeSize()))
@@ -72,15 +74,17 @@ func AuthoredTxToString(authtx interface{}, pretty bool) string {
 	}
 
 	encAuthTx.Tx = &encTx
-	return MarshalToJson(encAuthTx, pretty)
+	return MarshalToJSON(encAuthTx, pretty)
 }
 
+// EncAuthoredTx stuct
 type EncAuthoredTx struct {
 	Tx          *EncMsgTx
 	TotalInput  btcutil.Amount
 	ChangeIndex int
 }
 
+// EncMsgTx struct
 type EncMsgTx struct {
 	Txid     string
 	Version  int32
@@ -89,16 +93,19 @@ type EncMsgTx struct {
 	LockTime uint32
 }
 
+// EncTxOut struct
 type EncTxOut struct {
 	PkScript string
 	Value    int64
 }
 
+// EncOutPoint struct
 type EncOutPoint struct {
 	Hash  string
 	Index uint32
 }
 
+// EncTxIn struct
 type EncTxIn struct {
 	PreviousOutPoint EncOutPoint
 	SignatureScript  string

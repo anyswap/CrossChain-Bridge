@@ -1,9 +1,11 @@
 package dcrm
 
+// DataEnode enode
 type DataEnode struct {
 	Enode string
 }
 
+// GetEnodeResp enode response
 type GetEnodeResp struct {
 	Status string
 	Tip    string
@@ -11,10 +13,12 @@ type GetEnodeResp struct {
 	Data   *DataEnode
 }
 
+// DataResult result
 type DataResult struct {
 	Result string `json:"result"`
 }
 
+// DataResultResp result response
 type DataResultResp struct {
 	Status string
 	Tip    string
@@ -22,6 +26,7 @@ type DataResultResp struct {
 	Data   *DataResult
 }
 
+// SignReply sign reply
 type SignReply struct {
 	Enode     string
 	Status    string
@@ -29,6 +34,7 @@ type SignReply struct {
 	Initiator string
 }
 
+// SignStatus sign status
 type SignStatus struct {
 	Status    string
 	Rsv       string
@@ -38,6 +44,7 @@ type SignStatus struct {
 	TimeStamp string
 }
 
+// SignInfoData sign info
 type SignInfoData struct {
 	Account    string
 	GroupID    string
@@ -52,6 +59,7 @@ type SignInfoData struct {
 	TimeStamp  string
 }
 
+// SignInfoResp sign info response
 type SignInfoResp struct {
 	Status string
 	Tip    string
@@ -59,6 +67,7 @@ type SignInfoResp struct {
 	Data   []*SignInfoData
 }
 
+// SignData sign data
 type SignData struct {
 	TxType     string
 	PubKey     string
@@ -71,6 +80,7 @@ type SignData struct {
 	TimeStamp  string
 }
 
+// AcceptData accpet data
 type AcceptData struct {
 	TxType    string
 	Key       string
@@ -78,12 +88,14 @@ type AcceptData struct {
 	TimeStamp string
 }
 
+// GroupInfo group info
 type GroupInfo struct {
 	Gid    string
 	Count  int
 	Enodes []string
 }
 
+// GetGroupByIDResp group response
 type GetGroupByIDResp struct {
 	Status string
 	Tip    string

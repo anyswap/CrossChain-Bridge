@@ -27,7 +27,8 @@ var (
 	hashType = txscript.SigHashAll
 )
 
-func (b *BtcBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
+// DcrmSignTransaction dcrm sign raw tx
+func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
 		return nil, "", tokens.ErrWrongRawTx
@@ -59,11 +60,11 @@ func (b *BtcBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxA
 	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, args)
 }
 
-func (b *BtcBridge) verifyPublickeyData(pkData []byte, swapType tokens.SwapType) error {
+func (b *Bridge) verifyPublickeyData(pkData []byte, swapType tokens.SwapType) error {
 	switch swapType {
-	case tokens.Swap_Swapin:
+	case tokens.SwapinType:
 		return tokens.ErrSwapTypeNotSupported
-	case tokens.Swap_Swapout, tokens.Swap_Recall:
+	case tokens.SwapoutType, tokens.SwapRecallType:
 		dcrmAddress := b.TokenConfig.DcrmAddress
 		address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkData), b.GetChainConfig())
 		if address.EncodeAddress() != b.TokenConfig.DcrmAddress {
@@ -73,7 +74,8 @@ func (b *BtcBridge) verifyPublickeyData(pkData []byte, swapType tokens.SwapType)
 	return nil
 }
 
-func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash []string, rsv []string, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
+// MakeSignedTransaction make signed tx
+func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash []string, rsv []string, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
 	txIn := authoredTx.Tx.TxIn
 	if len(txIn) != len(msgHash) {
 		return nil, "", errors.New("mismatch number of msghashes and tx inputs")
@@ -81,7 +83,7 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 	if len(txIn) != len(rsv) {
 		return nil, "", errors.New("mismatch number of signatures and tx inputs")
 	}
-	log.Info("BtcBridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
+	log.Info("Bridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
 	var cPkData []byte
 
@@ -140,7 +142,8 @@ func (b *BtcBridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHa
 	return authoredTx, txHash, nil
 }
 
-func (b *BtcBridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, idx int) (rsv string, err error) {
+// DcrmSignMsgHash dcrm sign msg hash
+func (b *Bridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, idx int) (rsv string, err error) {
 	extra := args.Extra.BtcExtra
 	if extra == nil {
 		return "", tokens.ErrWrongExtraArgs
@@ -177,7 +180,8 @@ func (b *BtcBridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, id
 	return rsv, nil
 }
 
-func (b *BtcBridge) SignTransaction(rawTx interface{}, wif string) (signedTx interface{}, txHash string, err error) {
+// SignTransaction sign tx with wif
+func (b *Bridge) SignTransaction(rawTx interface{}, wif string) (signedTx interface{}, txHash string, err error) {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
 		return nil, "", tokens.ErrWrongRawTx

@@ -5,6 +5,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
+// MatchTx struct
 type MatchTx struct {
 	SwapTx     string
 	SwapHeight uint64
@@ -25,13 +26,13 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 	txid := tx.Hash
 	var swapType tokens.SwapType
 	if isSwapin {
-		swapType = tokens.Swap_Swapin
+		swapType = tokens.SwapinType
 	} else {
-		swapType = tokens.Swap_Swapout
+		swapType = tokens.SwapoutType
 	}
 	swapResult := &mongodb.MgoSwapResult{
 		Key:        txid,
-		TxId:       txid,
+		TxID:       txid,
 		TxHeight:   tx.Height,
 		TxTime:     tx.Timestamp,
 		From:       tx.From,
@@ -83,12 +84,12 @@ func updateSwapResult(key string, mtx *MatchTx) (err error) {
 		updates.SwapTime = mtx.SwapTime
 	}
 	switch mtx.SwapType {
-	case tokens.Swap_Recall:
+	case tokens.SwapRecallType:
 		updates.SwapType = uint32(mtx.SwapType)
 		fallthrough
-	case tokens.Swap_Swapin:
+	case tokens.SwapinType:
 		err = mongodb.UpdateSwapinResult(key, updates)
-	case tokens.Swap_Swapout:
+	case tokens.SwapoutType:
 		err = mongodb.UpdateSwapoutResult(key, updates)
 	default:
 		err = tokens.ErrUnknownSwapType

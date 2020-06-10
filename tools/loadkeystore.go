@@ -8,6 +8,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tools/keystore"
 )
 
+// LoadKeyStore load keystore from keyfile and passfile
 func LoadKeyStore(keyfile, passfile string) (*keystore.Key, error) {
 	keyjson, err := ioutil.ReadFile(keyfile)
 	if err != nil {

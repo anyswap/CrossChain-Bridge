@@ -23,6 +23,7 @@ import (
 )
 
 var (
+	// ErrDecrypt decrypt error
 	ErrDecrypt = errors.New("could not decrypt key with given password")
 )
 

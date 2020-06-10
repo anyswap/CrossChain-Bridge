@@ -24,9 +24,11 @@ var (
 	retryInterval = 3 * time.Second
 	waitInterval  = 20 * time.Second
 
+	// ErrIdentifierMismatch identifier mismatch (will ignore sign with this error in accept)
 	ErrIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
 )
 
+// StartAcceptSignJob accept job
 func StartAcceptSignJob() error {
 	acceptSignStarter.Do(func() {
 		logWorker("accept", "start accept sign job")
@@ -95,14 +97,14 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 		memo                 string
 	)
 	switch args.SwapType {
-	case tokens.Swap_Swapin:
+	case tokens.SwapinType:
 		srcBridge = tokens.SrcBridge
 		dstBridge = tokens.DstBridge
-	case tokens.Swap_Swapout:
+	case tokens.SwapoutType:
 		srcBridge = tokens.DstBridge
 		dstBridge = tokens.SrcBridge
 		memo = fmt.Sprintf("%s%s", tokens.UnlockMemoPrefix, args.SwapID)
-	case tokens.Swap_Recall:
+	case tokens.SwapRecallType:
 		srcBridge = tokens.SrcBridge
 		dstBridge = tokens.SrcBridge
 		memo = fmt.Sprintf("%s%s", tokens.RecallMemoPrefix, args.SwapID)
@@ -112,7 +114,7 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	var swap *tokens.TxSwapInfo
 	switch args.TxType {
 	case tokens.P2shSwapinTx:
-		btcBridge, ok := srcBridge.(*btc.BtcBridge)
+		btcBridge, ok := srcBridge.(*btc.Bridge)
 		if !ok {
 			return tokens.ErrWrongP2shSwapin
 		}

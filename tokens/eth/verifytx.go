@@ -12,11 +12,13 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-func (b *EthBridge) GetTransaction(txHash string) (interface{}, error) {
+// GetTransaction impl
+func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
 	return b.GetTransactionByHash(txHash)
 }
 
-func (b *EthBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
+// GetTransactionStatus impl
+func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	var txStatus tokens.TxStatus
 	txr, err := b.GetTransactionReceipt(txHash)
 	if err != nil {
@@ -26,18 +28,18 @@ func (b *EthBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	if *txr.Status != 1 {
 		log.Debug("transaction with wrong receipt status", "hash", txHash, "status", txr.Status)
 	}
-	txStatus.Block_height = txr.BlockNumber.ToInt().Uint64()
-	txStatus.Block_hash = txr.BlockHash.String()
-	block, err := b.GetBlockByHash(txStatus.Block_hash)
+	txStatus.BlockHeight = txr.BlockNumber.ToInt().Uint64()
+	txStatus.BlockHash = txr.BlockHash.String()
+	block, err := b.GetBlockByHash(txStatus.BlockHash)
 	if err == nil {
-		txStatus.Block_time = block.Time.ToInt().Uint64()
+		txStatus.BlockTime = block.Time.ToInt().Uint64()
 	} else {
-		log.Debug("GetBlockByHash fail", "hash", txStatus.Block_hash, "err", err)
+		log.Debug("GetBlockByHash fail", "hash", txStatus.BlockHash, "err", err)
 	}
 	if *txr.Status == 1 {
 		latest, err := b.GetLatestBlockNumber()
 		if err == nil {
-			txStatus.Confirmations = latest - txStatus.Block_height
+			txStatus.Confirmations = latest - txStatus.BlockHeight
 		} else {
 			log.Debug("GetLatestBlockNumber fail", "err", err)
 		}
@@ -46,7 +48,8 @@ func (b *EthBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	return &txStatus
 }
 
-func (b *EthBridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) error {
+// VerifyMsgHash verify msg hash
+func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) error {
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {
 		return tokens.ErrWrongRawTx
@@ -59,34 +62,35 @@ func (b *EthBridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra inter
 	return nil
 }
 
-func (b *EthBridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+// VerifyTransaction impl
+func (b *Bridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if !b.IsSrc {
 		return b.verifySwapoutTx(txHash, allowUnstable)
 	}
 	return b.verifySwapinTx(txHash, allowUnstable)
 }
 
-func (b *EthBridge) verifySwapoutTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifySwapoutTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if allowUnstable {
 		return b.verifySwapoutTxUnstable(txHash)
 	}
 	return b.verifySwapoutTxStable(txHash)
 }
 
-func (b *EthBridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
 	token := b.TokenConfig
 	dcrmAddress := token.DcrmAddress
 
 	txStatus := b.GetTransactionStatus(txHash)
-	swapInfo.Height = txStatus.Block_height  // Height
-	swapInfo.Timestamp = txStatus.Block_time // Timestamp
+	swapInfo.Height = txStatus.BlockHeight  // Height
+	swapInfo.Timestamp = txStatus.BlockTime // Timestamp
 	receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
 	if !ok || receipt == nil || *receipt.Status != 1 {
 		return swapInfo, tokens.ErrTxWithWrongReceipt
 	}
-	if txStatus.Block_height == 0 ||
+	if txStatus.BlockHeight == 0 ||
 		txStatus.Confirmations < *token.Confirmations {
 		return swapInfo, tokens.ErrTxNotStable
 	}
@@ -100,9 +104,9 @@ func (b *EthBridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, er
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
-	bindAddress, value, err := ParseSwapoutTxLogs(receipt.Logs)
+	bindAddress, value, err := parseSwapoutTxLogs(receipt.Logs)
 	if err != nil {
-		log.Debug("EthBridge ParseSwapoutTxLogs fail", "tx", txHash, "err", err)
+		log.Debug("Bridge parseSwapoutTxLogs fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
 	swapInfo.Bind = bindAddress // Bind
@@ -127,12 +131,12 @@ func (b *EthBridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, er
 	return swapInfo, nil
 }
 
-func (b *EthBridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug("EthBridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug("Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	if tx.BlockNumber != nil {
@@ -155,9 +159,9 @@ func (b *EthBridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, 
 	}
 
 	input := (*[]byte)(tx.Payload)
-	bindAddress, value, err := ParseSwapoutTxInput(input)
+	bindAddress, value, err := parseSwapoutTxInput(input)
 	if err != nil {
-		log.Debug("EthBridge ParseSwapoutTxInput fail", "tx", txHash, "input", input, "err", err)
+		log.Debug("Bridge parseSwapoutTxInput fail", "tx", txHash, "input", input, "err", err)
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
 	swapInfo.Bind = bindAddress // Bind
@@ -175,7 +179,7 @@ func (b *EthBridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, 
 	return swapInfo, nil
 }
 
-func ParseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
+func parseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 	if input == nil {
 		return "", nil, fmt.Errorf("empty tx input")
 	}
@@ -188,10 +192,10 @@ func ParseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 		return "", nil, fmt.Errorf("wrong func hash, have %x want %x", funcHash, tokens.SwapoutFuncHash)
 	}
 	encData := data[4:]
-	return ParseEncodedData(encData)
+	return parseEncodedData(encData)
 }
 
-func ParseSwapoutTxLogs(logs []*types.RPCLog) (string, *big.Int, error) {
+func parseSwapoutTxLogs(logs []*types.RPCLog) (string, *big.Int, error) {
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
 			continue
@@ -202,12 +206,12 @@ func ParseSwapoutTxLogs(logs []*types.RPCLog) (string, *big.Int, error) {
 		if log.Topics[0].String() != tokens.LogSwapoutTopic {
 			continue
 		}
-		return ParseEncodedData(*log.Data)
+		return parseEncodedData(*log.Data)
 	}
 	return "", nil, fmt.Errorf("swapout log not found or removed")
 }
 
-func ParseEncodedData(encData []byte) (string, *big.Int, error) {
+func parseEncodedData(encData []byte) (string, *big.Int, error) {
 	if len(encData) < 96 {
 		return "", nil, fmt.Errorf("wrong lenght of encoded data")
 	}
@@ -224,7 +228,7 @@ func ParseEncodedData(encData []byte) (string, *big.Int, error) {
 	return bind, value, nil
 }
 
-func (b *EthBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if b.TokenConfig.ID == "ERC20" {
 		return b.verifyErc20SwapinTx(txHash, allowUnstable)
 	}
@@ -236,7 +240,7 @@ func (b *EthBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug("EthBridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug("Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	if tx.BlockNumber != nil {
@@ -251,13 +255,13 @@ func (b *EthBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 
 	if !allowUnstable {
 		txStatus := b.GetTransactionStatus(txHash)
-		swapInfo.Height = txStatus.Block_height  // Height
-		swapInfo.Timestamp = txStatus.Block_time // Timestamp
+		swapInfo.Height = txStatus.BlockHeight  // Height
+		swapInfo.Timestamp = txStatus.BlockTime // Timestamp
 		receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
 		if !ok || receipt == nil || *receipt.Status != 1 {
 			return swapInfo, tokens.ErrTxWithWrongReceipt
 		}
-		if txStatus.Block_height == 0 ||
+		if txStatus.BlockHeight == 0 ||
 			txStatus.Confirmations < *token.Confirmations {
 			return swapInfo, tokens.ErrTxNotStable
 		}

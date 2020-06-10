@@ -20,18 +20,21 @@ func writeResponse(w http.ResponseWriter, resp interface{}, err error) {
 	}
 }
 
+// SeverInfoHandler handler
 func SeverInfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	res, err := swapapi.GetServerInfo()
 	writeResponse(w, res, err)
 }
 
+// StatisticsHandler handler
 func StatisticsHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	res, err := swapapi.GetSwapStatistics()
 	writeResponse(w, res, err)
 }
 
+// GetRawSwapinHandler handler
 func GetRawSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -40,6 +43,7 @@ func GetRawSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// GetRawSwapinResultHandler handler
 func GetRawSwapinResultHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -48,6 +52,7 @@ func GetRawSwapinResultHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// GetSwapinHandler handler
 func GetSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -56,6 +61,7 @@ func GetSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// GetRawSwapoutHandler hanlder
 func GetRawSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -64,6 +70,7 @@ func GetRawSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// GetRawSwapoutResultHandler handler
 func GetRawSwapoutResultHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -72,6 +79,7 @@ func GetRawSwapoutResultHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// GetSwapoutHandler handler
 func GetSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -86,17 +94,17 @@ func getHistoryParams(r *http.Request) (address string, offset int, limit int, e
 
 	address = vars["address"]
 
-	offset_val, exist := vals["offset"]
+	offsetStr, exist := vals["offset"]
 	if exist {
-		offset, err = common.GetIntFromStr(offset_val[0])
+		offset, err = common.GetIntFromStr(offsetStr[0])
 		if err != nil {
 			return address, offset, limit, err
 		}
 	}
 
-	limit_val, exist := vals["limit"]
+	limitStr, exist := vals["limit"]
 	if exist {
-		limit, err = common.GetIntFromStr(limit_val[0])
+		limit, err = common.GetIntFromStr(limitStr[0])
 		if err != nil {
 			return address, offset, limit, err
 		}
@@ -105,6 +113,7 @@ func getHistoryParams(r *http.Request) (address string, offset int, limit int, e
 	return address, offset, limit, nil
 }
 
+// SwapinHistoryHandler handler
 func SwapinHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	address, offset, limit, err := getHistoryParams(r)
@@ -116,6 +125,7 @@ func SwapinHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// SwapoutHistoryHandler handler
 func SwapoutHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	address, offset, limit, err := getHistoryParams(r)
@@ -127,6 +137,7 @@ func SwapoutHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// PostSwapinHandler handler
 func PostSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -135,6 +146,7 @@ func PostSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// PostP2shSwapinHandler handler
 func PostP2shSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -144,6 +156,7 @@ func PostP2shSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// PostSwapoutHandler handler
 func PostSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -152,6 +165,7 @@ func PostSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// RecallSwapinHandler handler
 func RecallSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -160,6 +174,7 @@ func RecallSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// RegisterP2shAddress handler
 func RegisterP2shAddress(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -168,6 +183,7 @@ func RegisterP2shAddress(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// GetP2shAddressInfo handler
 func GetP2shAddressInfo(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)

@@ -13,6 +13,7 @@ var (
 	swapoutVerifyStarter sync.Once
 )
 
+// StartVerifyJob verify job
 func StartVerifyJob() error {
 	go startSwapinVerifyJob()
 	go startSwapoutVerifyJob()
@@ -35,7 +36,7 @@ func startSwapinVerifyJob() error {
 				switch err {
 				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
 				default:
-					logWorkerError("verify", "process swapin verify error", err, "txid", swap.TxId)
+					logWorkerError("verify", "process swapin verify error", err, "txid", swap.TxID)
 				}
 			}
 			restInJob(restIntervalInVerifyJob)
@@ -60,7 +61,7 @@ func startSwapoutVerifyJob() error {
 				switch err {
 				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
 				default:
-					logWorkerError("verify", "process swapout verify error", err, "txid", swap.TxId)
+					logWorkerError("verify", "process swapout verify error", err, "txid", swap.TxID)
 				}
 			}
 			restInJob(restIntervalInVerifyJob)
@@ -82,13 +83,13 @@ func findSwapoutsToVerify() ([]*mongodb.MgoSwap, error) {
 }
 
 func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
-	txid := swap.TxId
+	txid := swap.TxID
 	var swapInfo *tokens.TxSwapInfo
 	switch tokens.SwapTxType(swap.TxType) {
 	case tokens.SwapinTx:
 		swapInfo, err = tokens.SrcBridge.VerifyTransaction(txid, false)
 	case tokens.P2shSwapinTx:
-		btcBridge, ok := tokens.SrcBridge.(*btc.BtcBridge)
+		btcBridge, ok := tokens.SrcBridge.(*btc.Bridge)
 		if !ok {
 			return tokens.ErrWrongP2shSwapin
 		}
@@ -120,7 +121,7 @@ func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
 }
 
 func processSwapoutVerify(swap *mongodb.MgoSwap) error {
-	txid := swap.TxId
+	txid := swap.TxID
 	swapInfo, err := tokens.DstBridge.VerifyTransaction(txid, false)
 
 	resultStatus := mongodb.MatchTxEmpty

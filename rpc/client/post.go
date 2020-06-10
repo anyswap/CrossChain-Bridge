@@ -13,6 +13,7 @@ const (
 	defaultRequestID = 1
 )
 
+// Request json rpc request
 type Request struct {
 	Method  string
 	Params  interface{}
@@ -20,6 +21,7 @@ type Request struct {
 	ID      int
 }
 
+// NewRequest new request
 func NewRequest(method string, params ...interface{}) *Request {
 	return &Request{
 		Method:  method,
@@ -29,6 +31,7 @@ func NewRequest(method string, params ...interface{}) *Request {
 	}
 }
 
+// NewRequestWithTimeoutAndID new request with timeout and id
 func NewRequestWithTimeoutAndID(timeout, id int, method string, params ...interface{}) *Request {
 	return &Request{
 		Method:  method,
@@ -38,16 +41,19 @@ func NewRequestWithTimeoutAndID(timeout, id int, method string, params ...interf
 	}
 }
 
-func RpcPost(result interface{}, url string, method string, params ...interface{}) error {
+// RPCPost rpc post
+func RPCPost(result interface{}, url string, method string, params ...interface{}) error {
 	req := NewRequest(method, params...)
-	return RpcPostRequest(url, req, result)
+	return RPCPostRequest(url, req, result)
 }
 
-func RpcPostWithTimeoutAndID(result interface{}, timeout, id int, url string, method string, params ...interface{}) error {
+// RPCPostWithTimeoutAndID rpc post with timeout and id
+func RPCPostWithTimeoutAndID(result interface{}, timeout, id int, url string, method string, params ...interface{}) error {
 	req := NewRequestWithTimeoutAndID(timeout, id, method, params...)
-	return RpcPostRequest(url, req, result)
+	return RPCPostRequest(url, req, result)
 }
 
+// RequestBody request body
 type RequestBody struct {
 	Version string      `json:"jsonrpc"`
 	Method  string      `json:"method"`
@@ -72,21 +78,22 @@ type jsonrpcResponse struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
-func RpcPostRequest(url string, req *Request, result interface{}) error {
+// RPCPostRequest rpc post request
+func RPCPostRequest(url string, req *Request, result interface{}) error {
 	reqBody := &RequestBody{
 		Version: "2.0",
 		Method:  req.Method,
 		Params:  req.Params,
 		ID:      req.ID,
 	}
-	resp, err := HttpPost(url, reqBody, nil, nil, req.Timeout)
+	resp, err := HTTPPost(url, reqBody, nil, nil, req.Timeout)
 	if err != nil {
 		return err
 	}
-	return getResultFromJsonResponse(result, resp)
+	return getResultFromJSONResponse(result, resp)
 }
 
-func getResultFromJsonResponse(result interface{}, resp *http.Response) error {
+func getResultFromJSONResponse(result interface{}, resp *http.Response) error {
 	defer resp.Body.Close()
 	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
@@ -97,7 +104,7 @@ func getResultFromJsonResponse(result interface{}, resp *http.Response) error {
 		return fmt.Errorf("wrong response status %v. message: %v", resp.StatusCode, string(body))
 	}
 	if len(body) == 0 {
-		return fmt.Errorf("empty response body.")
+		return fmt.Errorf("empty response body")
 	}
 
 	var jsonResp jsonrpcResponse
@@ -115,12 +122,14 @@ func getResultFromJsonResponse(result interface{}, resp *http.Response) error {
 	return nil
 }
 
-func RpcRawPost(url string, body string) (string, error) {
-	return RpcRawPostWithTimeout(url, body, defaultTimeout)
+// RPCRawPost rpc raw post
+func RPCRawPost(url string, body string) (string, error) {
+	return RPCRawPostWithTimeout(url, body, defaultTimeout)
 }
 
-func RpcRawPostWithTimeout(url string, reqBody string, timeout int) (string, error) {
-	resp, err := HttpRawPost(url, reqBody, nil, nil, timeout)
+// RPCRawPostWithTimeout rpc raw post with timeout
+func RPCRawPostWithTimeout(url string, reqBody string, timeout int) (string, error) {
+	resp, err := HTTPRawPost(url, reqBody, nil, nil, timeout)
 	if err != nil {
 		return "", err
 	}

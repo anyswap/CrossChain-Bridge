@@ -30,6 +30,7 @@ import (
 	"strings"
 )
 
+// DryRunFlag dry run flag
 var DryRunFlag = flag.Bool("n", false, "dry run, don't execute commands")
 
 // MustRun executes the given command and exits the host process for
@@ -45,6 +46,7 @@ func MustRun(cmd *exec.Cmd) {
 	}
 }
 
+// MustRunCommand wrap MustRun
 func MustRunCommand(cmd string, args ...string) {
 	MustRun(exec.Command(cmd, args...))
 }

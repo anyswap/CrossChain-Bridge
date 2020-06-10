@@ -48,6 +48,7 @@ func AbsolutePath(datadir string, filename string) string {
 	return filepath.Join(datadir, filename)
 }
 
+// ExecuteDir returns the execute directory
 func ExecuteDir() (string, error) {
 	return filepath.Abs(filepath.Dir(os.Args[0]))
 }

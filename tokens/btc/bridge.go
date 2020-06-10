@@ -8,18 +8,21 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
-type BtcBridge struct {
+// Bridge btc bridge
+type Bridge struct {
 	*tokens.CrossChainBridgeBase
 }
 
-func NewCrossChainBridge(isSrc bool) *BtcBridge {
+// NewCrossChainBridge new btc bridge
+func NewCrossChainBridge(isSrc bool) *Bridge {
 	if !isSrc {
 		panic(tokens.ErrBridgeDestinationNotSupported)
 	}
-	return &BtcBridge{tokens.NewCrossChainBridgeBase(isSrc)}
+	return &Bridge{tokens.NewCrossChainBridgeBase(isSrc)}
 }
 
-func (b *BtcBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
+// SetTokenAndGateway set token and gateway config
+func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
 
 	networkID := strings.ToLower(tokenCfg.NetID)
@@ -45,7 +48,7 @@ func (b *BtcBridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg 
 			break
 		}
 		log.Error("get latst block number failed.", "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID, "err", err)
-		log.Println("retry query gateway", gatewayCfg.ApiAddress)
+		log.Println("retry query gateway", gatewayCfg.APIAddress)
 		time.Sleep(3 * time.Second)
 	}
 }

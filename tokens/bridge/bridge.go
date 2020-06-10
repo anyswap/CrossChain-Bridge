@@ -16,8 +16,9 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens/fsn"
 )
 
-var btcBridge *btc.BtcBridge
+var btcBridge *btc.Bridge
 
+// NewCrossChainBridge new bridge according to chain name
 func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 	switch id {
 	case "Bitcoin":
@@ -33,6 +34,7 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 	return nil
 }
 
+// InitCrossChainBridge init bridge
 func InitCrossChainBridge(isServer bool) {
 	cfg := params.GetConfig()
 	srcToken := cfg.SrcToken
@@ -55,12 +57,12 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge.SetTokenAndGateway(dstToken, dstGateway)
 	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
 
-	InitBtcExtra(cfg.BtcExtra)
+	initBtcExtra(cfg.BtcExtra)
 
-	InitDcrm(cfg.Dcrm, isServer)
+	initDcrm(cfg.Dcrm, isServer)
 }
 
-func InitBtcExtra(btcExtra *tokens.BtcExtraConfig) {
+func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 	if btcBridge == nil || btcExtra == nil {
 		return
 	}
@@ -95,9 +97,9 @@ func InitBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 	}
 }
 
-func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
-	dcrm.SetDcrmRpcAddress(*dcrmConfig.RpcAddress)
-	log.Info("Init dcrm rpc adress", "rpcaddress", *dcrmConfig.RpcAddress)
+func initDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
+	dcrm.SetDcrmRPCAddress(*dcrmConfig.RPCAddress)
+	log.Info("Init dcrm rpc adress", "rpcaddress", *dcrmConfig.RPCAddress)
 
 	if isServer {
 		dcrm.SetSignPubkey(*dcrmConfig.Pubkey)
@@ -168,7 +170,7 @@ func InitDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 		time.Sleep(3 * time.Second)
 	}
 
-	for _, signGroupID := range dcrm.SignGroups {
+	for _, signGroupID := range dcrm.GetSignGroups() {
 		if !isServer {
 			break
 		}

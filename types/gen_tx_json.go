@@ -98,11 +98,13 @@ func (t *txdata) UnmarshalJSON(input []byte) error {
 	return nil
 }
 
+// PrintPretty print pretty (json)
 func (tx *Transaction) PrintPretty() {
 	bs, _ := json.MarshalIndent(tx, "", "  ")
 	fmt.Println(string(bs))
 }
 
+// PrintRaw print raw encoded (hex string)
 func (tx *Transaction) PrintRaw() {
 	bs, _ := rlp.EncodeToBytes(tx)
 	fmt.Println(hexutil.Bytes(bs))

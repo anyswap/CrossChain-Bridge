@@ -55,10 +55,12 @@ func (i HexOrDecimal64) MarshalText() ([]byte, error) {
 	return []byte(fmt.Sprintf("%#x", uint64(i))), nil
 }
 
+// ParseInt parses s as an integer in decimal syntax
 func ParseInt(s string) (int, error) {
 	return strconv.Atoi(s)
 }
 
+// MustParseInt parses s as an integer and panics if the string is invalid.
 func MustParseInt(s string) int {
 	v, err := ParseInt(s)
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/internal/build"
 )
 
-var GOBIN, _ = filepath.Abs(filepath.Join("build", "bin"))
+var gobin, _ = filepath.Abs(filepath.Join("build", "bin"))
 
 func main() {
 	log.SetFlags(log.Lshortfile)
@@ -90,7 +90,7 @@ func goTool(subcmd string, args ...string) *exec.Cmd {
 func goToolArch(arch string, cc string, subcmd string, args ...string) *exec.Cmd {
 	cmd := build.GoTool(subcmd, args...)
 	if arch == "" || arch == runtime.GOARCH {
-		cmd.Env = append(cmd.Env, "GOBIN="+GOBIN)
+		cmd.Env = append(cmd.Env, "GOBIN="+gobin)
 	} else {
 		cmd.Env = append(cmd.Env, "CGO_ENABLED=1")
 		cmd.Env = append(cmd.Env, "GOARCH="+arch)

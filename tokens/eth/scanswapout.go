@@ -14,7 +14,7 @@ import (
 
 var (
 	swapoutScanStarter   sync.Once
-	swapServerApiAddress string
+	swapServerAPIAddress string
 	oracleLatestScanned  uint64
 
 	maxScanHeight          = uint64(15000)
@@ -22,18 +22,19 @@ var (
 	restIntervalInScanJob  = 3 * time.Second
 )
 
-func (b *EthBridge) StartSwapoutScanJob(isServer bool) error {
+// StartSwapoutScanJob scan job
+func (b *Bridge) StartSwapoutScanJob(isServer bool) error {
 	swapoutScanStarter.Do(func() {
 		if isServer {
-			b.StartSwapoutScanJobOnServer()
+			b.startSwapoutScanJobOnServer()
 		} else {
-			b.StartSwapoutScanJobOnOracle()
+			b.startSwapoutScanJobOnOracle()
 		}
 	})
 	return nil
 }
 
-func (b *EthBridge) StartSwapoutScanJobOnServer() error {
+func (b *Bridge) startSwapoutScanJobOnServer() error {
 	log.Info("[scanswapout] start scan swapout job")
 
 	isProcessed := func(txid string, txheight uint64) bool {
@@ -49,7 +50,7 @@ func (b *EthBridge) StartSwapoutScanJobOnServer() error {
 	return b.scanTransactionHistory(true, isProcessed)
 }
 
-func (b *EthBridge) processSwapout(txid string, isServer bool) error {
+func (b *Bridge) processSwapout(txid string, isServer bool) error {
 	swapInfo, err := b.VerifyTransaction(txid, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return err
@@ -57,23 +58,23 @@ func (b *EthBridge) processSwapout(txid string, isServer bool) error {
 	if isServer {
 		return b.registerSwapout(txid, swapInfo.Bind)
 	}
-	if !b.IsSwapoutExistByQuery(txid) {
+	if !b.isSwapoutExistByQuery(txid) {
 		return b.postRegisterSwapout(txid)
 	}
 	return nil
 }
 
-func (b *EthBridge) IsSwapoutExistByQuery(txid string) bool {
+func (b *Bridge) isSwapoutExistByQuery(txid string) bool {
 	var result interface{}
-	client.RpcPost(&result, swapServerApiAddress, "swap.GetSwapout", txid)
+	client.RPCPost(&result, swapServerAPIAddress, "swap.GetSwapout", txid)
 	return result != nil
 }
 
-func (b *EthBridge) registerSwapout(txid string, bind string) error {
+func (b *Bridge) registerSwapout(txid string, bind string) error {
 	log.Info("[scanswapout] register swapout", "tx", txid, "bind", bind)
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
-		TxId:      txid,
+		TxID:      txid,
 		TxType:    uint32(tokens.SwapoutTx),
 		Bind:      bind,
 		Status:    mongodb.TxNotStable,
@@ -82,28 +83,28 @@ func (b *EthBridge) registerSwapout(txid string, bind string) error {
 	return mongodb.AddSwapout(swap)
 }
 
-func (b *EthBridge) postRegisterSwapout(txid string) error {
+func (b *Bridge) postRegisterSwapout(txid string) error {
 	log.Info("[scanswapout] post register swapout", "tx", txid)
 	var result interface{}
-	return client.RpcPost(&result, swapServerApiAddress, "swap.Swapout", txid)
+	return client.RPCPost(&result, swapServerAPIAddress, "swap.Swapout", txid)
 }
 
-func getSwapServerApiAddress() string {
+func getSwapServerAPIAddress() string {
 	oracleCfg := params.GetConfig().Oracle
 	if oracleCfg != nil {
-		return oracleCfg.ServerApiAddress
+		return oracleCfg.ServerAPIAddress
 	}
 	return ""
 }
 
-func (b *EthBridge) getSwapoutLogs(blockHeight uint64) ([]*types.RPCLog, error) {
+func (b *Bridge) getSwapoutLogs(blockHeight uint64) ([]*types.RPCLog, error) {
 	token := b.TokenConfig
 	contractAddress := token.ContractAddress
 	logTopic := tokens.LogSwapoutTopic
 	return b.GetContractLogs(contractAddress, logTopic, blockHeight)
 }
 
-func (b *EthBridge) getLatestHeight() uint64 {
+func (b *Bridge) getLatestHeight() uint64 {
 	for {
 		latest, err := b.GetLatestBlockNumber()
 		if err == nil {
@@ -115,13 +116,13 @@ func (b *EthBridge) getLatestHeight() uint64 {
 	return 0
 }
 
-func (b *EthBridge) StartSwapoutScanJobOnOracle() error {
+func (b *Bridge) startSwapoutScanJobOnOracle() error {
 	log.Info("[scanswapout] start scan swapout job")
 
-	// init swapServerApiAddress
-	swapServerApiAddress = getSwapServerApiAddress()
-	if swapServerApiAddress == "" {
-		log.Info("[scanswapout] stop scan swapout job as no Oracle.ServerApiAddress configed")
+	// init swapServerAPIAddress
+	swapServerAPIAddress = getSwapServerAPIAddress()
+	if swapServerAPIAddress == "" {
+		log.Info("[scanswapout] stop scan swapout job as no Oracle.ServerAPIAddress configed")
 		return nil
 	}
 
@@ -137,7 +138,7 @@ func (b *EthBridge) StartSwapoutScanJobOnOracle() error {
 	return b.scanTransactionHistory(false, isProcessed)
 }
 
-func (b *EthBridge) scanFirstLoop(isServer bool, isProcessed func(string, uint64) bool) error {
+func (b *Bridge) scanFirstLoop(isServer bool, isProcessed func(string, uint64) bool) error {
 	// first loop process all tx history no matter whether processed before
 	log.Info("[scanswapout] start first scan loop")
 	latest := b.getLatestHeight()
@@ -159,7 +160,7 @@ func (b *EthBridge) scanFirstLoop(isServer bool, isProcessed func(string, uint64
 	return nil
 }
 
-func (b *EthBridge) scanTransactionHistory(isServer bool, isProcessed func(string, uint64) bool) error {
+func (b *Bridge) scanTransactionHistory(isServer bool, isProcessed func(string, uint64) bool) error {
 	log.Info("[scanswapout] start scan tx history loop")
 	var (
 		confirmations = *b.TokenConfig.Confirmations
@@ -200,7 +201,7 @@ func (b *EthBridge) scanTransactionHistory(isServer bool, isProcessed func(strin
 	return nil
 }
 
-func (b *EthBridge) scanTransactionPool(isServer bool) error {
+func (b *Bridge) scanTransactionPool(isServer bool) error {
 	log.Info("[scanswapout] start scan tx pool loop")
 	for {
 		txs, err := b.GetPendingTransactions()

@@ -11,22 +11,24 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-func (b *EthBridge) GetLatestBlockNumber() (uint64, error) {
+// GetLatestBlockNumber call eth_blockNumber
+func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result string
-	err := client.RpcPost(&result, url, "eth_blockNumber")
+	err := client.RPCPost(&result, url, "eth_blockNumber")
 	if err != nil {
 		return 0, err
 	}
 	return common.GetUint64FromStr(result)
 }
 
-func (b *EthBridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
+// GetBlockByHash call eth_getBlockByHash
+func (b *Bridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result *types.RPCBlock
-	err := client.RpcPost(&result, url, "eth_getBlockByHash", blockHash, false)
+	err := client.RPCPost(&result, url, "eth_getBlockByHash", blockHash, false)
 	if err != nil {
 		return nil, err
 	}
@@ -36,11 +38,12 @@ func (b *EthBridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
 	return result, nil
 }
 
-func (b *EthBridge) GetTransactionByHash(txHash string) (*types.RPCTransaction, error) {
+// GetTransactionByHash call eth_getTransactionByHash
+func (b *Bridge) GetTransactionByHash(txHash string) (*types.RPCTransaction, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result *types.RPCTransaction
-	err := client.RpcPost(&result, url, "eth_getTransactionByHash", txHash)
+	err := client.RPCPost(&result, url, "eth_getTransactionByHash", txHash)
 	if err != nil {
 		return nil, err
 	}
@@ -50,22 +53,24 @@ func (b *EthBridge) GetTransactionByHash(txHash string) (*types.RPCTransaction, 
 	return result, nil
 }
 
-func (b *EthBridge) GetPendingTransactions() ([]*types.RPCTransaction, error) {
+// GetPendingTransactions call eth_pendingTransactions
+func (b *Bridge) GetPendingTransactions() ([]*types.RPCTransaction, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result []*types.RPCTransaction
-	err := client.RpcPost(&result, url, "eth_pendingTransactions")
+	err := client.RPCPost(&result, url, "eth_pendingTransactions")
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (b *EthBridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, error) {
+// GetTransactionReceipt call eth_getTransactionReceipt
+func (b *Bridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result *types.RPCTxReceipt
-	err := client.RpcPost(&result, url, "eth_getTransactionReceipt", txHash)
+	err := client.RPCPost(&result, url, "eth_getTransactionReceipt", txHash)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +80,8 @@ func (b *EthBridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, e
 	return result, nil
 }
 
-func (b *EthBridge) GetContractLogs(contractAddress, logTopic string, blockHeight uint64) ([]*types.RPCLog, error) {
+// GetContractLogs get contract logs
+func (b *Bridge) GetContractLogs(contractAddress, logTopic string, blockHeight uint64) ([]*types.RPCLog, error) {
 	addresses := []common.Address{common.HexToAddress(contractAddress)}
 	topics := []common.Hash{common.HexToHash(logTopic)}
 	height := new(big.Int).SetUint64(blockHeight)
@@ -89,67 +95,73 @@ func (b *EthBridge) GetContractLogs(contractAddress, logTopic string, blockHeigh
 	return b.GetLogs(filter)
 }
 
-func (b *EthBridge) GetLogs(filterQuery *types.FilterQuery) ([]*types.RPCLog, error) {
+// GetLogs call eth_getLogs
+func (b *Bridge) GetLogs(filterQuery *types.FilterQuery) ([]*types.RPCLog, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	args, err := types.ToFilterArg(filterQuery)
 	if err != nil {
 		return nil, err
 	}
 	var result []*types.RPCLog
-	err = client.RpcPost(&result, url, "eth_getLogs", args)
+	err = client.RPCPost(&result, url, "eth_getLogs", args)
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (b *EthBridge) GetPoolNonce(address string) (uint64, error) {
+// GetPoolNonce call eth_getTransactionCount
+func (b *Bridge) GetPoolNonce(address string) (uint64, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	account := common.HexToAddress(address)
 	var result hexutil.Uint64
-	err := client.RpcPost(&result, url, "eth_getTransactionCount", account, "pending")
+	err := client.RPCPost(&result, url, "eth_getTransactionCount", account, "pending")
 	return uint64(result), err
 }
 
-func (b *EthBridge) SuggestPrice() (*big.Int, error) {
+// SuggestPrice call eth_gasPrice
+func (b *Bridge) SuggestPrice() (*big.Int, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result hexutil.Big
-	err := client.RpcPost(&result, url, "eth_gasPrice")
+	err := client.RPCPost(&result, url, "eth_gasPrice")
 	if err != nil {
 		return nil, err
 	}
 	return result.ToInt(), nil
 }
 
-func (b *EthBridge) SendSignedTransaction(tx *types.Transaction) error {
+// SendSignedTransaction call eth_sendRawTransaction
+func (b *Bridge) SendSignedTransaction(tx *types.Transaction) error {
 	data, err := rlp.EncodeToBytes(tx)
 	if err != nil {
 		return err
 	}
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result interface{}
-	return client.RpcPost(&result, url, "eth_sendRawTransaction", common.ToHex(data))
+	return client.RPCPost(&result, url, "eth_sendRawTransaction", common.ToHex(data))
 }
 
-func (b *EthBridge) ChainID() (*big.Int, error) {
+// ChainID call eth_chainId
+func (b *Bridge) ChainID() (*big.Int, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result hexutil.Big
-	err := client.RpcPost(&result, url, "eth_chainId")
+	err := client.RPCPost(&result, url, "eth_chainId")
 	if err != nil {
 		return nil, err
 	}
 	return result.ToInt(), nil
 }
 
-func (b *EthBridge) GetCode(contract string) ([]byte, error) {
+// GetCode call eth_getCode
+func (b *Bridge) GetCode(contract string) ([]byte, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result hexutil.Bytes
-	err := client.RpcPost(&result, url, "eth_getCode", contract, "latest")
+	err := client.RPCPost(&result, url, "eth_getCode", contract, "latest")
 	return []byte(result), err
 }

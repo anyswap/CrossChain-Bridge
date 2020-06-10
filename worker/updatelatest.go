@@ -12,6 +12,7 @@ var (
 	updateLatestBlockHeightInterval = 5 * time.Second
 )
 
+// StartUpdateLatestBlockHeightJob update latest block height job
 func StartUpdateLatestBlockHeightJob() error {
 	updateLatestBlockHeightStarter.Do(func() {
 		logWorker("updatelatest", "start update latest block height job")

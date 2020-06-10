@@ -66,6 +66,7 @@ func IsHexCharacter(c byte) bool {
 	return ('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')
 }
 
+// IsUpperHexCharacter returns bool of c being a valid uppercase hexadecimal.
 func IsUpperHexCharacter(c byte) bool {
 	return 'A' <= c && c <= 'F'
 }
@@ -83,6 +84,7 @@ func IsHex(str string) bool {
 	return true
 }
 
+// GetUnprefixedHex returns (unprefixed hex, is hex string flag, if has uppercase hexadecimal)
 func GetUnprefixedHex(str string) (unprefixedHex string, ok, hasUpperChar bool) {
 	if len(str)%2 != 0 {
 		return

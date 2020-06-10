@@ -9,7 +9,8 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
-func (b *BtcBridge) SendTransaction(signedTx interface{}) (txHash string, err error) {
+// SendTransaction send signed tx
+func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error) {
 	authoredTx, ok := signedTx.(*txauthor.AuthoredTx)
 	if !ok {
 		return "", tokens.ErrWrongRawTx
@@ -26,7 +27,7 @@ func (b *BtcBridge) SendTransaction(signedTx interface{}) (txHash string, err er
 		return "", err
 	}
 	txHex := hex.EncodeToString(buf.Bytes())
-	log.Info("BtcBridge send tx", "hash", tx.TxHash())
+	log.Info("Bridge send tx", "hash", tx.TxHash())
 
 	return b.PostTransaction(txHex)
 }

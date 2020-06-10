@@ -8,7 +8,8 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-func (b *EthBridge) SendTransaction(signedTx interface{}) (txHash string, err error) {
+// SendTransaction send signed tx
+func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error) {
 	tx, ok := signedTx.(*types.Transaction)
 	if !ok {
 		fmt.Printf("signed tx is %+v\n", signedTx)

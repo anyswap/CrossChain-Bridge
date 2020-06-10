@@ -6,6 +6,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common"
 )
 
+// DoAcceptSign accept sign
 func DoAcceptSign(keyID string, agreeResult string) (string, error) {
 	nonce := uint64(0)
 	data := AcceptData{

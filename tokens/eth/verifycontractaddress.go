@@ -33,7 +33,8 @@ var erc20CodeParts = map[string][]byte{
 	"LogApproval":  common.FromHex("0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"),
 }
 
-func (b *EthBridge) VerifyContractCode(contract string, codePartsSlice ...map[string][]byte) (err error) {
+// VerifyContractCode verify contract code
+func (b *Bridge) VerifyContractCode(contract string, codePartsSlice ...map[string][]byte) (err error) {
 	var code []byte
 	retryCount := 3
 	for i := 0; i < retryCount; i++ {
@@ -54,10 +55,12 @@ func (b *EthBridge) VerifyContractCode(contract string, codePartsSlice ...map[st
 	return nil
 }
 
-func (b *EthBridge) VerifyErc20ContractAddress(contract string) (err error) {
+// VerifyErc20ContractAddress verify erc20 contract
+func (b *Bridge) VerifyErc20ContractAddress(contract string) (err error) {
 	return b.VerifyContractCode(contract, erc20CodeParts)
 }
 
-func (b *EthBridge) VerifyMappingAssetContractAddress(contract string) (err error) {
+// VerifyMbtcContractAddress verify mbtc contract
+func (b *Bridge) VerifyMbtcContractAddress(contract string) (err error) {
 	return b.VerifyContractCode(contract, extendedCodeParts, erc20CodeParts)
 }

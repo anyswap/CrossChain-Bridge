@@ -11,7 +11,8 @@ import (
 	"time"
 )
 
-func HttpGet(url string, params, headers map[string]string, timeout int) (*http.Response, error) {
+// HTTPGet http get
+func HTTPGet(url string, params, headers map[string]string, timeout int) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -24,7 +25,8 @@ func HttpGet(url string, params, headers map[string]string, timeout int) (*http.
 	return http.DefaultClient.Do(req)
 }
 
-func HttpPost(url string, body interface{}, params, headers map[string]string, timeout int) (*http.Response, error) {
+// HTTPPost http post
+func HTTPPost(url string, body interface{}, params, headers map[string]string, timeout int) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err
@@ -40,7 +42,8 @@ func HttpPost(url string, body interface{}, params, headers map[string]string, t
 	return http.DefaultClient.Do(req)
 }
 
-func HttpRawPost(url string, body string, params, headers map[string]string, timeout int) (*http.Response, error) {
+// HTTPRawPost http raw post
+func HTTPRawPost(url string, body string, params, headers map[string]string, timeout int) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err

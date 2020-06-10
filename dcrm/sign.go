@@ -12,6 +12,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
+// DoSign dcrm sign msgHash with context msgContext
 func DoSign(msgHash, msgContext string) (string, error) {
 	log.Debug("dcrm DoSign", "msgHash", msgHash, "msgContext", msgContext)
 	nonce, err := GetSignNonce()
@@ -19,8 +20,8 @@ func DoSign(msgHash, msgContext string) (string, error) {
 		return "", err
 	}
 	// randomly pick sub-group to sign
-	randIndex, _ := rand.Int(rand.Reader, big.NewInt(int64(len(SignGroups))))
-	signGroup := SignGroups[randIndex.Int64()]
+	randIndex, _ := rand.Int(rand.Reader, big.NewInt(int64(len(signGroups))))
+	signGroup := signGroups[randIndex.Int64()]
 	txdata := SignData{
 		TxType:     "SIGN",
 		PubKey:     signPubkey,
@@ -40,20 +41,21 @@ func DoSign(msgHash, msgContext string) (string, error) {
 	return Sign(rawTX)
 }
 
+// BuildDcrmRawTx build dcrm raw tx
 func BuildDcrmRawTx(nonce uint64, payload []byte) (string, error) {
 	tx := types.NewTransaction(
 		nonce,             // nonce
-		DcrmToAddr,        // to address
+		dcrmToAddr,        // to address
 		big.NewInt(0),     // value
 		100000,            // gasLimit
 		big.NewInt(80000), // gasPrice
 		payload,           // data
 	)
-	signature, err := crypto.Sign(Signer.Hash(tx).Bytes(), keyWrapper.PrivateKey)
+	signature, err := crypto.Sign(dcrmSigner.Hash(tx).Bytes(), keyWrapper.PrivateKey)
 	if err != nil {
 		return "", err
 	}
-	sigTx, err := tx.WithSignature(Signer, signature)
+	sigTx, err := tx.WithSignature(dcrmSigner, signature)
 	if err != nil {
 		return "", err
 	}

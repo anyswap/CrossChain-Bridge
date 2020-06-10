@@ -17,7 +17,7 @@ import (
 
 var (
 	p2shSwapinScanStarter    sync.Once
-	p2shSwapServerApiAddress string
+	p2shSwapServerAPIAddress string
 
 	scannedBlocks      = newCachedScannedBlocks(10)
 	scanStatusFileName = "btcscanstatus"
@@ -26,18 +26,19 @@ var (
 	restIntervalInP2shScanJob = 10 * time.Second
 )
 
-func (b *BtcBridge) StartP2shSwapinScanJob(isServer bool) error {
+// StartP2shSwapinScanJob scan job
+func (b *Bridge) StartP2shSwapinScanJob(isServer bool) error {
 	p2shSwapinScanStarter.Do(func() {
 		if isServer {
-			b.StartP2shSwapinScanJobOnServer()
+			b.startP2shSwapinScanJobOnServer()
 		} else {
-			b.StartP2shSwapinScanJobOnOracle()
+			b.startP2shSwapinScanJobOnOracle()
 		}
 	})
 	return nil
 }
 
-func (b *BtcBridge) StartP2shSwapinScanJobOnServer() error {
+func (b *Bridge) startP2shSwapinScanJobOnServer() error {
 	log.Info("[scanp2sh] server start scan p2sh swapin job")
 
 	go b.scanP2shInTransactionPool(true)
@@ -45,13 +46,13 @@ func (b *BtcBridge) StartP2shSwapinScanJobOnServer() error {
 	return b.scanP2shTransactionHistory(true)
 }
 
-func (b *BtcBridge) StartP2shSwapinScanJobOnOracle() error {
+func (b *Bridge) startP2shSwapinScanJobOnOracle() error {
 	log.Info("[scanp2sh] oracle start scan p2sh swapin job")
 
-	// init p2shSwapServerApiAddress
-	p2shSwapServerApiAddress = getSwapServerApiAddress()
-	if p2shSwapServerApiAddress == "" {
-		log.Info("[scanp2sh] stop scan p2sh swapin job as no Oracle.ServerApiAddress configed")
+	// init p2shSwapServerAPIAddress
+	p2shSwapServerAPIAddress = getSwapServerAPIAddress()
+	if p2shSwapServerAPIAddress == "" {
+		log.Info("[scanp2sh] stop scan p2sh swapin job as no Oracle.ServerAPIAddress configed")
 		return nil
 	}
 
@@ -60,7 +61,7 @@ func (b *BtcBridge) StartP2shSwapinScanJobOnOracle() error {
 	return b.scanP2shTransactionHistory(false)
 }
 
-func (b *BtcBridge) processP2shSwapin(txid string, isServer bool) error {
+func (b *Bridge) processP2shSwapin(txid string, isServer bool) error {
 	if isServer {
 		swap, _ := mongodb.FindSwapin(txid)
 		if swap != nil {
@@ -74,7 +75,7 @@ func (b *BtcBridge) processP2shSwapin(txid string, isServer bool) error {
 	}
 	if isServer {
 		err = b.registerP2shSwapin(txid, swapInfo.Bind)
-	} else if !b.IsSwapinExistByQuery(txid) {
+	} else if !b.isSwapinExistByQuery(txid) {
 		err = b.postRegisterP2shSwapin(txid, swapInfo.Bind)
 	}
 	if err != nil {
@@ -83,11 +84,11 @@ func (b *BtcBridge) processP2shSwapin(txid string, isServer bool) error {
 	return err
 }
 
-func (b *BtcBridge) registerP2shSwapin(txid string, bind string) error {
+func (b *Bridge) registerP2shSwapin(txid string, bind string) error {
 	log.Info("[scanp2sh] register p2sh swapin", "tx", txid, "bind", bind)
 	swap := &mongodb.MgoSwap{
 		Key:       txid,
-		TxId:      txid,
+		TxID:      txid,
 		TxType:    uint32(tokens.P2shSwapinTx),
 		Bind:      bind,
 		Status:    mongodb.TxNotStable,
@@ -96,7 +97,7 @@ func (b *BtcBridge) registerP2shSwapin(txid string, bind string) error {
 	return mongodb.AddSwapin(swap)
 }
 
-func (b *BtcBridge) postRegisterP2shSwapin(txid string, bind string) error {
+func (b *Bridge) postRegisterP2shSwapin(txid string, bind string) error {
 	log.Info("[scanp2sh] post register p2sh swapin", "tx", txid, "bind", bind)
 
 	args := map[string]interface{}{
@@ -104,14 +105,14 @@ func (b *BtcBridge) postRegisterP2shSwapin(txid string, bind string) error {
 		"bind": bind,
 	}
 	var result interface{}
-	err := client.RpcPost(&result, p2shSwapServerApiAddress, "swap.P2shSwapin", args)
+	err := client.RPCPost(&result, p2shSwapServerAPIAddress, "swap.P2shSwapin", args)
 	if err != nil {
 		log.Debug("rpc call swap.P2shSwapin failed", "args", args, "err", err)
 	}
 	return err
 }
 
-func OpenBtcScanStatusFile() (err error) {
+func openBtcScanStatusFile() (err error) {
 	if scanStatusFile != nil {
 		return
 	}
@@ -120,11 +121,11 @@ func OpenBtcScanStatusFile() (err error) {
 	if err != nil {
 		return err
 	}
-	log.Info("[scanp2sh] OpenBtcScanStatusFile succeed", "path", scanStatusFilePath)
+	log.Info("[scanp2sh] openBtcScanStatusFile succeed", "path", scanStatusFilePath)
 	return nil
 }
 
-func GetLatestScanHeight() uint64 {
+func getLatestScanHeight() uint64 {
 	buf := make([]byte, 33)
 	n, err := scanStatusFile.ReadAt(buf, 0)
 	fileContent := strings.TrimSpace(string(buf[:n]))
@@ -133,20 +134,20 @@ func GetLatestScanHeight() uint64 {
 		log.Error("parse scanstatus file failed", "err", err)
 		return 0
 	}
-	log.Info("[scanp2sh] GetLatestScanHeight", "height", height)
+	log.Info("[scanp2sh] getLatestScanHeight", "height", height)
 	return height
 }
 
-func UpdateLatestScanHeight(height uint64) error {
+func updateLatestScanHeight(height uint64) error {
 	fileContent := fmt.Sprintf("%d\n", height)
 	scanStatusFile.Seek(0, 0)
 	scanStatusFile.WriteString(fileContent)
 	scanStatusFile.Sync()
-	log.Info("[scanp2sh] UpdateLatestScanHeight", "height", height)
+	log.Info("[scanp2sh] updateLatestScanHeight", "height", height)
 	return nil
 }
 
-func (b *BtcBridge) getLatestBlock() uint64 {
+func (b *Bridge) getLatestBlock() uint64 {
 	for {
 		latest, err := b.GetLatestBlockNumber()
 		if err != nil {
@@ -158,14 +159,14 @@ func (b *BtcBridge) getLatestBlock() uint64 {
 	}
 }
 
-func (b *BtcBridge) scanP2shTransactionHistory(isServer bool) error {
-	err := OpenBtcScanStatusFile()
+func (b *Bridge) scanP2shTransactionHistory(isServer bool) error {
+	err := openBtcScanStatusFile()
 	if err != nil {
-		log.Error("OpenBtcScanStatusFile failed", "err", err)
+		log.Error("openBtcScanStatusFile failed", "err", err)
 		return err
 	}
 
-	startHeight := GetLatestScanHeight()
+	startHeight := getLatestScanHeight()
 	confirmations := *b.TokenConfig.Confirmations
 
 	var height uint64
@@ -209,7 +210,7 @@ func (b *BtcBridge) scanP2shTransactionHistory(isServer bool) error {
 			latestStable := latest - confirmations
 			if height < latestStable {
 				height = latestStable
-				UpdateLatestScanHeight(height)
+				updateLatestScanHeight(height)
 			}
 		}
 		time.Sleep(restIntervalInP2shScanJob)
@@ -217,7 +218,7 @@ func (b *BtcBridge) scanP2shTransactionHistory(isServer bool) error {
 	return nil
 }
 
-func (b *BtcBridge) scanP2shInTransactionPool(isServer bool) error {
+func (b *Bridge) scanP2shInTransactionPool(isServer bool) error {
 	log.Info("[scanp2sh] start scan tx pool loop")
 	for {
 		txids, err := b.GetPoolTxidList()
@@ -239,7 +240,7 @@ func getBindAddress(p2shAddress string, isServer bool) (bindAddress string) {
 		bindAddress, _ = mongodb.FindP2shBindAddress(p2shAddress)
 	} else {
 		var info tokens.P2shAddressInfo
-		err := client.RpcPost(&info, swapServerApiAddress, "swap.GetP2shAddressInfo", p2shAddress)
+		err := client.RPCPost(&info, p2shSwapServerAPIAddress, "swap.GetP2shAddressInfo", p2shAddress)
 		if err == nil {
 			bindAddress = info.BindAddress
 		} else {
@@ -249,17 +250,18 @@ func getBindAddress(p2shAddress string, isServer bool) (bindAddress string) {
 	return bindAddress
 }
 
-func (b *BtcBridge) CheckP2shTransaction(txHash string, isServer bool, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+// CheckP2shTransaction check p2sh tx
+func (b *Bridge) CheckP2shTransaction(txHash string, isServer bool, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug("BtcBridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug("Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return nil, tokens.ErrTxNotFound
 	}
 	var bindAddress, p2shAddress string
 	for _, output := range tx.Vout {
-		switch *output.Scriptpubkey_type {
+		switch *output.ScriptpubkeyType {
 		case "p2sh":
-			p2shAddress = *output.Scriptpubkey_address
+			p2shAddress = *output.ScriptpubkeyAddress
 			bindAddress = getBindAddress(p2shAddress, isServer)
 			if bindAddress != "" {
 				break

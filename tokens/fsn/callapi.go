@@ -9,11 +9,12 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-func (b *FsnBridge) GetTransactionAndReceipt(txHash string) (*types.RPCTxAndReceipt, error) {
+// GetTransactionAndReceipt get tx and receipt (fsn special)
+func (b *Bridge) GetTransactionAndReceipt(txHash string) (*types.RPCTxAndReceipt, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result *types.RPCTxAndReceipt
-	err := client.RpcPost(&result, url, "fsn_getTransactionAndReceipt", txHash)
+	err := client.RPCPost(&result, url, "fsn_getTransactionAndReceipt", txHash)
 	if err != nil {
 		return nil, err
 	}
@@ -23,11 +24,12 @@ func (b *FsnBridge) GetTransactionAndReceipt(txHash string) (*types.RPCTxAndRece
 	return result, nil
 }
 
-func (b *FsnBridge) ChainID() (*big.Int, error) {
+// ChainID get chain id use net_version (eth_chainId does not work)
+func (b *Bridge) ChainID() (*big.Int, error) {
 	gateway := b.GatewayConfig
-	url := gateway.ApiAddress
+	url := gateway.APIAddress
 	var result string
-	err := client.RpcPost(&result, url, "net_version")
+	err := client.RPCPost(&result, url, "net_version")
 	if err != nil {
 		return nil, err
 	}

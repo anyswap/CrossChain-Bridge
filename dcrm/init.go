@@ -10,17 +10,19 @@ import (
 )
 
 const (
-	DCRM_TO_ADDR           = "0x00000000000000000000000000000000000000dc"
-	DCRM_WALLET_SERVICE_ID = 30400
+	// DcrmToAddress used in dcrm sign and accept
+	DcrmToAddress = "0x00000000000000000000000000000000000000dc"
+	// DcrmWalletServiceID to make dcrm signer
+	DcrmWalletServiceID = 30400
 )
 
 var (
-	Signer     = types.MakeSigner("EIP155", big.NewInt(DCRM_WALLET_SERVICE_ID))
-	DcrmToAddr = common.HexToAddress(DCRM_TO_ADDR)
-	SignGroups []string // sub groups for sign
+	dcrmSigner = types.MakeSigner("EIP155", big.NewInt(DcrmWalletServiceID))
+	dcrmToAddr = common.HexToAddress(DcrmToAddress)
+	signGroups []string // sub groups for sign
 
 	keyWrapper     *keystore.Key
-	dcrmRpcAddress string
+	dcrmRPCAddress string
 
 	signPubkey string
 	groupID    string
@@ -28,24 +30,34 @@ var (
 	mode       string
 )
 
-func SetDcrmRpcAddress(url string) {
-	dcrmRpcAddress = url
+// SetDcrmRPCAddress set dcrm node rpc address
+func SetDcrmRPCAddress(url string) {
+	dcrmRPCAddress = url
 }
 
+// SetSignPubkey set dcrm account public key
 func SetSignPubkey(pubkey string) {
 	signPubkey = pubkey
 }
 
-func SetDcrmGroup(group_ string, threshold_ string, mode_ string) {
-	groupID = group_
-	threshold = threshold_
-	mode = mode_
+// SetDcrmGroup set dcrm group
+func SetDcrmGroup(group string, thresh string, mod string) {
+	groupID = group
+	threshold = thresh
+	mode = mod
 }
 
-func SetSignGroups(signGroups []string) {
-	SignGroups = signGroups
+// SetSignGroups set sign subgroups
+func SetSignGroups(groups []string) {
+	signGroups = groups
 }
 
+// GetSignGroups get sign subgroups
+func GetSignGroups() []string {
+	return signGroups
+}
+
+// LoadKeyStore load keystore
 func LoadKeyStore(keyfile, passfile string) error {
 	key, err := tools.LoadKeyStore(keyfile, passfile)
 	if err != nil {

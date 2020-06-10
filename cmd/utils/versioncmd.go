@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	// VersionCommand version subcommand
 	VersionCommand = &cli.Command{
 		Action:    version,
 		Name:      "version",

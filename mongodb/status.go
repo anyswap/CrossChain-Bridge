@@ -15,8 +15,10 @@ package mongodb
 // MatchTxEmpty    -> | MatchTxNotStable -> MatchTxStable
 // -----------------------------------------------
 
+// SwapStatus swap status
 type SwapStatus uint16
 
+// swap status values
 const (
 	TxNotStable      SwapStatus = iota // 0
 	TxVerifyFailed                     // 1

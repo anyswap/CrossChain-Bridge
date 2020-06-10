@@ -7,6 +7,7 @@ import (
 )
 
 var (
+	// LicenseCommand license cubcommonad
 	LicenseCommand = &cli.Command{
 		Action:    license,
 		Name:      "license",

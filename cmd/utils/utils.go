@@ -14,9 +14,9 @@ var (
 )
 
 // NewApp creates an app with sane defaults.
-func NewApp(clientIdentifier_, gitCommit_, usage string) *cli.App {
-	clientIdentifier = clientIdentifier_
-	gitCommit = gitCommit_
+func NewApp(identifier, gitcommit, usage string) *cli.App {
+	clientIdentifier = identifier
+	gitCommit = gitcommit
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Version = params.VersionWithMeta

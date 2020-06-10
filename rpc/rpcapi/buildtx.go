@@ -10,6 +10,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
+// BuildSwapoutTxArgs build swapout tx args
 type BuildSwapoutTxArgs struct {
 	From     common.Address  `json:"from"`
 	Value    *hexutil.Big    `json:"value"`
@@ -19,7 +20,8 @@ type BuildSwapoutTxArgs struct {
 	Nonce    *hexutil.Uint64 `json:"nonce"`
 }
 
-func (s *RpcAPI) BuildSwapoutTx(r *http.Request, args *BuildSwapoutTxArgs, result *types.Transaction) error {
+// BuildSwapoutTx build swapout tx
+func (s *RPCAPI) BuildSwapoutTx(r *http.Request, args *BuildSwapoutTxArgs, result *types.Transaction) error {
 	from := args.From.String()
 	token, gateway := tokens.DstBridge.GetTokenAndGateway()
 	contract := token.ContractAddress

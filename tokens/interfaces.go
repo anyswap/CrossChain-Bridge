@@ -6,12 +6,14 @@ import (
 	"math/big"
 )
 
+// transaction memo prefix
 const (
 	LockMemoPrefix   = "SWAPTO:"
 	UnlockMemoPrefix = "SWAPTX:"
 	RecallMemoPrefix = "RECALL:"
 )
 
+// common variables
 var (
 	SrcBridge CrossChainBridge
 	DstBridge CrossChainBridge
@@ -28,6 +30,7 @@ var (
 	LogSwapoutTopic = "0x9c92ad817e5474d30a4378deface765150479363a897b0590fbb12ae9d89396b"
 )
 
+// common errors
 var (
 	ErrSwapTypeNotSupported          = errors.New("swap type not supported in this endpoint")
 	ErrBridgeSourceNotSupported      = errors.New("bridge source not supported")
@@ -55,6 +58,7 @@ var (
 	ErrTxWithWrongInput   = errors.New("tx with wrong input data")
 )
 
+// ShouldRegisterSwapForError return true if this error should record in database
 func ShouldRegisterSwapForError(err error) bool {
 	switch err {
 	case nil,
@@ -68,6 +72,7 @@ func ShouldRegisterSwapForError(err error) bool {
 	return false
 }
 
+// CrossChainBridge interface
 type CrossChainBridge interface {
 	IsSrcEndpoint() bool
 	GetTokenAndGateway() (*TokenConfig, *GatewayConfig)
@@ -92,6 +97,7 @@ type CrossChainBridge interface {
 	StartSwapoutResultScanJob(isServer bool) error
 }
 
+// SetLatestBlockHeight set latest block height
 func SetLatestBlockHeight(latest uint64, isSrc bool) {
 	if isSrc {
 		SrcLatestBlockHeight = latest
@@ -100,24 +106,29 @@ func SetLatestBlockHeight(latest uint64, isSrc bool) {
 	}
 }
 
+// CrossChainBridgeBase base bridge
 type CrossChainBridgeBase struct {
 	TokenConfig   *TokenConfig
 	GatewayConfig *GatewayConfig
 	IsSrc         bool
 }
 
+// NewCrossChainBridgeBase new base bridge
 func NewCrossChainBridgeBase(isSrc bool) *CrossChainBridgeBase {
 	return &CrossChainBridgeBase{IsSrc: isSrc}
 }
 
+// IsSrcEndpoint returns if bridge is at the source endpoint
 func (b *CrossChainBridgeBase) IsSrcEndpoint() bool {
 	return b.IsSrc
 }
 
+// GetTokenAndGateway get token and gateway config
 func (b *CrossChainBridgeBase) GetTokenAndGateway() (*TokenConfig, *GatewayConfig) {
 	return b.TokenConfig, b.GatewayConfig
 }
 
+// SetTokenAndGateway set token and gateway config
 func (b *CrossChainBridgeBase) SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig) {
 	b.TokenConfig = tokenCfg
 	b.GatewayConfig = gatewayCfg
@@ -127,6 +138,7 @@ func (b *CrossChainBridgeBase) SetTokenAndGateway(tokenCfg *TokenConfig, gateway
 	}
 }
 
+// GetCrossChainBridge get bridge of specified endpoint
 func GetCrossChainBridge(isSrc bool) CrossChainBridge {
 	if isSrc {
 		return SrcBridge
@@ -134,6 +146,7 @@ func GetCrossChainBridge(isSrc bool) CrossChainBridge {
 	return DstBridge
 }
 
+// GetTokenConfig get token config of specified endpoint
 func GetTokenConfig(isSrc bool) *TokenConfig {
 	var token *TokenConfig
 	if isSrc {
@@ -144,6 +157,7 @@ func GetTokenConfig(isSrc bool) *TokenConfig {
 	return token
 }
 
+// FromBits convert from bits
 func FromBits(value *big.Int, decimals uint8) float64 {
 	oneToken := math.Pow(10, float64(decimals))
 	fOneToken := new(big.Float).SetFloat64(oneToken)
@@ -153,6 +167,7 @@ func FromBits(value *big.Int, decimals uint8) float64 {
 	return result
 }
 
+// ToBits convert to bits
 func ToBits(value float64, decimals uint8) *big.Int {
 	oneToken := math.Pow(10, float64(decimals))
 	fOneToken := new(big.Float).SetFloat64(oneToken)
@@ -164,6 +179,7 @@ func ToBits(value float64, decimals uint8) *big.Int {
 	return result
 }
 
+// CheckSwapValue check swap value is in right range
 func CheckSwapValue(value *big.Int, isSrc bool) bool {
 	token := GetTokenConfig(isSrc)
 	decimals := *token.Decimals
@@ -179,6 +195,7 @@ func CheckSwapValue(value *big.Int, isSrc bool) bool {
 	return true
 }
 
+// CalcSwappedValue calc swapped value (get rid of fee)
 func CalcSwappedValue(value *big.Int, isSrc bool) *big.Int {
 	token := GetTokenConfig(isSrc)
 

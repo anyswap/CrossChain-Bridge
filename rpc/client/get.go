@@ -7,16 +7,19 @@ import (
 	"io/ioutil"
 )
 
-func RpcGet(result interface{}, url string) error {
-	return RpcGetRequest(result, url, nil, nil, defaultTimeout)
+// RPCGet rpc get
+func RPCGet(result interface{}, url string) error {
+	return RPCGetRequest(result, url, nil, nil, defaultTimeout)
 }
 
-func RpcGetWithTimeout(result interface{}, url string, timeout int) error {
-	return RpcGetRequest(result, url, nil, nil, timeout)
+// RPCGetWithTimeout rpc get with timeout
+func RPCGetWithTimeout(result interface{}, url string, timeout int) error {
+	return RPCGetRequest(result, url, nil, nil, timeout)
 }
 
-func RpcGetRequest(result interface{}, url string, params, headers map[string]string, timeout int) error {
-	resp, err := HttpGet(url, params, headers, timeout)
+// RPCGetRequest rpc get request
+func RPCGetRequest(result interface{}, url string, params, headers map[string]string, timeout int) error {
+	resp, err := HTTPGet(url, params, headers, timeout)
 	if err != nil {
 		return fmt.Errorf("GET request error: %v (url: %v, params: %v)", err, url, params)
 	}
@@ -39,16 +42,19 @@ func RpcGetRequest(result interface{}, url string, params, headers map[string]st
 	return nil
 }
 
-func RpcRawGet(url string) (string, error) {
-	return RpcRawGetRequest(url, nil, nil, defaultTimeout)
+// RPCRawGet rpc raw get
+func RPCRawGet(url string) (string, error) {
+	return RPCRawGetRequest(url, nil, nil, defaultTimeout)
 }
 
-func RpcRawGetWithTimeout(url string, timeout int) (string, error) {
-	return RpcRawGetRequest(url, nil, nil, timeout)
+// RPCRawGetWithTimeout rpc raw get with timeout
+func RPCRawGetWithTimeout(url string, timeout int) (string, error) {
+	return RPCRawGetRequest(url, nil, nil, timeout)
 }
 
-func RpcRawGetRequest(url string, params, headers map[string]string, timeout int) (string, error) {
-	resp, err := HttpGet(url, params, headers, timeout)
+// RPCRawGetRequest rpc raw get request
+func RPCRawGetRequest(url string, params, headers map[string]string, timeout int) (string, error) {
+	resp, err := HTTPGet(url, params, headers, timeout)
 	if err != nil {
 		return "", fmt.Errorf("GET request error: %v (url: %v, params: %v)", err, url, params)
 	}

@@ -7,7 +7,8 @@ import (
 	"github.com/btcsuite/btcutil"
 )
 
-func (b *BtcBridge) IsValidAddress(addr string) bool {
+// IsValidAddress check address
+func (b *Bridge) IsValidAddress(addr string) bool {
 	chainConfig := b.GetChainConfig()
 	address, err := btcutil.DecodeAddress(addr, chainConfig)
 	if err != nil {
@@ -16,7 +17,8 @@ func (b *BtcBridge) IsValidAddress(addr string) bool {
 	return address.IsForNet(chainConfig)
 }
 
-func (b *BtcBridge) IsP2pkhAddress(addr string) bool {
+// IsP2pkhAddress check p2sh addrss
+func (b *Bridge) IsP2pkhAddress(addr string) bool {
 	chainConfig := b.GetChainConfig()
 	address, err := btcutil.DecodeAddress(addr, chainConfig)
 	if err != nil {
@@ -30,7 +32,8 @@ func (b *BtcBridge) IsP2pkhAddress(addr string) bool {
 
 }
 
-func (b *BtcBridge) GetChainConfig() *chaincfg.Params {
+// GetChainConfig get chain config (net params)
+func (b *Bridge) GetChainConfig() *chaincfg.Params {
 	token := b.TokenConfig
 	networkID := strings.ToLower(token.NetID)
 	switch networkID {

@@ -13,6 +13,7 @@ var (
 	swapoutStableStarter sync.Once
 )
 
+// StartStableJob stable job
 func StartStableJob() error {
 	go startSwapinStableJob()
 	go startSwapoutStableJob()
@@ -78,27 +79,27 @@ func findSwapoutResultsToStable() ([]*mongodb.MgoSwapResult, error) {
 }
 
 func processSwapinStable(swap *mongodb.MgoSwapResult) error {
-	swapTxId := swap.SwapTx
-	logWorker("stable", "start processSwapinStable", "swaptxid", swapTxId, "status", swap.Status)
+	swapTxID := swap.SwapTx
+	logWorker("stable", "start processSwapinStable", "swaptxid", swapTxID, "status", swap.Status)
 	var (
 		txStatus      *tokens.TxStatus
 		confirmations uint64
 	)
-	if swap.SwapType == uint32(tokens.Swap_Recall) {
-		txStatus = tokens.SrcBridge.GetTransactionStatus(swapTxId)
+	if swap.SwapType == uint32(tokens.SwapRecallType) {
+		txStatus = tokens.SrcBridge.GetTransactionStatus(swapTxID)
 		token, _ := tokens.SrcBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
 	} else {
-		txStatus = tokens.DstBridge.GetTransactionStatus(swapTxId)
+		txStatus = tokens.DstBridge.GetTransactionStatus(swapTxID)
 		token, _ := tokens.DstBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
 	}
 
 	if txStatus == nil {
-		return fmt.Errorf("[processSwapinStable] tx status is empty, swapTxId=%v", swapTxId)
+		return fmt.Errorf("[processSwapinStable] tx status is empty, swapTxID=%v", swapTxID)
 	}
 
-	if txStatus.Block_height == 0 {
+	if txStatus.BlockHeight == 0 {
 		return nil
 	}
 
@@ -110,29 +111,29 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 	}
 
 	matchTx := &MatchTx{
-		SwapHeight: txStatus.Block_height,
-		SwapTime:   txStatus.Block_time,
-		SwapType:   tokens.Swap_Swapin,
+		SwapHeight: txStatus.BlockHeight,
+		SwapTime:   txStatus.BlockTime,
+		SwapType:   tokens.SwapinType,
 	}
 	return updateSwapinResult(swap.Key, matchTx)
 }
 
 func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
-	swapTxId := swap.SwapTx
-	logWorker("stable", "start processSwapoutStable", "swaptxid", swapTxId, "status", swap.Status)
+	swapTxID := swap.SwapTx
+	logWorker("stable", "start processSwapoutStable", "swaptxid", swapTxID, "status", swap.Status)
 
 	var txStatus *tokens.TxStatus
 	var confirmations uint64
 
-	txStatus = tokens.SrcBridge.GetTransactionStatus(swapTxId)
+	txStatus = tokens.SrcBridge.GetTransactionStatus(swapTxID)
 	token, _ := tokens.SrcBridge.GetTokenAndGateway()
 	confirmations = *token.Confirmations
 
 	if txStatus == nil {
-		return fmt.Errorf("[processSwapoutStable] tx status is empty, swapTxId=%v", swapTxId)
+		return fmt.Errorf("[processSwapoutStable] tx status is empty, swapTxID=%v", swapTxID)
 	}
 
-	if txStatus.Block_height == 0 {
+	if txStatus.BlockHeight == 0 {
 		return nil
 	}
 
@@ -144,9 +145,9 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	}
 
 	matchTx := &MatchTx{
-		SwapHeight: txStatus.Block_height,
-		SwapTime:   txStatus.Block_time,
-		SwapType:   tokens.Swap_Swapout,
+		SwapHeight: txStatus.BlockHeight,
+		SwapTime:   txStatus.BlockTime,
+		SwapType:   tokens.SwapoutType,
 	}
 	return updateSwapoutResult(swap.Key, matchTx)
 }

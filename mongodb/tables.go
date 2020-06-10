@@ -8,12 +8,13 @@ const (
 	tbP2shAddresses  string = "P2shAddresses"
 	tbSwapStatistics string = "SwapStatistics"
 
-	KeyOfSwapStatistics string = "latest"
+	keyOfSwapStatistics string = "latest"
 )
 
+// MgoSwap registered swap
 type MgoSwap struct {
 	Key       string     `bson:"_id"`
-	TxId      string     `bson:"txid"`
+	TxID      string     `bson:"txid"`
 	TxType    uint32     `bson:"txtype"`
 	Bind      string     `bson:"bind"`
 	Status    SwapStatus `bson:"status"`
@@ -21,9 +22,10 @@ type MgoSwap struct {
 	Memo      string     `bson:"memo"`
 }
 
+// MgoSwapResult swap result (verified swap)
 type MgoSwapResult struct {
 	Key        string     `bson:"_id"`
-	TxId       string     `bson:"txid"`
+	TxID       string     `bson:"txid"`
 	TxHeight   uint64     `bson:"txheight"`
 	TxTime     uint64     `bson:"txtime"`
 	From       string     `bson:"from"`
@@ -40,6 +42,7 @@ type MgoSwapResult struct {
 	Memo       string     `bson:"memo"`
 }
 
+// SwapResultUpdateItems swap update items
 type SwapResultUpdateItems struct {
 	SwapTx     string
 	SwapHeight uint64
@@ -51,11 +54,13 @@ type SwapResultUpdateItems struct {
 	Memo       string
 }
 
+// MgoP2shAddress key is the bind address
 type MgoP2shAddress struct {
 	Key         string `bson:"_id"`
 	P2shAddress string `bson:"p2shaddress"`
 }
 
+// MgoSwapStatistics swap statistics
 type MgoSwapStatistics struct {
 	Key                string `bson:"_id"`
 	StableSwapinCount  int    `bson:"swapincount"`

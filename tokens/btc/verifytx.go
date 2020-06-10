@@ -12,38 +12,41 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
-func (b *BtcBridge) GetTransaction(txHash string) (interface{}, error) {
+// GetTransaction impl
+func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
 	return b.GetTransactionByHash(txHash)
 }
 
-func (b *BtcBridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
+// GetTransactionStatus impl
+func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	txStatus := &tokens.TxStatus{}
 	elcstStatus, err := b.GetElectTransactionStatus(txHash)
 	if err != nil {
-		log.Debug("BtcBridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
+		log.Debug("Bridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
 		return txStatus
 	}
-	if elcstStatus.Block_hash != nil {
-		txStatus.Block_hash = *elcstStatus.Block_hash
+	if elcstStatus.BlockHash != nil {
+		txStatus.BlockHash = *elcstStatus.BlockHash
 	}
-	if elcstStatus.Block_time != nil {
-		txStatus.Block_time = *elcstStatus.Block_time
+	if elcstStatus.BlockTime != nil {
+		txStatus.BlockTime = *elcstStatus.BlockTime
 	}
-	if elcstStatus.Block_height != nil {
-		txStatus.Block_height = *elcstStatus.Block_height
+	if elcstStatus.BlockHeight != nil {
+		txStatus.BlockHeight = *elcstStatus.BlockHeight
 		latest, err := b.GetLatestBlockNumber()
 		if err != nil {
-			log.Debug("BtcBridge::GetLatestBlockNumber fail", "err", err)
+			log.Debug("Bridge::GetLatestBlockNumber fail", "err", err)
 			return txStatus
 		}
-		if latest > txStatus.Block_height {
-			txStatus.Confirmations = latest - txStatus.Block_height
+		if latest > txStatus.BlockHeight {
+			txStatus.Confirmations = latest - txStatus.BlockHeight
 		}
 	}
 	return txStatus
 }
 
-func (b *BtcBridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) error {
+// VerifyMsgHash verify msg hash
+func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) error {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
 		return tokens.ErrWrongRawTx
@@ -72,36 +75,37 @@ func (b *BtcBridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra inter
 	return nil
 }
 
-func (b *BtcBridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+// VerifyTransaction impl
+func (b *Bridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if b.IsSrc {
 		return b.verifySwapinTx(txHash, allowUnstable)
 	}
 	return nil, tokens.ErrBridgeDestinationNotSupported
 }
 
-func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
 	token := b.TokenConfig
 	if !allowUnstable {
 		txStatus := b.GetTransactionStatus(txHash)
-		if txStatus.Block_height == 0 ||
+		if txStatus.BlockHeight == 0 ||
 			txStatus.Confirmations < *token.Confirmations {
 			return swapInfo, tokens.ErrTxNotStable
 		}
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug("BtcBridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug("Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	txStatus := tx.Status
 	dcrmAddress := token.DcrmAddress
-	if txStatus.Block_height != nil {
-		swapInfo.Height = *txStatus.Block_height // Height
+	if txStatus.BlockHeight != nil {
+		swapInfo.Height = *txStatus.BlockHeight // Height
 	}
-	if txStatus.Block_time != nil {
-		swapInfo.Timestamp = *txStatus.Block_time // Timestamp
+	if txStatus.BlockTime != nil {
+		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
 	var (
 		rightReceiver bool
@@ -110,12 +114,12 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 		from          string
 	)
 	for _, output := range tx.Vout {
-		switch *output.Scriptpubkey_type {
+		switch *output.ScriptpubkeyType {
 		case "op_return":
-			memoScript = *output.Scriptpubkey_asm
+			memoScript = *output.ScriptpubkeyAsm
 			continue
 		case "p2pkh":
-			if *output.Scriptpubkey_address != dcrmAddress {
+			if *output.ScriptpubkeyAddress != dcrmAddress {
 				continue
 			}
 			rightReceiver = true
@@ -134,8 +138,8 @@ func (b *BtcBridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.T
 	for _, input := range tx.Vin {
 		if input != nil &&
 			input.Prevout != nil &&
-			input.Prevout.Scriptpubkey_address != nil {
-			from = *input.Prevout.Scriptpubkey_address
+			input.Prevout.ScriptpubkeyAddress != nil {
+			from = *input.Prevout.ScriptpubkeyAddress
 			break
 		}
 	}

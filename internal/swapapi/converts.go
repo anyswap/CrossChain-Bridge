@@ -5,9 +5,10 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
+// ConvertMgoSwapToSwapInfo convert
 func ConvertMgoSwapToSwapInfo(ms *mongodb.MgoSwap) *SwapInfo {
 	return &SwapInfo{
-		TxId:      ms.TxId,
+		TxID:      ms.TxID,
 		Bind:      ms.Bind,
 		Status:    ms.Status,
 		Timestamp: ms.Timestamp,
@@ -15,6 +16,7 @@ func ConvertMgoSwapToSwapInfo(ms *mongodb.MgoSwap) *SwapInfo {
 	}
 }
 
+// ConvertMgoSwapsToSwapInfos convert
 func ConvertMgoSwapsToSwapInfos(msSlice []*mongodb.MgoSwap) []*SwapInfo {
 	result := make([]*SwapInfo, len(msSlice))
 	for k, v := range msSlice {
@@ -23,14 +25,15 @@ func ConvertMgoSwapsToSwapInfos(msSlice []*mongodb.MgoSwap) []*SwapInfo {
 	return result
 }
 
+// ConvertMgoSwapResultToSwapInfo convert
 func ConvertMgoSwapResultToSwapInfo(mr *mongodb.MgoSwapResult) *SwapInfo {
 	var confirmations uint64
 	if mr.SwapHeight != 0 {
 		var latest uint64
 		switch mr.SwapType {
-		case uint32(tokens.Swap_Swapin):
+		case uint32(tokens.SwapinType):
 			latest = tokens.DstLatestBlockHeight
-		case uint32(tokens.Swap_Swapout), uint32(tokens.Swap_Recall):
+		case uint32(tokens.SwapoutType), uint32(tokens.SwapRecallType):
 			latest = tokens.SrcLatestBlockHeight
 		}
 		if latest > mr.SwapHeight {
@@ -38,7 +41,7 @@ func ConvertMgoSwapResultToSwapInfo(mr *mongodb.MgoSwapResult) *SwapInfo {
 		}
 	}
 	return &SwapInfo{
-		TxId:          mr.TxId,
+		TxID:          mr.TxID,
 		TxHeight:      mr.TxHeight,
 		TxTime:        mr.TxTime,
 		From:          mr.From,
@@ -57,6 +60,7 @@ func ConvertMgoSwapResultToSwapInfo(mr *mongodb.MgoSwapResult) *SwapInfo {
 	}
 }
 
+// ConvertMgoSwapResultsToSwapInfos convert
 func ConvertMgoSwapResultsToSwapInfos(mrSlice []*mongodb.MgoSwapResult) []*SwapInfo {
 	result := make([]*SwapInfo, len(mrSlice))
 	for k, v := range mrSlice {

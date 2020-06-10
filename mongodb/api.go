@@ -64,10 +64,12 @@ func getCollection(table string) *mgo.Collection {
 
 // --------------- swapin --------------------------------
 
+// AddSwapin add swapin
 func AddSwapin(ms *MgoSwap) error {
 	return addSwap(tbSwapins, ms)
 }
 
+// RecallSwapin recall swapin
 func RecallSwapin(txid string) error {
 	swap, err := findSwap(tbSwapins, txid)
 	if err != nil {
@@ -88,40 +90,49 @@ func RecallSwapin(txid string) error {
 	}
 }
 
+// UpdateSwapinStatus update swapin status
 func UpdateSwapinStatus(txid string, status SwapStatus, timestamp int64, memo string) error {
 	return updateSwapStatus(tbSwapins, txid, status, timestamp, memo)
 }
 
+// FindSwapin find swapin
 func FindSwapin(txid string) (*MgoSwap, error) {
 	return findSwap(tbSwapins, txid)
 }
 
+// FindSwapinsWithStatus find swapin with status in the past septime
 func FindSwapinsWithStatus(status SwapStatus, septime int64) ([]*MgoSwap, error) {
 	return findSwapsWithStatus(tbSwapins, status, septime)
 }
 
+// GetCountOfSwapinsWithStatus get count of swapins with status
 func GetCountOfSwapinsWithStatus(status SwapStatus) (int, error) {
 	return getCountWithStatus(tbSwapins, status)
 }
 
 // --------------- swapout --------------------------------
 
+// AddSwapout add swapout
 func AddSwapout(ms *MgoSwap) error {
 	return addSwap(tbSwapouts, ms)
 }
 
+// UpdateSwapoutStatus update swapout status
 func UpdateSwapoutStatus(txid string, status SwapStatus, timestamp int64, memo string) error {
 	return updateSwapStatus(tbSwapouts, txid, status, timestamp, memo)
 }
 
+// FindSwapout find swapout
 func FindSwapout(txid string) (*MgoSwap, error) {
 	return findSwap(tbSwapouts, txid)
 }
 
+// FindSwapoutsWithStatus find swapout with status
 func FindSwapoutsWithStatus(status SwapStatus, septime int64) ([]*MgoSwap, error) {
 	return findSwapsWithStatus(tbSwapouts, status, septime)
 }
 
+// GetCountOfSwapoutsWithStatus get count of swapout with status
 func GetCountOfSwapoutsWithStatus(status SwapStatus) (int, error) {
 	return getCountWithStatus(tbSwapouts, status)
 }
@@ -131,9 +142,9 @@ func GetCountOfSwapoutsWithStatus(status SwapStatus) (int, error) {
 func addSwap(tbName string, ms *MgoSwap) error {
 	err := getCollection(tbName).Insert(ms)
 	if err == nil {
-		log.Info("mongodb add swap", "txid", ms.TxId, "isSwapin", tbName == tbSwapins)
+		log.Info("mongodb add swap", "txid", ms.TxID, "isSwapin", tbName == tbSwapins)
 	} else {
-		log.Debug("mongodb add swap", "txid", ms.TxId, "isSwapin", tbName == tbSwapins, "err", err)
+		log.Debug("mongodb add swap", "txid", ms.TxID, "isSwapin", tbName == tbSwapins, "err", err)
 	}
 	return mgoError(err)
 }
@@ -178,68 +189,84 @@ func findSwapsWithStatus(tbName string, status SwapStatus, septime int64) ([]*Mg
 
 // --------------- swapin result --------------------------------
 
+// AddSwapinResult add swapin result
 func AddSwapinResult(mr *MgoSwapResult) error {
 	return addSwapResult(tbSwapinResults, mr)
 }
 
+// UpdateSwapinResult update swapin result
 func UpdateSwapinResult(txid string, items *SwapResultUpdateItems) error {
 	return updateSwapResult(tbSwapinResults, txid, items)
 }
 
+// UpdateSwapinResultStatus update swapin result status
 func UpdateSwapinResultStatus(txid string, status SwapStatus, timestamp int64, memo string) error {
 	return updateSwapResultStatus(tbSwapinResults, txid, status, timestamp, memo)
 }
 
+// FindSwapinResult find swapin result
 func FindSwapinResult(txid string) (*MgoSwapResult, error) {
 	return findSwapResult(tbSwapinResults, txid)
 }
 
+// FindSwapinResultsWithStatus find swapin result with status
 func FindSwapinResultsWithStatus(status SwapStatus, septime int64) ([]*MgoSwapResult, error) {
 	return findSwapResultsWithStatus(tbSwapinResults, status, septime)
 }
 
+// FindSwapinResults find swapin history results
 func FindSwapinResults(address string, offset, limit int) ([]*MgoSwapResult, error) {
 	return findSwapResults(tbSwapinResults, address, offset, limit)
 }
 
+// GetCountOfSwapinResults get count of swapin results
 func GetCountOfSwapinResults() (int, error) {
 	return getCount(tbSwapinResults)
 }
 
+// GetCountOfSwapinResultsWithStatus get count of swapin results with status
 func GetCountOfSwapinResultsWithStatus(status SwapStatus) (int, error) {
 	return getCountWithStatus(tbSwapinResults, status)
 }
 
 // --------------- swapout result --------------------------------
 
+// AddSwapoutResult add swapout result
 func AddSwapoutResult(mr *MgoSwapResult) error {
 	return addSwapResult(tbSwapoutResults, mr)
 }
 
+// UpdateSwapoutResult update swapout result
 func UpdateSwapoutResult(txid string, items *SwapResultUpdateItems) error {
 	return updateSwapResult(tbSwapoutResults, txid, items)
 }
 
+// UpdateSwapoutResultStatus update swapout result status
 func UpdateSwapoutResultStatus(txid string, status SwapStatus, timestamp int64, memo string) error {
 	return updateSwapResultStatus(tbSwapoutResults, txid, status, timestamp, memo)
 }
 
+// FindSwapoutResult find swapout result
 func FindSwapoutResult(txid string) (*MgoSwapResult, error) {
 	return findSwapResult(tbSwapoutResults, txid)
 }
 
+// FindSwapoutResultsWithStatus find swapout result with status
 func FindSwapoutResultsWithStatus(status SwapStatus, septime int64) ([]*MgoSwapResult, error) {
 	return findSwapResultsWithStatus(tbSwapoutResults, status, septime)
 }
 
+// FindSwapoutResults find swapout history results
 func FindSwapoutResults(address string, offset, limit int) ([]*MgoSwapResult, error) {
 	return findSwapResults(tbSwapoutResults, address, offset, limit)
 }
 
+// GetCountOfSwapoutResults get count of swapout results
 func GetCountOfSwapoutResults() (int, error) {
 	return getCount(tbSwapoutResults)
 }
 
+// GetCountOfSwapoutResultsWithStatus get count of swapout results with status
 func GetCountOfSwapoutResultsWithStatus(status SwapStatus) (int, error) {
 	return getCountWithStatus(tbSwapoutResults, status)
 }
@@ -249,9 +276,9 @@ func GetCountOfSwapoutResultsWithStatus(status SwapStatus) (int, error) {
 func addSwapResult(tbName string, ms *MgoSwapResult) error {
 	err := getCollection(tbName).Insert(ms)
 	if err == nil {
-		log.Info("mongodb add swap result", "txid", ms.TxId, "swaptype", ms.SwapType, "isSwapin", tbName == tbSwapinResults)
+		log.Info("mongodb add swap result", "txid", ms.TxID, "swaptype", ms.SwapType, "isSwapin", tbName == tbSwapinResults)
 	} else {
-		log.Debug("mongodb add swap result", "txid", ms.TxId, "swaptype", ms.SwapType, "isSwapin", tbName == tbSwapinResults, "err", err)
+		log.Debug("mongodb add swap result", "txid", ms.TxID, "swaptype", ms.SwapType, "isSwapin", tbName == tbSwapinResults, "err", err)
 	}
 	return mgoError(err)
 }
@@ -358,15 +385,17 @@ func getCountWithStatus(tbName string, status SwapStatus) (int, error) {
 
 // ------------------ statistics ------------------------
 
+// AddSwapStatistics add swap statistics
 func AddSwapStatistics(ms *MgoSwapStatistics) error {
 	return getCollection(tbSwapStatistics).Insert(ms)
 }
 
+// UpdateSwapStatistics update swap statistics
 func UpdateSwapStatistics(value string, swapValue string, isSwapin bool) error {
 	curr, err := FindSwapStatistics()
 	if err != nil {
 		ms := &MgoSwapStatistics{
-			Key: KeyOfSwapStatistics,
+			Key: keyOfSwapStatistics,
 		}
 		err = AddSwapStatistics(ms)
 		if err != nil {
@@ -399,7 +428,7 @@ func UpdateSwapStatistics(value string, swapValue string, isSwapin bool) error {
 		updates["totalswapoutvalue"] = curVal.String()
 		updates["totalswapoutfee"] = curFee.String()
 	}
-	err = getCollection(tbSwapStatistics).UpdateId(KeyOfSwapStatistics, bson.M{"$set": updates})
+	err = getCollection(tbSwapStatistics).UpdateId(keyOfSwapStatistics, bson.M{"$set": updates})
 	if err == nil {
 		log.Info("mongodb update swap statistics", "updates", updates)
 	} else {
@@ -408,12 +437,14 @@ func UpdateSwapStatistics(value string, swapValue string, isSwapin bool) error {
 	return mgoError(err)
 }
 
+// FindSwapStatistics find swap statistics
 func FindSwapStatistics() (*MgoSwapStatistics, error) {
 	var result MgoSwapStatistics
-	err := getCollection(tbSwapStatistics).FindId(KeyOfSwapStatistics).One(&result)
+	err := getCollection(tbSwapStatistics).FindId(keyOfSwapStatistics).One(&result)
 	return &result, mgoError(err)
 }
 
+// SwapStatistics rpc return struct
 type SwapStatistics struct {
 	TotalSwapinCount    int
 	TotalSwapoutCount   int
@@ -427,6 +458,7 @@ type SwapStatistics struct {
 	TotalSwapoutFee     string
 }
 
+// GetSwapStatistics get swap statistics
 func GetSwapStatistics() (*SwapStatistics, error) {
 	stat := &SwapStatistics{}
 
@@ -449,6 +481,7 @@ func GetSwapStatistics() (*SwapStatistics, error) {
 
 // ------------------ p2sh address ------------------------
 
+// AddP2shAddress add p2sh address
 func AddP2shAddress(ma *MgoP2shAddress) error {
 	err := getCollection(tbP2shAddresses).Insert(ma)
 	if err == nil {
@@ -459,6 +492,7 @@ func AddP2shAddress(ma *MgoP2shAddress) error {
 	return mgoError(err)
 }
 
+// FindP2shAddress find p2sh addrss through bind address
 func FindP2shAddress(key string) (*MgoP2shAddress, error) {
 	var result MgoP2shAddress
 	err := getCollection(tbP2shAddresses).FindId(key).One(&result)
@@ -468,6 +502,7 @@ func FindP2shAddress(key string) (*MgoP2shAddress, error) {
 	return &result, nil
 }
 
+// FindP2shBindAddress find bind address through p2sh address
 func FindP2shBindAddress(p2shAddress string) (string, error) {
 	var result MgoP2shAddress
 	err := getCollection(tbP2shAddresses).Find(bson.M{"p2shaddress": p2shAddress}).One(&result)

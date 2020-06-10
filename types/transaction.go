@@ -11,8 +11,10 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+// StorageSize type
 type StorageSize float64
 
+// Transaction struct
 type Transaction struct {
 	data txdata
 	// caches
@@ -38,10 +40,12 @@ type txdata struct {
 	Hash *common.Hash `json:"hash" rlp:"-"`
 }
 
+// NewTransaction new tx
 func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
 	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, data)
 }
 
+// NewContractCreation new contract creation
 func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
 	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, data)
 }
@@ -71,9 +75,9 @@ func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit 
 	return &Transaction{data: d}
 }
 
-// ChainId returns which chain id this transaction was signed for (if at all)
-func (tx *Transaction) ChainId() *big.Int {
-	return deriveChainId(tx.data.V)
+// ChainID returns which chain id this transaction was signed for (if at all)
+func (tx *Transaction) ChainID() *big.Int {
+	return deriveChainID(tx.data.V)
 }
 
 // Protected returns whether the transaction is protected from replay protection.
@@ -125,7 +129,7 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	if withSignature {
 		var V byte
 		if isProtectedV(dec.V) {
-			chainID := deriveChainId(dec.V).Uint64()
+			chainID := deriveChainID(dec.V).Uint64()
 			V = byte(dec.V.Uint64() - 35 - 2*chainID)
 		} else {
 			V = byte(dec.V.Uint64() - 27)
@@ -139,12 +143,23 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	return nil
 }
 
-func (tx *Transaction) Data() []byte       { return common.CopyBytes(tx.data.Payload) }
-func (tx *Transaction) Gas() uint64        { return tx.data.GasLimit }
+// Data tx data
+func (tx *Transaction) Data() []byte { return common.CopyBytes(tx.data.Payload) }
+
+// Gas tx gas
+func (tx *Transaction) Gas() uint64 { return tx.data.GasLimit }
+
+// GasPrice tx gas price
 func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.data.Price) }
-func (tx *Transaction) Value() *big.Int    { return new(big.Int).Set(tx.data.Amount) }
-func (tx *Transaction) Nonce() uint64      { return tx.data.AccountNonce }
-func (tx *Transaction) CheckNonce() bool   { return true }
+
+// Value tx value
+func (tx *Transaction) Value() *big.Int { return new(big.Int).Set(tx.data.Amount) }
+
+// Nonce tx nonce
+func (tx *Transaction) Nonce() uint64 { return tx.data.AccountNonce }
+
+// CheckNonce check nonce
+func (tx *Transaction) CheckNonce() bool { return true }
 
 // To returns the recipient address of the transaction.
 // It returns nil if the transaction is a contract creation.

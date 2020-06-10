@@ -36,7 +36,7 @@ func init() {
 		utils.LogRotationFlag,
 		utils.LogMaxAgeFlag,
 		utils.VerbosityFlag,
-		utils.JsonFormatFlag,
+		utils.JSONFormatFlag,
 		utils.ColorFormatFlag,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))

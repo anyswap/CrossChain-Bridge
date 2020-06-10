@@ -5,12 +5,14 @@ import (
 	"math/big"
 )
 
+// btc extra default values
 var (
 	BtcMinRelayFee   int64 = 400
 	BtcRelayFeePerKb int64 = 2000
 	BtcFromPublicKey string
 )
 
+// TokenConfig struct
 type TokenConfig struct {
 	BlockChain      string
 	NetID           string
@@ -27,10 +29,12 @@ type TokenConfig struct {
 	SwapFeeRate     *float64
 }
 
+// IsErc20 return is token is erc20
 func (c *TokenConfig) IsErc20() bool {
 	return c.ID == "ERC20"
 }
 
+// CheckConfig check config
 func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.BlockChain == "" {
 		return errors.New("token must config 'BlockChain'")
@@ -65,27 +69,33 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	return nil
 }
 
+// GatewayConfig struct
 type GatewayConfig struct {
-	ApiAddress string
+	APIAddress string
 }
 
+// SwapType type
 type SwapType uint32
 
+// SwapType constants
 const (
-	Swap_NotSwap SwapType = iota
-	Swap_Swapin
-	Swap_Swapout
-	Swap_Recall
+	NoSwapType SwapType = iota
+	SwapinType
+	SwapoutType
+	SwapRecallType
 )
 
+// SwapTxType type
 type SwapTxType uint32
 
+// SwapTxType constants
 const (
 	SwapinTx     SwapTxType = iota // 0
 	SwapoutTx                      // 1
 	P2shSwapinTx                   // 2
 )
 
+// TxSwapInfo struct
 type TxSwapInfo struct {
 	Hash      string   `json:"hash"`
 	Height    uint64   `json:"height"`
@@ -96,14 +106,16 @@ type TxSwapInfo struct {
 	Value     *big.Int `json:"value"`
 }
 
+// TxStatus struct
 type TxStatus struct {
 	Receipt       interface{} `json:"receipt,omitempty"`
 	Confirmations uint64      `json:"confirmations"`
-	Block_height  uint64      `json:"block_height"`
-	Block_hash    string      `json:"block_hash"`
-	Block_time    uint64      `json:"block_time"`
+	BlockHeight   uint64      `json:"block_height"`
+	BlockHash     string      `json:"block_hash"`
+	BlockTime     uint64      `json:"block_time"`
 }
 
+// SwapInfo struct
 type SwapInfo struct {
 	SwapID     string     `json:"swapid,omitempty"`
 	SwapType   SwapType   `json:"swaptype,omitempty"`
@@ -112,6 +124,7 @@ type SwapInfo struct {
 	Identifier string     `json:"identifier,omitempty"`
 }
 
+// BuildTxArgs struct
 type BuildTxArgs struct {
 	SwapInfo `json:"swapInfo,omitempty`
 	From     string     `json:"from,omitempty"`
@@ -122,6 +135,7 @@ type BuildTxArgs struct {
 	Extra    *AllExtras `json:"extra,omitempty"`
 }
 
+// GetExtraArgs get extra args
 func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 	return &BuildTxArgs{
 		SwapInfo: args.SwapInfo,
@@ -129,22 +143,26 @@ func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 	}
 }
 
+// AllExtras struct
 type AllExtras struct {
 	BtcExtra *BtcExtraArgs `json:"btcExtra,omitempty`
 	EthExtra *EthExtraArgs `json:"ethExtra,omitempty`
 }
 
+// EthExtraArgs struct
 type EthExtraArgs struct {
 	Gas      *uint64  `json:"gas,omitempty"`
 	GasPrice *big.Int `json:"gasPrice,omitempty"`
 	Nonce    *uint64  `json:"nonce,omitempty"`
 }
 
+// BtcOutPoint struct
 type BtcOutPoint struct {
 	Hash  string `json:"hash"`
 	Index uint32 `json:"index"`
 }
 
+// BtcExtraArgs struct
 type BtcExtraArgs struct {
 	RelayFeePerKb *int64  `json:"relayFeePerKb,omitempty"`
 	ChangeAddress *string `json:"changeAddress,omitempty"`
@@ -154,13 +172,14 @@ type BtcExtraArgs struct {
 	SignIndex         *int           `json:"signIndex,omitempty"`
 }
 
-// used to build swpout to btc tx
+// BtcExtraConfig used to build swpout to btc tx
 type BtcExtraConfig struct {
 	MinRelayFee   int64
 	RelayFeePerKb int64
 	FromPublicKey string
 }
 
+// P2shAddressInfo struct
 type P2shAddressInfo struct {
 	BindAddress        string
 	P2shAddress        string

@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	defaultApiPort      = 11556
+	defaultAPIPort      = 11556
 	defServerConfigFile = "config.toml"
 )
 
@@ -22,13 +22,15 @@ var (
 	serverConfig      *ServerConfig
 	loadConfigStarter sync.Once
 
+	// DataDir datadir
 	DataDir = "datadir"
 )
 
+// ServerConfig config items (decode from toml file)
 type ServerConfig struct {
 	Identifier  string
 	MongoDB     *MongoDBConfig   `toml:",omitempty"`
-	ApiServer   *ApiServerConfig `toml:",omitempty"`
+	APIServer   *APIServerConfig `toml:",omitempty"`
 	SrcToken    *tokens.TokenConfig
 	SrcGateway  *tokens.GatewayConfig
 	DestToken   *tokens.TokenConfig
@@ -38,8 +40,9 @@ type ServerConfig struct {
 	BtcExtra    *tokens.BtcExtraConfig `toml:",omitempty"`
 }
 
+// DcrmConfig dcrm related config
 type DcrmConfig struct {
-	RpcAddress    *string
+	RPCAddress    *string
 	GroupID       *string
 	SignGroups    []string
 	NeededOracles *uint32
@@ -50,15 +53,18 @@ type DcrmConfig struct {
 	PasswordFile  *string `toml:",omitempty"`
 }
 
+// OracleConfig oracle config
 type OracleConfig struct {
-	ServerApiAddress string
+	ServerAPIAddress string
 }
 
-type ApiServerConfig struct {
+// APIServerConfig api service config
+type APIServerConfig struct {
 	Port           int
 	AllowedOrigins []string
 }
 
+// MongoDBConfig mongodb config
 type MongoDBConfig struct {
 	DbURL    string
 	DbName   string
@@ -66,6 +72,7 @@ type MongoDBConfig struct {
 	Password string `json:"-"`
 }
 
+// GetURL get mongodb url consider user name and password
 func (cfg *MongoDBConfig) GetURL() string {
 	if cfg.UserName == "" && cfg.Password == "" {
 		return cfg.DbURL
@@ -73,26 +80,31 @@ func (cfg *MongoDBConfig) GetURL() string {
 	return fmt.Sprintf("%s:%s@%s", cfg.UserName, cfg.Password, cfg.DbURL)
 }
 
-func GetApiPort() int {
-	apiPort := GetConfig().ApiServer.Port
+// GetAPIPort get api service port
+func GetAPIPort() int {
+	apiPort := GetConfig().APIServer.Port
 	if apiPort == 0 {
-		apiPort = defaultApiPort
+		apiPort = defaultAPIPort
 	}
 	return apiPort
 }
 
+// GetIdentifier get identifier (to distiguish in dcrm accept)
 func GetIdentifier() string {
 	return GetConfig().Identifier
 }
 
+// GetConfig get config items structure
 func GetConfig() *ServerConfig {
 	return serverConfig
 }
 
+// SetConfig set config items
 func SetConfig(config *ServerConfig) {
 	serverConfig = config
 }
 
+// CheckConfig check config
 func CheckConfig(isServer bool) (err error) {
 	config := GetConfig()
 	if config.Identifier == "" {
@@ -102,8 +114,8 @@ func CheckConfig(isServer bool) (err error) {
 		if config.MongoDB == nil {
 			return errors.New("server must config 'MongoDB'")
 		}
-		if config.ApiServer == nil {
-			return errors.New("server must config 'ApiServer'")
+		if config.APIServer == nil {
+			return errors.New("server must config 'APIServer'")
 		}
 	} else {
 		if config.Oracle != nil {
@@ -143,9 +155,10 @@ func CheckConfig(isServer bool) (err error) {
 	return nil
 }
 
+// CheckConfig check dcrm config
 func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
-	if c.RpcAddress == nil {
-		return errors.New("dcrm must config 'RpcAddress'")
+	if c.RPCAddress == nil {
+		return errors.New("dcrm must config 'RPCAddress'")
 	}
 	if c.GroupID == nil {
 		return errors.New("dcrm must config 'GroupID'")
@@ -176,10 +189,12 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	return nil
 }
 
+// CheckConfig check oracle config
 func (c *OracleConfig) CheckConfig(isServer bool) (err error) {
 	return nil
 }
 
+// LoadConfig load config
 func LoadConfig(configFile string, isServer bool) *ServerConfig {
 	loadConfigStarter.Do(func() {
 		if configFile == "" {
@@ -201,7 +216,7 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 
 		SetConfig(config)
 		var bs []byte
-		if log.JsonFormat {
+		if log.JSONFormat {
 			bs, _ = json.Marshal(config)
 		} else {
 			bs, _ = json.MarshalIndent(config, "", "  ")
@@ -214,6 +229,7 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 	return serverConfig
 }
 
+// SetDataDir set data dir
 func SetDataDir(datadir string) {
 	if datadir != "" {
 		DataDir = datadir

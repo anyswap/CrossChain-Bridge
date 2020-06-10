@@ -1,5 +1,6 @@
 package btc
 
-func (b *BtcBridge) StartSwapoutResultScanJob(isServer bool) error {
+// StartSwapoutResultScanJob scan job
+func (b *Bridge) StartSwapoutResultScanJob(isServer bool) error {
 	return nil
 }

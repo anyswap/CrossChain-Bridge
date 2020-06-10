@@ -10,8 +10,9 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tools/crypto"
 )
 
+// sign tx errors
 var (
-	ErrInvalidChainId = errors.New("invalid chain id for signer")
+	ErrInvalidChainID = errors.New("invalid chain id for signer")
 	ErrInvalidSig     = errors.New("invalid transaction v, r, s values")
 )
 
@@ -22,6 +23,7 @@ type sigCache struct {
 	from   common.Address
 }
 
+// MakeSigner make signer
 func MakeSigner(signType string, chainID *big.Int) Signer {
 	var signer Signer
 	switch signType {
@@ -87,36 +89,39 @@ type Signer interface {
 	Equal(Signer) bool
 }
 
-// EIP155Transaction implements Signer using the EIP155 rules.
+// EIP155Signer implements Signer using the EIP155 rules.
 type EIP155Signer struct {
-	chainId, chainIdMul *big.Int
+	chainID, chainIDMul *big.Int
 }
 
-func NewEIP155Signer(chainId *big.Int) EIP155Signer {
-	if chainId == nil {
-		chainId = new(big.Int)
+// NewEIP155Signer new EIP155Signer
+func NewEIP155Signer(chainID *big.Int) EIP155Signer {
+	if chainID == nil {
+		chainID = new(big.Int)
 	}
 	return EIP155Signer{
-		chainId:    chainId,
-		chainIdMul: new(big.Int).Mul(chainId, big.NewInt(2)),
+		chainID:    chainID,
+		chainIDMul: new(big.Int).Mul(chainID, big.NewInt(2)),
 	}
 }
 
+// Equal compare signer
 func (s EIP155Signer) Equal(s2 Signer) bool {
 	eip155, ok := s2.(EIP155Signer)
-	return ok && eip155.chainId.Cmp(s.chainId) == 0
+	return ok && eip155.chainID.Cmp(s.chainID) == 0
 }
 
 var big8 = big.NewInt(8)
 
+// Sender get sender
 func (s EIP155Signer) Sender(tx *Transaction) (common.Address, error) {
 	if !tx.Protected() {
 		return HomesteadSigner{}.Sender(tx)
 	}
-	if tx.ChainId().Cmp(s.chainId) != 0 {
-		return common.Address{}, ErrInvalidChainId
+	if tx.ChainID().Cmp(s.chainID) != 0 {
+		return common.Address{}, ErrInvalidChainID
 	}
-	V := new(big.Int).Sub(tx.data.V, s.chainIdMul)
+	V := new(big.Int).Sub(tx.data.V, s.chainIDMul)
 	V.Sub(V, big8)
 	return recoverPlain(s.Hash(tx), tx.data.R, tx.data.S, V, true)
 }
@@ -128,9 +133,9 @@ func (s EIP155Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if s.chainId.Sign() != 0 {
+	if s.chainID.Sign() != 0 {
 		V = big.NewInt(int64(sig[64] + 35))
-		V.Add(V, s.chainIdMul)
+		V.Add(V, s.chainIDMul)
 	}
 	return R, S, V, nil
 }
@@ -145,15 +150,16 @@ func (s EIP155Signer) Hash(tx *Transaction) common.Hash {
 		tx.data.Recipient,
 		tx.data.Amount,
 		tx.data.Payload,
-		s.chainId, uint(0), uint(0),
+		s.chainID, uint(0), uint(0),
 	})
 }
 
-// HomesteadTransaction implements TransactionInterface using the
+// HomesteadSigner implements TransactionInterface using the
 // homestead rules.
 type HomesteadSigner struct{ FrontierSigner }
 
-func (s HomesteadSigner) Equal(s2 Signer) bool {
+// Equal compare signer
+func (hs HomesteadSigner) Equal(s2 Signer) bool {
 	_, ok := s2.(HomesteadSigner)
 	return ok
 }
@@ -164,13 +170,16 @@ func (hs HomesteadSigner) SignatureValues(tx *Transaction, sig []byte) (r, s, v 
 	return hs.FrontierSigner.SignatureValues(tx, sig)
 }
 
+// Sender get sender
 func (hs HomesteadSigner) Sender(tx *Transaction) (common.Address, error) {
 	return recoverPlain(hs.Hash(tx), tx.data.R, tx.data.S, tx.data.V, true)
 }
 
+// FrontierSigner frontier signer
 type FrontierSigner struct{}
 
-func (s FrontierSigner) Equal(s2 Signer) bool {
+// Equal compare signer
+func (fs FrontierSigner) Equal(s2 Signer) bool {
 	_, ok := s2.(FrontierSigner)
 	return ok
 }
@@ -200,6 +209,7 @@ func (fs FrontierSigner) Hash(tx *Transaction) common.Hash {
 	})
 }
 
+// Sender get sender
 func (fs FrontierSigner) Sender(tx *Transaction) (common.Address, error) {
 	return recoverPlain(fs.Hash(tx), tx.data.R, tx.data.S, tx.data.V, false)
 }
@@ -231,8 +241,8 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 	return addr, nil
 }
 
-// deriveChainId derives the chain id from the given v parameter
-func deriveChainId(v *big.Int) *big.Int {
+// deriveChainID derives the chain id from the given v parameter
+func deriveChainID(v *big.Int) *big.Int {
 	if v.BitLen() <= 64 {
 		v := v.Uint64()
 		if v == 27 || v == 28 {

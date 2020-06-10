@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// version parts
 const (
 	VersionMajor = 0       // Major version component of the current release
 	VersionMinor = 2       // Minor version component of the current release
@@ -39,6 +40,7 @@ func ArchiveVersion(gitCommit string) string {
 	return vsn
 }
 
+// VersionWithCommit add git commit and data to version.
 func VersionWithCommit(gitCommit, gitDate string) string {
 	vsn := VersionWithMeta
 	if len(gitCommit) >= 8 {

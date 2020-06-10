@@ -8,7 +8,8 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
-func (b *BtcBridge) VerifyP2shTransaction(txHash string, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+// VerifyP2shTransaction verify p2sh tx
+func (b *Bridge) VerifyP2shTransaction(txHash string, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
 	if !b.IsSrc {
@@ -21,22 +22,22 @@ func (b *BtcBridge) VerifyP2shTransaction(txHash string, bindAddress string, all
 	token := b.TokenConfig
 	if !allowUnstable {
 		txStatus := b.GetTransactionStatus(txHash)
-		if txStatus.Block_height == 0 ||
+		if txStatus.BlockHeight == 0 ||
 			txStatus.Confirmations < *token.Confirmations {
 			return swapInfo, tokens.ErrTxNotStable
 		}
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug("BtcBridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug("Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	txStatus := tx.Status
-	if txStatus.Block_height != nil {
-		swapInfo.Height = *txStatus.Block_height // Height
+	if txStatus.BlockHeight != nil {
+		swapInfo.Height = *txStatus.BlockHeight // Height
 	}
-	if txStatus.Block_time != nil {
-		swapInfo.Timestamp = *txStatus.Block_time // Timestamp
+	if txStatus.BlockTime != nil {
+		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
 	var (
 		rightReceiver bool
@@ -44,9 +45,9 @@ func (b *BtcBridge) VerifyP2shTransaction(txHash string, bindAddress string, all
 		from          string
 	)
 	for _, output := range tx.Vout {
-		switch *output.Scriptpubkey_type {
+		switch *output.ScriptpubkeyType {
 		case "p2sh":
-			if *output.Scriptpubkey_address != p2shAddress {
+			if *output.ScriptpubkeyAddress != p2shAddress {
 				continue
 			}
 			rightReceiver = true
@@ -63,8 +64,8 @@ func (b *BtcBridge) VerifyP2shTransaction(txHash string, bindAddress string, all
 	for _, input := range tx.Vin {
 		if input != nil &&
 			input.Prevout != nil &&
-			input.Prevout.Scriptpubkey_address != nil {
-			from = *input.Prevout.Scriptpubkey_address
+			input.Prevout.ScriptpubkeyAddress != nil {
+			from = *input.Prevout.ScriptpubkeyAddress
 			break
 		}
 	}

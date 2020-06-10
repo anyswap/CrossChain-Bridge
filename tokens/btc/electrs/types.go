@@ -1,5 +1,6 @@
 package electrs
 
+// ElectTx struct
 type ElectTx struct {
 	Txid     *string        `json:"txid"`
 	Version  *uint32        `json:"version"`
@@ -12,25 +13,28 @@ type ElectTx struct {
 	Status   *ElectTxStatus `json:"status,omitempty"`
 }
 
+// ElectTxin struct
 type ElectTxin struct {
-	Txid                   *string     `json:"txid"`
-	Vout                   *uint32     `json:"vout"`
-	Scriptsig              *string     `json:"scriptsig"`
-	Scriptsig_asm          *string     `json:"scriptsig_asm"`
-	Is_coinbase            *bool       `json:"is_coinbase"`
-	Sequence               *uint32     `json:"sequence"`
-	Inner_redeemscript_asm *string     `json:"inner_redeemscript_asm"`
-	Prevout                *ElectTxOut `json:"prevout"`
+	Txid                 *string     `json:"txid"`
+	Vout                 *uint32     `json:"vout"`
+	Scriptsig            *string     `json:"scriptsig"`
+	ScriptsigAsm         *string     `json:"scriptsig_asm"`
+	IsCoinbase           *bool       `json:"is_coinbase"`
+	Sequence             *uint32     `json:"sequence"`
+	InnerRedeemscriptAsm *string     `json:"inner_redeemscript_asm"`
+	Prevout              *ElectTxOut `json:"prevout"`
 }
 
+// ElectTxOut struct
 type ElectTxOut struct {
-	Scriptpubkey         *string `json:"scriptpubkey"`
-	Scriptpubkey_asm     *string `json:"scriptpubkey_asm"`
-	Scriptpubkey_type    *string `json:"scriptpubkey_type"`
-	Scriptpubkey_address *string `json:"scriptpubkey_address"`
-	Value                *uint64 `json:"value"`
+	Scriptpubkey        *string `json:"scriptpubkey"`
+	ScriptpubkeyAsm     *string `json:"scriptpubkey_asm"`
+	ScriptpubkeyType    *string `json:"scriptpubkey_type"`
+	ScriptpubkeyAddress *string `json:"scriptpubkey_address"`
+	Value               *uint64 `json:"value"`
 }
 
+// ElectOutspend struct
 type ElectOutspend struct {
 	Spent  *bool          `json:"spent"`
 	Txid   *string        `json:"txid"`
@@ -38,13 +42,15 @@ type ElectOutspend struct {
 	Status *ElectTxStatus `json:"status,omitempty"`
 }
 
+// ElectTxStatus struct
 type ElectTxStatus struct {
-	Confirmed    *bool   `json:"confirmed"`
-	Block_height *uint64 `json:"block_height"`
-	Block_hash   *string `json:"block_hash"`
-	Block_time   *uint64 `json:"block_time"`
+	Confirmed   *bool   `json:"confirmed"`
+	BlockHeight *uint64 `json:"block_height"`
+	BlockHash   *string `json:"block_hash"`
+	BlockTime   *uint64 `json:"block_time"`
 }
 
+// ElectUtxo struct
 type ElectUtxo struct {
 	Txid   *string        `json:"txid"`
 	Vout   *uint32        `json:"vout"`
@@ -52,16 +58,20 @@ type ElectUtxo struct {
 	Status *ElectTxStatus `json:"status"`
 }
 
+// SortableElectUtxoSlice sortable
 type SortableElectUtxoSlice []*ElectUtxo
 
+// Len impl Sortable
 func (s SortableElectUtxoSlice) Len() int {
 	return len(s)
 }
 
+// Swap impl Sortable
 func (s SortableElectUtxoSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
+// Less impl Sortable
 // sort utxos
 // 1. confirmed fisrt
 // 2. value first

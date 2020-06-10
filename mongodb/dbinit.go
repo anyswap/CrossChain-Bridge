@@ -16,24 +16,25 @@ var (
 	dbName   string
 )
 
-func InitMongodb(mongoURL_, dbName_ string) {
-	mongoURL = mongoURL_
-	dbName = dbName_
+// MongoServerInit int mongodb server session
+func MongoServerInit(mongourl, dbname string) {
+	initMongodb(mongourl, dbname)
+	mongoConnect()
+	go checkMongoSession()
 }
 
-func MongoServerInit(mongoURL_, dbName_ string) {
-	InitMongodb(mongoURL_, dbName_)
-	MongoConnect()
-	go CheckMongoSession()
+func initMongodb(url, db string) {
+	mongoURL = url
+	dbName = db
 }
 
-func MongoReconnect() {
+func mongoReconnect() {
 	log.Info("[mongodb] reconnect database", "dbName", dbName)
-	MongoConnect()
-	go CheckMongoSession()
+	mongoConnect()
+	go checkMongoSession()
 }
 
-func MongoConnect() {
+func mongoConnect() {
 	if session != nil { // when reconnect
 		session.Close()
 	}
@@ -56,17 +57,17 @@ func MongoConnect() {
 }
 
 // fix 'read tcp 127.0.0.1:43502->127.0.0.1:27917: i/o timeout'
-func CheckMongoSession() {
+func checkMongoSession() {
 	for {
 		time.Sleep(60 * time.Second)
-		EnsureMongoConnected()
+		ensureMongoConnected()
 	}
 }
 
-func EnsureMongoConnected() {
+func ensureMongoConnected() {
 	defer func() {
 		if r := recover(); r != nil {
-			MongoReconnect()
+			mongoReconnect()
 		}
 	}()
 	err := session.Ping()
@@ -78,7 +79,7 @@ func EnsureMongoConnected() {
 			database = session.DB(dbName)
 			deinintCollections()
 		} else {
-			MongoReconnect()
+			mongoReconnect()
 		}
 	}
 }

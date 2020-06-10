@@ -29,13 +29,11 @@ import (
 	"sync"
 )
 
-//lint:ignore ST1012 EOL is not an error.
-
-// EOL is returned when the end of the current list
-// has been reached during streaming.
-var EOL = errors.New("rlp: end of list")
-
+// rlp errors
 var (
+	// ErrEOL is returned when the end of the current list
+	// has been reached during streaming.
+	ErrEOL              = errors.New("rlp: end of list")
 	ErrExpectedString   = errors.New("rlp: expected String or Byte")
 	ErrExpectedList     = errors.New("rlp: expected List")
 	ErrCanonInt         = errors.New("rlp: non-canonical integer format")
@@ -46,7 +44,7 @@ var (
 
 	// internal errors
 	errNotInList     = errors.New("rlp: call of ListEnd outside of any list")
-	errNotAtEOL      = errors.New("rlp: call of ListEnd not positioned at EOL")
+	errNotAtEOL      = errors.New("rlp: call of ListEnd not positioned at ErrEOL")
 	errUintOverflow  = errors.New("rlp: uint overflow")
 	errNoPointer     = errors.New("rlp: interface given to Decode must be a pointer")
 	errDecodeIntoNil = errors.New("rlp: pointer given to Decode must not be nil")
@@ -303,7 +301,7 @@ func decodeSliceElems(s *Stream, val reflect.Value, elemdec decoder) error {
 			val.SetLen(i + 1)
 		}
 		// decode into element
-		if err := elemdec(s, val.Index(i)); err == EOL {
+		if err := elemdec(s, val.Index(i)); err == ErrEOL {
 			break
 		} else if err != nil {
 			return addErrorContext(err, fmt.Sprint("[", i, "]"))
@@ -322,7 +320,7 @@ func decodeListArray(s *Stream, val reflect.Value, elemdec decoder) error {
 	vlen := val.Len()
 	i := 0
 	for ; i < vlen; i++ {
-		if err := elemdec(s, val.Index(i)); err == EOL {
+		if err := elemdec(s, val.Index(i)); err == ErrEOL {
 			break
 		} else if err != nil {
 			return addErrorContext(err, fmt.Sprint("[", i, "]"))
@@ -396,7 +394,7 @@ func makeStructDecoder(typ reflect.Type) (decoder, error) {
 		}
 		for _, f := range fields {
 			err := f.info.decoder(s, val.Field(f.index))
-			if err == EOL {
+			if err == ErrEOL {
 				return &decodeError{msg: "too few elements", typ: typ}
 			} else if err != nil {
 				return addErrorContext(err, "."+typ.Field(f.index).Name)
@@ -506,6 +504,7 @@ func decodeDecoder(s *Stream, val reflect.Value) error {
 // Kind represents the kind of value contained in an RLP stream.
 type Kind int
 
+// Kind constans
 const (
 	Byte Kind = iota
 	String
@@ -539,7 +538,7 @@ type ByteReader interface {
 // positioned just before the type information for the next value.
 //
 // When decoding a list and the input position reaches the declared
-// length of the list, all operations will return error EOL.
+// length of the list, all operations will return error ErrEOL.
 // The end of the list must be acknowledged using ListEnd to continue
 // reading the enclosing list.
 //
@@ -707,7 +706,7 @@ func (s *Stream) Bool() (bool, error) {
 
 // List starts decoding an RLP list. If the input does not contain a
 // list, the returned error will be ErrExpectedList. When the list's
-// end has been reached, any Stream operation will return EOL.
+// end has been reached, any Stream operation will return ErrEOL.
 func (s *Stream) List() (size uint64, err error) {
 	kind, size, err := s.Kind()
 	if err != nil {
@@ -831,7 +830,7 @@ func (s *Stream) Kind() (kind Kind, size uint64, err error) {
 		// Don't read further if we're at the end of the
 		// innermost list.
 		if tos != nil && tos.pos == tos.size {
-			return 0, 0, EOL
+			return 0, 0, ErrEOL
 		}
 		s.kind, s.size, s.kinderr = s.readKind()
 		if s.kinderr == nil {

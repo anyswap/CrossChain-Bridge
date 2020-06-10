@@ -19,7 +19,8 @@ var (
 	waitInterval  = 10 * time.Second
 )
 
-func (b *EthBridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (interface{}, string, error) {
+// DcrmSignTransaction dcrm sign raw tx
+func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (interface{}, string, error) {
 	swapinNonce--
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {

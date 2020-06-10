@@ -8,18 +8,22 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
-type RpcAPI struct{}
+// RPCAPI rpc api handler
+type RPCAPI struct{}
 
-type RpcNullArgs struct{}
+// RPCNullArgs null args
+type RPCNullArgs struct{}
 
-func (s *RpcAPI) GetVersionInfo(r *http.Request, args *RpcNullArgs, result *string) error {
+// GetVersionInfo api
+func (s *RPCAPI) GetVersionInfo(r *http.Request, args *RPCNullArgs, result *string) error {
 	ver := params.VersionWithMeta
 	ver += "-rev1"
 	*result = ver
 	return nil
 }
 
-func (s *RpcAPI) GetServerInfo(r *http.Request, args *RpcNullArgs, result *swapapi.ServerInfo) error {
+// GetServerInfo api
+func (s *RPCAPI) GetServerInfo(r *http.Request, args *RPCNullArgs, result *swapapi.ServerInfo) error {
 	res, err := swapapi.GetServerInfo()
 	if err == nil && res != nil {
 		*result = *res
@@ -27,7 +31,8 @@ func (s *RpcAPI) GetServerInfo(r *http.Request, args *RpcNullArgs, result *swapa
 	return err
 }
 
-func (s *RpcAPI) GetSwapStatistics(r *http.Request, args *RpcNullArgs, result *swapapi.SwapStatistics) error {
+// GetSwapStatistics api
+func (s *RPCAPI) GetSwapStatistics(r *http.Request, args *RPCNullArgs, result *swapapi.SwapStatistics) error {
 	res, err := swapapi.GetSwapStatistics()
 	if err == nil && res != nil {
 		*result = *res
@@ -35,7 +40,8 @@ func (s *RpcAPI) GetSwapStatistics(r *http.Request, args *RpcNullArgs, result *s
 	return err
 }
 
-func (s *RpcAPI) GetRawSwapin(r *http.Request, txid *string, result *swapapi.Swap) error {
+// GetRawSwapin api
+func (s *RPCAPI) GetRawSwapin(r *http.Request, txid *string, result *swapapi.Swap) error {
 	res, err := swapapi.GetRawSwapin(txid)
 	if err == nil && res != nil {
 		*result = *res
@@ -43,7 +49,8 @@ func (s *RpcAPI) GetRawSwapin(r *http.Request, txid *string, result *swapapi.Swa
 	return err
 }
 
-func (s *RpcAPI) GetRawSwapinResult(r *http.Request, txid *string, result *swapapi.SwapResult) error {
+// GetRawSwapinResult api
+func (s *RPCAPI) GetRawSwapinResult(r *http.Request, txid *string, result *swapapi.SwapResult) error {
 	res, err := swapapi.GetRawSwapinResult(txid)
 	if err == nil && res != nil {
 		*result = *res
@@ -51,7 +58,8 @@ func (s *RpcAPI) GetRawSwapinResult(r *http.Request, txid *string, result *swapa
 	return err
 }
 
-func (s *RpcAPI) GetSwapin(r *http.Request, txid *string, result *swapapi.SwapInfo) error {
+// GetSwapin api
+func (s *RPCAPI) GetSwapin(r *http.Request, txid *string, result *swapapi.SwapInfo) error {
 	res, err := swapapi.GetSwapin(txid)
 	if err == nil && res != nil {
 		*result = *res
@@ -59,7 +67,8 @@ func (s *RpcAPI) GetSwapin(r *http.Request, txid *string, result *swapapi.SwapIn
 	return err
 }
 
-func (s *RpcAPI) GetRawSwapout(r *http.Request, txid *string, result *swapapi.Swap) error {
+// GetRawSwapout api
+func (s *RPCAPI) GetRawSwapout(r *http.Request, txid *string, result *swapapi.Swap) error {
 	res, err := swapapi.GetRawSwapout(txid)
 	if err == nil && res != nil {
 		*result = *res
@@ -67,7 +76,8 @@ func (s *RpcAPI) GetRawSwapout(r *http.Request, txid *string, result *swapapi.Sw
 	return err
 }
 
-func (s *RpcAPI) GetRawSwapoutResult(r *http.Request, txid *string, result *swapapi.SwapResult) error {
+// GetRawSwapoutResult api
+func (s *RPCAPI) GetRawSwapoutResult(r *http.Request, txid *string, result *swapapi.SwapResult) error {
 	res, err := swapapi.GetRawSwapoutResult(txid)
 	if err == nil && res != nil {
 		*result = *res
@@ -75,7 +85,8 @@ func (s *RpcAPI) GetRawSwapoutResult(r *http.Request, txid *string, result *swap
 	return err
 }
 
-func (s *RpcAPI) GetSwapout(r *http.Request, txid *string, result *swapapi.SwapInfo) error {
+// GetSwapout api
+func (s *RPCAPI) GetSwapout(r *http.Request, txid *string, result *swapapi.SwapInfo) error {
 	res, err := swapapi.GetSwapout(txid)
 	if err == nil && res != nil {
 		*result = *res
@@ -83,20 +94,22 @@ func (s *RpcAPI) GetSwapout(r *http.Request, txid *string, result *swapapi.SwapI
 	return err
 }
 
-type RpcQueryHistoryArgs struct {
+// RPCQueryHistoryArgs args
+type RPCQueryHistoryArgs struct {
 	Address string `json:"address"`
 	Offset  int    `json:"offset"`
 	Limit   int    `json:"limit"`
 }
 
-func (args *RpcQueryHistoryArgs) getQueryArgs() (address string, offset int, limit int, err error) {
+func (args *RPCQueryHistoryArgs) getQueryArgs() (address string, offset int, limit int, err error) {
 	address = args.Address
 	offset = args.Offset
 	limit = args.Limit
 	return address, offset, limit, nil
 }
 
-func (s *RpcAPI) GetSwapinHistory(r *http.Request, args *RpcQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
+// GetSwapinHistory api
+func (s *RPCAPI) GetSwapinHistory(r *http.Request, args *RPCQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
 	address, offset, limit, err := args.getQueryArgs()
 	if err != nil {
 		return err
@@ -108,7 +121,8 @@ func (s *RpcAPI) GetSwapinHistory(r *http.Request, args *RpcQueryHistoryArgs, re
 	return err
 }
 
-func (s *RpcAPI) GetSwapoutHistory(r *http.Request, args *RpcQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
+// GetSwapoutHistory api
+func (s *RPCAPI) GetSwapoutHistory(r *http.Request, args *RPCQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
 	address, offset, limit, err := args.getQueryArgs()
 	if err != nil {
 		return err
@@ -120,7 +134,8 @@ func (s *RpcAPI) GetSwapoutHistory(r *http.Request, args *RpcQueryHistoryArgs, r
 	return err
 }
 
-func (s *RpcAPI) Swapin(r *http.Request, txid *string, result *swapapi.PostResult) error {
+// Swapin api
+func (s *RPCAPI) Swapin(r *http.Request, txid *string, result *swapapi.PostResult) error {
 	res, err := swapapi.Swapin(txid)
 	if err == nil && res != nil {
 		*result = *res
@@ -128,12 +143,14 @@ func (s *RpcAPI) Swapin(r *http.Request, txid *string, result *swapapi.PostResul
 	return err
 }
 
-type RpcP2shSwapinArgs struct {
+// RPCP2shSwapinArgs args
+type RPCP2shSwapinArgs struct {
 	TxID string `json:"txid"`
 	Bind string `json:"bind"`
 }
 
-func (s *RpcAPI) P2shSwapin(r *http.Request, args *RpcP2shSwapinArgs, result *swapapi.PostResult) error {
+// P2shSwapin api
+func (s *RPCAPI) P2shSwapin(r *http.Request, args *RPCP2shSwapinArgs, result *swapapi.PostResult) error {
 	res, err := swapapi.P2shSwapin(&args.TxID, &args.Bind)
 	if err == nil && res != nil {
 		*result = *res
@@ -141,7 +158,8 @@ func (s *RpcAPI) P2shSwapin(r *http.Request, args *RpcP2shSwapinArgs, result *sw
 	return err
 }
 
-func (s *RpcAPI) Swapout(r *http.Request, txid *string, result *swapapi.PostResult) error {
+// Swapout api
+func (s *RPCAPI) Swapout(r *http.Request, txid *string, result *swapapi.PostResult) error {
 	res, err := swapapi.Swapout(txid)
 	if err == nil && res != nil {
 		*result = *res
@@ -149,7 +167,8 @@ func (s *RpcAPI) Swapout(r *http.Request, txid *string, result *swapapi.PostResu
 	return err
 }
 
-func (s *RpcAPI) RecallSwapin(r *http.Request, txid *string, result *swapapi.PostResult) error {
+// RecallSwapin api
+func (s *RPCAPI) RecallSwapin(r *http.Request, txid *string, result *swapapi.PostResult) error {
 	res, err := swapapi.RecallSwapin(txid)
 	if err == nil && res != nil {
 		*result = *res
@@ -157,17 +176,20 @@ func (s *RpcAPI) RecallSwapin(r *http.Request, txid *string, result *swapapi.Pos
 	return err
 }
 
-func (s *RpcAPI) IsValidSwapinBindAddress(r *http.Request, address *string, result *bool) error {
+// IsValidSwapinBindAddress api
+func (s *RPCAPI) IsValidSwapinBindAddress(r *http.Request, address *string, result *bool) error {
 	*result = swapapi.IsValidSwapinBindAddress(address)
 	return nil
 }
 
-func (s *RpcAPI) IsValidSwapoutBindAddress(r *http.Request, address *string, result *bool) error {
+// IsValidSwapoutBindAddress api
+func (s *RPCAPI) IsValidSwapoutBindAddress(r *http.Request, address *string, result *bool) error {
 	*result = swapapi.IsValidSwapoutBindAddress(address)
 	return nil
 }
 
-func (s *RpcAPI) RegisterP2shAddress(r *http.Request, bindAddress *string, result *tokens.P2shAddressInfo) error {
+// RegisterP2shAddress api
+func (s *RPCAPI) RegisterP2shAddress(r *http.Request, bindAddress *string, result *tokens.P2shAddressInfo) error {
 	res, err := swapapi.RegisterP2shAddress(*bindAddress)
 	if err == nil && res != nil {
 		*result = *res
@@ -175,7 +197,8 @@ func (s *RpcAPI) RegisterP2shAddress(r *http.Request, bindAddress *string, resul
 	return err
 }
 
-func (s *RpcAPI) GetP2shAddressInfo(r *http.Request, p2shAddress *string, result *tokens.P2shAddressInfo) error {
+// GetP2shAddressInfo api
+func (s *RPCAPI) GetP2shAddressInfo(r *http.Request, p2shAddress *string, result *tokens.P2shAddressInfo) error {
 	res, err := swapapi.GetP2shAddressInfo(*p2shAddress)
 	if err == nil && res != nil {
 		*result = *res

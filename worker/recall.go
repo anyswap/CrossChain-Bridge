@@ -14,6 +14,7 @@ var (
 	swapinRecallStarter sync.Once
 )
 
+// StartRecallJob recall job
 func StartRecallJob() error {
 	go startSwapinRecallJob()
 	return nil
@@ -33,7 +34,7 @@ func startSwapinRecallJob() error {
 			for _, swap := range res {
 				err = processRecallSwapin(swap)
 				if err != nil {
-					logWorkerError("recall", "process recall error", err, "txid", swap.TxId)
+					logWorkerError("recall", "process recall error", err, "txid", swap.TxID)
 				}
 			}
 			restInJob(restIntervalInRecallJob)
@@ -49,7 +50,7 @@ func findSwapinsToRecall() ([]*mongodb.MgoSwap, error) {
 }
 
 func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
-	txid := swap.TxId
+	txid := swap.TxID
 	res, err := mongodb.FindSwapinResult(txid)
 	if err != nil {
 		return err
@@ -68,14 +69,14 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
-			SwapID:   res.TxId,
-			SwapType: tokens.Swap_Recall,
+			SwapID:   res.TxID,
+			SwapType: tokens.SwapRecallType,
 			TxType:   tokens.SwapTxType(swap.TxType),
 			Bind:     swap.Bind,
 		},
 		To:    res.Bind,
 		Value: value,
-		Memo:  fmt.Sprintf("%s%s", tokens.RecallMemoPrefix, res.TxId),
+		Memo:  fmt.Sprintf("%s%s", tokens.RecallMemoPrefix, res.TxID),
 	}
 	bridge := tokens.SrcBridge
 	rawTx, err := bridge.BuildRawTransaction(args)
@@ -94,7 +95,7 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
-		SwapType:  tokens.Swap_Recall,
+		SwapType:  tokens.SwapRecallType,
 	}
 	err = updateSwapinResult(txid, matchTx)
 	if err != nil {
