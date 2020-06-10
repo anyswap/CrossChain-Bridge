@@ -32,6 +32,7 @@ Name = "Bitcoin Coin"
 Symbol = "BTC"
 Decimals = 8
 Description = "Bitcoin Coin"
+ContractAddress = ""
 DcrmAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 Confirmations = 0 # suggest >= 6 for Mainnet
 MaximumSwap = 1000.0

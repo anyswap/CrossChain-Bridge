@@ -2,6 +2,7 @@ package btc
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -69,7 +70,7 @@ func (b *Bridge) processP2shSwapin(txid string, isServer bool) error {
 	}
 	swapInfo, err := b.CheckP2shTransaction(txid, isServer, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
-		log.Trace("[scanp2sh] CheckP2shTransaction", "txid", txid, "isServer", isServer, "err", err)
+		//log.Trace("[scanp2sh] CheckP2shTransaction", "txid", txid, "isServer", isServer, "err", err)
 		return err
 	}
 	if isServer {
@@ -127,6 +128,9 @@ func openBtcScanStatusFile() (err error) {
 func getLatestScanHeight() uint64 {
 	buf := make([]byte, 33)
 	n, err := scanStatusFile.ReadAt(buf, 0)
+	if err == io.EOF {
+		return 0
+	}
 	if err != nil {
 		log.Error("read scanstatus file failed", "err", err)
 		return 0
@@ -152,6 +156,7 @@ func updateLatestScanHeight(height uint64) {
 				break
 			}
 		}
+		log.Warn("updateLatestScanHeight error", "err", err)
 		time.Sleep(1 * time.Second)
 	}
 	_ = scanStatusFile.Sync()
@@ -252,8 +257,11 @@ func getBindAddress(p2shAddress string, isServer bool) (bindAddress string) {
 		err := client.RPCPost(&info, p2shSwapServerAPIAddress, "swap.GetP2shAddressInfo", p2shAddress)
 		if err == nil {
 			bindAddress = info.BindAddress
-		} else {
+		} else if !strings.Contains(err.Error(), mongodb.ErrItemNotFound.Error()) {
 			log.Debug("rpc call swap.GetP2shAddressInfo failed", "p2shAddress", p2shAddress, "err", err)
+			if strings.Contains(err.Error(), "connection refused") {
+				time.Sleep(10 * time.Second)
+			}
 		}
 	}
 	return bindAddress
@@ -263,7 +271,7 @@ func getBindAddress(p2shAddress string, isServer bool) (bindAddress string) {
 func (b *Bridge) CheckP2shTransaction(txHash string, isServer bool, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug("Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return nil, tokens.ErrTxNotFound
 	}
 	var bindAddress, p2shAddress string

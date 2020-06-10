@@ -22,7 +22,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	txStatus := &tokens.TxStatus{}
 	elcstStatus, err := b.GetElectTransactionStatus(txHash)
 	if err != nil {
-		log.Debug("Bridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
 		return txStatus
 	}
 	if elcstStatus.BlockHash != nil {
@@ -35,7 +35,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 		txStatus.BlockHeight = *elcstStatus.BlockHeight
 		latest, err := b.GetLatestBlockNumber()
 		if err != nil {
-			log.Debug("Bridge::GetLatestBlockNumber fail", "err", err)
+			log.Debug(b.TokenConfig.BlockChain+" Bridge::GetLatestBlockNumber fail", "err", err)
 			return txStatus
 		}
 		if latest > txStatus.BlockHeight {
@@ -96,7 +96,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug("Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	txStatus := tx.Status
@@ -146,11 +146,11 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	swapInfo.From = from // From
 
 	// check sender
-	if from == dcrmAddress {
+	if swapInfo.From == dcrmAddress {
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 
-	if !tokens.CheckSwapValue(common.BigFromUint64(value), b.IsSrc) {
+	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
@@ -158,13 +158,13 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	if !bindOk {
 		log.Debug("wrong memo", "memo", memoScript)
 		return swapInfo, tokens.ErrTxWithWrongMemo
-	} else if !tokens.DstBridge.IsValidAddress(bindAddress) {
-		log.Debug("wrong bind address in memo", "bind", bindAddress)
+	} else if !tokens.DstBridge.IsValidAddress(swapInfo.Bind) {
+		log.Debug("wrong bind address in memo", "bind", swapInfo.Bind)
 		return swapInfo, tokens.ErrTxWithWrongMemo
 	}
 
 	if !allowUnstable {
-		log.Debug("verify swapin pass", "from", from, "to", dcrmAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+		log.Debug("verify swapin pass", "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfo, nil
 }

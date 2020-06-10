@@ -29,7 +29,7 @@ func (b *Bridge) VerifyP2shTransaction(txHash string, bindAddress string, allowU
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug("Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	txStatus := tx.Status
@@ -72,16 +72,16 @@ func (b *Bridge) VerifyP2shTransaction(txHash string, bindAddress string, allowU
 	swapInfo.From = from // From
 
 	// check sender
-	if from == b.TokenConfig.DcrmAddress {
+	if swapInfo.From == b.TokenConfig.DcrmAddress {
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 
-	if !tokens.CheckSwapValue(common.BigFromUint64(value), b.IsSrc) {
+	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
 	if !allowUnstable {
-		log.Debug("verify p2sh swapin pass", "from", from, "to", p2shAddress, "bind", bindAddress, "value", value, "txid", *tx.Txid, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+		log.Debug("verify p2sh swapin pass", "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfo, nil
 }

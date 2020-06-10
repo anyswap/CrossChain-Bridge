@@ -136,7 +136,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 	swapInfo.Hash = txHash // Hash
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug("Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	if tx.BlockNumber != nil {
@@ -240,7 +240,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug("Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	if tx.BlockNumber != nil {

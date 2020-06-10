@@ -2,7 +2,6 @@ package client
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -99,11 +98,9 @@ func addRawPostBody(req *http.Request, body string) error {
 }
 
 func doRequest(req *http.Request, timeoutSeconds int) (*http.Response, error) {
-	if timeoutSeconds <= 0 {
-		return http.DefaultClient.Do(req)
+	client := http.Client{}
+	if timeoutSeconds > 0 {
+		client.Timeout = time.Duration(timeoutSeconds) * time.Second
 	}
-	timeout := time.Duration(timeoutSeconds) * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	return http.DefaultClient.Do(req.WithContext(ctx))
+	return client.Do(req)
 }
