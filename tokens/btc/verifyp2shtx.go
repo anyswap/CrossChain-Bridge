@@ -72,7 +72,7 @@ func (b *Bridge) VerifyP2shTransaction(txHash string, bindAddress string, allowU
 	swapInfo.From = from // From
 
 	// check sender
-	if swapInfo.From == b.TokenConfig.DcrmAddress {
+	if swapInfo.From == swapInfo.To {
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 

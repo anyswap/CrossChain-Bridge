@@ -63,7 +63,8 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
-	if common.IsEqualIgnoreCase(swapInfo.Bind, dcrmAddress) {
+	// check sender
+	if swapInfo.From == swapInfo.To {
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 
@@ -71,7 +72,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
-	log.Debug("verify swapout stable pass", "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+	log.Debug("verify erc20 swapin pass", "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	return swapInfo, nil
 }
 
@@ -112,7 +113,8 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
-	if common.IsEqualIgnoreCase(swapInfo.Bind, dcrmAddress) {
+	// check sender
+	if swapInfo.From == swapInfo.To {
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 

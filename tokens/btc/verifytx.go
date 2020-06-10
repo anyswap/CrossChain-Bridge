@@ -146,7 +146,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	swapInfo.From = from // From
 
 	// check sender
-	if swapInfo.From == dcrmAddress {
+	if swapInfo.From == swapInfo.To {
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 

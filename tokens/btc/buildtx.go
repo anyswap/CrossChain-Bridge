@@ -67,16 +67,14 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	if err != nil {
 		return nil, err
 	}
-	txOut := wire.NewTxOut(amount.Int64(), pkscript)
-	txOuts = append(txOuts, txOut)
+	txOuts = append(txOuts, wire.NewTxOut(amount.Int64(), pkscript))
 
 	if memo != "" {
 		nullScript, err := txscript.NullDataScript([]byte(memo))
 		if err != nil {
 			return nil, err
 		}
-		txOut = wire.NewTxOut(0, nullScript)
-		txOuts = append(txOuts, txOut)
+		txOuts = append(txOuts, wire.NewTxOut(0, nullScript))
 	}
 
 	inputSource := func(target btcutil.Amount) (
