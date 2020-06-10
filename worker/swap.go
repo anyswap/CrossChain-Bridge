@@ -22,13 +22,12 @@ var (
 )
 
 // StartSwapJob swap job
-func StartSwapJob() error {
+func StartSwapJob() {
 	go startSwapinSwapJob()
 	go startSwapoutSwapJob()
-	return nil
 }
 
-func startSwapinSwapJob() error {
+func startSwapinSwapJob() {
 	swapinSwapStarter.Do(func() {
 		logWorker("swap", "start swapin swap job")
 		for {
@@ -48,10 +47,9 @@ func startSwapinSwapJob() error {
 			restInJob(restIntervalInDoSwapJob)
 		}
 	})
-	return nil
 }
 
-func startSwapoutSwapJob() error {
+func startSwapoutSwapJob() {
 	swapoutSwapStarter.Do(func() {
 		logWorker("swapout", "start swapout swap job")
 		for {
@@ -71,7 +69,6 @@ func startSwapoutSwapJob() error {
 			restInJob(restIntervalInDoSwapJob)
 		}
 	})
-	return nil
 }
 
 func findSwapinsToSwap() ([]*mongodb.MgoSwap, error) {
@@ -96,7 +93,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	if res.SwapTx != "" {
 		if res.Status == mongodb.TxNotSwapped {
-			mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+			_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 		}
 		return fmt.Errorf("%v already swapped to %v", txid, res.SwapTx)
 	}
@@ -108,7 +105,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 				SwapTx:   history.matchTx,
 				SwapType: tokens.SwapinType,
 			}
-			updateSwapinResult(txid, matchTx)
+			_ = updateSwapinResult(txid, matchTx)
 			logWorker("swapin", "ignore swapped swapin", "txid", txid, "matchTx", history.matchTx)
 			return fmt.Errorf("found swapped in history, txid=%v, matchTx=%v", txid, history.matchTx)
 		}
@@ -169,8 +166,8 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	if err != nil {
 		logWorkerError("swapin", "update swapin status to TxSwapFailed", err, "txid", txid)
-		mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
-		mongodb.UpdateSwapinResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
+		_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
+		_ = mongodb.UpdateSwapinResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
 		return err
 	}
 	return nil
@@ -186,7 +183,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	if res.SwapTx != "" {
 		if res.Status == mongodb.TxNotSwapped {
-			mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
+			_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
 		}
 		return fmt.Errorf("%v already swapped to %v", txid, res.SwapTx)
 	}
@@ -198,7 +195,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 				SwapTx:   history.matchTx,
 				SwapType: tokens.SwapoutType,
 			}
-			updateSwapoutResult(txid, matchTx)
+			_ = updateSwapoutResult(txid, matchTx)
 			logWorker("swapout", "ignore swapped swapout", "txid", txid, "matchTx", history.matchTx)
 			return fmt.Errorf("found swapped out history, txid=%v, matchTx=%v", txid, history.matchTx)
 		}
@@ -258,8 +255,8 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	if err != nil {
 		logWorkerError("swapout", "update swapout status to TxSwapFailed", err, "txid", txid)
-		mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
-		mongodb.UpdateSwapoutResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
+		_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
+		_ = mongodb.UpdateSwapoutResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
 	}
 	return err
 

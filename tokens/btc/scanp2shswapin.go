@@ -27,7 +27,7 @@ var (
 )
 
 // StartP2shSwapinScanJob scan job
-func (b *Bridge) StartP2shSwapinScanJob(isServer bool) error {
+func (b *Bridge) StartP2shSwapinScanJob(isServer bool) {
 	p2shSwapinScanStarter.Do(func() {
 		if isServer {
 			b.startP2shSwapinScanJobOnServer()
@@ -35,30 +35,29 @@ func (b *Bridge) StartP2shSwapinScanJob(isServer bool) error {
 			b.startP2shSwapinScanJobOnOracle()
 		}
 	})
-	return nil
 }
 
-func (b *Bridge) startP2shSwapinScanJobOnServer() error {
+func (b *Bridge) startP2shSwapinScanJobOnServer() {
 	log.Info("[scanp2sh] server start scan p2sh swapin job")
 
 	go b.scanP2shInTransactionPool(true)
 
-	return b.scanP2shTransactionHistory(true)
+	b.scanP2shTransactionHistory(true)
 }
 
-func (b *Bridge) startP2shSwapinScanJobOnOracle() error {
+func (b *Bridge) startP2shSwapinScanJobOnOracle() {
 	log.Info("[scanp2sh] oracle start scan p2sh swapin job")
 
 	// init p2shSwapServerAPIAddress
 	p2shSwapServerAPIAddress = getSwapServerAPIAddress()
 	if p2shSwapServerAPIAddress == "" {
 		log.Info("[scanp2sh] stop scan p2sh swapin job as no Oracle.ServerAPIAddress configed")
-		return nil
+		return
 	}
 
 	go b.scanP2shInTransactionPool(false)
 
-	return b.scanP2shTransactionHistory(false)
+	b.scanP2shTransactionHistory(false)
 }
 
 func (b *Bridge) processP2shSwapin(txid string, isServer bool) error {
@@ -128,6 +127,10 @@ func openBtcScanStatusFile() (err error) {
 func getLatestScanHeight() uint64 {
 	buf := make([]byte, 33)
 	n, err := scanStatusFile.ReadAt(buf, 0)
+	if err != nil {
+		log.Error("read scanstatus file failed", "err", err)
+		return 0
+	}
 	fileContent := strings.TrimSpace(string(buf[:n]))
 	height, err := common.GetUint64FromStr(fileContent)
 	if err != nil {
@@ -138,13 +141,21 @@ func getLatestScanHeight() uint64 {
 	return height
 }
 
-func updateLatestScanHeight(height uint64) error {
+func updateLatestScanHeight(height uint64) {
 	fileContent := fmt.Sprintf("%d\n", height)
-	scanStatusFile.Seek(0, 0)
-	scanStatusFile.WriteString(fileContent)
-	scanStatusFile.Sync()
+	retryCount := 3
+	for i := 0; i < retryCount; i++ {
+		_, err := scanStatusFile.Seek(0, 0)
+		if err == nil {
+			_, err = scanStatusFile.WriteString(fileContent)
+			if err == nil {
+				break
+			}
+		}
+		time.Sleep(1 * time.Second)
+	}
+	_ = scanStatusFile.Sync()
 	log.Info("[scanp2sh] updateLatestScanHeight", "height", height)
-	return nil
 }
 
 func (b *Bridge) getLatestBlock() uint64 {
@@ -159,11 +170,11 @@ func (b *Bridge) getLatestBlock() uint64 {
 	}
 }
 
-func (b *Bridge) scanP2shTransactionHistory(isServer bool) error {
+func (b *Bridge) scanP2shTransactionHistory(isServer bool) {
 	err := openBtcScanStatusFile()
 	if err != nil {
 		log.Error("openBtcScanStatusFile failed", "err", err)
-		return err
+		return
 	}
 
 	startHeight := getLatestScanHeight()
@@ -200,7 +211,7 @@ func (b *Bridge) scanP2shTransactionHistory(isServer bool) error {
 				continue
 			}
 			for _, txid := range txids {
-				b.processP2shSwapin(txid, isServer)
+				_ = b.processP2shSwapin(txid, isServer)
 			}
 			scannedBlocks.cacheScannedBlock(blockHash, h)
 			log.Info("[scanp2sh] scanned tx history", "blockHash", blockHash, "height", h, "txs", len(txids))
@@ -215,10 +226,9 @@ func (b *Bridge) scanP2shTransactionHistory(isServer bool) error {
 		}
 		time.Sleep(restIntervalInP2shScanJob)
 	}
-	return nil
 }
 
-func (b *Bridge) scanP2shInTransactionPool(isServer bool) error {
+func (b *Bridge) scanP2shInTransactionPool(isServer bool) {
 	log.Info("[scanp2sh] start scan tx pool loop")
 	for {
 		txids, err := b.GetPoolTxidList()
@@ -228,11 +238,10 @@ func (b *Bridge) scanP2shInTransactionPool(isServer bool) error {
 			continue
 		}
 		for _, txid := range txids {
-			b.processP2shSwapin(txid, isServer)
+			_ = b.processP2shSwapin(txid, isServer)
 		}
 		time.Sleep(restIntervalInScanJob)
 	}
-	return nil
 }
 
 func getBindAddress(p2shAddress string, isServer bool) (bindAddress string) {

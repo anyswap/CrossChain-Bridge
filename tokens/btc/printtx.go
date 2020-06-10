@@ -39,7 +39,7 @@ func AuthoredTxToString(authtx interface{}, pretty bool) string {
 	}
 
 	buf := bytes.NewBuffer(make([]byte, 0, tx.SerializeSize()))
-	tx.Serialize(buf)
+	_ = tx.Serialize(buf)
 	txid := tx.TxHash().String()
 
 	var encTx EncMsgTx

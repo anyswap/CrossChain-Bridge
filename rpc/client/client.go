@@ -20,9 +20,8 @@ func HTTPGet(url string, params, headers map[string]string, timeout int) (*http.
 
 	addParams(req, params)
 	addHeaders(req, headers)
-	addTimeoutContext(req, timeout)
 
-	return http.DefaultClient.Do(req)
+	return doRequest(req, timeout)
 }
 
 // HTTPPost http post
@@ -37,9 +36,8 @@ func HTTPPost(url string, body interface{}, params, headers map[string]string, t
 	if err := addPostBody(req, body); err != nil {
 		return nil, err
 	}
-	addTimeoutContext(req, timeout)
 
-	return http.DefaultClient.Do(req)
+	return doRequest(req, timeout)
 }
 
 // HTTPRawPost http raw post
@@ -54,9 +52,8 @@ func HTTPRawPost(url string, body string, params, headers map[string]string, tim
 	if err := addRawPostBody(req, body); err != nil {
 		return nil, err
 	}
-	addTimeoutContext(req, timeout)
 
-	return http.DefaultClient.Do(req)
+	return doRequest(req, timeout)
 }
 
 func addParams(req *http.Request, params map[string]string) {
@@ -70,10 +67,8 @@ func addParams(req *http.Request, params map[string]string) {
 }
 
 func addHeaders(req *http.Request, headers map[string]string) {
-	if headers != nil {
-		for key, val := range headers {
-			req.Header.Add(key, val)
-		}
+	for key, val := range headers {
+		req.Header.Add(key, val)
 	}
 }
 
@@ -103,10 +98,12 @@ func addRawPostBody(req *http.Request, body string) error {
 	return nil
 }
 
-func addTimeoutContext(req *http.Request, timeoutSeconds int) {
-	if timeoutSeconds > 0 {
-		timeout := time.Duration(timeoutSeconds) * time.Second
-		ctx, _ := context.WithTimeout(context.Background(), timeout)
-		req.WithContext(ctx)
+func doRequest(req *http.Request, timeoutSeconds int) (*http.Response, error) {
+	if timeoutSeconds <= 0 {
+		return http.DefaultClient.Do(req)
 	}
+	timeout := time.Duration(timeoutSeconds) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return http.DefaultClient.Do(req.WithContext(ctx))
 }

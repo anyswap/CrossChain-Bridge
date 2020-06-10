@@ -91,10 +91,10 @@ type CrossChainBridge interface {
 
 	GetLatestBlockNumber() (uint64, error)
 
-	StartSwapinScanJob(isServer bool) error
-	StartSwapoutScanJob(isServer bool) error
-	StartSwapinResultScanJob(isServer bool) error
-	StartSwapoutResultScanJob(isServer bool) error
+	StartSwapinScanJob(isServer bool)
+	StartSwapoutScanJob(isServer bool)
+	StartSwapinResultScanJob(isServer bool)
+	StartSwapoutResultScanJob(isServer bool)
 }
 
 // SetLatestBlockHeight set latest block height
@@ -189,10 +189,7 @@ func CheckSwapValue(value *big.Int, isSrc bool) bool {
 		return false
 	}
 	maxValue := ToBits(*token.MaximumSwap, decimals)
-	if new(big.Int).Sub(value, toleranceBits).Cmp(maxValue) > 0 {
-		return false
-	}
-	return true
+	return new(big.Int).Sub(value, toleranceBits).Cmp(maxValue) <= 0
 }
 
 // CalcSwappedValue calc swapped value (get rid of fee)

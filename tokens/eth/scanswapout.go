@@ -23,7 +23,7 @@ var (
 )
 
 // StartSwapoutScanJob scan job
-func (b *Bridge) StartSwapoutScanJob(isServer bool) error {
+func (b *Bridge) StartSwapoutScanJob(isServer bool) {
 	swapoutScanStarter.Do(func() {
 		if isServer {
 			b.startSwapoutScanJobOnServer()
@@ -31,10 +31,9 @@ func (b *Bridge) StartSwapoutScanJob(isServer bool) error {
 			b.startSwapoutScanJobOnOracle()
 		}
 	})
-	return nil
 }
 
-func (b *Bridge) startSwapoutScanJobOnServer() error {
+func (b *Bridge) startSwapoutScanJobOnServer() {
 	log.Info("[scanswapout] start scan swapout job")
 
 	isProcessed := func(txid string, txheight uint64) bool {
@@ -47,7 +46,7 @@ func (b *Bridge) startSwapoutScanJobOnServer() error {
 	go b.scanFirstLoop(true, isProcessed)
 
 	log.Info("[scanswapout] start second scan loop")
-	return b.scanTransactionHistory(true, isProcessed)
+	b.scanTransactionHistory(true, isProcessed)
 }
 
 func (b *Bridge) processSwapout(txid string, isServer bool) error {
@@ -66,7 +65,7 @@ func (b *Bridge) processSwapout(txid string, isServer bool) error {
 
 func (b *Bridge) isSwapoutExistByQuery(txid string) bool {
 	var result interface{}
-	client.RPCPost(&result, swapServerAPIAddress, "swap.GetSwapout", txid)
+	_ = client.RPCPost(&result, swapServerAPIAddress, "swap.GetSwapout", txid)
 	return result != nil
 }
 
@@ -113,17 +112,16 @@ func (b *Bridge) getLatestHeight() uint64 {
 		log.Error("[scanswapout] get latest block number error", "err", err)
 		time.Sleep(retryIntervalInScanJob)
 	}
-	return 0
 }
 
-func (b *Bridge) startSwapoutScanJobOnOracle() error {
+func (b *Bridge) startSwapoutScanJobOnOracle() {
 	log.Info("[scanswapout] start scan swapout job")
 
 	// init swapServerAPIAddress
 	swapServerAPIAddress = getSwapServerAPIAddress()
 	if swapServerAPIAddress == "" {
 		log.Info("[scanswapout] stop scan swapout job as no Oracle.ServerAPIAddress configed")
-		return nil
+		return
 	}
 
 	go b.scanTransactionPool(false)
@@ -135,10 +133,10 @@ func (b *Bridge) startSwapoutScanJobOnOracle() error {
 	isProcessed := func(txid string, txheight uint64) bool {
 		return txheight <= oracleLatestScanned
 	}
-	return b.scanTransactionHistory(false, isProcessed)
+	b.scanTransactionHistory(false, isProcessed)
 }
 
-func (b *Bridge) scanFirstLoop(isServer bool, isProcessed func(string, uint64) bool) error {
+func (b *Bridge) scanFirstLoop(isServer bool, isProcessed func(string, uint64) bool) {
 	// first loop process all tx history no matter whether processed before
 	log.Info("[scanswapout] start first scan loop")
 	latest := b.getLatestHeight()
@@ -152,15 +150,14 @@ func (b *Bridge) scanFirstLoop(isServer bool, isProcessed func(string, uint64) b
 		for _, log := range logs {
 			txid := log.TxHash.String()
 			if !isProcessed(txid, height) {
-				b.processSwapout(txid, isServer)
+				_ = b.processSwapout(txid, isServer)
 			}
 		}
 		height--
 	}
-	return nil
 }
 
-func (b *Bridge) scanTransactionHistory(isServer bool, isProcessed func(string, uint64) bool) error {
+func (b *Bridge) scanTransactionHistory(isServer bool, isProcessed func(string, uint64) bool) {
 	log.Info("[scanswapout] start scan tx history loop")
 	var (
 		confirmations = *b.TokenConfig.Confirmations
@@ -190,7 +187,7 @@ func (b *Bridge) scanTransactionHistory(isServer bool, isProcessed func(string, 
 				rescan = true
 				break // rescan if already processed
 			}
-			b.processSwapout(txid, isServer)
+			_ = b.processSwapout(txid, isServer)
 		}
 		if rescan {
 			time.Sleep(restIntervalInScanJob)
@@ -198,10 +195,9 @@ func (b *Bridge) scanTransactionHistory(isServer bool, isProcessed func(string, 
 			height--
 		}
 	}
-	return nil
 }
 
-func (b *Bridge) scanTransactionPool(isServer bool) error {
+func (b *Bridge) scanTransactionPool(isServer bool) {
 	log.Info("[scanswapout] start scan tx pool loop")
 	for {
 		txs, err := b.GetPendingTransactions()
@@ -212,9 +208,8 @@ func (b *Bridge) scanTransactionPool(isServer bool) error {
 		}
 		for _, tx := range txs {
 			txid := tx.Hash.String()
-			b.processSwapout(txid, isServer)
+			_ = b.processSwapout(txid, isServer)
 		}
 		time.Sleep(restIntervalInScanJob)
 	}
-	return nil
 }

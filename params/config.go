@@ -234,5 +234,5 @@ func SetDataDir(datadir string) {
 	if datadir != "" {
 		DataDir = datadir
 	}
-	os.MkdirAll(DataDir, os.ModePerm)
+	_ = os.MkdirAll(DataDir, os.ModePerm)
 }

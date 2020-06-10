@@ -271,7 +271,7 @@ func TestStreamRaw(t *testing.T) {
 	}
 	for i, tt := range tests {
 		s := NewStream(bytes.NewReader(unhex(tt.input)), 0)
-		s.List()
+		_, _ = s.List()
 
 		want := unhex(tt.output)
 		raw, err := s.Raw()
@@ -354,7 +354,6 @@ type tailUint struct {
 type tailPrivateFields struct {
 	A    uint
 	Tail []uint `rlp:"tail"`
-	x, y bool   //lint:ignore U1000 unused fields required for testing purposes.
 }
 
 type nilListUint struct {
@@ -832,7 +831,7 @@ func ExampleDecode_structTagNil() {
 	var normalRules struct {
 		String *string
 	}
-	Decode(bytes.NewReader(input), &normalRules)
+	_ = Decode(bytes.NewReader(input), &normalRules)
 	fmt.Printf("normal: String = %q\n", *normalRules.String)
 
 	// This type uses the struct tag.
@@ -840,7 +839,7 @@ func ExampleDecode_structTagNil() {
 	var withEmptyOK struct {
 		String *string `rlp:"nil"`
 	}
-	Decode(bytes.NewReader(input), &withEmptyOK)
+	_ = Decode(bytes.NewReader(input), &withEmptyOK)
 	fmt.Printf("with nil tag: String = %v\n", withEmptyOK.String)
 
 	// Output:

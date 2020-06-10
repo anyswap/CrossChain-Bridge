@@ -35,7 +35,7 @@ func main() {
 // Compiling
 
 func doInstall(cmdline []string) {
-	flag.CommandLine.Parse(cmdline)
+	_ = flag.CommandLine.Parse(cmdline)
 	env := build.Env()
 
 	// Check Go version. People regularly open issues about compilation

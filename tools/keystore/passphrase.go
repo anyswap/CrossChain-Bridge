@@ -34,9 +34,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 
-	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/common/math"
 	"github.com/fsn-dev/crossChain-Bridge/tools/crypto"
 	"github.com/pborman/uuid"
@@ -66,33 +64,6 @@ const (
 	scryptR     = 8
 	scryptDKLen = 32
 )
-
-type keyStorePassphrase struct {
-	keysDirPath string
-	scryptN     int
-	scryptP     int
-	// skipKeyFileVerification disables the security-feature which does
-	// reads and decrypts any newly created keyfiles. This should be 'false' in all
-	// cases except tests -- setting this to 'true' is not recommended.
-	skipKeyFileVerification bool
-}
-
-func (ks keyStorePassphrase) GetKey(addr common.Address, filename, auth string) (*Key, error) {
-	// Load the key from the keystore and decrypt its contents
-	keyjson, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	key, err := DecryptKey(keyjson, auth)
-	if err != nil {
-		return nil, err
-	}
-	// Make sure we're really operating on the requested key (no swap attacks)
-	if key.Address != addr {
-		return nil, fmt.Errorf("key content mismatch: have account %x, want %x", key.Address, addr)
-	}
-	return key, nil
-}
 
 // EncryptDataV3 encrypts the data given as 'data' with the password 'auth'.
 func EncryptDataV3(data, auth []byte, scryptN, scryptP int) (CryptoJSON, error) {

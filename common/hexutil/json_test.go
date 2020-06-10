@@ -246,7 +246,7 @@ func BenchmarkUnmarshalUint64(b *testing.B) {
 	input := []byte(`"0x123456789abcdf"`)
 	for i := 0; i < b.N; i++ {
 		var v Uint64
-		v.UnmarshalJSON(input)
+		_ = v.UnmarshalJSON(input)
 	}
 }
 

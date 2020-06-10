@@ -15,7 +15,7 @@ import (
 func Keccak256Hash(data ...[]byte) (h Hash) {
 	d := sha3.NewLegacyKeccak256()
 	for _, b := range data {
-		d.Write(b)
+		_, _ = d.Write(b)
 	}
 	d.Sum(h[:0])
 	return h
@@ -23,7 +23,7 @@ func Keccak256Hash(data ...[]byte) (h Hash) {
 
 // IsEqualIgnoreCase returns if s1 and s2 are equal ignore case.
 func IsEqualIgnoreCase(s1, s2 string) bool {
-	return strings.ToLower(s1) == strings.ToLower(s2)
+	return strings.EqualFold(s1, s2)
 }
 
 // BigFromUint64 new big int from uint64 value.

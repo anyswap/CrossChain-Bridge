@@ -20,7 +20,7 @@ import (
 func StartAPIServer() {
 	rpcserver := rpc.NewServer()
 	rpcserver.RegisterCodec(rpcjson.NewCodec(), "application/json")
-	rpcserver.RegisterService(new(rpcapi.RPCAPI), "swap")
+	_ = rpcserver.RegisterService(new(rpcapi.RPCAPI), "swap")
 
 	r := mux.NewRouter()
 	r.Handle("/rpc", rpcserver)
@@ -91,5 +91,5 @@ func StartAPIServer() {
 }
 
 func warnHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, fmt.Sprintf("Forbid '%v' on '%v'", r.Method, r.RequestURI))
+	fmt.Fprintf(w, "Forbid '%v' on '%v'\n", r.Method, r.RequestURI)
 }

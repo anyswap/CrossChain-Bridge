@@ -29,15 +29,14 @@ var (
 )
 
 // StartAcceptSignJob accept job
-func StartAcceptSignJob() error {
+func StartAcceptSignJob() {
 	acceptSignStarter.Do(func() {
 		logWorker("accept", "start accept sign job")
 		acceptSign()
 	})
-	return nil
 }
 
-func acceptSign() error {
+func acceptSign() {
 	for {
 		signInfo, err := dcrm.GetCurNodeSignInfo()
 		if err != nil {
@@ -50,7 +49,7 @@ func acceptSign() error {
 			history := getAcceptSignHistory(keyID)
 			if history != nil {
 				logWorker("accept", "ignore accepted sign", "keyID", keyID, "result", history.result)
-				dcrm.DoAcceptSign(keyID, history.result)
+				_, _ = dcrm.DoAcceptSign(keyID, history.result)
 				continue
 			}
 			agreeResult := "AGREE"
@@ -77,7 +76,6 @@ func acceptSign() error {
 		}
 		time.Sleep(waitInterval)
 	}
-	return nil
 }
 
 func verifySignInfo(signInfo *dcrm.SignInfoData) error {

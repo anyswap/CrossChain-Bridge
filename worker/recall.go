@@ -15,12 +15,11 @@ var (
 )
 
 // StartRecallJob recall job
-func StartRecallJob() error {
+func StartRecallJob() {
 	go startSwapinRecallJob()
-	return nil
 }
 
-func startSwapinRecallJob() error {
+func startSwapinRecallJob() {
 	swapinRecallStarter.Do(func() {
 		logWorker("recall", "start swapin recall job")
 		for {
@@ -40,7 +39,6 @@ func startSwapinRecallJob() error {
 			restInJob(restIntervalInRecallJob)
 		}
 	})
-	return nil
 }
 
 func findSwapinsToRecall() ([]*mongodb.MgoSwap, error) {
@@ -57,7 +55,7 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	}
 	if res.SwapTx != "" {
 		if res.Status == mongodb.TxToBeRecall {
-			mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+			_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
 		}
 		return fmt.Errorf("%v already swapped to %v", txid, res.SwapTx)
 	}
@@ -115,8 +113,8 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		time.Sleep(retrySendTxInterval)
 	}
 	if err != nil {
-		mongodb.UpdateSwapinStatus(txid, mongodb.TxRecallFailed, now(), err.Error())
-		mongodb.UpdateSwapinResultStatus(txid, mongodb.TxRecallFailed, now(), err.Error())
+		_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxRecallFailed, now(), err.Error())
+		_ = mongodb.UpdateSwapinResultStatus(txid, mongodb.TxRecallFailed, now(), err.Error())
 		return err
 	}
 	return nil

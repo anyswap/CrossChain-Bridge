@@ -6,7 +6,7 @@ import (
 )
 
 // StartScanJob scan job
-func StartScanJob(isServer bool) error {
+func StartScanJob(isServer bool) {
 	go tokens.SrcBridge.StartSwapinScanJob(isServer)
 	go tokens.DstBridge.StartSwapinResultScanJob(isServer)
 	go tokens.DstBridge.StartSwapoutScanJob(isServer)
@@ -15,6 +15,4 @@ func StartScanJob(isServer bool) error {
 	if btcBridge, ok := tokens.SrcBridge.(*btc.Bridge); ok {
 		go btcBridge.StartP2shSwapinScanJob(isServer)
 	}
-
-	return nil
 }

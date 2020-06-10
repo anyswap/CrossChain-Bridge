@@ -173,7 +173,7 @@ func (tx *Transaction) To() *common.Address {
 
 func rlpHash(x interface{}) (h common.Hash) {
 	hw := sha3.NewLegacyKeccak256()
-	rlp.Encode(hw, x)
+	_ = rlp.Encode(hw, x)
 	hw.Sum(h[:0])
 	return h
 }
@@ -203,7 +203,7 @@ func (tx *Transaction) Size() StorageSize {
 		return size.(StorageSize)
 	}
 	c := writeCounter(0)
-	rlp.Encode(&c, &tx.data)
+	_ = rlp.Encode(&c, &tx.data)
 	tx.size.Store(StorageSize(c))
 	return StorageSize(c)
 }

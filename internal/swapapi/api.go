@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	errSwapExist    = newRPCError(-32097, "swap already exist")
+	errSwapExist = newRPCError(-32097, "swap already exist")
 	errNotBridge = newRPCError(-32096, "bridge is not btc")
 )
 
@@ -247,7 +247,7 @@ func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddres
 	if addToDatabase {
 		result, _ := mongodb.FindP2shAddress(bindAddress)
 		if result == nil {
-			mongodb.AddP2shAddress(&mongodb.MgoP2shAddress{
+			_ = mongodb.AddP2shAddress(&mongodb.MgoP2shAddress{
 				Key:         bindAddress,
 				P2shAddress: p2shAddr,
 			})

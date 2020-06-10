@@ -126,7 +126,7 @@ type SwapInfo struct {
 
 // BuildTxArgs struct
 type BuildTxArgs struct {
-	SwapInfo `json:"swapInfo,omitempty`
+	SwapInfo `json:"swapInfo,omitempty"`
 	From     string     `json:"from,omitempty"`
 	To       string     `json:"to,omitempty"`
 	Value    *big.Int   `json:"value,omitempty"`
@@ -145,8 +145,8 @@ func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 
 // AllExtras struct
 type AllExtras struct {
-	BtcExtra *BtcExtraArgs `json:"btcExtra,omitempty`
-	EthExtra *EthExtraArgs `json:"ethExtra,omitempty`
+	BtcExtra *BtcExtraArgs `json:"btcExtra,omitempty"`
+	EthExtra *EthExtraArgs `json:"ethExtra,omitempty"`
 }
 
 // EthExtraArgs struct

@@ -14,13 +14,12 @@ var (
 )
 
 // StartVerifyJob verify job
-func StartVerifyJob() error {
+func StartVerifyJob() {
 	go startSwapinVerifyJob()
 	go startSwapoutVerifyJob()
-	return nil
 }
 
-func startSwapinVerifyJob() error {
+func startSwapinVerifyJob() {
 	swapinVerifyStarter.Do(func() {
 		logWorker("verify", "start swapin verify job")
 		for {
@@ -42,10 +41,9 @@ func startSwapinVerifyJob() error {
 			restInJob(restIntervalInVerifyJob)
 		}
 	})
-	return nil
 }
 
-func startSwapoutVerifyJob() error {
+func startSwapoutVerifyJob() {
 	swapoutVerifyStarter.Do(func() {
 		logWorker("verify", "start swapout verify job")
 		for {
@@ -67,7 +65,6 @@ func startSwapoutVerifyJob() error {
 			restInJob(restIntervalInVerifyJob)
 		}
 	})
-	return nil
 }
 
 func findSwapinsToVerify() ([]*mongodb.MgoSwap, error) {

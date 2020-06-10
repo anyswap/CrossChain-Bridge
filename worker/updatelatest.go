@@ -13,7 +13,7 @@ var (
 )
 
 // StartUpdateLatestBlockHeightJob update latest block height job
-func StartUpdateLatestBlockHeightJob() error {
+func StartUpdateLatestBlockHeightJob() {
 	updateLatestBlockHeightStarter.Do(func() {
 		logWorker("updatelatest", "start update latest block height job")
 		for {
@@ -22,31 +22,28 @@ func StartUpdateLatestBlockHeightJob() error {
 			time.Sleep(updateLatestBlockHeightInterval)
 		}
 	})
-	return nil
 }
 
-func updateSrcLatestBlockHeight() error {
+func updateSrcLatestBlockHeight() {
 	srcLatest, err := tokens.SrcBridge.GetLatestBlockNumber()
 	if err != nil {
 		logWorkerError("updatelatest", "get src latest block number error", err)
-		return err
+		return
 	}
 	if tokens.SrcLatestBlockHeight != srcLatest {
 		tokens.SrcLatestBlockHeight = srcLatest
 		logWorker("updatelatest", "update src latest block number", "latest", srcLatest)
 	}
-	return nil
 }
 
-func updateDstLatestBlockHeight() error {
+func updateDstLatestBlockHeight() {
 	dstLatest, err := tokens.DstBridge.GetLatestBlockNumber()
 	if err != nil {
 		logWorkerError("updatelatest", "get dest latest block number error", err)
-		return err
+		return
 	}
 	if tokens.DstLatestBlockHeight != dstLatest {
 		tokens.DstLatestBlockHeight = dstLatest
 		logWorker("updatelatest", "update dest latest block number", "latest", dstLatest)
 	}
-	return nil
 }

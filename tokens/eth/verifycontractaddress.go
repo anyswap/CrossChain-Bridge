@@ -47,7 +47,7 @@ func (b *Bridge) VerifyContractCode(contract string, codePartsSlice ...map[strin
 	}
 	for _, codeParts := range codePartsSlice {
 		for key, part := range codeParts {
-			if bytes.Index(code, part) == -1 {
+			if !bytes.Contains(code, part) {
 				return fmt.Errorf("contract byte code miss '%v' bytes '%x'", key, part)
 			}
 		}

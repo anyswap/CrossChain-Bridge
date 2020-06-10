@@ -36,7 +36,10 @@ func getOrInitCollection(table string, collection **mgo.Collection, indexKey ...
 	if *collection == nil {
 		*collection = database.C(table)
 		if len(indexKey) != 0 {
-			(*collection).EnsureIndexKey(indexKey...)
+			err := (*collection).EnsureIndexKey(indexKey...)
+			if err != nil {
+				log.Error("EnsureIndexKey error", "table", table, "indexKey", indexKey)
+			}
 		}
 	}
 	return *collection
@@ -59,7 +62,6 @@ func getCollection(table string) *mgo.Collection {
 	default:
 		panic("unknown talbe " + table)
 	}
-	return nil
 }
 
 // --------------- swapin --------------------------------
@@ -332,7 +334,7 @@ func updateSwapResultStatus(tbName string, txid string, status SwapStatus, times
 	if status == MatchTxStable {
 		swapResult, err := findSwapResult(tbName, txid)
 		if err == nil {
-			UpdateSwapStatistics(swapResult.Value, swapResult.SwapValue, isSwapin)
+			_ = UpdateSwapStatistics(swapResult.Value, swapResult.SwapValue, isSwapin)
 		}
 	}
 	return mgoError(err)

@@ -22,7 +22,7 @@ var (
 )
 
 // StartSwapinScanJob scann job
-func (b *Bridge) StartSwapinScanJob(isServer bool) error {
+func (b *Bridge) StartSwapinScanJob(isServer bool) {
 	swapinScanStarter.Do(func() {
 		if isServer {
 			b.startSwapinScanJobOnServer()
@@ -30,10 +30,9 @@ func (b *Bridge) StartSwapinScanJob(isServer bool) error {
 			b.startSwapinScanJobOnOracle()
 		}
 	})
-	return nil
 }
 
-func (b *Bridge) startSwapinScanJobOnServer() error {
+func (b *Bridge) startSwapinScanJobOnServer() {
 	log.Info("[scanswapin] server start scan swapin job")
 
 	isProcessed := func(txid string) bool {
@@ -46,7 +45,7 @@ func (b *Bridge) startSwapinScanJobOnServer() error {
 	go b.scanFirstLoop(true, isProcessed)
 
 	log.Info("[scanswapin] server start second scan loop")
-	return b.scanTransactionHistory(true, isProcessed)
+	b.scanTransactionHistory(true, isProcessed)
 }
 
 func (b *Bridge) processSwapin(txid string, isServer bool) error {
@@ -65,7 +64,7 @@ func (b *Bridge) processSwapin(txid string, isServer bool) error {
 
 func (b *Bridge) isSwapinExistByQuery(txid string) bool {
 	var result interface{}
-	client.RPCPost(&result, swapServerAPIAddress, "swap.GetSwapin", txid)
+	_ = client.RPCPost(&result, swapServerAPIAddress, "swap.GetSwapin", txid)
 	return result != nil
 }
 
@@ -96,14 +95,14 @@ func getSwapServerAPIAddress() string {
 	return ""
 }
 
-func (b *Bridge) startSwapinScanJobOnOracle() error {
+func (b *Bridge) startSwapinScanJobOnOracle() {
 	log.Info("[scanswapin] oracle start scan swapin job")
 
 	// init swapServerAPIAddress
 	swapServerAPIAddress = getSwapServerAPIAddress()
 	if swapServerAPIAddress == "" {
 		log.Info("[scanswapin] stop scan swapin job as no Oracle.ServerAPIAddress configed")
-		return nil
+		return
 	}
 
 	go b.scanTransactionPool(false)
@@ -126,10 +125,10 @@ func (b *Bridge) startSwapinScanJobOnOracle() error {
 	isProcessed := func(txid string) bool {
 		return txid == oracleLatestSeenTx
 	}
-	return b.scanTransactionHistory(false, isProcessed)
+	b.scanTransactionHistory(false, isProcessed)
 }
 
-func (b *Bridge) scanFirstLoop(isServer bool, isProcessed func(string) bool) error {
+func (b *Bridge) scanFirstLoop(isServer bool, isProcessed func(string) bool) {
 	// first loop process all tx history no matter whether processed before
 	log.Info("[scanswapin] start first scan loop")
 	var (
@@ -153,19 +152,18 @@ func (b *Bridge) scanFirstLoop(isServer bool, isProcessed func(string) bool) err
 		}
 		for _, tx := range txHistory {
 			if isTooOld(tx.Status.BlockTime) {
-				return nil
+				return
 			}
 			txid := *tx.Txid
 			if !isProcessed(txid) {
-				b.processSwapin(txid, isServer)
+				_ = b.processSwapin(txid, isServer)
 			}
 		}
 		lastSeenTxid = *txHistory[len(txHistory)-1].Txid
 	}
-	return nil
 }
 
-func (b *Bridge) scanTransactionHistory(isServer bool, isProcessed func(string) bool) error {
+func (b *Bridge) scanTransactionHistory(isServer bool, isProcessed func(string) bool) {
 	log.Info("[scanswapin] start scan tx history loop")
 	var (
 		lastSeenTxid  = ""
@@ -194,7 +192,7 @@ func (b *Bridge) scanTransactionHistory(isServer bool, isProcessed func(string) 
 				rescan = true
 				break // rescan if already processed
 			}
-			b.processSwapin(txid, isServer)
+			_ = b.processSwapin(txid, isServer)
 		}
 		if rescan {
 			lastSeenTxid = ""
@@ -206,10 +204,9 @@ func (b *Bridge) scanTransactionHistory(isServer bool, isProcessed func(string) 
 			lastSeenTxid = *txHistory[len(txHistory)-1].Txid
 		}
 	}
-	return nil
 }
 
-func (b *Bridge) scanTransactionPool(isServer bool) error {
+func (b *Bridge) scanTransactionPool(isServer bool) {
 	log.Info("[scanswapin] start scan tx pool loop")
 	for {
 		txids, err := b.GetPoolTxidList()
@@ -219,9 +216,8 @@ func (b *Bridge) scanTransactionPool(isServer bool) error {
 			continue
 		}
 		for _, txid := range txids {
-			b.processSwapin(txid, isServer)
+			_ = b.processSwapin(txid, isServer)
 		}
 		time.Sleep(restIntervalInScanJob)
 	}
-	return nil
 }

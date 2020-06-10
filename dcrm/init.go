@@ -47,6 +47,10 @@ func SetDcrmGroup(group string, thresh string, mod string) {
 	mode = mod
 }
 
+func GetGroupID() string {
+	return groupID
+}
+
 // SetSignGroups set sign subgroups
 func SetSignGroups(groups []string) {
 	signGroups = groups

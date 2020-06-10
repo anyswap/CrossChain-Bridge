@@ -31,7 +31,6 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 	default:
 		panic("Unsupported block chain " + id)
 	}
-	return nil
 }
 
 // InitCrossChainBridge init bridge

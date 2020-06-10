@@ -54,7 +54,7 @@ var errInvalidPubkey = errors.New("invalid secp256k1 public key")
 func Keccak256(data ...[]byte) []byte {
 	d := sha3.NewLegacyKeccak256()
 	for _, b := range data {
-		d.Write(b)
+		_, _ = d.Write(b)
 	}
 	return d.Sum(nil)
 }
@@ -64,7 +64,7 @@ func Keccak256(data ...[]byte) []byte {
 func Keccak256Hash(data ...[]byte) (h common.Hash) {
 	d := sha3.NewLegacyKeccak256()
 	for _, b := range data {
-		d.Write(b)
+		_, _ = d.Write(b)
 	}
 	d.Sum(h[:0])
 	return h
@@ -74,7 +74,7 @@ func Keccak256Hash(data ...[]byte) (h common.Hash) {
 func Keccak512(data ...[]byte) []byte {
 	d := sha3.NewLegacyKeccak512()
 	for _, b := range data {
-		d.Write(b)
+		_, _ = d.Write(b)
 	}
 	return d.Sum(nil)
 }
@@ -215,10 +215,4 @@ func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
 func PubkeyToAddress(p ecdsa.PublicKey) common.Address {
 	pubBytes := FromECDSAPub(&p)
 	return common.BytesToAddress(Keccak256(pubBytes[1:])[12:])
-}
-
-func zeroBytes(bytes []byte) {
-	for i := range bytes {
-		bytes[i] = 0
-	}
 }

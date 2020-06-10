@@ -14,7 +14,7 @@ func writeResponse(w http.ResponseWriter, resp interface{}, err error) {
 	if err == nil {
 		jsonData, _ := json.Marshal(resp)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonData)
+		_, _ = w.Write(jsonData)
 	} else {
 		fmt.Fprintln(w, err.Error())
 	}

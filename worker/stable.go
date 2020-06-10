@@ -14,13 +14,12 @@ var (
 )
 
 // StartStableJob stable job
-func StartStableJob() error {
+func StartStableJob() {
 	go startSwapinStableJob()
 	go startSwapoutStableJob()
-	return nil
 }
 
-func startSwapinStableJob() error {
+func startSwapinStableJob() {
 	swapinStableStarter.Do(func() {
 		logWorker("stable", "start update swapin stable job")
 		for {
@@ -40,10 +39,9 @@ func startSwapinStableJob() error {
 			restInJob(restIntervalInStableJob)
 		}
 	})
-	return nil
 }
 
-func startSwapoutStableJob() error {
+func startSwapoutStableJob() {
 	swapoutStableStarter.Do(func() {
 		logWorker("stable", "start update swapout stable job")
 		for {
@@ -63,7 +61,6 @@ func startSwapoutStableJob() error {
 			restInJob(restIntervalInStableJob)
 		}
 	})
-	return nil
 }
 
 func findSwapinResultsToStable() ([]*mongodb.MgoSwapResult, error) {

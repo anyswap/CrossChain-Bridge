@@ -24,15 +24,6 @@ type Key struct {
 	PrivateKey *ecdsa.PrivateKey
 }
 
-type keyStore interface {
-	// Loads and decrypts the key from disk.
-	GetKey(addr common.Address, filename string, auth string) (*Key, error)
-	// Writes and encrypts the key.
-	StoreKey(filename string, k *Key, auth string) error
-	// Joins filename with the key directory unless it is already absolute.
-	JoinPath(filename string) string
-}
-
 type plainKeyJSON struct {
 	Address    string `json:"address"`
 	PrivateKey string `json:"privatekey"`
