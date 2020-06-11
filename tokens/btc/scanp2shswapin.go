@@ -128,11 +128,10 @@ func openBtcScanStatusFile() (err error) {
 func getLatestScanHeight() uint64 {
 	buf := make([]byte, 33)
 	n, err := scanStatusFile.ReadAt(buf, 0)
-	if err == io.EOF {
-		return 0
-	}
-	if err != nil {
-		log.Error("read scanstatus file failed", "err", err)
+	if n == 0 {
+		if err != nil && err != io.EOF {
+			log.Error("read scanstatus file failed", "err", err)
+		}
 		return 0
 	}
 	fileContent := strings.TrimSpace(string(buf[:n]))
