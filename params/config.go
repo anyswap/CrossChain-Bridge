@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
+	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
@@ -191,7 +193,21 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 
 // CheckConfig check oracle config
 func (c *OracleConfig) CheckConfig(isServer bool) (err error) {
-	return nil
+	serverAPIAddress := c.ServerAPIAddress
+	if serverAPIAddress == "" {
+		return nil
+	}
+	var version string
+	for {
+		err = client.RPCPost(&version, serverAPIAddress, "swap.GetVersionInfo")
+		if err == nil {
+			log.Info("oracle get server version info succeed", "version", version)
+			break
+		}
+		log.Warn("oracle connect ServerAPIAddress failed", "ServerAPIAddress", serverAPIAddress, "err", err)
+		time.Sleep(3 * time.Second)
+	}
+	return err
 }
 
 // LoadConfig load config
@@ -223,7 +239,7 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 		}
 		log.Println("LoadConfig finished.", string(bs))
 		if err := CheckConfig(isServer); err != nil {
-			panic(fmt.Sprintf("Check server config error: %v", err))
+			panic(fmt.Sprintf("Check config failed. %v", err))
 		}
 	})
 	return serverConfig
