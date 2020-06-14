@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
@@ -38,7 +36,6 @@ type ServerConfig struct {
 	DestToken   *tokens.TokenConfig
 	DestGateway *tokens.GatewayConfig
 	Dcrm        *DcrmConfig
-	Oracle      *OracleConfig          `toml:",omitempty"`
 	BtcExtra    *tokens.BtcExtraConfig `toml:",omitempty"`
 }
 
@@ -53,11 +50,6 @@ type DcrmConfig struct {
 	Pubkey        *string `toml:",omitempty"`
 	KeystoreFile  *string `toml:",omitempty"`
 	PasswordFile  *string `toml:",omitempty"`
-}
-
-// OracleConfig oracle config
-type OracleConfig struct {
-	ServerAPIAddress string
 }
 
 // APIServerConfig api service config
@@ -112,20 +104,11 @@ func CheckConfig(isServer bool) (err error) {
 	if config.Identifier == "" {
 		return errors.New("server must config non empty 'Identifier'")
 	}
-	if isServer {
-		if config.MongoDB == nil {
-			return errors.New("server must config 'MongoDB'")
-		}
-		if config.APIServer == nil {
-			return errors.New("server must config 'APIServer'")
-		}
-	} else {
-		if config.Oracle != nil {
-			err = config.Oracle.CheckConfig(isServer)
-			if err != nil {
-				return err
-			}
-		}
+	if config.MongoDB == nil {
+		return errors.New("server must config 'MongoDB'")
+	}
+	if config.APIServer == nil {
+		return errors.New("server must config 'APIServer'")
 	}
 	if config.SrcToken == nil {
 		return errors.New("server must config 'SrcToken'")
@@ -189,25 +172,6 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 		return errors.New("dcrm must config 'PasswordFile'")
 	}
 	return nil
-}
-
-// CheckConfig check oracle config
-func (c *OracleConfig) CheckConfig(isServer bool) (err error) {
-	serverAPIAddress := c.ServerAPIAddress
-	if serverAPIAddress == "" {
-		return nil
-	}
-	var version string
-	for {
-		err = client.RPCPost(&version, serverAPIAddress, "swap.GetVersionInfo")
-		if err == nil {
-			log.Info("oracle get server version info succeed", "version", version)
-			break
-		}
-		log.Warn("oracle connect ServerAPIAddress failed", "ServerAPIAddress", serverAPIAddress, "err", err)
-		time.Sleep(3 * time.Second)
-	}
-	return err
 }
 
 // LoadConfig load config

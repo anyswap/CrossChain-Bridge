@@ -2,17 +2,15 @@ package worker
 
 import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
-	"github.com/fsn-dev/crossChain-Bridge/tokens/btc"
 )
 
 // StartScanJob scan job
 func StartScanJob(isServer bool) {
-	go tokens.SrcBridge.StartSwapinScanJob(isServer)
-	go tokens.DstBridge.StartSwapinResultScanJob(isServer)
-	go tokens.DstBridge.StartSwapoutScanJob(isServer)
-	go tokens.SrcBridge.StartSwapoutResultScanJob(isServer)
+	go tokens.SrcBridge.StartPoolTransactionScanJob()
+	go tokens.SrcBridge.StartChainTransactionScanJob()
+	go tokens.SrcBridge.StartSwapHistoryScanJob()
 
-	if btcBridge, ok := tokens.SrcBridge.(*btc.Bridge); ok {
-		go btcBridge.StartP2shSwapinScanJob(isServer)
-	}
+	go tokens.DstBridge.StartPoolTransactionScanJob()
+	go tokens.DstBridge.StartChainTransactionScanJob()
+	go tokens.DstBridge.StartSwapHistoryScanJob()
 }

@@ -91,10 +91,9 @@ type CrossChainBridge interface {
 
 	GetLatestBlockNumber() (uint64, error)
 
-	StartSwapinScanJob(isServer bool)
-	StartSwapoutScanJob(isServer bool)
-	StartSwapinResultScanJob(isServer bool)
-	StartSwapoutResultScanJob(isServer bool)
+	StartPoolTransactionScanJob()
+	StartChainTransactionScanJob()
+	StartSwapHistoryScanJob()
 }
 
 // SetLatestBlockHeight set latest block height

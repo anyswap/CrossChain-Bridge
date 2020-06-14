@@ -5,10 +5,42 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
 	"time"
 )
+
+var (
+	httpClient *http.Client
+)
+
+func init() {
+	httpClient = createHTTPClient()
+}
+
+const (
+	maxIdleConns        int = 200
+	maxIdleConnsPerHost int = 100
+	idleConnTimeout     int = 90
+)
+
+// createHTTPClient for connection re-use
+func createHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			MaxIdleConns:        maxIdleConns,
+			MaxIdleConnsPerHost: maxIdleConnsPerHost,
+			IdleConnTimeout:     time.Duration(idleConnTimeout) * time.Second,
+		},
+		Timeout: defaultTimeout * time.Second,
+	}
+}
 
 // HTTPGet http get
 func HTTPGet(url string, params, headers map[string]string, timeout int) (*http.Response, error) {
@@ -98,9 +130,6 @@ func addRawPostBody(req *http.Request, body string) error {
 }
 
 func doRequest(req *http.Request, timeoutSeconds int) (*http.Response, error) {
-	client := http.Client{}
-	if timeoutSeconds > 0 {
-		client.Timeout = time.Duration(timeoutSeconds) * time.Second
-	}
-	return client.Do(req)
+	httpClient.Timeout = time.Duration(timeoutSeconds) * time.Second
+	return httpClient.Do(req)
 }

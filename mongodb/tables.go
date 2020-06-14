@@ -7,8 +7,11 @@ const (
 	tbSwapoutResults string = "SwapoutResults"
 	tbP2shAddresses  string = "P2shAddresses"
 	tbSwapStatistics string = "SwapStatistics"
+	tbLatestScanInfo string = "LatestScanInfo"
 
-	keyOfSwapStatistics string = "latest"
+	keyOfSwapStatistics    string = "latest"
+	keyOfSrcLatestScanInfo string = "srclatest"
+	keyOfDstLatestScanInfo string = "dstlatest"
 )
 
 // MgoSwap registered swap
@@ -69,4 +72,11 @@ type MgoSwapStatistics struct {
 	StableSwapoutCount int    `bson:"swapoutcount"`
 	TotalSwapoutValue  string `bson:"totalswapoutvalue"`
 	TotalSwapoutFee    string `bson:"totalswapoutfee"`
+}
+
+// MgoLatestScanInfo latest scan info
+type MgoLatestScanInfo struct {
+	Key         string `bson:"_id"`
+	BlockHeight uint64 `bson:"blockheight"`
+	Timestamp   int64  `bson:"timestamp"`
 }

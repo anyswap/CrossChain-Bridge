@@ -38,6 +38,20 @@ func (b *Bridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
 	return result, nil
 }
 
+func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
+	gateway := b.GatewayConfig
+	url := gateway.APIAddress
+	var result *types.RPCBlock
+	err := client.RPCPost(&result, url, "eth_getBlockByNumber", types.ToBlockNumArg(number), false)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, errors.New("block not found")
+	}
+	return result, nil
+}
+
 // GetTransactionByHash call eth_getTransactionByHash
 func (b *Bridge) GetTransactionByHash(txHash string) (*types.RPCTransaction, error) {
 	gateway := b.GatewayConfig

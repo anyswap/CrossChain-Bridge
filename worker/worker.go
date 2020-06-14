@@ -8,14 +8,24 @@ import (
 
 const interval = 10 * time.Millisecond
 
-// StartServerWork start swap server work
-func StartServerWork() {
+// StartWork start swap server work
+func StartWork(isServer bool) {
 	logWorker("worker", "start server worker")
 
 	bridge.InitCrossChainBridge(true)
 
+	go StartUpdateLatestBlockHeightJob()
+	time.Sleep(interval)
+
 	go StartScanJob(true)
 	time.Sleep(interval)
+
+	go StartAcceptSignJob()
+	time.Sleep(interval)
+
+	if !isServer {
+		return
+	}
 
 	go StartVerifyJob()
 	time.Sleep(interval)
@@ -26,20 +36,5 @@ func StartServerWork() {
 	go StartStableJob()
 	time.Sleep(interval)
 
-	go StartUpdateLatestBlockHeightJob()
-	time.Sleep(interval)
-
 	//go StartRecallJob()
-}
-
-// StartOracleWork start swap oracle work
-func StartOracleWork() {
-	logWorker("worker", "start oracle worker")
-
-	bridge.InitCrossChainBridge(false)
-
-	go StartScanJob(false)
-	time.Sleep(interval)
-
-	go StartAcceptSignJob()
 }

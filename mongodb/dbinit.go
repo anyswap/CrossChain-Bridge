@@ -20,6 +20,7 @@ var (
 func MongoServerInit(mongourl, dbname string) {
 	initMongodb(mongourl, dbname)
 	mongoConnect()
+	InitCollections()
 	go checkMongoSession()
 }
 

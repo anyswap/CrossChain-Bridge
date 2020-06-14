@@ -1,33 +1,29 @@
-# server and oracle config
+# a short string to identify the bridge
 Identifier = "BTC2ETH"
 
-# server config
+# modgodb database connection config
 [MongoDB]
 DbURL = "localhost:27017"
 DbName = "databasename"
 UserName = "username"
 Password = "password"
 
-# server config
+# bridge API service
 [ApiServer]
 Port = 11556
 AllowedOrigins = []
 
-# oracle config
-[Oracle]
-# post swap register requests to this address
-ServerApiAddress = "http://127.0.0.1:11556/rpc"
-
-# server config
+# customize fees in building btc transaction
 [BtcExtra]
 MinRelayFee   = 400
 RelayFeePerKb = 2000
 FromPublicKey = ""
 
-# server and oracle config
+# source token config
 [SrcToken]
 BlockChain = "Bitcoin"
 NetID = "TestNet3"
+ID = "BTC"
 Name = "Bitcoin Coin"
 Symbol = "BTC"
 Decimals = 8
@@ -39,14 +35,15 @@ MaximumSwap = 1000.0
 MinimumSwap = 0.00001
 SwapFeeRate = 0.001
 
-# server and oracle config
+# source blockchain gateway config
 [SrcGateway]
 ApiAddress = "http://47.107.50.83:3002"
 
-# server and oracle config
+# dest token config
 [DestToken]
 BlockChain = "Ethereum"
 NetID = "Rinkeby"
+ID = "mBTC"
 Name = "SMPC Bitcoin"
 Symbol = "mBTC"
 Decimals = 8
@@ -58,33 +55,34 @@ MaximumSwap = 100.0
 MinimumSwap = 0.00001
 SwapFeeRate = 0.001
 
-# server and oracle config
+# dest blockchain gateway config
 [DestGateway]
 ApiAddress = "http://5.189.139.168:8018"
 
-# server and oracle config
+# DCRM config
 [Dcrm]
+# dcrm group ID
 GroupID = "74245ef03937fa75b979bdaa6a5952a93f53e021e0832fca4c2ad8952572c9b70f49e291de7e024b0f7fc54ec5875210db2ac775dba44448b3972b75af074d17"
 
-# server config
+# dcrm account public key
 Pubkey = "045c8648793e4867af465691685000ae841dccab0b011283139d2eae454b569d5789f01632e13a75a5aad8480140e895dd671cae3639f935750bea7ae4b5a2512e"
 
-# server config
+# dcrm sub groups for signing (server only)
 SignGroups = [
 	"38a93f457c793ac3ee242b2c050a403774738e6558cfaa620fe5577bb15a28f63c39adcc0778497e5009a9ee776a0778ffcad4e95827e69efa21b893b8a78793",
 	"bb1dfe1ec046cc3a3b88408ae03976aabffe459b40e5def09e76f5d4c7a917133241da9da7fc05e3e172fab54ce3129a9a492d52a5a09494d0b9c1e608f661bf"
 ]
 
-# NeededOracles=2,TotalOracles=3 represent '2/3' threshold
+# dcrm threshold (NeededOracles=2,TotalOracles=3 represent '2/3' threshold)
 NeededOracles = 2
 TotalOracles = 3
 
-# 0:managed 1:private
+# dcrm mode (0:managed 1:private)
 Mode = 0
 
-# server and oracle config (suggest using absolute path)
+# dcrm user keystore and password file (suggest using absolute path)
 KeystoreFile = "/home/xxx/accounts/keystore1"
 PasswordFile = "/home/xxx/accounts/password1"
 
-# server and oracle config (gdcrm node RPC address)
+# dcrm backend node (gdcrm node RPC address)
 RpcAddress = "http://127.0.0.1:2922"

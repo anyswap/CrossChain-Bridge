@@ -16,6 +16,7 @@ var (
 	collSwapoutResult  *mgo.Collection
 	collP2shAddress    *mgo.Collection
 	collSwapStatistics *mgo.Collection
+	collLatestScanInfo *mgo.Collection
 )
 
 const (
@@ -30,6 +31,7 @@ func deinintCollections() {
 	collSwapoutResult = nil
 	collP2shAddress = nil
 	collSwapStatistics = nil
+	collLatestScanInfo = nil
 }
 
 func getOrInitCollection(table string, collection **mgo.Collection, indexKey ...string) *mgo.Collection {
@@ -59,6 +61,8 @@ func getCollection(table string) *mgo.Collection {
 		return getOrInitCollection(table, &collP2shAddress, "p2shaddress")
 	case tbSwapStatistics:
 		return getOrInitCollection(table, &collSwapStatistics)
+	case tbLatestScanInfo:
+		return getOrInitCollection(table, &collLatestScanInfo)
 	default:
 		panic("unknown talbe " + table)
 	}
@@ -387,21 +391,12 @@ func getCountWithStatus(tbName string, status SwapStatus) (int, error) {
 
 // ------------------ statistics ------------------------
 
-// AddSwapStatistics add swap statistics
-func AddSwapStatistics(ms *MgoSwapStatistics) error {
-	return getCollection(tbSwapStatistics).Insert(ms)
-}
-
 // UpdateSwapStatistics update swap statistics
 func UpdateSwapStatistics(value string, swapValue string, isSwapin bool) error {
 	curr, err := FindSwapStatistics()
 	if err != nil {
-		ms := &MgoSwapStatistics{
+		curr = &MgoSwapStatistics{
 			Key: keyOfSwapStatistics,
-		}
-		err = AddSwapStatistics(ms)
-		if err != nil {
-			return mgoError(err)
 		}
 	}
 
@@ -512,4 +507,64 @@ func FindP2shBindAddress(p2shAddress string) (string, error) {
 		return "", mgoError(err)
 	}
 	return result.Key, nil
+}
+
+// ------------------ latest scan info ------------------------
+
+// UpdateLatestScanInfo update latest scan info
+func UpdateLatestScanInfo(isSrc bool, blockHeight uint64) error {
+	oldInfo, _ := FindLatestScanInfo(isSrc)
+	if oldInfo != nil {
+		oldHeight := oldInfo.BlockHeight
+		if blockHeight <= oldHeight {
+			return nil
+		}
+	}
+	var key string
+	if isSrc {
+		key = keyOfSrcLatestScanInfo
+	} else {
+		key = keyOfDstLatestScanInfo
+	}
+	updates := bson.M{
+		"blockheight": blockHeight,
+		"timestamp":   time.Now().Unix(),
+	}
+	err := getCollection(tbLatestScanInfo).UpdateId(key, bson.M{"$set": updates})
+	if err == nil {
+		log.Info("mongodb update lastest scan info", "isSrc", isSrc, "updates", updates)
+	} else {
+		log.Debug("mongodb update latest scan info", "isSrc", isSrc, "updates", updates, "err", err)
+	}
+	return mgoError(err)
+}
+
+// FindLatestScanInfo find latest scan info
+func FindLatestScanInfo(isSrc bool) (*MgoLatestScanInfo, error) {
+	var result MgoLatestScanInfo
+	var key string
+	if isSrc {
+		key = keyOfSrcLatestScanInfo
+	} else {
+		key = keyOfDstLatestScanInfo
+	}
+	err := getCollection(tbLatestScanInfo).FindId(key).One(&result)
+	return &result, mgoError(err)
+}
+
+// InitCollections init some tables
+func InitCollections() {
+	_ = getCollection(tbSwapStatistics).Insert(
+		&MgoSwapStatistics{
+			Key: keyOfSwapStatistics,
+		},
+	)
+	_ = getCollection(tbLatestScanInfo).Insert(
+		&MgoLatestScanInfo{
+			Key: keyOfSrcLatestScanInfo,
+		},
+		&MgoLatestScanInfo{
+			Key: keyOfDstLatestScanInfo,
+		},
+	)
 }
