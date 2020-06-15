@@ -296,3 +296,8 @@ func P2shSwapin(txid *string, bindAddr *string) (*PostResult, error) {
 	log.Info("[api] add p2sh swapin", "swap", swap)
 	return &SuccessPostResult, nil
 }
+
+// GetLatestScanInfo api
+func GetLatestScanInfo(isSrc bool) (*LatestScanInfo, error) {
+	return mongodb.FindLatestScanInfo(isSrc)
+}

@@ -12,20 +12,18 @@ const interval = 10 * time.Millisecond
 func StartWork(isServer bool) {
 	logWorker("worker", "start server worker")
 
-	bridge.InitCrossChainBridge(true)
+	bridge.InitCrossChainBridge(isServer)
 
-	go StartUpdateLatestBlockHeightJob()
-	time.Sleep(interval)
-
-	go StartScanJob(true)
-	time.Sleep(interval)
-
-	go StartAcceptSignJob()
+	go StartScanJob(isServer)
 	time.Sleep(interval)
 
 	if !isServer {
+		go StartAcceptSignJob()
 		return
 	}
+
+	go StartUpdateLatestBlockHeightJob()
+	time.Sleep(interval)
 
 	go StartVerifyJob()
 	time.Sleep(interval)

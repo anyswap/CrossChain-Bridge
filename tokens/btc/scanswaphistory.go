@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	"github.com/fsn-dev/crossChain-Bridge/mongodb"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/tools"
 )
 
 var (
@@ -13,12 +13,15 @@ var (
 	restIntervalInScanJob  = 3 * time.Second
 )
 
+// StartSwapHistoryScanJob scan job
 func (b *Bridge) StartSwapHistoryScanJob() {
-	log.Info("[scanhistory] start scan history job", "isSrc", b.IsSrc)
+	log.Info("[scanhistory] start scan swap history job", "isSrc", b.IsSrc)
 
 	isProcessed := func(txid string) bool {
-		swap, _ := mongodb.FindSwapin(txid)
-		return swap != nil
+		if b.IsSrc {
+			return tools.IsSwapinExist(txid)
+		}
+		return tools.IsSwapoutExist(txid)
 	}
 
 	go b.scanFirstLoop(isProcessed)
@@ -65,7 +68,7 @@ FIRST_LOOP:
 }
 
 func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
-	log.Info("[scanhistory] start scan tx history loop", "isSrc", b.IsSrc)
+	log.Info("[scanhistory] start scan swap history loop", "isSrc", b.IsSrc)
 	var (
 		lastSeenTxid = ""
 		rescan       = true
@@ -83,6 +86,7 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 		} else if rescan {
 			rescan = false
 		}
+		log.Info("[scanhistory] scan swap history", "isSrc", b.IsSrc, "count", len(txHistory))
 		for _, tx := range txHistory {
 			txid := *tx.Txid
 			if isProcessed(txid) {

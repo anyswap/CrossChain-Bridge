@@ -13,6 +13,7 @@ after building, the following files will be generated in `./build/bin` directory
 
 ```text
 swapserver	# server provide api service, and trigger swap processing
+swaporacle      # oracle take part in dcrm signing (can disagree illegal transaction)
 config.toml
 ```
 
@@ -29,10 +30,17 @@ Identifier should be a short string to identify the bridge (eg. `BTC2ETH`, `BTC2
 #### MongoDB
 
 MongoDB is used by the server to store swap status and history, you should config according to your modgodb database setting.
+(the swap oracle don't need it)
 
 #### ApiServer
 
 ApiServer is used by the server to provide API service to register swap and to provide history retrieving.
+(the swap oracle don't need it)
+
+#### Oracle
+
+Oracle is needed by the swap oracle to post swap register RPC requests to swap server
+(the swap server don't need `Oracle`).
 
 ### BtcExtra
 
@@ -58,6 +66,8 @@ DestGateway is used to do RPC request to verify transactions on dest blockchain,
 
 Dcrm is used to config DCRM node info and group info.
 
+`ServerAccount` is used to specify the server dcrm user (initiator of dcrm sign)
+
 for the swap server, `Pubkey` and `SignGroups` is needed for dcrm signing.
 
 Notice:
@@ -70,11 +80,12 @@ and assgin `KeystoreFile`, `PasswordFile` and `RpcAddress` etc. separatly.
 
 ```shell
 setsid ./build/bin/swapserver --verbosity 6 --config build/bin/config.toml --log build/bin/logs/server.log
+setsid ./build/bin/swaporacle --verbosity 6 --config build/bin/config.toml --log build/bin/logs/oracle.log
 ```
 
 ## Others
 
-`swapserver` has the following subcommands:
+`swapserver` and `swaporacle` has the following subcommands:
 
 ```text
 help       - to see hep info.
@@ -84,7 +95,7 @@ license - to show the license
 
 ## Preparations
 
-Running  `swapserver` to provide cross chain bridge service, we must prepare the following things firstly and config them rightly. Otherwise the program will not run or run rightly. To ensure this, we have add many checkings to the config items.
+Running  `swapserver` and `swaporacle` to provide cross chain bridge service, we must prepare the following things firstly and config them rightly. Otherwise the program will not run or run rightly. To ensure this, we have add many checkings to the config items.
 
 For the config file, please refer [config file example](https://github.com/fsn-dev/crossChain-Bridge/blob/master/params/config.toml)
 
@@ -110,7 +121,7 @@ For the config file, please refer [config file example](https://github.com/fsn-d
 
     We can get the corresponding `DCRM addresses` on supported blockchains. Then we should config `DcrmAddress` in `[SrcToken]` and `[DestToken]` section according to the blockchain of them.
 
-    We should config the `[Dcrm]` section accordingly（ eg. `GroupID`, `Pubkey`，`NeededOracles`， `TotalOracles`，`Mode`）
+    We should config the `[Dcrm]` section accordingly（ eg. `ServerAccount`, `GroupID`, `Pubkey`，`NeededOracles`， `TotalOracles`，`Mode`）
 
     And we should config the following `[Dcrm]` section items sparately for each user in the DCRM group:
 

@@ -1,15 +1,16 @@
 package tools
 
 // NewCachedScannedBlocks new cached scanned blocks
-func NewCachedScannedBlocks(capacity int) *cachedScannedBlocks {
-	return &cachedScannedBlocks{
+func NewCachedScannedBlocks(capacity int) *CachedScannedBlocks {
+	return &CachedScannedBlocks{
 		nextIndex: 0,
 		capacity:  capacity,
 		blocks:    make([]cachedScannedBlockRecord, capacity),
 	}
 }
 
-type cachedScannedBlocks struct {
+// CachedScannedBlocks cached scanned blocks
+type CachedScannedBlocks struct {
 	nextIndex int
 	capacity  int
 	blocks    []cachedScannedBlockRecord
@@ -20,7 +21,8 @@ type cachedScannedBlockRecord struct {
 	height uint64
 }
 
-func (c *cachedScannedBlocks) CacheScannedBlock(hash string, height uint64) {
+// CacheScannedBlock add cache block
+func (c *CachedScannedBlocks) CacheScannedBlock(hash string, height uint64) {
 	c.blocks[c.nextIndex] = cachedScannedBlockRecord{
 		hash:   hash,
 		height: height,
@@ -28,7 +30,8 @@ func (c *cachedScannedBlocks) CacheScannedBlock(hash string, height uint64) {
 	c.nextIndex = (c.nextIndex + 1) % c.capacity
 }
 
-func (c *cachedScannedBlocks) IsBlockScanned(blockHash string) bool {
+// IsBlockScanned return if cache block exist
+func (c *CachedScannedBlocks) IsBlockScanned(blockHash string) bool {
 	for _, block := range c.blocks {
 		if block.hash == blockHash {
 			return true

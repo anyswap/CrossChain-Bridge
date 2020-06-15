@@ -38,6 +38,7 @@ func (b *Bridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
 	return result, nil
 }
 
+// GetBlockByNumber call eth_getBlockByNumber
 func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
 	gateway := b.GatewayConfig
 	url := gateway.APIAddress

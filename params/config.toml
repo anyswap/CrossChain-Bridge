@@ -1,19 +1,24 @@
 # a short string to identify the bridge
 Identifier = "BTC2ETH"
 
-# modgodb database connection config
+# modgodb database connection config (server only)
 [MongoDB]
 DbURL = "localhost:27017"
 DbName = "databasename"
 UserName = "username"
 Password = "password"
 
-# bridge API service
-[ApiServer]
+# bridge API service (server only)
+[APIServer]
 Port = 11556
 AllowedOrigins = []
 
-# customize fees in building btc transaction
+# oracle config (oracle only)
+[Oracle]
+# post swap register RPC requests to this server
+ServerAPIAddress = "http://127.0.0.1:11556/rpc"
+
+# customize fees in building btc transaction (server only)
 [BtcExtra]
 MinRelayFee   = 400
 RelayFeePerKb = 2000
@@ -37,7 +42,7 @@ SwapFeeRate = 0.001
 
 # source blockchain gateway config
 [SrcGateway]
-ApiAddress = "http://47.107.50.83:3002"
+APIAddress = "http://47.107.50.83:3002"
 
 # dest token config
 [DestToken]
@@ -57,7 +62,7 @@ SwapFeeRate = 0.001
 
 # dest blockchain gateway config
 [DestGateway]
-ApiAddress = "http://5.189.139.168:8018"
+APIAddress = "http://5.189.139.168:8018"
 
 # DCRM config
 [Dcrm]
@@ -88,4 +93,4 @@ KeystoreFile = "/home/xxx/accounts/keystore1"
 PasswordFile = "/home/xxx/accounts/password1"
 
 # dcrm backend node (gdcrm node RPC address)
-RpcAddress = "http://127.0.0.1:2922"
+RPCAddress = "http://127.0.0.1:2922"

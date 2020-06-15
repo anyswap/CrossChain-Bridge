@@ -1,12 +1,9 @@
 package btc
 
 import (
-	"time"
-
-	"github.com/fsn-dev/crossChain-Bridge/dcrm"
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/tools"
 )
 
 func (b *Bridge) processTransaction(txid string) {
@@ -15,8 +12,7 @@ func (b *Bridge) processTransaction(txid string) {
 }
 
 func (b *Bridge) processSwapin(txid string) error {
-	swap, _ := mongodb.FindSwapin(txid)
-	if swap != nil {
+	if tools.IsSwapinExist(txid) {
 		return nil
 	}
 	swapInfo, err := b.VerifyTransaction(txid, true)
@@ -24,33 +20,15 @@ func (b *Bridge) processSwapin(txid string) error {
 		//log.Trace("[scan] processSwapin", "txid", txid, "err", err)
 		return err
 	}
-	err = b.registerSwapin(txid, swapInfo.Bind)
+	err = tools.RegisterSwapin(txid, swapInfo.Bind)
 	if err != nil {
 		log.Trace("[scan] processSwapin", "txid", txid, "err", err)
 	}
 	return err
 }
 
-func (b *Bridge) registerSwapin(txid string, bind string) error {
-	isServer := dcrm.IsSwapServer()
-	log.Info("[scan] register swapin", "isServer", isServer, "tx", txid, "bind", bind)
-	if isServer {
-		swap := &mongodb.MgoSwap{
-			Key:       txid,
-			TxType:    uint32(tokens.SwapinTx),
-			Bind:      bind,
-			TxID:      txid,
-			Status:    mongodb.TxNotStable,
-			Timestamp: time.Now().Unix(),
-		}
-		return mongodb.AddSwapin(swap)
-	}
-	return nil
-}
-
 func (b *Bridge) processP2shSwapin(txid string) error {
-	swap, _ := mongodb.FindSwapin(txid)
-	if swap != nil {
+	if tools.IsSwapinExist(txid) {
 		return nil
 	}
 	swapInfo, err := b.checkP2shTransaction(txid, true)
@@ -58,24 +36,11 @@ func (b *Bridge) processP2shSwapin(txid string) error {
 		//log.Trace("[scan] processP2shSwapin", "txid", txid, "err", err)
 		return err
 	}
-	err = b.registerP2shSwapin(txid, swapInfo.Bind)
+	err = tools.RegisterP2shSwapin(txid, swapInfo.Bind)
 	if err != nil {
 		log.Trace("[scan] processP2shSwapin", "txid", txid, "err", err)
 	}
 	return err
-}
-
-func (b *Bridge) registerP2shSwapin(txid string, bind string) error {
-	log.Info("[scan] register p2sh swapin", "tx", txid, "bind", bind)
-	swap := &mongodb.MgoSwap{
-		Key:       txid,
-		TxID:      txid,
-		TxType:    uint32(tokens.P2shSwapinTx),
-		Bind:      bind,
-		Status:    mongodb.TxNotStable,
-		Timestamp: time.Now().Unix(),
-	}
-	return mongodb.AddSwapin(swap)
 }
 
 func (b *Bridge) checkP2shTransaction(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
@@ -89,7 +54,7 @@ func (b *Bridge) checkP2shTransaction(txHash string, allowUnstable bool) (*token
 		switch *output.ScriptpubkeyType {
 		case "p2sh":
 			p2shAddress = *output.ScriptpubkeyAddress
-			bindAddress = getBindAddress(p2shAddress)
+			bindAddress = tools.GetP2shBindAddress(p2shAddress)
 			if bindAddress != "" {
 				break
 			}
@@ -99,9 +64,4 @@ func (b *Bridge) checkP2shTransaction(txHash string, allowUnstable bool) (*token
 		return nil, tokens.ErrTxWithWrongReceiver
 	}
 	return b.VerifyP2shTransaction(txHash, bindAddress, allowUnstable)
-}
-
-func getBindAddress(p2shAddress string) (bindAddress string) {
-	bindAddress, _ = mongodb.FindP2shBindAddress(p2shAddress)
-	return bindAddress
 }

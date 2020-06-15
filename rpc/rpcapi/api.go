@@ -205,3 +205,12 @@ func (s *RPCAPI) GetP2shAddressInfo(r *http.Request, p2shAddress *string, result
 	}
 	return err
 }
+
+// GetLatestScanInfo api
+func (s *RPCAPI) GetLatestScanInfo(r *http.Request, isSrc *bool, result *swapapi.LatestScanInfo) error {
+	res, err := swapapi.GetLatestScanInfo(*isSrc)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}

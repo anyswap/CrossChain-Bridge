@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/tools"
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
@@ -17,27 +17,18 @@ var (
 
 // StartSwapHistoryScanJob scan job
 func (b *Bridge) StartSwapHistoryScanJob() {
-	log.Info("[swaphistory] start scan history job", "isSrc", b.IsSrc)
+	log.Info("[swaphistory] start scan swap history job", "isSrc", b.IsSrc)
 
-	isProcessed := func(txid string, txheight uint64) bool {
-		swap, _ := mongodb.FindSwapout(txid)
-		return swap != nil
+	isProcessed := func(txid string) bool {
+		if b.IsSrc {
+			return tools.IsSwapinExist(txid)
+		}
+		return tools.IsSwapoutExist(txid)
 	}
 
 	go b.scanFirstLoop(isProcessed)
 
 	b.scanTransactionHistory(isProcessed)
-}
-
-func (b *Bridge) getLatestHeight() uint64 {
-	for {
-		latest, err := b.GetLatestBlockNumber()
-		if err == nil {
-			return latest
-		}
-		log.Error("[swaphistory] get latest block number error", "isSrc", b.IsSrc, "err", err)
-		time.Sleep(retryIntervalInScanJob)
-	}
 }
 
 func (b *Bridge) getSwapoutLogs(blockHeight uint64) ([]*types.RPCLog, error) {
@@ -47,10 +38,10 @@ func (b *Bridge) getSwapoutLogs(blockHeight uint64) ([]*types.RPCLog, error) {
 	return b.GetContractLogs(contractAddress, logTopic, blockHeight)
 }
 
-func (b *Bridge) scanFirstLoop(isProcessed func(string, uint64) bool) {
+func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 	// first loop process all tx history no matter whether processed before
 	log.Info("[swaphistory] start first scan loop", "isSrc", b.IsSrc)
-	latest := b.getLatestHeight()
+	latest := tools.LoopGetLatestBlockNumber(b)
 	for height := latest; height+maxScanHeight > latest; {
 		logs, err := b.getSwapoutLogs(height)
 		if err != nil {
@@ -60,23 +51,25 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string, uint64) bool) {
 		}
 		for _, log := range logs {
 			txid := log.TxHash.String()
-			if !isProcessed(txid, height) {
+			if !isProcessed(txid) {
 				b.processTransaction(txid)
 			}
 		}
 		height--
 	}
+
+	log.Info("[scanhistory] finish first scan loop", "isSrc", b.IsSrc)
 }
 
-func (b *Bridge) scanTransactionHistory(isProcessed func(string, uint64) bool) {
-	log.Info("[scanhistory] start scan tx history loop")
+func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
+	log.Info("[scanhistory] start scan swap history loop")
 	var (
 		height uint64
 		rescan = true
 	)
 	for {
 		if rescan {
-			height = b.getLatestHeight()
+			height = tools.LoopGetLatestBlockNumber(b)
 		}
 		logs, err := b.getSwapoutLogs(height)
 		if err != nil {
@@ -84,9 +77,10 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string, uint64) bool) {
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
+		log.Info("[scanhistory] scan swap history", "isSrc", b.IsSrc, "height", height, "count", len(logs))
 		for _, log := range logs {
 			txid := log.TxHash.String()
-			if isProcessed(txid, height) {
+			if isProcessed(txid) {
 				rescan = true
 				break // rescan if already processed
 			}

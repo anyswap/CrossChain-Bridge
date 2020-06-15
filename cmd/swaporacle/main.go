@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/cmd/utils"
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/params"
-	rpcserver "github.com/fsn-dev/crossChain-Bridge/rpc/server"
 	"github.com/fsn-dev/crossChain-Bridge/worker"
 	"github.com/urfave/cli/v2"
 )
@@ -59,18 +56,11 @@ func swaporacle(ctx *cli.Context) error {
 	}
 	exitCh := make(chan struct{})
 	configFile := utils.GetConfigFilePath(ctx)
-	config := params.LoadConfig(configFile, true)
+	params.LoadConfig(configFile, false)
 
 	params.SetDataDir(ctx.String(utils.DataDirFlag.Name))
 
-	dbConfig := config.MongoDB
-	mongoURL := dbConfig.GetURL()
-	dbName := dbConfig.DbName
-	mongodb.MongoServerInit(mongoURL, dbName)
-
 	worker.StartWork(false)
-	time.Sleep(100 * time.Millisecond)
-	rpcserver.StartAPIServer()
 
 	<-exitCh
 	return nil

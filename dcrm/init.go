@@ -51,6 +51,7 @@ func SetDcrmGroup(group string, thresh string, mod string) {
 	mode = mod
 }
 
+// GetGroupID return dcrm group id
 func GetGroupID() string {
 	return groupID
 }
@@ -81,6 +82,7 @@ func GetDcrmUser() common.Address {
 	return dcrmUser
 }
 
+// IsSwapServer returns if this dcrm user is the swap server
 func IsSwapServer() bool {
 	return GetDcrmUser() == ServerDcrmUser
 }

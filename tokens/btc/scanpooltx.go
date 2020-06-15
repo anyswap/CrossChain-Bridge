@@ -4,8 +4,14 @@ import (
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/log"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/tools"
 )
 
+var (
+	scannedTxs = tools.NewCachedScannedTxs(100)
+)
+
+// StartPoolTransactionScanJob scan job
 func (b *Bridge) StartPoolTransactionScanJob() {
 	log.Info("[scanpool] start scan pool tx job", "isSrc", b.IsSrc)
 	for {
@@ -15,8 +21,13 @@ func (b *Bridge) StartPoolTransactionScanJob() {
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
+		log.Info("[scanpool] scan pool tx", "isSrc", b.IsSrc, "txs", len(txids))
 		for _, txid := range txids {
+			if scannedTxs.IsTxScanned(txid) {
+				continue
+			}
 			b.processTransaction(txid)
+			scannedTxs.CacheScannedTx(txid)
 		}
 		time.Sleep(restIntervalInScanJob)
 	}
