@@ -61,6 +61,9 @@ ApiAddress = "http://5.189.139.168:8018"
 
 # DCRM config
 [Dcrm]
+# server dcrm user (initiator of dcrm sign)
+ServerAccount = "0x00c37841378920E2BA5151a5d1E074Cf367586c4"
+
 # dcrm group ID
 GroupID = "74245ef03937fa75b979bdaa6a5952a93f53e021e0832fca4c2ad8952572c9b70f49e291de7e024b0f7fc54ec5875210db2ac775dba44448b3972b75af074d17"
 

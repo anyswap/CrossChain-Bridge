@@ -22,12 +22,16 @@ var (
 	signGroups []string // sub groups for sign
 
 	keyWrapper     *keystore.Key
+	dcrmUser       common.Address
 	dcrmRPCAddress string
 
 	signPubkey string
 	groupID    string
 	threshold  string
 	mode       string
+
+	// ServerDcrmUser dcrm initiator for sign
+	ServerDcrmUser common.Address
 )
 
 // SetDcrmRPCAddress set dcrm node rpc address
@@ -68,5 +72,15 @@ func LoadKeyStore(keyfile, passfile string) error {
 		return err
 	}
 	keyWrapper = key
+	dcrmUser = keyWrapper.Address
 	return nil
+}
+
+// GetDcrmUser returns the dcrm user of specified keystore
+func GetDcrmUser() common.Address {
+	return dcrmUser
+}
+
+func IsSwapServer() bool {
+	return GetDcrmUser() == ServerDcrmUser
 }

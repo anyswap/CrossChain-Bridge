@@ -41,6 +41,7 @@ type ServerConfig struct {
 
 // DcrmConfig dcrm related config
 type DcrmConfig struct {
+	ServerAccount string
 	RPCAddress    *string
 	GroupID       *string
 	SignGroups    []string
@@ -86,6 +87,11 @@ func GetAPIPort() int {
 // GetIdentifier get identifier (to distiguish in dcrm accept)
 func GetIdentifier() string {
 	return GetConfig().Identifier
+}
+
+// GetServerDcrmUser get server dcrm user (initiator of dcrm sign)
+func GetServerDcrmUser() string {
+	return GetConfig().Dcrm.ServerAccount
 }
 
 // GetConfig get config items structure
@@ -156,6 +162,9 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	}
 	if c.Mode != 0 {
 		return errors.New("dcrm must config 'Mode' to 0 (managed)")
+	}
+	if c.ServerAccount == "" {
+		return errors.New("dcrm must config 'ServerAccount'")
 	}
 	if isServer {
 		if c.Pubkey == nil {

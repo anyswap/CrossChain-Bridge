@@ -123,6 +123,14 @@ func initDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	}
 	log.Info("Init dcrm, load keystore success")
 
+	dcrm.ServerDcrmUser = common.HexToAddress(dcrmConfig.ServerAccount)
+	log.Info("Init server dcrm user success", "ServerDcrmUser", dcrm.ServerDcrmUser)
+
+	if isServer && !dcrm.IsSwapServer() {
+		log.Error("wrong dcrm user for server", "have", dcrm.GetDcrmUser().String(), "want", dcrm.ServerDcrmUser.String())
+		panic("wrong dcrm user for server")
+	}
+
 	// init selfEnode
 	var selfEnode string
 	for {

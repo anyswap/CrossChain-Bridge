@@ -3,6 +3,7 @@ package btc
 import (
 	"time"
 
+	"github.com/fsn-dev/crossChain-Bridge/dcrm"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
@@ -31,16 +32,20 @@ func (b *Bridge) processSwapin(txid string) error {
 }
 
 func (b *Bridge) registerSwapin(txid string, bind string) error {
-	log.Info("[scan] register swapin", "tx", txid, "bind", bind)
-	swap := &mongodb.MgoSwap{
-		Key:       txid,
-		TxType:    uint32(tokens.SwapinTx),
-		Bind:      bind,
-		TxID:      txid,
-		Status:    mongodb.TxNotStable,
-		Timestamp: time.Now().Unix(),
+	isServer := dcrm.IsSwapServer()
+	log.Info("[scan] register swapin", "isServer", isServer, "tx", txid, "bind", bind)
+	if isServer {
+		swap := &mongodb.MgoSwap{
+			Key:       txid,
+			TxType:    uint32(tokens.SwapinTx),
+			Bind:      bind,
+			TxID:      txid,
+			Status:    mongodb.TxNotStable,
+			Timestamp: time.Now().Unix(),
+		}
+		return mongodb.AddSwapin(swap)
 	}
-	return mongodb.AddSwapin(swap)
+	return nil
 }
 
 func (b *Bridge) processP2shSwapin(txid string) error {

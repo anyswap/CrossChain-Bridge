@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/dcrm"
 	"github.com/fsn-dev/crossChain-Bridge/params"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
@@ -24,8 +25,9 @@ var (
 	retryInterval = 3 * time.Second
 	waitInterval  = 20 * time.Second
 
-	// ErrIdentifierMismatch identifier mismatch (will ignore sign with this error in accept)
-	ErrIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
+	// those errors will be ignored in accepting
+	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
+	errInitiatorMismatch  = errors.New("initiator mismatch")
 )
 
 // StartAcceptSignJob accept job
@@ -55,7 +57,8 @@ func acceptSign() {
 			agreeResult := "AGREE"
 			err := verifySignInfo(info)
 			switch err {
-			case ErrIdentifierMismatch,
+			case errIdentifierMismatch,
+				errInitiatorMismatch,
 				tokens.ErrTxNotStable,
 				tokens.ErrTxNotFound:
 				logWorkerTrace("accept", "ignore sign info", "keyID", keyID, "err", err)
@@ -79,16 +82,18 @@ func acceptSign() {
 }
 
 func verifySignInfo(signInfo *dcrm.SignInfoData) error {
-	msgHash := signInfo.MsgHash
+	if common.HexToAddress(signInfo.Account) != common.HexToAddress(params.GetServerDcrmUser()) {
+		return errInitiatorMismatch
+	}
 	msgContext := signInfo.MsgContext
 	logWorker("accept", "verifySignInfo", "msgContext", msgContext)
 	var args tokens.BuildTxArgs
 	err := json.Unmarshal([]byte(msgContext), &args)
 	if err != nil {
-		return ErrIdentifierMismatch
+		return errIdentifierMismatch
 	}
 	if args.Identifier != params.GetIdentifier() {
-		return ErrIdentifierMismatch
+		return errIdentifierMismatch
 	}
 	var (
 		srcBridge, dstBridge tokens.CrossChainBridge
@@ -136,7 +141,7 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	if err != nil {
 		return err
 	}
-	return dstBridge.VerifyMsgHash(rawTx, msgHash, args.Extra)
+	return dstBridge.VerifyMsgHash(rawTx, signInfo.MsgHash, args.Extra)
 }
 
 type acceptSignInfo struct {
