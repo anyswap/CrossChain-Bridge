@@ -35,4 +35,6 @@ func StartWork(isServer bool) {
 	time.Sleep(interval)
 
 	//go StartRecallJob()
+
+	go StartAggregateJob()
 }

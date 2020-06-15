@@ -232,11 +232,10 @@ func GetP2shAddressInfo(p2shAddress string) (*tokens.P2shAddressInfo, error) {
 }
 
 func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddressInfo, error) {
-	btcBridge, ok := tokens.SrcBridge.(*btc.Bridge)
-	if !ok {
+	if btc.BridgeInstance == nil {
 		return nil, errNotBridge
 	}
-	p2shAddr, redeemScript, err := btcBridge.GetP2shAddress(bindAddress)
+	p2shAddr, redeemScript, err := btc.BridgeInstance.GetP2shAddress(bindAddress)
 	if err != nil {
 		return nil, newRPCInternalError(err)
 	}
@@ -264,15 +263,14 @@ func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddres
 // P2shSwapin api
 func P2shSwapin(txid *string, bindAddr *string) (*PostResult, error) {
 	log.Debug("[api] receive P2shSwapin", "txid", *txid, "bindAddress", *bindAddr)
-	btcBridge, ok := tokens.SrcBridge.(*btc.Bridge)
-	if !ok {
+	if btc.BridgeInstance == nil {
 		return nil, errNotBridge
 	}
 	txidstr := *txid
 	if swap, _ := mongodb.FindSwapin(txidstr); swap != nil {
 		return nil, errSwapExist
 	}
-	_, err := btcBridge.VerifyP2shTransaction(txidstr, *bindAddr, true)
+	_, err := btc.BridgeInstance.VerifyP2shTransaction(txidstr, *bindAddr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32099, "verify p2sh swapin failed! "+err.Error())
 	}

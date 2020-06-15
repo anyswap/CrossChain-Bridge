@@ -35,18 +35,32 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	}
 
 	var (
-		tx        = authoredTx.Tx
-		msgHashes []string
-		rsvs      []string
+		msgHashes    []string
+		rsvs         []string
+		sigScripts   [][]byte
+		hasP2shInput bool
 	)
 
-	for i, pkscript := range authoredTx.PrevScripts {
-		sigHash, err := txscript.CalcSignatureHash(pkscript, hashType, tx, i)
+	for i, preScript := range authoredTx.PrevScripts {
+		sigScript := preScript
+		if txscript.IsPayToScriptHash(preScript) {
+			sigScript, err = b.getRedeemScriptByOutputScrpit(preScript)
+			if err != nil {
+				return nil, "", err
+			}
+			hasP2shInput = true
+		}
+
+		sigHash, err := txscript.CalcSignatureHash(sigScript, hashType, authoredTx.Tx, i)
 		if err != nil {
 			return nil, "", err
 		}
 		msgHash := hex.EncodeToString(sigHash)
 		msgHashes = append(msgHashes, msgHash)
+		sigScripts = append(sigScripts, sigScript)
+	}
+	if !hasP2shInput {
+		sigScripts = nil
 	}
 
 	for idx, msgHash := range msgHashes {
@@ -57,7 +71,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		rsvs = append(rsvs, rsv)
 	}
 
-	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, args)
+	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, sigScripts, args)
 }
 
 func (b *Bridge) verifyPublickeyData(pkData []byte, swapType tokens.SwapType) error {
@@ -75,7 +89,9 @@ func (b *Bridge) verifyPublickeyData(pkData []byte, swapType tokens.SwapType) er
 }
 
 // MakeSignedTransaction make signed tx
-func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash []string, rsv []string, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
+func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash []string, rsv []string,
+	sigScripts [][]byte, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
+
 	txIn := authoredTx.Tx.TxIn
 	if len(txIn) != len(msgHash) {
 		return nil, "", errors.New("mismatch number of msghashes and tx inputs")
@@ -83,9 +99,15 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash 
 	if len(txIn) != len(rsv) {
 		return nil, "", errors.New("mismatch number of signatures and tx inputs")
 	}
+	if sigScripts != nil && len(sigScripts) != len(txIn) {
+		return nil, "", errors.New("mismatch number of signatures scripts and tx inputs")
+	}
 	log.Info("Bridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
-	var cPkData []byte
+	var (
+		cPkData   []byte
+		sigScript []byte
+	)
 
 	fromPublicKey := tokens.BtcFromPublicKey
 	if args != nil && args.Extra != nil {
@@ -132,7 +154,20 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash 
 			}
 		}
 
-		sigScript, err := txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).Script()
+		prevScript := authoredTx.PrevScripts[i]
+		scriptClass := txscript.GetScriptClass(prevScript)
+		switch scriptClass {
+		case txscript.PubKeyHashTy:
+			sigScript, err = txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).Script()
+		case txscript.ScriptHashTy:
+			if sigScripts == nil {
+				err = fmt.Errorf("MakeSignedTransaction spend p2sh without redeem scripts")
+			} else {
+				sigScript, err = txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).AddData(sigScripts[i]).Script()
+			}
+		default:
+			err = fmt.Errorf("unsupport to spend '%v' output", scriptClass.String())
+		}
 		if err != nil {
 			return nil, "", err
 		}
@@ -193,18 +228,32 @@ func (b *Bridge) SignTransaction(rawTx interface{}, wif string) (signedTx interf
 	privateKey := pkwif.PrivKey
 
 	var (
-		tx        = authoredTx.Tx
-		msgHashes []string
-		rsvs      []string
+		msgHashes    []string
+		rsvs         []string
+		sigScripts   [][]byte
+		hasP2shInput bool
 	)
 
-	for i, pkscript := range authoredTx.PrevScripts {
-		sigHash, err := txscript.CalcSignatureHash(pkscript, hashType, tx, i)
+	for i, preScript := range authoredTx.PrevScripts {
+		sigScript := preScript
+		if txscript.IsPayToScriptHash(preScript) {
+			sigScript, err = b.getRedeemScriptByOutputScrpit(preScript)
+			if err != nil {
+				return nil, "", err
+			}
+			hasP2shInput = true
+		}
+
+		sigHash, err := txscript.CalcSignatureHash(sigScript, hashType, authoredTx.Tx, i)
 		if err != nil {
 			return nil, "", err
 		}
 		msgHash := hex.EncodeToString(sigHash)
 		msgHashes = append(msgHashes, msgHash)
+		sigScripts = append(sigScripts, sigScript)
+	}
+	if !hasP2shInput {
+		sigScripts = nil
 	}
 
 	for _, msgHash := range msgHashes {
@@ -227,5 +276,5 @@ func (b *Bridge) SignTransaction(rawTx interface{}, wif string) (signedTx interf
 			},
 		},
 	}
-	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, args)
+	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, sigScripts, args)
 }

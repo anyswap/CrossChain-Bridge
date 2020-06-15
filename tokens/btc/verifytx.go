@@ -46,7 +46,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 }
 
 // VerifyMsgHash verify msg hash
-func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) error {
+func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) (err error) {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
 		return tokens.ErrWrongRawTx
@@ -64,8 +64,14 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interfac
 		return tokens.ErrWrongSignIndex
 	}
 	tx := authoredTx.Tx
-	pkscript := authoredTx.PrevScripts[idx]
-	sigHash, err := txscript.CalcSignatureHash(pkscript, hashType, tx, idx)
+	sigScript := authoredTx.PrevScripts[idx]
+	if txscript.IsPayToScriptHash(sigScript) {
+		sigScript, err = b.getRedeemScriptByOutputScrpit(sigScript)
+		if err != nil {
+			return err
+		}
+	}
+	sigHash, err := txscript.CalcSignatureHash(sigScript, hashType, tx, idx)
 	if err != nil {
 		return err
 	}

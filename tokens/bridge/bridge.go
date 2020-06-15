@@ -16,14 +16,11 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens/fsn"
 )
 
-var btcBridge *btc.Bridge
-
 // NewCrossChainBridge new bridge according to chain name
 func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 	switch id {
 	case "Bitcoin":
-		btcBridge = btc.NewCrossChainBridge(isSrc)
-		return btcBridge
+		return btc.NewCrossChainBridge(isSrc)
 	case "Ethereum":
 		return eth.NewCrossChainBridge(isSrc)
 	case "Fusion":
@@ -62,7 +59,7 @@ func InitCrossChainBridge(isServer bool) {
 }
 
 func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
-	if btcBridge == nil || btcExtra == nil {
+	if btc.BridgeInstance == nil || btcExtra == nil {
 		return
 	}
 
@@ -85,11 +82,11 @@ func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 
 	if tokens.BtcFromPublicKey != "" {
 		pk := common.FromHex(tokens.BtcFromPublicKey)
-		address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pk), btcBridge.GetChainConfig())
+		address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pk), btc.BridgeInstance.GetChainConfig())
 		pubkeyAddress := address.EncodeAddress()
 		log.Info("Init Btc extra", "FromPublicKey", tokens.BtcFromPublicKey, "address", pubkeyAddress)
 
-		btcDcrmAddress := btcBridge.TokenConfig.DcrmAddress
+		btcDcrmAddress := btc.BridgeInstance.TokenConfig.DcrmAddress
 		if pubkeyAddress != btcDcrmAddress {
 			log.Fatal("BtcFromPublicKey's address mismatch dcrm address", "pubkeyAddress", pubkeyAddress, "dcrmAddress", btcDcrmAddress)
 		}

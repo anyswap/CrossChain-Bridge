@@ -8,11 +8,12 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/tools"
 )
 
 // GetP2shAddressWithMemo common
-func GetP2shAddressWithMemo(memo []byte, pubKeyHash []byte, net *chaincfg.Params) (address string, script []byte, err error) {
-	script, err = txscript.NewScriptBuilder().
+func GetP2shAddressWithMemo(memo []byte, pubKeyHash []byte, net *chaincfg.Params) (p2shAddress string, redeemScript []byte, err error) {
+	redeemScript, err = txscript.NewScriptBuilder().
 		AddData(memo).AddOp(txscript.OP_DROP).
 		AddOp(txscript.OP_DUP).AddOp(txscript.OP_HASH160).AddData(pubKeyHash).
 		AddOp(txscript.OP_EQUALVERIFY).AddOp(txscript.OP_CHECKSIG).
@@ -21,11 +22,11 @@ func GetP2shAddressWithMemo(memo []byte, pubKeyHash []byte, net *chaincfg.Params
 		return
 	}
 	var addressScriptHash *btcutil.AddressScriptHash
-	addressScriptHash, err = btcutil.NewAddressScriptHash(script, net)
+	addressScriptHash, err = btcutil.NewAddressScriptHash(redeemScript, net)
 	if err != nil {
 		return
 	}
-	address = addressScriptHash.EncodeAddress()
+	p2shAddress = addressScriptHash.EncodeAddress()
 	return
 }
 
@@ -40,4 +41,45 @@ func (b *Bridge) GetP2shAddress(bindAddr string) (string, []byte, error) {
 	address, _ := btcutil.DecodeAddress(dcrmAddress, net)
 	pubKeyHash := address.ScriptAddress()
 	return GetP2shAddressWithMemo(memo, pubKeyHash, net)
+}
+
+func (b *Bridge) getRedeemScriptByOutputScrpit(preScript []byte) ([]byte, error) {
+	pkScript, err := txscript.ParsePkScript(preScript)
+	if err != nil {
+		return nil, err
+	}
+	p2shAddress, err := pkScript.Address(b.GetChainConfig())
+	if err != nil {
+		return nil, err
+	}
+	p2shAddr := p2shAddress.String()
+	bindAddr := tools.GetP2shBindAddress(p2shAddr)
+	if bindAddr == "" {
+		return nil, fmt.Errorf("ps2h address %v is registered", p2shAddr)
+	}
+	var address string
+	address, redeemScript, _ := b.GetP2shAddress(bindAddr)
+	if address != p2shAddr {
+		return nil, fmt.Errorf("ps2h address mismatch for bind addres %v, have %v want %v", bindAddr, p2shAddr, address)
+	}
+	return redeemScript, nil
+}
+
+// GetP2shAddressByRedeemScript get p2sh address by redeem script
+func (b *Bridge) GetP2shAddressByRedeemScript(redeemScript []byte) (string, error) {
+	net := b.GetChainConfig()
+	addressScriptHash, err := btcutil.NewAddressScriptHash(redeemScript, net)
+	if err != nil {
+		return "", err
+	}
+	return addressScriptHash.EncodeAddress(), nil
+}
+
+// GetP2shSigScript get p2sh signature script
+func (b *Bridge) GetP2shSigScript(redeemScript []byte) ([]byte, error) {
+	p2shAddr, err := b.GetP2shAddressByRedeemScript(redeemScript)
+	if err != nil {
+		return nil, err
+	}
+	return b.getPayToAddrScript(p2shAddr)
 }

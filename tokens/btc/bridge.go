@@ -8,6 +8,9 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
+// BridgeInstance btc bridge instance
+var BridgeInstance *Bridge
+
 // Bridge btc bridge
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
@@ -18,7 +21,8 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	if !isSrc {
 		panic(tokens.ErrBridgeDestinationNotSupported)
 	}
-	return &Bridge{tokens.NewCrossChainBridgeBase(isSrc)}
+	BridgeInstance = &Bridge{tokens.NewCrossChainBridgeBase(isSrc)}
+	return BridgeInstance
 }
 
 // SetTokenAndGateway set token and gateway config

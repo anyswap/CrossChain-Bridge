@@ -17,7 +17,7 @@ func (b *Bridge) IsValidAddress(addr string) bool {
 	return address.IsForNet(chainConfig)
 }
 
-// IsP2pkhAddress check p2sh addrss
+// IsP2pkhAddress check p2pkh addrss
 func (b *Bridge) IsP2pkhAddress(addr string) bool {
 	chainConfig := b.GetChainConfig()
 	address, err := btcutil.DecodeAddress(addr, chainConfig)
@@ -28,6 +28,21 @@ func (b *Bridge) IsP2pkhAddress(addr string) bool {
 		return false
 	}
 	_, ok := address.(*btcutil.AddressPubKeyHash)
+	return ok
+
+}
+
+// IsP2shAddress check p2sh addrss
+func (b *Bridge) IsP2shAddress(addr string) bool {
+	chainConfig := b.GetChainConfig()
+	address, err := btcutil.DecodeAddress(addr, chainConfig)
+	if err != nil {
+		return false
+	}
+	if !address.IsForNet(chainConfig) {
+		return false
+	}
+	_, ok := address.(*btcutil.AddressScriptHash)
 	return ok
 
 }

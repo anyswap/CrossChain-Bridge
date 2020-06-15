@@ -85,16 +85,22 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	if common.HexToAddress(signInfo.Account) != common.HexToAddress(params.GetServerDcrmUser()) {
 		return errInitiatorMismatch
 	}
+	msgHash := signInfo.MsgHash
 	msgContext := signInfo.MsgContext
-	logWorker("accept", "verifySignInfo", "msgContext", msgContext)
+	logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
 	var args tokens.BuildTxArgs
 	err := json.Unmarshal([]byte(msgContext), &args)
 	if err != nil {
 		return errIdentifierMismatch
 	}
-	if args.Identifier != params.GetIdentifier() {
+	switch args.Identifier {
+	case params.GetIdentifier():
+	case btc.AggregateIdentifier:
+		return btc.BridgeInstance.VerifyAggregateMsgHash(msgHash, &args)
+	default:
 		return errIdentifierMismatch
 	}
+
 	var (
 		srcBridge, dstBridge tokens.CrossChainBridge
 		memo                 string
@@ -117,11 +123,10 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	var swap *tokens.TxSwapInfo
 	switch args.TxType {
 	case tokens.P2shSwapinTx:
-		btcBridge, ok := srcBridge.(*btc.Bridge)
-		if !ok {
+		if btc.BridgeInstance == nil {
 			return tokens.ErrWrongP2shSwapin
 		}
-		swap, err = btcBridge.VerifyP2shTransaction(args.SwapID, args.Bind, false)
+		swap, err = btc.BridgeInstance.VerifyP2shTransaction(args.SwapID, args.Bind, false)
 	default:
 		swap, err = srcBridge.VerifyTransaction(args.SwapID, false)
 	}
@@ -141,7 +146,7 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	if err != nil {
 		return err
 	}
-	return dstBridge.VerifyMsgHash(rawTx, signInfo.MsgHash, args.Extra)
+	return dstBridge.VerifyMsgHash(rawTx, msgHash, args.Extra)
 }
 
 type acceptSignInfo struct {

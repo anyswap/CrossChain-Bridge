@@ -126,7 +126,14 @@ func (b *Bridge) getPayToAddrScript(address string) ([]byte, error) {
 func (b *Bridge) selectUtxos(from string, target btcutil.Amount) (
 	total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 
-	utxos, err := b.FindUtxos(from)
+	var utxos []*electrs.ElectUtxo
+	for i := 0; i < retryCount; i++ {
+		utxos, err = b.FindUtxos(from)
+		if err == nil {
+			break
+		}
+		time.Sleep(retryInterval)
+	}
 	if err != nil {
 		return
 	}
@@ -136,7 +143,10 @@ func (b *Bridge) selectUtxos(from string, target btcutil.Amount) (
 		return
 	}
 
-	success := false
+	var (
+		tx      *electrs.ElectTx
+		success bool
+	)
 
 	for _, utxo := range utxos {
 		value := btcutil.Amount(*utxo.Value)
@@ -146,7 +156,13 @@ func (b *Bridge) selectUtxos(from string, target btcutil.Amount) (
 		if value > btcutil.MaxSatoshi {
 			continue
 		}
-		tx, err := b.GetTransactionByHash(*utxo.Txid)
+		for i := 0; i < retryCount; i++ {
+			tx, err = b.GetTransactionByHash(*utxo.Txid)
+			if err == nil {
+				break
+			}
+			time.Sleep(retryInterval)
+		}
 		if err != nil {
 			continue
 		}
@@ -189,11 +205,6 @@ func (b *Bridge) selectUtxos(from string, target btcutil.Amount) (
 func (b *Bridge) getUtxos(from string, target btcutil.Amount, prevOutPoints []*tokens.BtcOutPoint) (
 	total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 
-	latest, err := b.GetLatestBlockNumber()
-	if err != nil {
-		return
-	}
-
 	p2pkhScript, err := b.getPayToAddrScript(from)
 	if err != nil {
 		return
@@ -203,9 +214,6 @@ func (b *Bridge) getUtxos(from string, target btcutil.Amount, prevOutPoints []*t
 		outspend *electrs.ElectOutspend
 		txHash   *chainhash.Hash
 		value    btcutil.Amount
-
-		retryCount    = 3
-		retryInterval = 1 * time.Second
 	)
 
 	for _, point := range prevOutPoints {
@@ -222,9 +230,9 @@ func (b *Bridge) getUtxos(from string, target btcutil.Amount, prevOutPoints []*t
 		if *outspend.Spent {
 			if outspend.Status != nil && outspend.Status.BlockHeight != nil {
 				spentHeight := *outspend.Status.BlockHeight
-				err = fmt.Errorf("out point (%v, %v) is spent at %v (latest %v)", point.Hash, point.Index, spentHeight, latest)
+				err = fmt.Errorf("out point (%v, %v) is spent at %v", point.Hash, point.Index, spentHeight)
 			} else {
-				err = fmt.Errorf("out point (%v, %v) is spent at txpool (latest %v)", point.Hash, point.Index, latest)
+				err = fmt.Errorf("out point (%v, %v) is spent at txpool", point.Hash, point.Index)
 			}
 			return
 		}

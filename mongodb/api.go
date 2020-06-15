@@ -509,6 +509,17 @@ func FindP2shBindAddress(p2shAddress string) (string, error) {
 	return result.Key, nil
 }
 
+// FindP2shAddresses find p2sh address
+func FindP2shAddresses(offset, limit int) ([]*MgoP2shAddress, error) {
+	result := make([]*MgoP2shAddress, 0, limit)
+	q := getCollection(tbP2shAddresses).Find(nil).Skip(offset).Limit(limit)
+	err := q.All(&result)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+	return result, nil
+}
+
 // ------------------ latest scan info ------------------------
 
 // UpdateLatestScanInfo update latest scan info
