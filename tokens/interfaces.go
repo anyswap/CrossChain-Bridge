@@ -48,13 +48,13 @@ var (
 	ErrTxNotStable         = errors.New("tx not stable")
 	ErrTxWithWrongReceiver = errors.New("tx with wrong receiver")
 	ErrTxWithWrongContract = errors.New("tx with wrong contract")
+	ErrTxWithWrongInput    = errors.New("tx with wrong input data")
 
 	// errors should register
 	ErrTxWithWrongMemo    = errors.New("tx with wrong memo")
 	ErrTxWithWrongValue   = errors.New("tx with wrong value")
 	ErrTxWithWrongReceipt = errors.New("tx with wrong receipt")
 	ErrTxWithWrongSender  = errors.New("tx with wrong sender")
-	ErrTxWithWrongInput   = errors.New("tx with wrong input data")
 )
 
 // ShouldRegisterSwapForError return true if this error should record in database
@@ -64,8 +64,7 @@ func ShouldRegisterSwapForError(err error) bool {
 		ErrTxWithWrongMemo,
 		ErrTxWithWrongValue,
 		ErrTxWithWrongReceipt,
-		ErrTxWithWrongSender,
-		ErrTxWithWrongInput:
+		ErrTxWithWrongSender:
 		return true
 	}
 	return false
