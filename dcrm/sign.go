@@ -12,8 +12,13 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
+// DoSignOne dcrm sign single msgHash with context msgContext
+func DoSignOne(msgHash, msgContext string) (string, error) {
+	return DoSign([]string{msgHash}, []string{msgContext})
+}
+
 // DoSign dcrm sign msgHash with context msgContext
-func DoSign(msgHash, msgContext string) (string, error) {
+func DoSign(msgHash, msgContext []string) (string, error) {
 	log.Debug("dcrm DoSign", "msgHash", msgHash, "msgContext", msgContext)
 	nonce, err := GetSignNonce()
 	if err != nil {

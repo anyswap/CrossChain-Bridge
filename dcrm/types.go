@@ -37,7 +37,7 @@ type SignReply struct {
 // SignStatus sign status
 type SignStatus struct {
 	Status    string
-	Rsv       string
+	Rsv       []string
 	Tip       string
 	Error     string
 	AllReply  []*SignReply
@@ -51,8 +51,8 @@ type SignInfoData struct {
 	Key        string
 	KeyType    string
 	Mode       string
-	MsgHash    string
-	MsgContext string
+	MsgHash    []string
+	MsgContext []string
 	Nonce      string
 	PubKey     string
 	ThresHold  string
@@ -71,8 +71,8 @@ type SignInfoResp struct {
 type SignData struct {
 	TxType     string
 	PubKey     string
-	MsgHash    string
-	MsgContext string
+	MsgHash    []string
+	MsgContext []string
 	Keytype    string
 	GroupID    string
 	ThresHold  string
@@ -82,10 +82,12 @@ type SignData struct {
 
 // AcceptData accpet data
 type AcceptData struct {
-	TxType    string
-	Key       string
-	Accept    string
-	TimeStamp string
+	TxType     string
+	Key        string
+	Accept     string
+	MsgHash    []string
+	MsgContext []string
+	TimeStamp  string
 }
 
 // GroupInfo group info

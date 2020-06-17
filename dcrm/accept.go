@@ -7,13 +7,15 @@ import (
 )
 
 // DoAcceptSign accept sign
-func DoAcceptSign(keyID string, agreeResult string) (string, error) {
+func DoAcceptSign(keyID string, agreeResult string, msgHash []string, msgContext []string) (string, error) {
 	nonce := uint64(0)
 	data := AcceptData{
-		TxType:    "ACCEPTSIGN",
-		Key:       keyID,
-		Accept:    agreeResult,
-		TimeStamp: common.NowMilliStr(),
+		TxType:     "ACCEPTSIGN",
+		Key:        keyID,
+		Accept:     agreeResult,
+		MsgHash:    msgHash,
+		MsgContext: msgContext,
+		TimeStamp:  common.NowMilliStr(),
 	}
 	payload, err := json.Marshal(data)
 	if err != nil {

@@ -28,6 +28,7 @@ var (
 	// those errors will be ignored in accepting
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
 	errInitiatorMismatch  = errors.New("initiator mismatch")
+	errWrongMsgContext    = errors.New("wrong msg context")
 )
 
 // StartAcceptSignJob accept job
@@ -51,7 +52,7 @@ func acceptSign() {
 			history := getAcceptSignHistory(keyID)
 			if history != nil {
 				logWorker("accept", "ignore accepted sign", "keyID", keyID, "result", history.result)
-				_, _ = dcrm.DoAcceptSign(keyID, history.result)
+				_, _ = dcrm.DoAcceptSign(keyID, history.result, history.msgHash, history.msgContext)
 				continue
 			}
 			agreeResult := "AGREE"
@@ -59,6 +60,7 @@ func acceptSign() {
 			switch err {
 			case errIdentifierMismatch,
 				errInitiatorMismatch,
+				errWrongMsgContext,
 				tokens.ErrTxNotStable,
 				tokens.ErrTxNotFound:
 				logWorkerTrace("accept", "ignore sign info", "keyID", keyID, "err", err)
@@ -69,12 +71,12 @@ func acceptSign() {
 				agreeResult = "DISAGREE"
 			}
 			logWorker("accept", "dcrm DoAcceptSign", "keyID", keyID, "result", agreeResult)
-			res, err := dcrm.DoAcceptSign(keyID, agreeResult)
+			res, err := dcrm.DoAcceptSign(keyID, agreeResult, info.MsgHash, info.MsgContext)
 			if err != nil {
 				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res)
 			} else {
 				logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult)
-				addAcceptSignHistory(keyID, agreeResult)
+				addAcceptSignHistory(keyID, agreeResult, info.MsgHash, info.MsgContext)
 			}
 		}
 		time.Sleep(waitInterval)
@@ -88,10 +90,13 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	msgHash := signInfo.MsgHash
 	msgContext := signInfo.MsgContext
 	logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
+	if len(msgContext) != 1 {
+		return errWrongMsgContext
+	}
 	var args tokens.BuildTxArgs
-	err := json.Unmarshal([]byte(msgContext), &args)
+	err := json.Unmarshal([]byte(msgContext[0]), &args)
 	if err != nil {
-		return errIdentifierMismatch
+		return errWrongMsgContext
 	}
 	switch args.Identifier {
 	case params.GetIdentifier():
@@ -150,16 +155,20 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 }
 
 type acceptSignInfo struct {
-	keyID  string
-	result string
+	keyID      string
+	result     string
+	msgHash    []string
+	msgContext []string
 }
 
-func addAcceptSignHistory(keyID, result string) {
+func addAcceptSignHistory(keyID string, result string, msgHash []string, msgContext []string) {
 	// Create the new item as its own ring
 	item := ring.New(1)
 	item.Value = &acceptSignInfo{
-		keyID:  keyID,
-		result: result,
+		keyID:      keyID,
+		result:     result,
+		msgHash:    msgHash,
+		msgContext: msgContext,
 	}
 
 	acceptRingLock.Lock()

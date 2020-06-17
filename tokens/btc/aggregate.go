@@ -48,7 +48,7 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 }
 
 // VerifyAggregateMsgHash verify aggregate msgHash
-func (b *Bridge) VerifyAggregateMsgHash(msgHash string, args *tokens.BuildTxArgs) error {
+func (b *Bridge) VerifyAggregateMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 	if args == nil || args.Extra == nil || args.Extra.BtcExtra == nil || len(args.Extra.BtcExtra.PreviousOutPoints) == 0 {
 		return errors.New("empty btc extra")
 	}

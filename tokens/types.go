@@ -169,7 +169,6 @@ type BtcExtraArgs struct {
 	FromPublicKey *string `json:"fromPublickey,omitempty"`
 
 	PreviousOutPoints []*BtcOutPoint `json:"previousOutPoints,omitempty"`
-	SignIndex         *int           `json:"signIndex,omitempty"`
 }
 
 // BtcExtraConfig used to build swpout to btc tx

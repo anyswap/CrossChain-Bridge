@@ -39,7 +39,6 @@ var (
 	ErrMsgHashMismatch               = errors.New("message hash mismatch")
 	ErrWrongRawTx                    = errors.New("wrong raw tx")
 	ErrWrongExtraArgs                = errors.New("wrong extra args")
-	ErrWrongSignIndex                = errors.New("wrong sign index in extra args")
 	ErrWrongP2shSwapin               = errors.New("wrong p2sh swapin (only btc supports)")
 	ErrWrongSwapinTxType             = errors.New("wrong swapin tx type")
 
@@ -83,7 +82,7 @@ type CrossChainBridge interface {
 	GetTransaction(txHash string) (interface{}, error)
 	GetTransactionStatus(txHash string) *TxStatus
 	VerifyTransaction(txHash string, allowUnstable bool) (*TxSwapInfo, error)
-	VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) error
+	VerifyMsgHash(rawTx interface{}, msgHash []string, extra interface{}) error
 
 	BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error)
 	DcrmSignTransaction(rawTx interface{}, args *BuildTxArgs) (signedTx interface{}, txHash string, err error)

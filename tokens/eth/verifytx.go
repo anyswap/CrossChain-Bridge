@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
@@ -46,11 +47,15 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 }
 
 // VerifyMsgHash verify msg hash
-func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) error {
+func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string, extra interface{}) error {
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {
 		return tokens.ErrWrongRawTx
 	}
+	if len(msgHashes) != 1 {
+		return fmt.Errorf("require one msgHash but have %v", len(msgHashes))
+	}
+	msgHash := msgHashes[0]
 	signer := b.Signer
 	sigHash := signer.Hash(tx)
 	if sigHash.String() != msgHash {

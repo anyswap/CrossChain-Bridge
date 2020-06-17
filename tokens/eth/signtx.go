@@ -3,6 +3,7 @@ package eth
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/common"
@@ -30,11 +31,11 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	msgHash := signer.Hash(tx)
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
-	keyID, err := dcrm.DoSign(msgHash.String(), msgContext)
+	keyID, err := dcrm.DoSignOne(msgHash.String(), msgContext)
 	if err != nil {
 		return nil, "", err
 	}
-	log.Info("DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash.String(), "txid", args.SwapID)
+	log.Info(b.TokenConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash.String(), "txid", args.SwapID)
 	time.Sleep(waitInterval)
 
 	var rsv string
@@ -42,7 +43,11 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	for ; i < retryCount; i++ {
 		signStatus, err := dcrm.GetSignStatus(keyID)
 		if err == nil {
-			rsv = signStatus.Rsv
+			if len(signStatus.Rsv) != 1 {
+				return nil, "", fmt.Errorf("get sign status require one rsv but have %v (keyID = %v)", len(signStatus.Rsv), keyID)
+			}
+
+			rsv = signStatus.Rsv[0]
 			break
 		}
 		switch err {
@@ -56,7 +61,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", errors.New("get sign status failed")
 	}
 
-	log.Trace("DcrmSignTransaction get rsv success", "rsv", rsv)
+	log.Trace(b.TokenConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
 
 	signature := common.FromHex(rsv)
 
@@ -82,6 +87,6 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	}
 	txHash := signedTx.Hash().String()
 	swapinNonce++
-	log.Info("DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", swapinNonce)
+	log.Info(b.TokenConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", swapinNonce)
 	return signedTx, txHash, err
 }

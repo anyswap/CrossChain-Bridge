@@ -63,12 +63,9 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		sigScripts = nil
 	}
 
-	for idx, msgHash := range msgHashes {
-		rsv, err := b.DcrmSignMsgHash(msgHash, args, idx)
-		if err != nil {
-			return nil, "", err
-		}
-		rsvs = append(rsvs, rsv)
+	rsvs, err = b.DcrmSignMsgHash(msgHashes, args)
+	if err != nil {
+		return nil, "", err
 	}
 
 	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, sigScripts, args)
@@ -102,7 +99,7 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash 
 	if sigScripts != nil && len(sigScripts) != len(txIn) {
 		return nil, "", errors.New("mismatch number of signatures scripts and tx inputs")
 	}
-	log.Info("Bridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
+	log.Info(b.TokenConfig.BlockChain+" Bridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
 	var (
 		cPkData   []byte
@@ -174,44 +171,47 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash 
 		txin.SignatureScript = sigScript
 	}
 	txHash = authoredTx.Tx.TxHash().String()
+	log.Info(b.TokenConfig.BlockChain+" MakeSignedTransaction success", "txhash", txHash)
 	return authoredTx, txHash, nil
 }
 
 // DcrmSignMsgHash dcrm sign msg hash
-func (b *Bridge) DcrmSignMsgHash(msgHash string, args *tokens.BuildTxArgs, idx int) (rsv string, err error) {
+func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rsv []string, err error) {
 	extra := args.Extra.BtcExtra
 	if extra == nil {
-		return "", tokens.ErrWrongExtraArgs
+		return nil, tokens.ErrWrongExtraArgs
 	}
-	extra.SignIndex = &idx
 	jsondata, _ := json.Marshal(args)
-	msgContext := string(jsondata)
+	msgContext := []string{string(jsondata)}
 	keyID, err := dcrm.DoSign(msgHash, msgContext)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	log.Info("DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
+	log.Info(b.TokenConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
 	time.Sleep(waitInterval)
 
 	i := 0
 	for ; i < retryCount; i++ {
 		signStatus, err := dcrm.GetSignStatus(keyID)
 		if err == nil {
+			if len(signStatus.Rsv) != len(msgHash) {
+				return nil, fmt.Errorf("get sign status require %v rsv but have %v (keyID = %v)", len(msgHash), len(signStatus.Rsv), keyID)
+			}
 			rsv = signStatus.Rsv
 			break
 		}
 		switch err {
 		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
-			return "", err
+			return nil, err
 		}
 		log.Debug("retry get sign status as error", "err", err, "txid", args.SwapID)
 		time.Sleep(retryInterval)
 	}
-	if i == retryCount || rsv == "" {
-		return "", errors.New("get sign status failed")
+	if i == retryCount || len(rsv) == 0 {
+		return nil, errors.New("get sign status failed")
 	}
 
-	log.Trace("DcrmSignTransaction get rsv success", "rsv", rsv)
+	log.Trace(b.TokenConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
 	return rsv, nil
 }
 

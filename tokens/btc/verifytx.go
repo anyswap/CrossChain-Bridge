@@ -46,37 +46,26 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 }
 
 // VerifyMsgHash verify msg hash
-func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash string, extra interface{}) (err error) {
+func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string, extra interface{}) (err error) {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
 		return tokens.ErrWrongRawTx
 	}
-	extras, ok := extra.(*tokens.AllExtras)
-	if !ok || extras.BtcExtra == nil {
-		return tokens.ErrWrongExtraArgs
-	}
-	btcExtra := extras.BtcExtra
-	if btcExtra.SignIndex == nil {
-		return tokens.ErrWrongSignIndex
-	}
-	idx := *btcExtra.SignIndex
-	if idx >= len(authoredTx.PrevScripts) {
-		return tokens.ErrWrongSignIndex
-	}
-	tx := authoredTx.Tx
-	sigScript := authoredTx.PrevScripts[idx]
-	if txscript.IsPayToScriptHash(sigScript) {
-		sigScript, err = b.getRedeemScriptByOutputScrpit(sigScript)
+	for i, preScript := range authoredTx.PrevScripts {
+		sigScript := preScript
+		if txscript.IsPayToScriptHash(sigScript) {
+			sigScript, err = b.getRedeemScriptByOutputScrpit(preScript)
+			if err != nil {
+				return err
+			}
+		}
+		sigHash, err := txscript.CalcSignatureHash(sigScript, hashType, authoredTx.Tx, i)
 		if err != nil {
 			return err
 		}
-	}
-	sigHash, err := txscript.CalcSignatureHash(sigScript, hashType, tx, idx)
-	if err != nil {
-		return err
-	}
-	if hex.EncodeToString(sigHash) != msgHash {
-		return tokens.ErrMsgHashMismatch
+		if hex.EncodeToString(sigHash) != msgHash[i] {
+			return tokens.ErrMsgHashMismatch
+		}
 	}
 	return nil
 }
