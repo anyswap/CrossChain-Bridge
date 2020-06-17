@@ -32,9 +32,9 @@ Identifier should be a short string to identify the bridge (eg. `BTC2ETH`, `BTC2
 MongoDB is used by the server to store swap status and history, you should config according to your modgodb database setting.
 (the swap oracle don't need it)
 
-#### ApiServer
+#### APIServer
 
-ApiServer is used by the server to provide API service to register swap and to provide history retrieving.
+APIServer is used by the server to provide API service to register swap and to provide history retrieving.
 (the swap oracle don't need it)
 
 #### Oracle
@@ -74,7 +74,7 @@ Notice:
 If in test enviroment you may run more than one program of swap servers on one machine,
 Please specify `different log file name` to clarify the outputs.
 And please specify `different config files` for each server,
-and assgin `KeystoreFile`, `PasswordFile` and `RpcAddress` etc. separatly.
+and assgin `KeystoreFile`, `PasswordFile` and `RPCAddress` etc. separatly.
 
 ## Run swap server
 
@@ -127,13 +127,13 @@ For the config file, please refer [config file example](https://github.com/fsn-d
 
     1. `KeystoreFile`
     2. `PasswordFile`
-    3. `RpcAddress`
+    3. `RPCAddress`
 
     For example,
 
     we are configing `user1` now, we should config `KeystoreFile` and `PasswordFile` use `user1`'s keystore and password file (we will get `user1`'s private key to sign a DCRM requesting).
 
-    And we should config `RpcAddress` to the RPC address of the running `gdcrm` node of `user1` (we will do RPC calls to this address to complete DCRM signing or accepting, etc.)
+    And we should config `RPCAddress` to the RPC address of the running `gdcrm` node of `user1` (we will do RPC calls to this address to complete DCRM signing or accepting, etc.)
 
 3. create DCRM sub-groups for signing
 
@@ -154,7 +154,7 @@ For the config file, please refer [config file example](https://github.com/fsn-d
 
     After created mBTC, we should config `ContractAddress` in `[DestToken]` section.
 
-5. config `[ApiServer]` section
+5. config `[APIServer]` section
 
     The swap server provides RPC service to query swap status and swap history. etc.
 
@@ -164,7 +164,7 @@ For the config file, please refer [config file example](https://github.com/fsn-d
 
 6. config `[SrcToken]`,`[SrcGateway]`
 
-    We should config `ApiAddress` in `[SrcGateway]` section,
+    We should config `APIAddress` in `[SrcGateway]` section,
     to post RPC request to the running full node to get transaction, broadcat transaction etc.
 
     Config `[SrcToken]`, ref. to the following example:
@@ -189,7 +189,7 @@ For the config file, please refer [config file example](https://github.com/fsn-d
 
 7. config `[DestToken]`, `[DestGateway]`
 
-    We should config `ApiAddress` in `[DestGateway]` section,
+    We should config `APIAddress` in `[DestGateway]` section,
     to post RPC request to the running full node to get transaction, broadcat transaction etc.
 
     Config `[DestToken]` like `[SrcToken]`.
