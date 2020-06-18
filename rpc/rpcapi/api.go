@@ -17,7 +17,7 @@ type RPCNullArgs struct{}
 // GetVersionInfo api
 func (s *RPCAPI) GetVersionInfo(r *http.Request, args *RPCNullArgs, result *string) error {
 	ver := params.VersionWithMeta
-	ver += "-rev3"
+	//ver += "-rev3"
 	*result = ver
 	return nil
 }

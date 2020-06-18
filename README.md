@@ -80,6 +80,11 @@ and assgin `KeystoreFile`, `PasswordFile` and `RPCAddress` etc. separatly.
 
 ```shell
 setsid ./build/bin/swapserver --verbosity 6 --config build/bin/config.toml --log build/bin/logs/server.log
+```
+
+## Run swap oracle
+
+```shell
 setsid ./build/bin/swaporacle --verbosity 6 --config build/bin/config.toml --log build/bin/logs/oracle.log
 ```
 
