@@ -20,8 +20,9 @@ func init() {
 }
 
 const (
-	maxIdleConns        int = 200
-	maxIdleConnsPerHost int = 100
+	maxIdleConns        int = 100
+	maxIdleConnsPerHost int = 10
+	maxConnsPerHost     int = 50
 	idleConnTimeout     int = 90
 )
 
@@ -34,6 +35,7 @@ func createHTTPClient() *http.Client {
 				Timeout:   30 * time.Second,
 				KeepAlive: 30 * time.Second,
 			}).DialContext,
+			MaxConnsPerHost:     maxConnsPerHost,
 			MaxIdleConns:        maxIdleConns,
 			MaxIdleConnsPerHost: maxIdleConnsPerHost,
 			IdleConnTimeout:     time.Duration(idleConnTimeout) * time.Second,
