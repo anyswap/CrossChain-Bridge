@@ -1,5 +1,9 @@
 package electrs
 
+import (
+	"fmt"
+)
+
 // ElectTx struct
 type ElectTx struct {
 	Txid     *string        `json:"txid"`
@@ -56,6 +60,10 @@ type ElectUtxo struct {
 	Vout   *uint32        `json:"vout"`
 	Value  *uint64        `json:"value"`
 	Status *ElectTxStatus `json:"status"`
+}
+
+func (utxo *ElectUtxo) String() string {
+	return fmt.Sprintf("txid %v vout %v value %v confirmed %v", *utxo.Txid, *utxo.Vout, *utxo.Value, *utxo.Status.Confirmed)
 }
 
 // SortableElectUtxoSlice sortable

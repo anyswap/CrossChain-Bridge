@@ -9,80 +9,88 @@ import (
 )
 
 var (
-	utxoChan              = make(chan *addrUxto, utxoPageLimit)
 	utxoPageLimit         = 100
 	utxoAggregateMinCount = 10
 	utxoAggregateMinValue = uint64(100000)
-)
 
-type addrUxto struct {
-	addr string
-	utxo *electrs.ElectUtxo
-}
+	aggSumVal   uint64
+	aggAddrs    []string
+	aggUtxos    []*electrs.ElectUtxo
+	aggOffset   int
+	aggInterval = 300 * time.Second
+)
 
 // StartAggregateJob aggregate job
 func StartAggregateJob() {
 	if btc.BridgeInstance == nil {
 		return
 	}
-	go doAggregate()
+
 	for loop := 1; ; loop++ {
+		aggSumVal = 0
+		aggAddrs = nil
+		aggUtxos = nil
+		aggOffset = 0
+
 		logWorker("aggregate", "start aggregate job", "loop", loop)
-		offset := 0
-		for {
-			p2shAddrs, err := mongodb.FindP2shAddresses(offset, utxoPageLimit)
-			if err != nil {
-				time.Sleep(3 * time.Second)
-				continue
-			}
-			for _, p2shAddr := range p2shAddrs {
-				utxos, _ := btc.BridgeInstance.FindUtxos(p2shAddr.P2shAddress)
-				for _, utxo := range utxos {
-					utxoChan <- &addrUxto{
-						addr: p2shAddr.P2shAddress,
-						utxo: utxo,
-					}
-				}
-			}
-			if len(p2shAddrs) < utxoPageLimit {
-				break
-			}
-			offset += utxoPageLimit
-		}
+		doAggregateJob()
 		logWorker("aggregate", "finish aggregate job", "loop", loop)
-		time.Sleep(300 * time.Second)
+		time.Sleep(aggInterval)
 	}
 }
 
-func doAggregate() {
-	var (
-		sumVal uint64
-		addrs  []string
-		utxos  []*electrs.ElectUtxo
-	)
+func doAggregateJob() {
 	for {
-		addrutxo := <-utxoChan
+		p2shAddrs, err := mongodb.FindP2shAddresses(aggOffset, utxoPageLimit)
+		if err != nil {
+			logWorkerError("aggregate", "FindP2shAddresses failed", err, "offset", aggOffset, "limit", utxoPageLimit)
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		for _, p2shAddr := range p2shAddrs {
+			findUtxosAndAggregate(p2shAddr.P2shAddress)
+		}
+		if len(p2shAddrs) < utxoPageLimit {
+			break
+		}
+		aggOffset += utxoPageLimit
+	}
+}
 
-		addr := addrutxo.addr
-		utxo := addrutxo.utxo
+func findUtxosAndAggregate(addr string) {
+	findUtxos, _ := btc.BridgeInstance.FindUtxos(addr)
+	for _, utxo := range findUtxos {
 		if utxo.Value == nil || *utxo.Value == 0 {
 			continue
 		}
-		logWorker("aggregate", "find utxo", "address", addr, "utxo", utxo)
+		logWorker("aggregate", "find utxo", "address", addr, "utxo", utxo.String())
 
-		sumVal += *utxo.Value
-		addrs = append(addrs, addr)
-		utxos = append(utxos, utxo)
-		if len(utxos) == utxoAggregateMinCount || sumVal >= utxoAggregateMinValue {
-			txHash, err := btc.BridgeInstance.AggregateUtxos(addrs, utxos)
-			if err != nil {
-				logWorkerError("aggregate", "aggregateUtxos failed", err)
-			} else {
-				logWorker("aggregate", "aggregateUtxos succeed", "txHash", txHash, "utxos", len(utxos), "sumVal", sumVal)
-			}
-			sumVal = 0
-			addrs = nil
-			utxos = nil
+		aggSumVal += *utxo.Value
+		aggAddrs = append(aggAddrs, addr)
+		aggUtxos = append(aggUtxos, utxo)
+
+		if shouldAggregate() {
+			aggregate()
 		}
+
+	}
+}
+
+func shouldAggregate() bool {
+	if len(aggUtxos) >= utxoAggregateMinCount {
+		return true
+	}
+	if aggSumVal >= utxoAggregateMinValue {
+		return true
+	}
+	return false
+}
+
+func aggregate() {
+	txHash, err := btc.BridgeInstance.AggregateUtxos(aggAddrs, aggUtxos)
+	if err != nil {
+		logWorkerError("aggregate", "AggregateUtxos failed", err)
+	} else {
+		logWorker("aggregate", "AggregateUtxos succeed", "txHash", txHash, "utxos", len(aggUtxos), "sumVal", aggSumVal)
 	}
 }
