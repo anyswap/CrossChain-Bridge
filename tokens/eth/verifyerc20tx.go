@@ -12,13 +12,6 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
-// erc20 transfer func hash and log
-var (
-	Erc20TrasferFuncHash     = common.FromHex("0xa9059cbb")
-	Erc20TrasferFromFuncHash = common.FromHex("0x23b872dd")
-	Erc20TrasferLogTopic     = common.FromHex("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")
-)
-
 func (b *Bridge) verifyErc20SwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if allowUnstable {
 		return b.verifyErc20SwapinTxUnstable(txHash)
@@ -136,8 +129,8 @@ func parseErc20SwapinTxInput(input *[]byte) (string, string, *big.Int, error) {
 	funcHash := data[:4]
 	isTransferFrom := false
 	switch {
-	case bytes.Equal(funcHash, Erc20TrasferFuncHash):
-	case bytes.Equal(funcHash, Erc20TrasferFromFuncHash):
+	case bytes.Equal(funcHash, erc20CodeParts["transfer"]):
+	case bytes.Equal(funcHash, erc20CodeParts["transferFrom"]):
 		isTransferFrom = true
 	default:
 		return "", "", nil, fmt.Errorf("Erc20 Transfer func hash not found")
@@ -154,7 +147,7 @@ func parseErc20SwapinTxLogs(logs []*types.RPCLog) (string, string, *big.Int, err
 		if len(log.Topics) != 3 || log.Data == nil {
 			continue
 		}
-		if bytes.Equal(log.Topics[0][:], Erc20TrasferLogTopic) {
+		if bytes.Equal(log.Topics[0][:], erc20CodeParts["LogTransfer"]) {
 			continue
 		}
 		from := common.BytesToAddress(log.Topics[1][:]).String()

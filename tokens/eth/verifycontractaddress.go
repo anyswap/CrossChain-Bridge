@@ -8,6 +8,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/btc"
 )
 
 var extendedCodeParts = map[string][]byte{
@@ -16,6 +17,21 @@ var extendedCodeParts = map[string][]byte{
 	"LogSwapinTopic":  common.FromHex(tokens.LogSwapinTopic),
 	"SwapoutFuncHash": tokens.SwapoutFuncHash[:],
 	"LogSwapoutTopic": common.FromHex(tokens.LogSwapoutTopic),
+}
+
+var extendedCodeParts2 = map[string][]byte{
+	// Extended interfaces
+	"SwapinFuncHash":  tokens.SwapinFuncHash[:],
+	"LogSwapinTopic":  common.FromHex(tokens.LogSwapinTopic),
+	"SwapoutFuncHash": tokens.SwapoutFuncHash2[:],
+	"LogSwapoutTopic": common.FromHex(tokens.LogSwapoutTopic2),
+}
+
+func getEendedCodeParts() map[string][]byte {
+	if btc.BridgeInstance != nil {
+		return extendedCodeParts
+	}
+	return extendedCodeParts2
 }
 
 var erc20CodeParts = map[string][]byte{
@@ -62,5 +78,5 @@ func (b *Bridge) VerifyErc20ContractAddress(contract string) (err error) {
 
 // VerifyMbtcContractAddress verify mbtc contract
 func (b *Bridge) VerifyMbtcContractAddress(contract string) (err error) {
-	return b.VerifyContractCode(contract, extendedCodeParts, erc20CodeParts)
+	return b.VerifyContractCode(contract, getEendedCodeParts(), erc20CodeParts)
 }

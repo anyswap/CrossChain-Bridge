@@ -50,14 +50,17 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 		log.Debug("Bridge parseSwapoutTxLogs fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
-	swapInfo.Bind = bindAddress // Bind
-	swapInfo.Value = value      // Value
-
-	dcrmAddress := token.DcrmAddress
-	// check sender
-	if common.IsEqualIgnoreCase(swapInfo.From, dcrmAddress) {
-		return swapInfo, tokens.ErrTxWithWrongSender
+	if bindAddress != "" {
+		swapInfo.Bind = strings.ToLower(bindAddress) // Bind
+	} else {
+		swapInfo.Bind = swapInfo.From // Bind
 	}
+	swapInfo.Value = value // Value
+
+	// check sender
+	//if common.IsEqualIgnoreCase(swapInfo.From, token.DcrmAddress) {
+	//	return swapInfo, tokens.ErrTxWithWrongSender
+	//}
 
 	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
@@ -101,14 +104,17 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 		log.Debug(b.TokenConfig.BlockChain+" Bridge parseSwapoutTxInput fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
-	swapInfo.Bind = bindAddress // Bind
-	swapInfo.Value = value      // Value
-
-	dcrmAddress := token.DcrmAddress
-	// check sender
-	if common.IsEqualIgnoreCase(swapInfo.From, dcrmAddress) {
-		return swapInfo, tokens.ErrTxWithWrongSender
+	if bindAddress != "" {
+		swapInfo.Bind = strings.ToLower(bindAddress) // Bind
+	} else {
+		swapInfo.Bind = swapInfo.From // Bind
 	}
+	swapInfo.Value = value // Value
+
+	// check sender
+	//if common.IsEqualIgnoreCase(swapInfo.From, token.DcrmAddress) {
+	//	return swapInfo, tokens.ErrTxWithWrongSender
+	//}
 
 	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
@@ -131,14 +137,16 @@ func parseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 		return "", nil, fmt.Errorf("wrong tx input %x", data)
 	}
 	funcHash := data[:4]
-	if !bytes.Equal(funcHash, tokens.SwapoutFuncHash[:]) {
-		return "", nil, fmt.Errorf("wrong func hash, have %x want %x", funcHash, tokens.SwapoutFuncHash)
+	swapoutFuncHash := getEendedCodeParts()["SwapoutFuncHash"]
+	if !bytes.Equal(funcHash, swapoutFuncHash) {
+		return "", nil, fmt.Errorf("wrong func hash, have %x want %x", funcHash, swapoutFuncHash)
 	}
 	encData := data[4:]
 	return parseEncodedData(encData)
 }
 
 func parseSwapoutTxLogs(logs []*types.RPCLog) (string, *big.Int, error) {
+	logSwapoutTopic := getEendedCodeParts()["LogSwapoutTopic"]
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
 			continue
@@ -146,7 +154,7 @@ func parseSwapoutTxLogs(logs []*types.RPCLog) (string, *big.Int, error) {
 		if len(log.Topics) != 2 || log.Data == nil {
 			continue
 		}
-		if log.Topics[0].String() != tokens.LogSwapoutTopic {
+		if !bytes.Equal(log.Topics[0].Bytes(), logSwapoutTopic) {
 			continue
 		}
 		return parseEncodedData(*log.Data)

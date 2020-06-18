@@ -27,11 +27,6 @@ func StartAggregateJob() {
 	}
 
 	for loop := 1; ; loop++ {
-		aggSumVal = 0
-		aggAddrs = nil
-		aggUtxos = nil
-		aggOffset = 0
-
 		logWorker("aggregate", "start aggregate job", "loop", loop)
 		doAggregateJob()
 		logWorker("aggregate", "finish aggregate job", "loop", loop)
@@ -40,6 +35,7 @@ func StartAggregateJob() {
 }
 
 func doAggregateJob() {
+	aggOffset = 0
 	for {
 		p2shAddrs, err := mongodb.FindP2shAddresses(aggOffset, utxoPageLimit)
 		if err != nil {
@@ -93,4 +89,7 @@ func aggregate() {
 	} else {
 		logWorker("aggregate", "AggregateUtxos succeed", "txHash", txHash, "utxos", len(aggUtxos), "sumVal", aggSumVal)
 	}
+	aggSumVal = 0
+	aggAddrs = nil
+	aggUtxos = nil
 }
