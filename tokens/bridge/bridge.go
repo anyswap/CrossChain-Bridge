@@ -63,24 +63,28 @@ func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 		return
 	}
 
-	tokens.BtcMinRelayFee = btcExtra.MinRelayFee
-	tokens.BtcRelayFeePerKb = btcExtra.RelayFeePerKb
-	tokens.BtcFromPublicKey = btcExtra.FromPublicKey
+	if btcExtra.MinRelayFee > 0 {
+		tokens.BtcMinRelayFee = btcExtra.MinRelayFee
+		maxMinRelayFee, _ := btcutil.NewAmount(0.001)
+		minRelayFee := btcutil.Amount(tokens.BtcMinRelayFee)
+		if minRelayFee > maxMinRelayFee {
+			log.Fatal("BtcMinRelayFee is too large", "value", minRelayFee, "max", maxMinRelayFee)
+		}
+	}
+
+	if btcExtra.RelayFeePerKb > 0 {
+		tokens.BtcRelayFeePerKb = btcExtra.RelayFeePerKb
+		maxRelayFeePerKb, _ := btcutil.NewAmount(0.001)
+		relayFeePerKb := btcutil.Amount(tokens.BtcRelayFeePerKb)
+		if relayFeePerKb > maxRelayFeePerKb {
+			log.Fatal("BtcRelayFeePerKb is too large", "value", relayFeePerKb, "max", maxRelayFeePerKb)
+		}
+	}
+
 	log.Info("Init Btc extra", "MinRelayFee", tokens.BtcMinRelayFee, "RelayFeePerKb", tokens.BtcRelayFeePerKb)
 
-	maxMinRelayFee, _ := btcutil.NewAmount(0.001)
-	minRelayFee := btcutil.Amount(tokens.BtcMinRelayFee)
-	if minRelayFee > maxMinRelayFee {
-		log.Fatal("BtcMinRelayFee is too large", "value", minRelayFee, "max", maxMinRelayFee)
-	}
-
-	maxRelayFeePerKb, _ := btcutil.NewAmount(0.001)
-	relayFeePerKb := btcutil.Amount(tokens.BtcRelayFeePerKb)
-	if relayFeePerKb > maxRelayFeePerKb {
-		log.Fatal("BtcRelayFeePerKb is too large", "value", relayFeePerKb, "max", maxRelayFeePerKb)
-	}
-
-	if tokens.BtcFromPublicKey != "" {
+	if btcExtra.FromPublicKey != "" {
+		tokens.BtcFromPublicKey = btcExtra.FromPublicKey
 		pk := common.FromHex(tokens.BtcFromPublicKey)
 		address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pk), btc.BridgeInstance.GetChainConfig())
 		pubkeyAddress := address.EncodeAddress()
@@ -91,6 +95,16 @@ func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 			log.Fatal("BtcFromPublicKey's address mismatch dcrm address", "pubkeyAddress", pubkeyAddress, "dcrmAddress", btcDcrmAddress)
 		}
 	}
+
+	if btcExtra.UtxoAggregateMinCount > 0 {
+		tokens.BtcUtxoAggregateMinCount = btcExtra.UtxoAggregateMinCount
+	}
+
+	if btcExtra.UtxoAggregateMinValue > 0 {
+		tokens.BtcUtxoAggregateMinValue = btcExtra.UtxoAggregateMinValue
+	}
+
+	log.Info("Init Btc extra", "UtxoAggregateMinCount", tokens.BtcUtxoAggregateMinCount, "UtxoAggregateMinValue", tokens.BtcUtxoAggregateMinValue)
 }
 
 func initDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {

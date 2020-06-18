@@ -4,14 +4,13 @@ import (
 	"time"
 
 	"github.com/fsn-dev/crossChain-Bridge/mongodb"
+	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/btc"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
 
 var (
-	utxoPageLimit         = 100
-	utxoAggregateMinCount = 10
-	utxoAggregateMinValue = uint64(100000)
+	utxoPageLimit = 100
 
 	aggSumVal   uint64
 	aggAddrs    []string
@@ -73,10 +72,10 @@ func findUtxosAndAggregate(addr string) {
 }
 
 func shouldAggregate() bool {
-	if len(aggUtxos) >= utxoAggregateMinCount {
+	if len(aggUtxos) >= tokens.BtcUtxoAggregateMinCount {
 		return true
 	}
-	if aggSumVal >= utxoAggregateMinValue {
+	if aggSumVal >= tokens.BtcUtxoAggregateMinValue {
 		return true
 	}
 	return false

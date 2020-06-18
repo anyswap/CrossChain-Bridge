@@ -22,7 +22,8 @@ ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 [BtcExtra]
 MinRelayFee   = 400
 RelayFeePerKb = 2000
-FromPublicKey = ""
+UtxoAggregateMinCount = 10
+UtxoAggregateMinValue = 100000
 
 # source token config
 [SrcToken]

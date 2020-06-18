@@ -216,7 +216,8 @@ For the config file, please refer [config file example](https://github.com/fsn-d
     ```toml
     MinRelayFee   = 400
     RelayFeePerKb = 2000
-    FromPublicKey = ""
+    UtxoAggregateMinCount = 20
+    UtxoAggregateMinValue = 1000000
     ```
 
     If not configed, the default vlaue will be used (in fact, the above values are the defaults)
