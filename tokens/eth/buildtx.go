@@ -109,7 +109,7 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs, er
 
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
 func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
-	funcHash := tokens.SwapinFuncHash[:]
+	funcHash := getSwapinFuncHash()
 	txHash := common.HexToHash(args.SwapID).Bytes()
 	address := common.LeftPadBytes(common.HexToAddress(args.To).Bytes(), 32)
 	amount := common.LeftPadBytes(tokens.CalcSwappedValue(args.Value, b.IsSrc).Bytes(), 32)

@@ -3,8 +3,8 @@ package eth
 import (
 	"time"
 
+	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
-	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/tools"
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
@@ -34,7 +34,7 @@ func (b *Bridge) StartSwapHistoryScanJob() {
 func (b *Bridge) getSwapoutLogs(blockHeight uint64) ([]*types.RPCLog, error) {
 	token := b.TokenConfig
 	contractAddress := token.ContractAddress
-	logTopic := tokens.LogSwapoutTopic
+	logTopic := common.ToHex(getLogSwapoutTopic())
 	return b.GetContractLogs(contractAddress, logTopic, blockHeight)
 }
 

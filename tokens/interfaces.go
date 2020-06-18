@@ -20,18 +20,6 @@ var (
 
 	SrcLatestBlockHeight uint64
 	DstLatestBlockHeight uint64
-
-	// first 4 bytes of `Keccak256Hash([]byte("Swapin(bytes32,address,uint256)"))`
-	SwapinFuncHash = [4]byte{0xec, 0x12, 0x6c, 0x77}
-	LogSwapinTopic = "0x05d0634fe981be85c22e2942a880821b70095d84e152c3ea3c17a4e4250d9d61"
-
-	// first 4 bytes of `Keccak256Hash([]byte("Swapout(uint256,string)"))`
-	SwapoutFuncHash = [4]byte{0xad, 0x54, 0x05, 0x6d}
-	LogSwapoutTopic = "0x9c92ad817e5474d30a4378deface765150479363a897b0590fbb12ae9d89396b"
-
-	// first 4 bytes of `Keccak256Hash([]byte("Swapout(uint256)"))`
-	SwapoutFuncHash2 = [4]byte{0xf1, 0x33, 0x7b, 0x76}
-	LogSwapoutTopic2 = "0x9711511ecf3840282a7a2f2bd0f1dcc30c8cf0913c9575c8089a8d018a2099ff"
 )
 
 // common errors

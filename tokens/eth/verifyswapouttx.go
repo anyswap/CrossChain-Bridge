@@ -137,7 +137,7 @@ func parseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 		return "", nil, fmt.Errorf("wrong tx input %x", data)
 	}
 	funcHash := data[:4]
-	swapoutFuncHash := getEendedCodeParts()["SwapoutFuncHash"]
+	swapoutFuncHash := getSwapoutFuncHash()
 	if !bytes.Equal(funcHash, swapoutFuncHash) {
 		return "", nil, fmt.Errorf("wrong func hash, have %x want %x", funcHash, swapoutFuncHash)
 	}
@@ -146,7 +146,7 @@ func parseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 }
 
 func parseSwapoutTxLogs(logs []*types.RPCLog) (string, *big.Int, error) {
-	logSwapoutTopic := getEendedCodeParts()["LogSwapoutTopic"]
+	logSwapoutTopic := getLogSwapoutTopic()
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
 			continue
@@ -163,10 +163,24 @@ func parseSwapoutTxLogs(logs []*types.RPCLog) (string, *big.Int, error) {
 }
 
 func parseEncodedData(encData []byte) (string, *big.Int, error) {
-	if len(encData) < 96 {
-		return "", nil, fmt.Errorf("wrong lenght of encoded data")
+	isMbtc := isMbtcSwapout()
+	if isMbtc {
+		if len(encData) < 96 {
+			return "", nil, fmt.Errorf("wrong lenght of encoded data")
+		}
+	} else {
+		if len(encData) != 32 {
+			return "", nil, fmt.Errorf("wrong lenght of encoded data")
+		}
 	}
+
+	// get value
 	value := common.GetBigInt(encData, 0, 32)
+	if !isMbtc {
+		return "", value, nil
+	}
+
+	// get bind address
 	offset, overflow := common.GetUint64(encData, 32, 32)
 	if overflow {
 		return "", nil, fmt.Errorf("string offset overflow")

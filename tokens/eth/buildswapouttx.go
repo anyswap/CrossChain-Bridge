@@ -77,7 +77,7 @@ func BuildSwapoutTxInput(swapoutVal *big.Int, bindAddr string) ([]byte, error) {
 
 	// add func hash
 	input := make([]byte, len(bs)+4)
-	copy(input[:4], tokens.SwapoutFuncHash[:])
+	copy(input[:4], getSwapoutFuncHash())
 	copy(input[4:], bs)
 
 	// verify input
