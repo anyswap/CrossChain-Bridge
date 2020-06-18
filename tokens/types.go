@@ -34,41 +34,6 @@ func (c *TokenConfig) IsErc20() bool {
 	return c.ID == "ERC20"
 }
 
-// CheckConfig check config
-func (c *TokenConfig) CheckConfig(isSrc bool) error {
-	if c.BlockChain == "" {
-		return errors.New("token must config 'BlockChain'")
-	}
-	if c.NetID == "" {
-		return errors.New("token must config 'NetID'")
-	}
-	if c.Decimals == nil {
-		return errors.New("token must config 'Decimals'")
-	}
-	if c.Confirmations == nil {
-		return errors.New("token must config 'Confirmations'")
-	}
-	if c.MaximumSwap == nil {
-		return errors.New("token must config 'MaximumSwap'")
-	}
-	if c.MinimumSwap == nil {
-		return errors.New("token must config 'MinimumSwap'")
-	}
-	if c.SwapFeeRate == nil {
-		return errors.New("token must config 'SwapFeeRate'")
-	}
-	if c.DcrmAddress == "" {
-		return errors.New("token must config 'DcrmAddress'")
-	}
-	if !isSrc && c.ContractAddress == "" {
-		return errors.New("token must config 'ContractAddress' for destination chain")
-	}
-	if isSrc && c.IsErc20() && c.ContractAddress == "" {
-		return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
-	}
-	return nil
-}
-
 // GatewayConfig struct
 type GatewayConfig struct {
 	APIAddress string
@@ -184,4 +149,48 @@ type P2shAddressInfo struct {
 	P2shAddress        string
 	RedeemScript       string
 	RedeemScriptDisasm string
+}
+
+// CheckConfig check config
+func (c *TokenConfig) CheckConfig(isSrc bool) error {
+	if c.BlockChain == "" {
+		return errors.New("token must config 'BlockChain'")
+	}
+	if c.NetID == "" {
+		return errors.New("token must config 'NetID'")
+	}
+	if c.Decimals == nil {
+		return errors.New("token must config 'Decimals'")
+	}
+	if c.Confirmations == nil {
+		return errors.New("token must config 'Confirmations'")
+	}
+	if c.MaximumSwap == nil {
+		return errors.New("token must config 'MaximumSwap'")
+	}
+	if *c.MaximumSwap < 0 {
+		return errors.New("token 'MaximumSwap' is negative")
+	}
+	if c.MinimumSwap == nil {
+		return errors.New("token must config 'MinimumSwap'")
+	}
+	if *c.MinimumSwap < 0 {
+		return errors.New("token 'MinimumSwap' is negative")
+	}
+	if c.SwapFeeRate == nil {
+		return errors.New("token must config 'SwapFeeRate'")
+	}
+	if *c.SwapFeeRate < 0 {
+		return errors.New("token 'SwapFeeRate' is negative")
+	}
+	if c.DcrmAddress == "" {
+		return errors.New("token must config 'DcrmAddress'")
+	}
+	if !isSrc && c.ContractAddress == "" {
+		return errors.New("token must config 'ContractAddress' for destination chain")
+	}
+	if isSrc && c.IsErc20() && c.ContractAddress == "" {
+		return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
+	}
+	return nil
 }

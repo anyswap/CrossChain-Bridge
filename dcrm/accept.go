@@ -10,12 +10,12 @@ import (
 func DoAcceptSign(keyID string, agreeResult string, msgHash []string, msgContext []string) (string, error) {
 	nonce := uint64(0)
 	data := AcceptData{
-		TxType:     "ACCEPTSIGN",
-		Key:        keyID,
-		Accept:     agreeResult,
-		MsgHash:    msgHash,
-		MsgContext: msgContext,
-		TimeStamp:  common.NowMilliStr(),
+		TxType:  "ACCEPTSIGN",
+		Key:     keyID,
+		Accept:  agreeResult,
+		MsgHash: msgHash,
+		//MsgContext: msgContext, // context is verified on top level
+		TimeStamp: common.NowMilliStr(),
 	}
 	payload, err := json.Marshal(data)
 	if err != nil {

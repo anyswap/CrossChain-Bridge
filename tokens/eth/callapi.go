@@ -180,3 +180,19 @@ func (b *Bridge) GetCode(contract string) ([]byte, error) {
 	err := client.RPCPost(&result, url, "eth_getCode", contract, "latest")
 	return []byte(result), err
 }
+
+// CallContract call eth_call
+func (b *Bridge) CallContract(contract string, data hexutil.Bytes, blockNumber string) (string, error) {
+	gateway := b.GatewayConfig
+	url := gateway.APIAddress
+	reqArgs := map[string]interface{}{
+		"to":   contract,
+		"data": data,
+	}
+	var result string
+	err := client.RPCPost(&result, url, "eth_call", reqArgs, blockNumber)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
