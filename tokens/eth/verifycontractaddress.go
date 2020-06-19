@@ -109,9 +109,9 @@ func getSwapinFuncHash() []byte {
 	return ExtCodeParts["SwapinFuncHash"]
 }
 
-//func getLogSwapinTopic() []byte {
-//	return ExtCodeParts["LogSwapinTopic"]
-//}
+func getLogSwapinTopic() []byte {
+	return ExtCodeParts["LogSwapinTopic"]
+}
 
 func getSwapoutFuncHash() []byte {
 	return ExtCodeParts["SwapoutFuncHash"]

@@ -3,6 +3,7 @@ package tokens
 import (
 	"errors"
 	"math/big"
+	"strings"
 )
 
 // btc extra default values
@@ -34,7 +35,7 @@ type TokenConfig struct {
 
 // IsErc20 return is token is erc20
 func (c *TokenConfig) IsErc20() bool {
-	return c.ID == "ERC20"
+	return strings.ToUpper(c.ID) == "ERC20"
 }
 
 // GatewayConfig struct

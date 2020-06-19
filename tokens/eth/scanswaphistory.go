@@ -17,6 +17,9 @@ var (
 
 // StartSwapHistoryScanJob scan job
 func (b *Bridge) StartSwapHistoryScanJob() {
+	if b.TokenConfig.ContractAddress == "" {
+		return
+	}
 	log.Info("[swaphistory] start scan swap history job", "isSrc", b.IsSrc)
 
 	isProcessed := func(txid string) bool {
@@ -31,10 +34,15 @@ func (b *Bridge) StartSwapHistoryScanJob() {
 	b.scanTransactionHistory(isProcessed)
 }
 
-func (b *Bridge) getSwapoutLogs(blockHeight uint64) ([]*types.RPCLog, error) {
+func (b *Bridge) getSwapLogs(blockHeight uint64) ([]*types.RPCLog, error) {
 	token := b.TokenConfig
 	contractAddress := token.ContractAddress
-	logTopic := common.ToHex(getLogSwapoutTopic())
+	var logTopic string
+	if b.IsSrc {
+		logTopic = common.ToHex(getLogSwapinTopic())
+	} else {
+		logTopic = common.ToHex(getLogSwapoutTopic())
+	}
 	return b.GetContractLogs(contractAddress, logTopic, blockHeight)
 }
 
@@ -43,9 +51,9 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 	log.Info("[swaphistory] start first scan loop", "isSrc", b.IsSrc)
 	latest := tools.LoopGetLatestBlockNumber(b)
 	for height := latest; height+maxScanHeight > latest; {
-		logs, err := b.getSwapoutLogs(height)
+		logs, err := b.getSwapLogs(height)
 		if err != nil {
-			//log.Trace("[swaphistory] first scan get swapout logs error", "isSrc", b.IsSrc, "height", height, "err", err)
+			//log.Trace("[swaphistory] first scan get swap logs error", "isSrc", b.IsSrc, "height", height, "err", err)
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
@@ -71,9 +79,9 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 		if rescan {
 			height = tools.LoopGetLatestBlockNumber(b)
 		}
-		logs, err := b.getSwapoutLogs(height)
+		logs, err := b.getSwapLogs(height)
 		if err != nil {
-			log.Error("[swaphistory] get swapout logs error", "isSrc", b.IsSrc, "height", height, "err", err)
+			log.Error("[swaphistory] get swap logs error", "isSrc", b.IsSrc, "height", height, "err", err)
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}

@@ -73,7 +73,7 @@ func (b *Bridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.T
 }
 
 func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	if b.TokenConfig.ID == "ERC20" {
+	if b.TokenConfig.IsErc20() {
 		return b.verifyErc20SwapinTx(txHash, allowUnstable)
 	}
 
