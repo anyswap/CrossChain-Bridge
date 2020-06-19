@@ -19,9 +19,6 @@ type Bridge struct {
 
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	if isSrc {
-		panic(tokens.ErrTodo)
-	}
 	return &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
 }
 

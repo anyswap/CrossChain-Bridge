@@ -19,10 +19,21 @@ var (
 
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
-	isSwapin := args.SwapType == tokens.SwapinType
-	if isSwapin && args.Input == nil {
-		b.buildSwapinTxInput(args)
+	var input []byte
+	if args.Input == nil {
+		switch args.SwapType {
+		case tokens.SwapinType:
+			b.buildSwapinTxInput(args)
+			input = *args.Input
+		case tokens.SwapoutType:
+			input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
+		case tokens.SwapRecallType:
+			input = []byte(tokens.RecallMemoPrefix + args.SwapID)
+		}
+	} else {
+		input = *args.Input
 	}
+
 	extra, err := b.setDefaults(args)
 	if err != nil {
 		return nil, err
@@ -33,11 +44,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		nonce    = *extra.Nonce
 		gasLimit = *extra.Gas
 		gasPrice = extra.GasPrice
-		input    []byte
 	)
-	if args.Input != nil {
-		input = *args.Input
-	}
 
 	switch args.SwapType {
 	case tokens.SwapoutType, tokens.SwapRecallType:
