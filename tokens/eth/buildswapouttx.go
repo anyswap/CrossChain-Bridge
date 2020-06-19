@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/fsn-dev/crossChain-Bridge/common"
-	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 	"github.com/fsn-dev/crossChain-Bridge/types"
@@ -61,24 +59,7 @@ func (b *Bridge) BuildSwapoutTx(from, contract string, extraArgs *tokens.EthExtr
 
 // BuildSwapoutTxInput build swapout tx input
 func BuildSwapoutTxInput(swapoutVal *big.Int, bindAddr string) ([]byte, error) {
-	strLen := len(bindAddr)
-
-	// encode params
-	bs := make(hexutil.Bytes, 0)
-	bs = append(bs, common.LeftPadBytes(swapoutVal.Bytes(), 32)...)
-	bs = append(bs, common.LeftPadBytes(big.NewInt(int64(len(bs)+32)).Bytes(), 32)...)
-	bs = append(bs, common.LeftPadBytes(big.NewInt(int64(strLen)).Bytes(), 32)...)
-
-	lastPad := strLen - strLen%32
-	bs = append(bs, bindAddr[:lastPad]...)
-	if lastPad != strLen {
-		bs = append(bs, common.RightPadBytes([]byte(bindAddr[lastPad:]), 32)...)
-	}
-
-	// add func hash
-	input := make([]byte, len(bs)+4)
-	copy(input[:4], getSwapoutFuncHash())
-	copy(input[4:], bs)
+	input := PackDataWithFuncHash(getSwapoutFuncHash(), swapoutVal, bindAddr)
 
 	// verify input
 	bindAddress, swapoutvalue, err := parseSwapoutTxInput(&input)
