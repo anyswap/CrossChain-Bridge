@@ -17,7 +17,6 @@ func (b *Bridge) processSwapin(txid string) error {
 	}
 	swapInfo, err := b.VerifyTransaction(txid, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
-		//log.Trace("[scan] processSwapin", "txid", txid, "err", err)
 		return err
 	}
 	err = tools.RegisterSwapin(txid, swapInfo.Bind)
@@ -33,7 +32,6 @@ func (b *Bridge) processP2shSwapin(txid string) error {
 	}
 	swapInfo, err := b.checkP2shTransaction(txid, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
-		//log.Trace("[scan] processP2shSwapin", "txid", txid, "err", err)
 		return err
 	}
 	err = tools.RegisterP2shSwapin(txid, swapInfo.Bind)
@@ -51,8 +49,7 @@ func (b *Bridge) checkP2shTransaction(txHash string, allowUnstable bool) (*token
 	}
 	var bindAddress, p2shAddress string
 	for _, output := range tx.Vout {
-		switch *output.ScriptpubkeyType {
-		case "p2sh":
+		if *output.ScriptpubkeyType == p2shType {
 			p2shAddress = *output.ScriptpubkeyAddress
 			bindAddress = tools.GetP2shBindAddress(p2shAddress)
 			if bindAddress != "" {

@@ -38,8 +38,8 @@ type Bytes []byte
 
 // MarshalText implements encoding.TextMarshaler
 func (b Bytes) MarshalText() ([]byte, error) {
-	result := make([]byte, len(b)*2+2)
-	copy(result, `0x`)
+	result := make([]byte, len(b)*2+HexPrefixLen)
+	copy(result, HexPrefix)
 	hex.Encode(result[2:], b)
 	return result, nil
 }
@@ -80,7 +80,8 @@ func (b *Bytes) UnmarshalGraphQL(input interface{}) error {
 	var err error
 	switch input := input.(type) {
 	case string:
-		data, err := Decode(input)
+		var data []byte
+		data, err = Decode(input)
 		if err != nil {
 			return err
 		}
@@ -174,9 +175,10 @@ func (b *Big) UnmarshalText(input []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(raw) > 64 {
+	if len(raw) > maxBigHexLen {
 		return ErrBig256Range
 	}
+	bigWordNibbles := getBigWordNibbles()
 	words := make([]big.Word, len(raw)/bigWordNibbles+1)
 	end := len(raw)
 	for i := range words {
@@ -196,7 +198,7 @@ func (b *Big) UnmarshalText(input []byte) error {
 	}
 	var dec big.Int
 	dec.SetBits(words)
-	*b = (Big)(dec)
+	*b = Big(dec)
 	return nil
 }
 
@@ -255,7 +257,7 @@ func (b *Uint64) UnmarshalText(input []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(raw) > 16 {
+	if len(raw) > maxUint64HexLen {
 		return ErrUint64Range
 	}
 	var dec uint64

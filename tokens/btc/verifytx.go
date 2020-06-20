@@ -10,6 +10,7 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/common"
 	"github.com/fsn-dev/crossChain-Bridge/log"
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
 )
 
 // GetTransaction impl
@@ -81,13 +82,8 @@ func (b *Bridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.T
 func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
-	token := b.TokenConfig
-	if !allowUnstable {
-		txStatus := b.GetTransactionStatus(txHash)
-		if txStatus.BlockHeight == 0 ||
-			txStatus.Confirmations < *token.Confirmations {
-			return swapInfo, tokens.ErrTxNotStable
-		}
+	if !allowUnstable && !b.checkStable(txHash) {
+		return swapInfo, tokens.ErrTxNotStable
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
@@ -95,32 +91,14 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	txStatus := tx.Status
-	dcrmAddress := token.DcrmAddress
 	if txStatus.BlockHeight != nil {
 		swapInfo.Height = *txStatus.BlockHeight // Height
 	}
 	if txStatus.BlockTime != nil {
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
-	var (
-		rightReceiver bool
-		value         uint64
-		memoScript    string
-		from          string
-	)
-	for _, output := range tx.Vout {
-		switch *output.ScriptpubkeyType {
-		case "op_return":
-			memoScript = *output.ScriptpubkeyAsm
-			continue
-		case "p2pkh":
-			if *output.ScriptpubkeyAddress != dcrmAddress {
-				continue
-			}
-			rightReceiver = true
-			value += *output.Value
-		}
-	}
+	dcrmAddress := b.TokenConfig.DcrmAddress
+	value, memoScript, rightReceiver := b.getReceivedValue(tx.Vout, dcrmAddress)
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
@@ -130,15 +108,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	bindAddress, bindOk := getBindAddressFromMemoScipt(memoScript)
 	swapInfo.Bind = bindAddress // Bind
 
-	for _, input := range tx.Vin {
-		if input != nil &&
-			input.Prevout != nil &&
-			input.Prevout.ScriptpubkeyAddress != nil {
-			from = *input.Prevout.ScriptpubkeyAddress
-			break
-		}
-	}
-	swapInfo.From = from // From
+	swapInfo.From = getTxFrom(tx.Vin) // From
 
 	// check sender
 	if swapInfo.From == swapInfo.To {
@@ -162,6 +132,39 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		log.Debug("verify swapin pass", "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfo, nil
+}
+
+func (b *Bridge) checkStable(txHash string) bool {
+	txStatus := b.GetTransactionStatus(txHash)
+	return txStatus.BlockHeight > 0 && txStatus.Confirmations >= *b.TokenConfig.Confirmations
+}
+
+func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver string) (value uint64, memoScript string, rightReceiver bool) {
+	for _, output := range vout {
+		switch *output.ScriptpubkeyType {
+		case opReturnType:
+			memoScript = *output.ScriptpubkeyAsm
+			continue
+		case p2pkhType:
+			if *output.ScriptpubkeyAddress != receiver {
+				continue
+			}
+			rightReceiver = true
+			value += *output.Value
+		}
+	}
+	return value, memoScript, rightReceiver
+}
+
+func getTxFrom(vin []*electrs.ElectTxin) string {
+	for _, input := range vin {
+		if input != nil &&
+			input.Prevout != nil &&
+			input.Prevout.ScriptpubkeyAddress != nil {
+			return *input.Prevout.ScriptpubkeyAddress
+		}
+	}
+	return ""
 }
 
 func getBindAddressFromMemoScipt(memoScript string) (bind string, ok bool) {

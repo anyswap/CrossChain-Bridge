@@ -69,7 +69,7 @@ func AuthoredTxToString(authtx interface{}, pretty bool) string {
 		encTx.TxIn[i].SignatureScript, _ = txscript.DisasmString(txIn.SignatureScript)
 		encTx.TxIn[i].Witness = make([]hexutil.Bytes, len(txIn.Witness))
 		for j, witness := range txIn.Witness {
-			encTx.TxIn[i].Witness[j] = (hexutil.Bytes)(witness)
+			encTx.TxIn[i].Witness[j] = hexutil.Bytes(witness)
 		}
 	}
 

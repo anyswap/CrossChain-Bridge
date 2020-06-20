@@ -17,13 +17,10 @@ import (
 // BuildAggregateTransaction build aggregate tx (spend p2sh utxo)
 func (b *Bridge) BuildAggregateTransaction(addrs []string, utxos []*electrs.ElectUtxo) (rawTx *txauthor.AuthoredTx, err error) {
 	if len(addrs) != len(utxos) {
-		return nil, fmt.Errorf("BuildAggregateTransaction: count of addrs (%v) is not equal to count of utxos (%v)", len(addrs), len(utxos))
+		return nil, fmt.Errorf("call BuildAggregateTransaction: count of addrs (%v) is not equal to count of utxos (%v)", len(addrs), len(utxos))
 	}
 
-	inputSource := func(target btcutil.Amount) (
-		total btcutil.Amount, inputs []*wire.TxIn,
-		inputValues []btcutil.Amount, scripts [][]byte, err error) {
-
+	inputSource := func(target btcutil.Amount) (total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 		return b.getUtxosFromElectUtxos(target, addrs, utxos)
 	}
 
@@ -44,9 +41,7 @@ func (b *Bridge) rebuildAggregateTransaction(prevOutPoints []*tokens.BtcOutPoint
 	return b.BuildAggregateTransaction(addrs, utxos)
 }
 
-func (b *Bridge) getUtxosFromElectUtxos(target btcutil.Amount, addrs []string, utxos []*electrs.ElectUtxo) (
-	total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
-
+func (b *Bridge) getUtxosFromElectUtxos(target btcutil.Amount, addrs []string, utxos []*electrs.ElectUtxo) (total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 	var (
 		txHash   *chainhash.Hash
 		value    btcutil.Amount
@@ -89,7 +84,11 @@ func (b *Bridge) getUtxosFromElectUtxos(target btcutil.Amount, addrs []string, u
 		scripts = append(scripts, pkScript)
 	}
 
-	return
+	if total < target {
+		log.Warn("getUtxos total %v < target %v", total, target)
+	}
+
+	return total, inputs, inputValues, scripts, nil
 }
 
 func (b *Bridge) getUtxosFromOutPoints(prevOutPoints []*tokens.BtcOutPoint) (addrs []string, utxos []*electrs.ElectUtxo, err error) {
@@ -107,7 +106,7 @@ func (b *Bridge) getUtxosFromOutPoints(prevOutPoints []*tokens.BtcOutPoint) (add
 			time.Sleep(retryInterval)
 		}
 		if err != nil {
-			return
+			return nil, nil, err
 		}
 		if *outspend.Spent {
 			if outspend.Status != nil && outspend.Status.BlockHeight != nil {
@@ -116,7 +115,7 @@ func (b *Bridge) getUtxosFromOutPoints(prevOutPoints []*tokens.BtcOutPoint) (add
 			} else {
 				err = fmt.Errorf("out point (%v, %v) is spent at txpool", point.Hash, point.Index)
 			}
-			return
+			return nil, nil, err
 		}
 		for i := 0; i < retryCount; i++ {
 			tx, err = b.GetTransactionByHash(point.Hash)
@@ -126,16 +125,16 @@ func (b *Bridge) getUtxosFromOutPoints(prevOutPoints []*tokens.BtcOutPoint) (add
 			time.Sleep(retryInterval)
 		}
 		if err != nil {
-			return
+			return nil, nil, err
 		}
 		if point.Index >= uint32(len(tx.Vout)) {
 			err = fmt.Errorf("out point (%v, %v) index overflow", point.Hash, point.Index)
-			return
+			return nil, nil, err
 		}
 		output := tx.Vout[point.Index]
 		if *output.Value == 0 {
 			err = fmt.Errorf("out point (%v, %v) with zero value", point.Hash, point.Index)
-			return
+			return nil, nil, err
 		}
 
 		addrs = append(addrs, *output.ScriptpubkeyAddress)
@@ -145,5 +144,5 @@ func (b *Bridge) getUtxosFromOutPoints(prevOutPoints []*tokens.BtcOutPoint) (add
 			Value: output.Value,
 		})
 	}
-	return
+	return addrs, utxos, nil
 }

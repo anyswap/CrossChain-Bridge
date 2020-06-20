@@ -58,12 +58,12 @@ func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, err
 // not match the signer used in the current call.
 func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 	if sc := tx.from.Load(); sc != nil {
-		sigCache := sc.(sigCache)
+		cache := sc.(sigCache)
 		// If the signer used to derive from in a previous
 		// call is not the same as used current, invalidate
 		// the cache.
-		if sigCache.signer.Equal(signer) {
-			return sigCache.from, nil
+		if cache.signer.Equal(signer) {
+			return cache.from, nil
 		}
 	}
 
@@ -128,16 +128,16 @@ func (s EIP155Signer) Sender(tx *Transaction) (common.Address, error) {
 
 // SignatureValues returns signature values. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
-func (s EIP155Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
-	R, S, V, err = HomesteadSigner{}.SignatureValues(tx, sig)
+func (s EIP155Signer) SignatureValues(tx *Transaction, sig []byte) (rsvR, rsvS, rsvV *big.Int, err error) {
+	rsvR, rsvS, rsvV, err = HomesteadSigner{}.SignatureValues(tx, sig)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	if s.chainID.Sign() != 0 {
-		V = big.NewInt(int64(sig[64] + 35))
-		V.Add(V, s.chainIDMul)
+		rsvV = big.NewInt(int64(sig[64] + 35))
+		rsvV.Add(rsvV, s.chainIDMul)
 	}
-	return R, S, V, nil
+	return rsvR, rsvS, rsvV, nil
 }
 
 // Hash returns the hash to be signed by the sender.
@@ -214,20 +214,20 @@ func (fs FrontierSigner) Sender(tx *Transaction) (common.Address, error) {
 	return recoverPlain(fs.Hash(tx), tx.data.R, tx.data.S, tx.data.V, false)
 }
 
-func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (common.Address, error) {
-	if Vb.BitLen() > 8 {
+func recoverPlain(sighash common.Hash, rsvR, rsvS, rsvV *big.Int, homestead bool) (common.Address, error) {
+	if rsvV.BitLen() > 8 {
 		return common.Address{}, ErrInvalidSig
 	}
-	V := byte(Vb.Uint64() - 27)
-	if !crypto.ValidateSignatureValues(V, R, S, homestead) {
+	v := byte(rsvV.Uint64() - 27)
+	if !crypto.ValidateSignatureValues(v, rsvR, rsvS, homestead) {
 		return common.Address{}, ErrInvalidSig
 	}
 	// encode the signature in uncompressed format
-	r, s := R.Bytes(), S.Bytes()
+	r, s := rsvR.Bytes(), rsvS.Bytes()
 	sig := make([]byte, crypto.SignatureLength)
 	copy(sig[32-len(r):32], r)
 	copy(sig[64-len(s):64], s)
-	sig[64] = V
+	sig[64] = v
 	// recover the public key from the signature
 	pub, err := crypto.Ecrecover(sighash[:], sig)
 	if err != nil {

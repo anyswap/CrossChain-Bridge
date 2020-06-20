@@ -7,7 +7,7 @@ import (
 )
 
 // DoAcceptSign accept sign
-func DoAcceptSign(keyID string, agreeResult string, msgHash []string, msgContext []string) (string, error) {
+func DoAcceptSign(keyID, agreeResult string, msgHash, msgContext []string) (string, error) {
 	nonce := uint64(0)
 	data := AcceptData{
 		TxType:  "ACCEPTSIGN",

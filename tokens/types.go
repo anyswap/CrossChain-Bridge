@@ -35,7 +35,7 @@ type TokenConfig struct {
 
 // IsErc20 return is token is erc20
 func (c *TokenConfig) IsErc20() bool {
-	return strings.ToUpper(c.ID) == "ERC20"
+	return strings.EqualFold(c.ID, "ERC20")
 }
 
 // GatewayConfig struct
@@ -158,6 +158,7 @@ type P2shAddressInfo struct {
 }
 
 // CheckConfig check config
+//nolint:gocyclo // keep TokenConfig check as whole
 func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.BlockChain == "" {
 		return errors.New("token must config 'BlockChain'")

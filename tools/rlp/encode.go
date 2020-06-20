@@ -153,11 +153,11 @@ func (w *encbuf) Write(b []byte) (int, error) {
 
 func (w *encbuf) encode(val interface{}) error {
 	rval := reflect.ValueOf(val)
-	writer, err := cachedWriter(rval.Type())
+	writerFn, err := cachedWriter(rval.Type())
 	if err != nil {
 		return err
 	}
-	return writer(rval, w)
+	return writerFn(rval, w)
 }
 
 func (w *encbuf) encodeStringHeader(size int) {
@@ -223,10 +223,10 @@ func (w *encbuf) toWriter(out io.Writer) (err error) {
 	for _, head := range w.lheads {
 		// write string data before header
 		if head.offset-strpos > 0 {
-			n, err := out.Write(w.str[strpos:head.offset])
+			n, err2 := out.Write(w.str[strpos:head.offset])
 			strpos += n
-			if err != nil {
-				return err
+			if err2 != nil {
+				return err2
 			}
 		}
 		// write the header
@@ -315,6 +315,7 @@ var (
 )
 
 // makeWriter creates a writer function for the given type.
+//nolint:gocyclo // allow long switch
 func makeWriter(typ reflect.Type, ts tags) (writer, error) {
 	kind := typ.Kind()
 	switch {
@@ -360,12 +361,13 @@ func writeRawValue(val reflect.Value, w *encbuf) error {
 
 func writeUint(val reflect.Value, w *encbuf) error {
 	i := val.Uint()
-	if i == 0 {
+	switch {
+	case i == 0:
 		w.str = append(w.str, 0x80)
-	} else if i < 128 {
+	case i < 128:
 		// fits single byte
 		w.str = append(w.str, byte(i))
-	} else {
+	default:
 		// TODO: encode int to w.str directly
 		s := putint(w.sizebuf[1:], i)
 		w.sizebuf[0] = 0x80 + byte(s)
@@ -398,11 +400,13 @@ func writeBigIntNoPtr(val reflect.Value, w *encbuf) error {
 }
 
 func writeBigInt(i *big.Int, w *encbuf) error {
-	if cmp := i.Cmp(big0); cmp == -1 {
+	cmp := i.Cmp(big0)
+	switch cmp {
+	case -1:
 		return fmt.Errorf("rlp: cannot encode negative *big.Int")
-	} else if cmp == 0 {
+	case 0:
 		w.str = append(w.str, 0x80)
-	} else {
+	default:
 		w.encodeString(i.Bytes())
 	}
 	return nil
@@ -417,9 +421,9 @@ func writeByteArray(val reflect.Value, w *encbuf) error {
 	if !val.CanAddr() {
 		// Slice requires the value to be addressable.
 		// Make it addressable by copying.
-		copy := reflect.New(val.Type()).Elem()
-		copy.Set(val)
-		val = copy
+		copyElem := reflect.New(val.Type()).Elem()
+		copyElem.Set(val)
+		val = copyElem
 	}
 	size := val.Len()
 	slice := val.Slice(0, size).Bytes()
@@ -448,11 +452,11 @@ func writeInterface(val reflect.Value, w *encbuf) error {
 		return nil
 	}
 	eval := val.Elem()
-	writer, err := cachedWriter(eval.Type())
+	writerFn, err := cachedWriter(eval.Type())
 	if err != nil {
 		return err
 	}
-	return writer(eval, w)
+	return writerFn(eval, w)
 }
 
 func makeSliceWriter(typ reflect.Type, ts tags) (writer, error) {
@@ -545,6 +549,7 @@ func makeEncoderWriter(typ reflect.Type) writer {
 
 // putint writes i to the beginning of b in big endian byte
 // order, using the least number of bytes needed to represent i.
+//nolint:funlen // allow long switch
 func putint(b []byte, i uint64) (size int) {
 	switch {
 	case i < (1 << 8):

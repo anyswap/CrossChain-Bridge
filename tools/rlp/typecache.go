@@ -74,9 +74,9 @@ func cachedWriter(typ reflect.Type) (writer, error) {
 	return info.writer, info.writerErr
 }
 
-func cachedTypeInfo(typ reflect.Type, tags tags) *typeinfo {
+func cachedTypeInfo(typ reflect.Type, tag tags) *typeinfo {
 	typeCacheMutex.RLock()
-	info := typeCache[typekey{typ, tags}]
+	info := typeCache[typekey{typ, tag}]
 	typeCacheMutex.RUnlock()
 	if info != nil {
 		return info
@@ -84,11 +84,11 @@ func cachedTypeInfo(typ reflect.Type, tags tags) *typeinfo {
 	// not in the cache, need to generate info for this type.
 	typeCacheMutex.Lock()
 	defer typeCacheMutex.Unlock()
-	return cachedTypeInfo1(typ, tags)
+	return cachedTypeInfo1(typ, tag)
 }
 
-func cachedTypeInfo1(typ reflect.Type, tags tags) *typeinfo {
-	key := typekey{typ, tags}
+func cachedTypeInfo1(typ reflect.Type, tag tags) *typeinfo {
+	key := typekey{typ, tag}
 	info := typeCache[key]
 	if info != nil {
 		// another goroutine got the write lock first
@@ -99,7 +99,7 @@ func cachedTypeInfo1(typ reflect.Type, tags tags) *typeinfo {
 	// the dummy value and won't call itself recursively.
 	info = new(typeinfo)
 	typeCache[key] = info
-	info.generate(typ, tags)
+	info.generate(typ, tag)
 	return info
 }
 
@@ -111,17 +111,19 @@ type field struct {
 func structFields(typ reflect.Type) (fields []field, err error) {
 	lastPublic := lastPublicField(typ)
 	for i := 0; i < typ.NumField(); i++ {
-		if f := typ.Field(i); f.PkgPath == "" { // exported
-			tags, err := parseStructTag(typ, i, lastPublic)
-			if err != nil {
-				return nil, err
-			}
-			if tags.ignored {
-				continue
-			}
-			info := cachedTypeInfo1(f.Type, tags)
-			fields = append(fields, field{i, info})
+		f := typ.Field(i)
+		if f.PkgPath != "" { // unexported
+			continue
 		}
+		tag, err := parseStructTag(typ, i, lastPublic)
+		if err != nil {
+			return nil, err
+		}
+		if tag.ignored {
+			continue
+		}
+		info := cachedTypeInfo1(f.Type, tag)
+		fields = append(fields, field{i, info})
 	}
 	return fields, nil
 }
@@ -148,22 +150,27 @@ func (e structTagError) Error() string {
 func parseStructTag(typ reflect.Type, fi, lastPublic int) (tags, error) {
 	f := typ.Field(fi)
 	var ts tags
+	const (
+		tnil       = "nil"
+		tnilString = "nilString"
+		tnilList   = "nilList"
+	)
 	for _, t := range strings.Split(f.Tag.Get("rlp"), ",") {
 		switch t = strings.TrimSpace(t); t {
 		case "":
 		case "-":
 			ts.ignored = true
-		case "nil", "nilString", "nilList":
+		case tnil, tnilString, tnilList:
 			ts.nilOK = true
 			if f.Type.Kind() != reflect.Ptr {
 				return ts, structTagError{typ, f.Name, t, "field is not a pointer"}
 			}
 			switch t {
-			case "nil":
+			case tnil:
 				ts.nilKind = defaultNilKind(f.Type.Elem())
-			case "nilString":
+			case tnilString:
 				ts.nilKind = String
-			case "nilList":
+			case tnilList:
 				ts.nilKind = List
 			}
 		case "tail":
@@ -191,9 +198,9 @@ func lastPublicField(typ reflect.Type) int {
 	return last
 }
 
-func (i *typeinfo) generate(typ reflect.Type, tags tags) {
-	i.decoder, i.decoderErr = makeDecoder(typ, tags)
-	i.writer, i.writerErr = makeWriter(typ, tags)
+func (i *typeinfo) generate(typ reflect.Type, tag tags) {
+	i.decoder, i.decoderErr = makeDecoder(typ, tag)
+	i.writer, i.writerErr = makeWriter(typ, tag)
 }
 
 // defaultNilKind determines whether a nil pointer to typ encodes/decodes

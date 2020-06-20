@@ -45,7 +45,6 @@ FIRST_LOOP:
 	for {
 		txHistory, err := b.GetTransactionHistory(b.TokenConfig.DcrmAddress, lastSeenTxid)
 		if err != nil {
-			//log.Trace("[scanhistory] get tx history error",  "isSrc", b.IsSrc,"err", err)
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}

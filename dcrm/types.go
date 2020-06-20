@@ -92,7 +92,7 @@ type AcceptData struct {
 
 // GroupInfo group info
 type GroupInfo struct {
-	Gid    string
+	GID    string
 	Count  int
 	Enodes []string
 }

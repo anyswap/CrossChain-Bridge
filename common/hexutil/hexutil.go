@@ -37,7 +37,15 @@ import (
 	"strconv"
 )
 
-const uintBits = 32 << (uint64(^uint(0)) >> 63)
+// constants
+const (
+	uintBits        = 32 << (uint64(^uint(0)) >> 63)
+	maxBigHexLen    = 64
+	maxUint64HexLen = 16
+
+	HexPrefix    = "0x"
+	HexPrefixLen = 2
+)
 
 // Errors
 var (
@@ -58,7 +66,7 @@ func (err decError) Error() string { return err.msg }
 
 // Decode decodes a hex string with 0x prefix.
 func Decode(input string) ([]byte, error) {
-	if len(input) == 0 {
+	if input == "" {
 		return nil, ErrEmptyString
 	}
 	if !has0xPrefix(input) {
@@ -82,8 +90,8 @@ func MustDecode(input string) []byte {
 
 // Encode encodes b as a hex string with 0x prefix.
 func Encode(b []byte) string {
-	enc := make([]byte, len(b)*2+2)
-	copy(enc, "0x")
+	enc := make([]byte, len(b)*2+HexPrefixLen)
+	copy(enc, HexPrefix)
 	hex.Encode(enc[2:], b)
 	return string(enc)
 }
@@ -114,24 +122,28 @@ func MustDecodeUint64(input string) uint64 {
 // EncodeUint64 encodes i as a hex string with 0x prefix.
 func EncodeUint64(i uint64) string {
 	enc := make([]byte, 2, 10)
-	copy(enc, "0x")
+	copy(enc, HexPrefix)
 	return string(strconv.AppendUint(enc, i, 16))
 }
 
-var bigWordNibbles int
+var gBigWordNibbles int
 
-func init() {
+func getBigWordNibbles() int {
+	if gBigWordNibbles != 0 {
+		return gBigWordNibbles
+	}
 	// This is a weird way to compute the number of nibbles required for big.Word.
 	// The usual way would be to use constant arithmetic but go vet can't handle that.
 	b, _ := new(big.Int).SetString("FFFFFFFFFF", 16)
 	switch len(b.Bits()) {
 	case 1:
-		bigWordNibbles = 16
+		gBigWordNibbles = 16
 	case 2:
-		bigWordNibbles = 8
+		gBigWordNibbles = 8
 	default:
 		panic("weird big.Word size")
 	}
+	return gBigWordNibbles
 }
 
 // DecodeBig decodes a hex string with 0x prefix as a quantity.
@@ -141,9 +153,10 @@ func DecodeBig(input string) (*big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(raw) > 64 {
+	if len(raw) > maxBigHexLen {
 		return nil, ErrBig256Range
 	}
+	bigWordNibbles := getBigWordNibbles()
 	words := make([]big.Word, len(raw)/bigWordNibbles+1)
 	end := len(raw)
 	for i := range words {
@@ -190,14 +203,14 @@ func has0xPrefix(input string) bool {
 }
 
 func checkNumber(input string) (raw string, err error) {
-	if len(input) == 0 {
+	if input == "" {
 		return "", ErrEmptyString
 	}
 	if !has0xPrefix(input) {
 		return "", ErrMissingPrefix
 	}
 	input = input[2:]
-	if len(input) == 0 {
+	if input == "" {
 		return "", ErrEmptyNumber
 	}
 	if len(input) > 1 && input[0] == '0' {

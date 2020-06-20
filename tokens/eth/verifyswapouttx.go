@@ -58,9 +58,9 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 	swapInfo.Value = value // Value
 
 	// check sender
-	//if common.IsEqualIgnoreCase(swapInfo.From, token.DcrmAddress) {
-	//	return swapInfo, tokens.ErrTxWithWrongSender
-	//}
+	// if common.IsEqualIgnoreCase(swapInfo.From, token.DcrmAddress) {
+	// 	return swapInfo, tokens.ErrTxWithWrongSender
+	// }
 
 	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
@@ -112,9 +112,9 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 	swapInfo.Value = value // Value
 
 	// check sender
-	//if common.IsEqualIgnoreCase(swapInfo.From, token.DcrmAddress) {
-	//	return swapInfo, tokens.ErrTxWithWrongSender
-	//}
+	// if common.IsEqualIgnoreCase(swapInfo.From, token.DcrmAddress) {
+	// 	return swapInfo, tokens.ErrTxWithWrongSender
+	// }
 
 	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
@@ -166,11 +166,11 @@ func parseEncodedData(encData []byte) (string, *big.Int, error) {
 	isMbtc := isMbtcSwapout()
 	if isMbtc {
 		if len(encData) < 96 {
-			return "", nil, fmt.Errorf("wrong lenght of encoded data")
+			return "", nil, fmt.Errorf("wrong length of encoded data")
 		}
 	} else {
 		if len(encData) != 32 {
-			return "", nil, fmt.Errorf("wrong lenght of encoded data")
+			return "", nil, fmt.Errorf("wrong length of encoded data")
 		}
 	}
 

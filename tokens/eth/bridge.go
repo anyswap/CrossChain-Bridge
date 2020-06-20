@@ -11,6 +11,12 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
+const (
+	netMainnet = "mainnet"
+	netRinkeby = "rinkeby"
+	netCustom  = "custom"
+)
+
 // Bridge eth bridge
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
@@ -38,8 +44,8 @@ func (b *Bridge) VerifyChainID() {
 	networkID := strings.ToLower(tokenCfg.NetID)
 
 	switch networkID {
-	case "mainnet", "rinkeby":
-	case "custom":
+	case netMainnet, netRinkeby:
+	case netCustom:
 		return
 	default:
 		panic(fmt.Sprintf("unsupported ethereum network: %v", tokenCfg.NetID))
@@ -65,11 +71,11 @@ func (b *Bridge) VerifyChainID() {
 	}
 
 	switch networkID {
-	case "mainnet":
+	case netMainnet:
 		if chainID.Uint64() != 1 {
 			panicMismatchChainID()
 		}
-	case "rinkeby":
+	case netRinkeby:
 		if chainID.Uint64() != 4 {
 			panicMismatchChainID()
 		}
@@ -102,15 +108,16 @@ func (b *Bridge) VerifyTokenCofig() {
 		if !b.IsValidAddress(tokenCfg.ContractAddress) {
 			log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)
 		}
-		if !b.IsSrc {
+		switch {
+		case !b.IsSrc:
 			if err := b.VerifyMbtcContractAddress(tokenCfg.ContractAddress); err != nil {
 				log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
 			}
-		} else if tokenCfg.IsErc20() {
+		case tokenCfg.IsErc20():
 			if err := b.VerifyErc20ContractAddress(tokenCfg.ContractAddress); err != nil {
 				log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
 			}
-		} else {
+		default:
 			log.Fatal("unsupported type of contract address in source chain, please assign SrcToken.ID (eg. ERC20) in config file", "address", tokenCfg.ContractAddress)
 		}
 		log.Info("verify contract address pass", "address", tokenCfg.ContractAddress)

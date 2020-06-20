@@ -15,7 +15,8 @@ var (
 	httpClient *http.Client
 )
 
-func init() {
+// InitHTTPClient init http client
+func InitHTTPClient() {
 	httpClient = createHTTPClient()
 }
 
@@ -74,7 +75,7 @@ func HTTPPost(url string, body interface{}, params, headers map[string]string, t
 }
 
 // HTTPRawPost http raw post
-func HTTPRawPost(url string, body string, params, headers map[string]string, timeout int) (*http.Response, error) {
+func HTTPRawPost(url, body string, params, headers map[string]string, timeout int) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err
@@ -120,18 +121,26 @@ func addPostBody(req *http.Request, body interface{}) error {
 	return nil
 }
 
-func addRawPostBody(req *http.Request, body string) error {
-	if body != "" {
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		req.GetBody = func() (io.ReadCloser, error) {
-			return ioutil.NopCloser(strings.NewReader(body)), nil
-		}
-		req.Body, _ = req.GetBody()
+func addRawPostBody(req *http.Request, body string) (err error) {
+	if body == "" {
+		return nil
 	}
-	return nil
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.GetBody = func() (io.ReadCloser, error) {
+		return ioutil.NopCloser(strings.NewReader(body)), nil
+	}
+	req.Body, err = req.GetBody()
+	return err
 }
 
 func doRequest(req *http.Request, timeoutSeconds int) (*http.Response, error) {
-	httpClient.Timeout = time.Duration(timeoutSeconds) * time.Second
+	timeout := time.Duration(timeoutSeconds) * time.Second
+	if httpClient == nil {
+		client := http.Client{
+			Timeout: timeout,
+		}
+		return client.Do(req)
+	}
+	httpClient.Timeout = timeout
 	return httpClient.Do(req)
 }

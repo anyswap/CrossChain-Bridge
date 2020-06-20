@@ -39,6 +39,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		rsvs         []string
 		sigScripts   [][]byte
 		hasP2shInput bool
+		sigHash      []byte
 	)
 
 	for i, preScript := range authoredTx.PrevScripts {
@@ -51,7 +52,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 			hasP2shInput = true
 		}
 
-		sigHash, err := txscript.CalcSignatureHash(sigScript, hashType, authoredTx.Tx, i)
+		sigHash, err = txscript.CalcSignatureHash(sigScript, hashType, authoredTx.Tx, i)
 		if err != nil {
 			return nil, "", err
 		}
@@ -86,9 +87,7 @@ func (b *Bridge) verifyPublickeyData(pkData []byte, swapType tokens.SwapType) er
 }
 
 // MakeSignedTransaction make signed tx
-func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash []string, rsv []string,
-	sigScripts [][]byte, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
-
+func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash, rsv []string, sigScripts [][]byte, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
 	txIn := authoredTx.Tx.TxIn
 	if len(txIn) != len(msgHash) {
 		return nil, "", errors.New("mismatch number of msghashes and tx inputs")
@@ -101,52 +100,21 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash 
 	}
 	log.Info(b.TokenConfig.BlockChain+" Bridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
-	var (
-		cPkData   []byte
-		sigScript []byte
-	)
-
-	fromPublicKey := tokens.BtcFromPublicKey
-	if args != nil && args.Extra != nil {
-		extra := args.Extra.BtcExtra
-		if extra != nil && extra.FromPublicKey != nil {
-			fromPublicKey = *extra.FromPublicKey
-		}
-	}
-	if fromPublicKey != "" {
-		cPkData = common.FromHex(fromPublicKey)
-		if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
-			return nil, "", err
-		}
+	cPkData, err := b.getPkDataFronConfig(args)
+	if err != nil {
+		return nil, "", err
 	}
 
+	var sigScript []byte
 	for i, txin := range txIn {
-		l := len(rsv[i]) - 2
-		rs := rsv[i][0:l]
-
-		r := rs[:64]
-		s := rs[64:]
-
-		rr, _ := new(big.Int).SetString(r, 16)
-		ss, _ := new(big.Int).SetString(s, 16)
-
-		sign := &btcec.Signature{
-			R: rr,
-			S: ss,
+		signData, ok := getSigDataFromRSV(rsv[i])
+		if !ok {
+			return nil, "", errors.New("wrong RSV data")
 		}
-
-		signData := append(sign.Serialize(), byte(hashType))
 
 		if len(cPkData) == 0 {
-			rsvData := common.FromHex(rsv[i])
-			hashData := common.FromHex(msgHash[i])
-			pkData, err := crypto.Ecrecover(hashData, rsvData)
+			cPkData, err = b.getPkDataFronSig(rsv[i], msgHash[i], args.SwapType)
 			if err != nil {
-				return nil, "", err
-			}
-			pk, _ := btcec.ParsePubKey(pkData, btcec.S256())
-			cPkData = pk.SerializeCompressed()
-			if err := b.verifyPublickeyData(cPkData, args.SwapType); err != nil {
 				return nil, "", err
 			}
 		}
@@ -158,7 +126,7 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash 
 			sigScript, err = txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).Script()
 		case txscript.ScriptHashTy:
 			if sigScripts == nil {
-				err = fmt.Errorf("MakeSignedTransaction spend p2sh without redeem scripts")
+				err = fmt.Errorf("call MakeSignedTransaction spend p2sh without redeem scripts")
 			} else {
 				sigScript, err = txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).AddData(sigScripts[i]).Script()
 			}
@@ -173,6 +141,69 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash 
 	txHash = authoredTx.Tx.TxHash().String()
 	log.Info(b.TokenConfig.BlockChain+" MakeSignedTransaction success", "txhash", txHash)
 	return authoredTx, txHash, nil
+}
+
+func getSigDataFromRSV(rsv string) ([]byte, bool) {
+	rs := rsv[0 : len(rsv)-2]
+
+	r := rs[:64]
+	s := rs[64:]
+
+	rr, ok := new(big.Int).SetString(r, 16)
+	if !ok {
+		return nil, false
+	}
+
+	ss, ok := new(big.Int).SetString(s, 16)
+	if !ok {
+		return nil, false
+	}
+
+	sign := &btcec.Signature{
+		R: rr,
+		S: ss,
+	}
+
+	signData := append(sign.Serialize(), byte(hashType))
+	return signData, true
+}
+
+func (b *Bridge) getPkDataFronConfig(args *tokens.BuildTxArgs) (cPkData []byte, err error) {
+	fromPublicKey := tokens.BtcFromPublicKey
+	if args != nil && args.Extra != nil {
+		extra := args.Extra.BtcExtra
+		if extra != nil && extra.FromPublicKey != nil {
+			fromPublicKey = *extra.FromPublicKey
+		}
+	}
+	if fromPublicKey == "" {
+		return nil, nil
+	}
+	cPkData = common.FromHex(fromPublicKey)
+	err = b.verifyPublickeyData(cPkData, args.SwapType)
+	if err != nil {
+		return nil, err
+	}
+	return cPkData, nil
+}
+
+func (b *Bridge) getPkDataFronSig(rsv, msgHash string, swapType tokens.SwapType) (cPkData []byte, err error) {
+	rsvData := common.FromHex(rsv)
+	hashData := common.FromHex(msgHash)
+	pkData, err := crypto.Ecrecover(hashData, rsvData)
+	if err != nil {
+		return nil, err
+	}
+	pk, err := btcec.ParsePubKey(pkData, btcec.S256())
+	if err != nil {
+		return nil, err
+	}
+	cPkData = pk.SerializeCompressed()
+	err = b.verifyPublickeyData(cPkData, swapType)
+	if err != nil {
+		return nil, err
+	}
+	return cPkData, nil
 }
 
 // DcrmSignMsgHash dcrm sign msg hash

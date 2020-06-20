@@ -67,11 +67,13 @@ func doInstall(cmdline []string) {
 	build.MustRun(goinstall)
 }
 
-func buildFlags(env build.Environment) (flags []string) {
+func buildFlags(env *build.Environment) (flags []string) {
 	var ld []string
 	if env.Commit != "" {
-		ld = append(ld, "-X", "main.gitCommit="+env.Commit)
-		ld = append(ld, "-X", "main.gitDate="+env.Date)
+		ld = append(ld,
+			"-X", "main.gitCommit="+env.Commit,
+			"-X", "main.gitDate="+env.Date,
+		)
 	}
 	if runtime.GOOS == "darwin" {
 		ld = append(ld, "-s")
@@ -87,13 +89,12 @@ func goTool(subcmd string, args ...string) *exec.Cmd {
 	return goToolArch(runtime.GOARCH, os.Getenv("CC"), subcmd, args...)
 }
 
-func goToolArch(arch string, cc string, subcmd string, args ...string) *exec.Cmd {
+func goToolArch(arch, cc, subcmd string, args ...string) *exec.Cmd {
 	cmd := build.GoTool(subcmd, args...)
 	if arch == "" || arch == runtime.GOARCH {
 		cmd.Env = append(cmd.Env, "GOBIN="+gobin)
 	} else {
-		cmd.Env = append(cmd.Env, "CGO_ENABLED=1")
-		cmd.Env = append(cmd.Env, "GOARCH="+arch)
+		cmd.Env = append(cmd.Env, "CGO_ENABLED=1", "GOARCH="+arch)
 	}
 	if cc != "" {
 		cmd.Env = append(cmd.Env, "CC="+cc)

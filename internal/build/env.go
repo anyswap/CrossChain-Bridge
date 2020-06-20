@@ -47,21 +47,25 @@ type Environment struct {
 	IsCronJob                 bool
 }
 
-func (env Environment) String() string {
+func (env *Environment) String() string {
 	return fmt.Sprintf("%s env (commit:%s date:%s branch:%s tag:%s buildnum:%s pr:%t)",
 		env.Name, env.Commit, env.Date, env.Branch, env.Tag, env.Buildnum, env.IsPullRequest)
 }
 
+func isTrueEnv(name string) bool {
+	return strings.EqualFold(os.Getenv(name), "true")
+}
+
 // Env returns metadata about the current CI environment, falling back to LocalEnv
 // if not running on CI.
-func Env() Environment {
+func Env() *Environment {
 	switch {
-	case os.Getenv("CI") == "true" && os.Getenv("TRAVIS") == "true":
+	case isTrueEnv("CI") && isTrueEnv("TRAVIS"):
 		commit := os.Getenv("TRAVIS_PULL_REQUEST_SHA")
 		if commit == "" {
 			commit = os.Getenv("TRAVIS_COMMIT")
 		}
-		return Environment{
+		return &Environment{
 			Name:          "travis",
 			Repo:          os.Getenv("TRAVIS_REPO_SLUG"),
 			Commit:        commit,
@@ -72,12 +76,12 @@ func Env() Environment {
 			IsPullRequest: os.Getenv("TRAVIS_PULL_REQUEST") != "false",
 			IsCronJob:     os.Getenv("TRAVIS_EVENT_TYPE") == "cron",
 		}
-	case os.Getenv("CI") == "True" && os.Getenv("APPVEYOR") == "True":
+	case isTrueEnv("CI") && isTrueEnv("APPVEYOR"):
 		commit := os.Getenv("APPVEYOR_PULL_REQUEST_HEAD_COMMIT")
 		if commit == "" {
 			commit = os.Getenv("APPVEYOR_REPO_COMMIT")
 		}
-		return Environment{
+		return &Environment{
 			Name:          "appveyor",
 			Repo:          os.Getenv("APPVEYOR_REPO_NAME"),
 			Commit:        commit,
@@ -86,7 +90,7 @@ func Env() Environment {
 			Tag:           os.Getenv("APPVEYOR_REPO_TAG_NAME"),
 			Buildnum:      os.Getenv("APPVEYOR_BUILD_NUMBER"),
 			IsPullRequest: os.Getenv("APPVEYOR_PULL_REQUEST_NUMBER") != "",
-			IsCronJob:     os.Getenv("APPVEYOR_SCHEDULED_BUILD") == "True",
+			IsCronJob:     isTrueEnv("APPVEYOR_SCHEDULED_BUILD"),
 		}
 	default:
 		return LocalEnv()
@@ -94,8 +98,8 @@ func Env() Environment {
 }
 
 // LocalEnv returns build environment metadata gathered from git.
-func LocalEnv() Environment {
-	env := applyEnvFlags(Environment{Name: "local", Repo: "local"})
+func LocalEnv() *Environment {
+	env := applyEnvFlags(&Environment{Name: "local", Repo: "local"})
 
 	head := readGitFile("HEAD")
 	if fields := strings.Fields(head); len(fields) == 2 {
@@ -104,7 +108,7 @@ func LocalEnv() Environment {
 		// In this case we are in "detached head" state
 		// see: https://git-scm.com/docs/git-checkout#_detached_head
 		// Additional check required to verify, that file contains commit hash
-		commitRe, _ := regexp.Compile("^([0-9a-f]{40})$")
+		commitRe := regexp.MustCompile("^([0-9a-f]{40})$")
 		if commit := commitRe.FindString(head); commit != "" && env.Commit == "" {
 			env.Commit = commit
 		}
@@ -144,7 +148,7 @@ func getDate(commit string) string {
 	return time.Unix(date, 0).Format("20060102")
 }
 
-func applyEnvFlags(env Environment) Environment {
+func applyEnvFlags(env *Environment) *Environment {
 	if !flag.Parsed() {
 		panic("you need to call flag.Parse before Env or LocalEnv")
 	}

@@ -102,7 +102,7 @@ Signed integers, floating point numbers, maps, channels and functions cannot be 
 
 Struct Tags
 
-Package rlp honours certain struct tags: "-", "tail", "nil", "nilList" and "nilString".
+Package rlp honors certain struct tags: "-", "tail", "nil", "nilList" and "nilString".
 
 The "-" tag ignores fields.
 

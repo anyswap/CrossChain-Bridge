@@ -12,7 +12,7 @@ import (
 )
 
 // GetP2shAddressWithMemo common
-func GetP2shAddressWithMemo(memo []byte, pubKeyHash []byte, net *chaincfg.Params) (p2shAddress string, redeemScript []byte, err error) {
+func GetP2shAddressWithMemo(memo, pubKeyHash []byte, net *chaincfg.Params) (p2shAddress string, redeemScript []byte, err error) {
 	redeemScript, err = txscript.NewScriptBuilder().
 		AddData(memo).AddOp(txscript.OP_DROP).
 		AddOp(txscript.OP_DUP).AddOp(txscript.OP_HASH160).AddData(pubKeyHash).
@@ -31,7 +31,7 @@ func GetP2shAddressWithMemo(memo []byte, pubKeyHash []byte, net *chaincfg.Params
 }
 
 // GetP2shAddress get p2sh address from bind address
-func (b *Bridge) GetP2shAddress(bindAddr string) (string, []byte, error) {
+func (b *Bridge) GetP2shAddress(bindAddr string) (p2shAddress string, redeemScript []byte, err error) {
 	if !tokens.GetCrossChainBridge(!b.IsSrc).IsValidAddress(bindAddr) {
 		return "", nil, fmt.Errorf("invalid bind address %v", bindAddr)
 	}
@@ -60,7 +60,7 @@ func (b *Bridge) getRedeemScriptByOutputScrpit(preScript []byte) ([]byte, error)
 	var address string
 	address, redeemScript, _ := b.GetP2shAddress(bindAddr)
 	if address != p2shAddr {
-		return nil, fmt.Errorf("ps2h address mismatch for bind addres %v, have %v want %v", bindAddr, p2shAddr, address)
+		return nil, fmt.Errorf("ps2h address mismatch for bind address %v, have %v want %v", bindAddr, p2shAddr, address)
 	}
 	return redeemScript, nil
 }

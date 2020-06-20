@@ -100,7 +100,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 
 	history := getSwapHistory(txid, true)
 	if history != nil {
-		if _, err := bridge.GetTransaction(history.matchTx); err == nil {
+		if _, err = bridge.GetTransaction(history.matchTx); err == nil {
 			matchTx := &MatchTx{
 				SwapTx:   history.matchTx,
 				SwapType: tokens.SwapinType,
@@ -190,7 +190,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 
 	history := getSwapHistory(txid, false)
 	if history != nil {
-		if _, err := bridge.GetTransaction(history.matchTx); err == nil {
+		if _, err = bridge.GetTransaction(history.matchTx); err == nil {
 			matchTx := &MatchTx{
 				SwapTx:   history.matchTx,
 				SwapType: tokens.SwapoutType,
@@ -259,7 +259,6 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		_ = mongodb.UpdateSwapoutResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
 	}
 	return err
-
 }
 
 type swapInfo struct {

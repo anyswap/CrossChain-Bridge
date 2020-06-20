@@ -3,8 +3,8 @@ Identifier = "BTC2ETH"
 
 # modgodb database connection config (server only)
 [MongoDB]
-DbURL = "localhost:27017"
-DbName = "databasename"
+DBURL = "localhost:27017"
+DBName = "databasename"
 UserName = "username"
 Password = "password"
 

@@ -64,7 +64,7 @@ func GetPoolTransactions(b tokens.CrossChainBridge, addr string) ([]*ElectTx, er
 }
 
 // GetTransactionHistory call /address/{addr}/txs/chain
-func GetTransactionHistory(b tokens.CrossChainBridge, addr string, lastSeenTxid string) ([]*ElectTx, error) {
+func GetTransactionHistory(b tokens.CrossChainBridge, addr, lastSeenTxid string) ([]*ElectTx, error) {
 	_, gateway := b.GetTokenAndGateway()
 	url := gateway.APIAddress + "/address/" + addr + "/txs/chain"
 	if lastSeenTxid != "" {

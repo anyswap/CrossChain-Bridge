@@ -59,12 +59,12 @@ func HasHexPrefix(str string) bool {
 
 // IsHexCharacter returns bool of c being a valid hexadecimal.
 func IsHexCharacter(c byte) bool {
-	return ('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
 
 // IsUpperHexCharacter returns bool of c being a valid uppercase hexadecimal.
 func IsUpperHexCharacter(c byte) bool {
-	return 'A' <= c && c <= 'F'
+	return c >= 'A' && c <= 'F'
 }
 
 // IsHex validates whether each byte is valid hexadecimal string.

@@ -96,7 +96,7 @@ func MaxUint64(x, y uint64) uint64 {
 
 // GetData get data[start:start+size] (won't out of index range),
 // and right padding the bytes to size long
-func GetData(data []byte, start uint64, size uint64) []byte {
+func GetData(data []byte, start, size uint64) []byte {
 	length := uint64(len(data))
 	if start > length {
 		start = length
@@ -114,11 +114,11 @@ func BigUint64(v *big.Int) (uint64, bool) {
 }
 
 // GetBigInt get big int from data[start:start+size]
-func GetBigInt(data []byte, start uint64, size uint64) *big.Int {
+func GetBigInt(data []byte, start, size uint64) *big.Int {
 	return new(big.Int).SetBytes(GetData(data, start, size))
 }
 
 // GetUint64 get uint64 from data[start:start+size]
-func GetUint64(data []byte, start uint64, size uint64) (uint64, bool) {
+func GetUint64(data []byte, start, size uint64) (uint64, bool) {
 	return BigUint64(GetBigInt(data, start, size))
 }

@@ -3,6 +3,7 @@ package worker
 import (
 	"time"
 
+	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
 	"github.com/fsn-dev/crossChain-Bridge/tokens/bridge"
 )
 
@@ -12,6 +13,7 @@ const interval = 10 * time.Millisecond
 func StartWork(isServer bool) {
 	logWorker("worker", "start server worker")
 
+	client.InitHTTPClient()
 	bridge.InitCrossChainBridge(isServer)
 
 	go StartScanJob(isServer)
@@ -33,8 +35,6 @@ func StartWork(isServer bool) {
 
 	go StartStableJob()
 	time.Sleep(interval)
-
-	//go StartRecallJob()
 
 	go StartAggregateJob()
 }

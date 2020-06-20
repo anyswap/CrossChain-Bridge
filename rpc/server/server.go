@@ -18,11 +18,43 @@ import (
 
 // StartAPIServer start api server
 func StartAPIServer() {
+	router := initRouter()
+
+	apiPort := params.GetAPIPort()
+	apiServer := params.GetConfig().APIServer
+	allowedOrigins := apiServer.AllowedOrigins
+
+	corsOptions := []handlers.CORSOption{
+		handlers.AllowedMethods([]string{"GET", "POST"}),
+	}
+	if len(allowedOrigins) != 0 {
+		corsOptions = append(corsOptions,
+			handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"}),
+			handlers.AllowedOrigins(allowedOrigins),
+		)
+	}
+
+	log.Info("JSON RPC service listen and serving", "port", apiPort, "allowedOrigins", allowedOrigins)
+	svr := http.Server{
+		Addr:         fmt.Sprintf(":%v", apiPort),
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		Handler:      handlers.CORS(corsOptions...)(router),
+	}
+	go func() {
+		if err := svr.ListenAndServe(); err != nil {
+			log.Error("ListenAndServe error", "err", err)
+		}
+	}()
+}
+
+func initRouter() *mux.Router {
+	r := mux.NewRouter()
+
 	rpcserver := rpc.NewServer()
 	rpcserver.RegisterCodec(rpcjson.NewCodec(), "application/json")
 	_ = rpcserver.RegisterService(new(rpcapi.RPCAPI), "swap")
 
-	r := mux.NewRouter()
 	r.Handle("/rpc", rpcserver)
 	r.HandleFunc("/serverinfo", restapi.SeverInfoHandler).Methods("GET")
 	r.HandleFunc("/statistics", restapi.StatisticsHandler).Methods("GET")
@@ -62,32 +94,7 @@ func StartAPIServer() {
 	r.HandleFunc("/p2sh/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
 	r.HandleFunc("/p2sh/bind/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
 
-	apiPort := params.GetAPIPort()
-	apiServer := params.GetConfig().APIServer
-	allowedOrigins := apiServer.AllowedOrigins
-
-	corsOptions := []handlers.CORSOption{
-		handlers.AllowedMethods([]string{"GET", "POST"}),
-	}
-	if len(allowedOrigins) != 0 {
-		corsOptions = append(corsOptions,
-			handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"}),
-			handlers.AllowedOrigins(allowedOrigins),
-		)
-	}
-
-	log.Info("JSON RPC service listen and serving", "port", apiPort, "allowedOrigins", allowedOrigins)
-	svr := http.Server{
-		Addr:         fmt.Sprintf(":%v", apiPort),
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
-		Handler:      handlers.CORS(corsOptions...)(r),
-	}
-	go func() {
-		if err := svr.ListenAndServe(); err != nil {
-			log.Error("ListenAndServe error", "err", err)
-		}
-	}()
+	return r
 }
 
 func warnHandler(w http.ResponseWriter, r *http.Request) {

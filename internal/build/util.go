@@ -91,5 +91,5 @@ func readGitFile(file string) string {
 // because runtime.Version checks on the host should match the tools that are run.
 func GoTool(tool string, args ...string) *exec.Cmd {
 	args = append([]string{tool}, args...)
-	return exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), args...)
+	return exec.Command(filepath.Join(runtime.GOROOT(), "bin", "go"), args...) //nolint:gosec // any better way?
 }

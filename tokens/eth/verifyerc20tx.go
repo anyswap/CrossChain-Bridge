@@ -118,7 +118,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 	return swapInfo, nil
 }
 
-func parseErc20SwapinTxInput(input *[]byte) (string, string, *big.Int, error) {
+func parseErc20SwapinTxInput(input *[]byte) (from, to string, value *big.Int, err error) {
 	if input == nil {
 		return "", "", nil, fmt.Errorf("empty tx input")
 	}
@@ -133,13 +133,13 @@ func parseErc20SwapinTxInput(input *[]byte) (string, string, *big.Int, error) {
 	case bytes.Equal(funcHash, erc20CodeParts["transferFrom"]):
 		isTransferFrom = true
 	default:
-		return "", "", nil, fmt.Errorf("Erc20 Transfer func hash not found")
+		return "", "", nil, fmt.Errorf("func hash of Erc20 Transfer is not found")
 	}
 	encData := data[4:]
 	return parseErc20EncodedData(encData, isTransferFrom)
 }
 
-func parseErc20SwapinTxLogs(logs []*types.RPCLog) (string, string, *big.Int, error) {
+func parseErc20SwapinTxLogs(logs []*types.RPCLog) (from, to string, value *big.Int, err error) {
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
 			continue
@@ -150,24 +150,23 @@ func parseErc20SwapinTxLogs(logs []*types.RPCLog) (string, string, *big.Int, err
 		if bytes.Equal(log.Topics[0][:], erc20CodeParts["LogTransfer"]) {
 			continue
 		}
-		from := common.BytesToAddress(log.Topics[1][:]).String()
-		to := common.BytesToAddress(log.Topics[2][:]).String()
-		value := new(big.Int).SetBytes(*log.Data)
+		from = common.BytesToAddress(log.Topics[1][:]).String()
+		to = common.BytesToAddress(log.Topics[2][:]).String()
+		value = new(big.Int).SetBytes(*log.Data)
 		return from, to, value, nil
 	}
-	return "", "", nil, fmt.Errorf("Erc20 Transfer log not found or removed")
+	return "", "", nil, fmt.Errorf("log of Erc20 Transfer is not found or removed")
 }
 
-func parseErc20EncodedData(encData []byte, isTransferFrom bool) (string, string, *big.Int, error) {
-	from := ""
+func parseErc20EncodedData(encData []byte, isTransferFrom bool) (from, to string, value *big.Int, err error) {
 	if isTransferFrom {
 		from = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
 		encData = encData[32:]
 	}
 	if len(encData) < 64 {
-		return "", "", nil, fmt.Errorf("wrong lenght of encoded data")
+		return "", "", nil, fmt.Errorf("wrong length of encoded data")
 	}
-	to := common.BytesToAddress(common.GetData(encData, 0, 32)).String()
-	value := common.GetBigInt(encData, 32, 32)
+	to = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
+	value = common.GetBigInt(encData, 32, 32)
 	return from, to, value, nil
 }

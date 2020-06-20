@@ -12,6 +12,13 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/types"
 )
 
+const (
+	netMainnet = "mainnet"
+	netTestnet = "testnet"
+	netDevnet  = "devnet"
+	netCustom  = "custom"
+)
+
 // Bridge fsn bridge inherit from eth bridge
 type Bridge struct {
 	*eth.Bridge
@@ -38,8 +45,8 @@ func (b *Bridge) VerifyChainID() {
 	networkID := strings.ToLower(tokenCfg.NetID)
 
 	switch networkID {
-	case "mainnet", "testnet", "devnet":
-	case "custom":
+	case netMainnet, netTestnet, netDevnet:
+	case netCustom:
 		return
 	default:
 		panic(fmt.Sprintf("unsupported fusion network: %v", tokenCfg.NetID))
@@ -65,15 +72,15 @@ func (b *Bridge) VerifyChainID() {
 	}
 
 	switch networkID {
-	case "mainnet":
+	case netMainnet:
 		if chainID.Uint64() != 32659 {
 			panicMismatchChainID()
 		}
-	case "testnet":
+	case netTestnet:
 		if chainID.Uint64() != 46688 {
 			panicMismatchChainID()
 		}
-	case "devnet":
+	case netDevnet:
 		if chainID.Uint64() != 55555 {
 			panicMismatchChainID()
 		}

@@ -51,7 +51,7 @@ func IsSwapoutExist(txid string) bool {
 }
 
 // RegisterSwapin register swapin
-func RegisterSwapin(txid string, bind string) error {
+func RegisterSwapin(txid, bind string) error {
 	isServer := dcrm.IsSwapServer()
 	log.Info("[scan] register swapin", "isServer", isServer, "tx", txid, "bind", bind)
 	if isServer {
@@ -70,7 +70,7 @@ func RegisterSwapin(txid string, bind string) error {
 }
 
 // RegisterP2shSwapin register p2sh swapin
-func RegisterP2shSwapin(txid string, bind string) error {
+func RegisterP2shSwapin(txid, bind string) error {
 	isServer := dcrm.IsSwapServer()
 	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid, "bind", bind)
 	if isServer {
@@ -110,7 +110,7 @@ func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
 }
 
 // RegisterSwapout register swapout
-func RegisterSwapout(txid string, bind string) error {
+func RegisterSwapout(txid, bind string) error {
 	isServer := dcrm.IsSwapServer()
 	log.Info("[scan] register swapout", "isServer", isServer, "txid", txid, "bind", bind)
 	if isServer {

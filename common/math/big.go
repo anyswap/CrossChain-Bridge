@@ -20,6 +20,7 @@ package math
 import (
 	"fmt"
 	"math/big"
+	"strings"
 )
 
 // Various big integer limit values.
@@ -75,7 +76,7 @@ func ParseBig256(s string) (*big.Int, bool) {
 	}
 	var bigint *big.Int
 	var ok bool
-	if len(s) >= 2 && (s[:2] == "0x" || s[:2] == "0X") {
+	if len(s) >= 2 && strings.EqualFold(s[:2], "0x") {
 		bigint, ok = new(big.Int).SetString(s[2:], 16)
 	} else {
 		bigint, ok = new(big.Int).SetString(s, 10)

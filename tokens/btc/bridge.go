@@ -8,6 +8,12 @@ import (
 	"github.com/fsn-dev/crossChain-Bridge/tokens"
 )
 
+const (
+	netMainnet  = "mainnet"
+	netTestnet3 = "testnet3"
+	netCustom   = "custom"
+)
+
 // BridgeInstance btc bridge instance
 var BridgeInstance *Bridge
 
@@ -31,8 +37,8 @@ func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *to
 
 	networkID := strings.ToLower(tokenCfg.NetID)
 	switch networkID {
-	case "mainnet", "testnet3":
-	case "custom":
+	case netMainnet, netTestnet3:
+	case netCustom:
 		return
 	default:
 		log.Fatal("unsupported bitcoin network", "netID", tokenCfg.NetID)
@@ -42,7 +48,7 @@ func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *to
 		log.Fatal("invalid dcrm address (not p2pkh)", "address", tokenCfg.DcrmAddress)
 	}
 
-	if strings.ToUpper(tokenCfg.Symbol) == "BTC" && *tokenCfg.Decimals != 8 {
+	if strings.EqualFold(tokenCfg.Symbol, "BTC") && *tokenCfg.Decimals != 8 {
 		log.Fatal("invalid decimals for BTC", "configed", *tokenCfg.Decimals, "want", 8)
 	}
 

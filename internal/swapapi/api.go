@@ -62,7 +62,6 @@ func GetRawSwapinResult(txid *string) (*SwapResult, error) {
 
 // GetSwapin api
 func GetSwapin(txid *string) (*SwapInfo, error) {
-	//log.Debug("[api] receive GetSwapin", "txid", *txid)
 	txidstr := *txid
 	result, err := mongodb.FindSwapinResult(txidstr)
 	if err == nil {
@@ -87,7 +86,6 @@ func GetRawSwapoutResult(txid *string) (*SwapResult, error) {
 
 // GetSwapout api
 func GetSwapout(txid *string) (*SwapInfo, error) {
-	//log.Debug("[api] receive GetSwapout", "txid", *txid)
 	txidstr := *txid
 	result, err := mongodb.FindSwapoutResult(txidstr)
 	if err == nil {
@@ -142,24 +140,10 @@ func Swapin(txid *string) (*PostResult, error) {
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32099, "verify swapin failed! "+err.Error())
 	}
-	var memo string
-	if err != nil {
-		memo = err.Error()
-	}
-	swap := &mongodb.MgoSwap{
-		Key:       txidstr,
-		TxID:      txidstr,
-		TxType:    uint32(tokens.SwapinTx),
-		Bind:      swapInfo.Bind,
-		Status:    mongodb.TxNotStable,
-		Timestamp: time.Now().Unix(),
-		Memo:      memo,
-	}
-	err = mongodb.AddSwapin(swap)
+	err = addSwapToDatabase(txidstr, tokens.SwapinTx, swapInfo, err)
 	if err != nil {
 		return nil, err
 	}
-	log.Info("[api] add swapin", "swap", swap)
 	return &SuccessPostResult, nil
 }
 
@@ -174,25 +158,33 @@ func Swapout(txid *string) (*PostResult, error) {
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32098, "verify swapout failed! "+err.Error())
 	}
-	var memo string
+	err = addSwapToDatabase(txidstr, tokens.SwapoutTx, swapInfo, err)
 	if err != nil {
-		memo = err.Error()
+		return nil, err
+	}
+	return &SuccessPostResult, nil
+}
+
+func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.TxSwapInfo, verifyError error) error {
+	var memo string
+	if verifyError != nil {
+		memo = verifyError.Error()
 	}
 	swap := &mongodb.MgoSwap{
-		Key:       txidstr,
-		TxID:      txidstr,
-		TxType:    uint32(tokens.SwapoutTx),
+		Key:       txid,
+		TxID:      txid,
+		TxType:    uint32(txType),
 		Bind:      swapInfo.Bind,
 		Status:    mongodb.TxNotStable,
 		Timestamp: time.Now().Unix(),
 		Memo:      memo,
 	}
-	err = mongodb.AddSwapout(swap)
-	if err != nil {
-		return nil, err
+	isSwapin := txType == tokens.SwapinTx
+	log.Info("[api] add swap", "isSwapin", isSwapin, "swap", swap)
+	if isSwapin {
+		return mongodb.AddSwapin(swap)
 	}
-	log.Info("[api] add swapout", "swap", swap)
-	return &SuccessPostResult, nil
+	return mongodb.AddSwapout(swap)
 }
 
 // RecallSwapin api
@@ -261,7 +253,7 @@ func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddres
 }
 
 // P2shSwapin api
-func P2shSwapin(txid *string, bindAddr *string) (*PostResult, error) {
+func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	log.Debug("[api] receive P2shSwapin", "txid", *txid, "bindAddress", *bindAddr)
 	if btc.BridgeInstance == nil {
 		return nil, errNotBridge

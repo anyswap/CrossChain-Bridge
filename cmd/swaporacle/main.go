@@ -20,7 +20,7 @@ var (
 	app = utils.NewApp(clientIdentifier, gitCommit, "the swaporacle command line interface")
 )
 
-func init() {
+func initApp() {
 	// Initialize the CLI app and start action
 	app.Action = swaporacle
 	app.HideVersion = true // we have a command to print the version
@@ -43,6 +43,7 @@ func init() {
 }
 
 func main() {
+	initApp()
 	if err := app.Run(os.Args); err != nil {
 		log.Println(err)
 		os.Exit(1)

@@ -17,7 +17,7 @@ type RPCNullArgs struct{}
 // GetVersionInfo api
 func (s *RPCAPI) GetVersionInfo(r *http.Request, args *RPCNullArgs, result *string) error {
 	ver := params.VersionWithMeta
-	//ver += "-rev3"
+	ver += "-rev1"
 	*result = ver
 	return nil
 }
@@ -101,20 +101,9 @@ type RPCQueryHistoryArgs struct {
 	Limit   int    `json:"limit"`
 }
 
-func (args *RPCQueryHistoryArgs) getQueryArgs() (address string, offset int, limit int, err error) {
-	address = args.Address
-	offset = args.Offset
-	limit = args.Limit
-	return address, offset, limit, nil
-}
-
 // GetSwapinHistory api
 func (s *RPCAPI) GetSwapinHistory(r *http.Request, args *RPCQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
-	address, offset, limit, err := args.getQueryArgs()
-	if err != nil {
-		return err
-	}
-	res, err := swapapi.GetSwapinHistory(address, offset, limit)
+	res, err := swapapi.GetSwapinHistory(args.Address, args.Offset, args.Limit)
 	if err == nil && res != nil {
 		*result = res
 	}
@@ -123,11 +112,7 @@ func (s *RPCAPI) GetSwapinHistory(r *http.Request, args *RPCQueryHistoryArgs, re
 
 // GetSwapoutHistory api
 func (s *RPCAPI) GetSwapoutHistory(r *http.Request, args *RPCQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
-	address, offset, limit, err := args.getQueryArgs()
-	if err != nil {
-		return err
-	}
-	res, err := swapapi.GetSwapoutHistory(address, offset, limit)
+	res, err := swapapi.GetSwapoutHistory(args.Address, args.Offset, args.Limit)
 	if err == nil && res != nil {
 		*result = res
 	}

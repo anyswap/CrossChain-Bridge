@@ -53,7 +53,6 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 	for height := latest; height+maxScanHeight > latest; {
 		logs, err := b.getSwapLogs(height)
 		if err != nil {
-			//log.Trace("[swaphistory] first scan get swap logs error", "isSrc", b.IsSrc, "height", height, "err", err)
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}

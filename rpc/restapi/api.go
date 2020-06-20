@@ -61,7 +61,7 @@ func GetSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-// GetRawSwapoutHandler hanlder
+// GetRawSwapoutHandler handler
 func GetRawSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
@@ -88,7 +88,7 @@ func GetSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-func getHistoryParams(r *http.Request) (address string, offset int, limit int, err error) {
+func getHistoryParams(r *http.Request) (address string, offset, limit int, err error) {
 	vars := mux.Vars(r)
 	vals := r.URL.Query()
 

@@ -35,7 +35,7 @@ func (b *Bridge) GetPoolTransactions(addr string) ([]*electrs.ElectTx, error) {
 }
 
 // GetTransactionHistory impl
-func (b *Bridge) GetTransactionHistory(addr string, lastSeenTxid string) ([]*electrs.ElectTx, error) {
+func (b *Bridge) GetTransactionHistory(addr, lastSeenTxid string) ([]*electrs.ElectTx, error) {
 	return electrs.GetTransactionHistory(b, addr, lastSeenTxid)
 }
 

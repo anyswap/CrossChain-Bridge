@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	swapinNonce uint64
+	swapinNonce  uint64
+	swapoutNonce uint64
 
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
@@ -58,60 +59,77 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
 }
 
-func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (*tokens.EthExtraArgs, error) {
+func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraArgs, err error) {
 	if args.Value == nil {
 		args.Value = new(big.Int)
 	}
-	var extra *tokens.EthExtraArgs
 	if args.Extra == nil || args.Extra.EthExtra == nil {
 		extra = &tokens.EthExtraArgs{}
 		args.Extra = &tokens.AllExtras{EthExtra: extra}
 	} else {
 		extra = args.Extra.EthExtra
 	}
-	var err error
 	if extra.GasPrice == nil {
-		var price *big.Int
-		for i := 0; i < retryRPCCount; i++ {
-			price, err = b.SuggestPrice()
-			if err == nil {
-				break
-			}
-			if i+1 == retryRPCCount {
-				return nil, err
-			}
-			time.Sleep(retryRPCInterval)
+		extra.GasPrice, err = b.getGasPrice()
+		if err != nil {
+			return nil, err
 		}
-		extra.GasPrice = price
 	}
 	if extra.Nonce == nil {
-		var nonce uint64
-		for i := 0; i < retryRPCCount; i++ {
-			nonce, err = b.GetPoolNonce(args.From)
-			if err == nil {
-				break
-			}
-			if i+1 == retryRPCCount {
-				return nil, err
-			}
-			time.Sleep(retryRPCInterval)
+		extra.Nonce, err = b.getAccountNonce(args.From, args.SwapType)
+		if err != nil {
+			return nil, err
 		}
-		if args.SwapType == tokens.SwapinType &&
-			args.From == b.TokenConfig.DcrmAddress {
-			if swapinNonce >= nonce {
-				swapinNonce++
-				nonce = swapinNonce
-			} else {
-				swapinNonce = nonce
-			}
-		}
-		extra.Nonce = &nonce
 	}
 	if extra.Gas == nil {
 		extra.Gas = new(uint64)
 		*extra.Gas = 90000
 	}
 	return extra, nil
+}
+
+func (b *Bridge) getGasPrice() (price *big.Int, err error) {
+	for i := 0; i < retryRPCCount; i++ {
+		price, err = b.SuggestPrice()
+		if err == nil {
+			return price, nil
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	return nil, err
+}
+
+func (b *Bridge) getAccountNonce(from string, swapType tokens.SwapType) (nonceptr *uint64, err error) {
+	var nonce uint64
+	for i := 0; i < retryRPCCount; i++ {
+		nonce, err = b.GetPoolNonce(from)
+		if err == nil {
+			break
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if from == b.TokenConfig.DcrmAddress {
+		switch swapType {
+		case tokens.SwapinType:
+			if swapinNonce >= nonce {
+				swapinNonce++
+				nonce = swapinNonce
+			} else {
+				swapinNonce = nonce
+			}
+		case tokens.SwapoutType, tokens.SwapRecallType:
+			if swapoutNonce >= nonce {
+				swapoutNonce++
+				nonce = swapoutNonce
+			} else {
+				swapoutNonce = nonce
+			}
+		}
+	}
+	return &nonce, nil
 }
 
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`

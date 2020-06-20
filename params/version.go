@@ -12,6 +12,10 @@ const (
 	VersionMeta  = "alpha" // Version metadata to append to the version string
 )
 
+const (
+	versionStable = "stable"
+)
+
 // Version holds the textual version string.
 var Version = func() string {
 	return fmt.Sprintf("%d.%d.%d", VersionMajor, VersionMinor, VersionPatch)
@@ -31,7 +35,7 @@ var VersionWithMeta = func() string {
 //      "1.8.13-unstable-21c059b6" for unstable releases
 func ArchiveVersion(gitCommit string) string {
 	vsn := Version
-	if VersionMeta != "stable" {
+	if VersionMeta != versionStable {
 		vsn += "-" + VersionMeta
 	}
 	if len(gitCommit) >= 8 {
@@ -46,7 +50,7 @@ func VersionWithCommit(gitCommit, gitDate string) string {
 	if len(gitCommit) >= 8 {
 		vsn += "-" + gitCommit[:8]
 	}
-	if (VersionMeta != "stable") && (gitDate != "") {
+	if (VersionMeta != versionStable) && (gitDate != "") {
 		vsn += "-" + gitDate
 	}
 	return vsn

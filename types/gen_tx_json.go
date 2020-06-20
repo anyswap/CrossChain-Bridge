@@ -12,7 +12,7 @@ import (
 )
 
 // MarshalJSON marshals as JSON.
-func (t txdata) MarshalJSON() ([]byte, error) {
+func (t *txdata) MarshalJSON() ([]byte, error) {
 	type txdata struct {
 		AccountNonce hexutil.Uint64  `json:"nonce"    gencodec:"required"`
 		Price        *hexutil.Big    `json:"gasPrice" gencodec:"required"`

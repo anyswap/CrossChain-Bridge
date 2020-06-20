@@ -29,7 +29,6 @@ func (b *Bridge) IsP2pkhAddress(addr string) bool {
 	}
 	_, ok := address.(*btcutil.AddressPubKeyHash)
 	return ok
-
 }
 
 // IsP2shAddress check p2sh addrss
@@ -44,7 +43,6 @@ func (b *Bridge) IsP2shAddress(addr string) bool {
 	}
 	_, ok := address.(*btcutil.AddressScriptHash)
 	return ok
-
 }
 
 // GetChainConfig get chain config (net params)
@@ -52,9 +50,9 @@ func (b *Bridge) GetChainConfig() *chaincfg.Params {
 	token := b.TokenConfig
 	networkID := strings.ToLower(token.NetID)
 	switch networkID {
-	case "mainnet":
+	case netMainnet:
 		return &chaincfg.MainNetParams
-	case "testnet3":
+	case netTestnet3:
 		return &chaincfg.TestNet3Params
 	}
 	return &chaincfg.TestNet3Params

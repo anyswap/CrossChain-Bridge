@@ -67,7 +67,6 @@ func findUtxosAndAggregate(addr string) {
 		if shouldAggregate() {
 			aggregate()
 		}
-
 	}
 }
 

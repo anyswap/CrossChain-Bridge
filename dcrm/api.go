@@ -12,8 +12,12 @@ import (
 
 // get dcrm sign status error
 var (
-	ErrGetSignStatusTimeout = errors.New("GetSignStatus timeout")
-	ErrGetSignStatusFailed  = errors.New("GetSignStatus failure")
+	ErrGetSignStatusTimeout = errors.New("getSignStatus timeout")
+	ErrGetSignStatusFailed  = errors.New("getSignStatus failure")
+)
+
+const (
+	successStatus = "Success"
 )
 
 func newWrongStatusError(subject, status, errInfo string) error {
@@ -35,8 +39,8 @@ func GetEnode() (string, error) {
 	if err != nil {
 		return "", wrapPostError("dcrm_getEnode", err)
 	}
-	if result.Status != "Success" {
-		return "", newWrongStatusError("GetEnode", result.Status, result.Error)
+	if result.Status != successStatus {
+		return "", newWrongStatusError("getEnode", result.Status, result.Error)
 	}
 	return result.Data.Enode, nil
 }
@@ -48,12 +52,12 @@ func GetSignNonce() (uint64, error) {
 	if err != nil {
 		return 0, wrapPostError("dcrm_getSignNonce", err)
 	}
-	if result.Status != "Success" {
-		return 0, newWrongStatusError("GetSignNonce", result.Status, result.Error)
+	if result.Status != successStatus {
+		return 0, newWrongStatusError("getSignNonce", result.Status, result.Error)
 	}
 	bi, err := common.GetBigIntFromStr(result.Data.Result)
 	if err != nil {
-		return 0, fmt.Errorf("GetSignNonce can't parse result as big int, %v", err)
+		return 0, fmt.Errorf("getSignNonce can't parse result as big int, %v", err)
 	}
 	return bi.Uint64(), nil
 }
@@ -65,8 +69,8 @@ func GetSignStatus(key string) (*SignStatus, error) {
 	if err != nil {
 		return nil, wrapPostError("dcrm_getSignStatus", err)
 	}
-	if result.Status != "Success" {
-		return nil, newWrongStatusError("GetSignStatus", result.Status, "responce error "+result.Error)
+	if result.Status != successStatus {
+		return nil, newWrongStatusError("getSignStatus", result.Status, "response error "+result.Error)
 	}
 	data := result.Data.Result
 	var signStatus SignStatus
@@ -76,15 +80,15 @@ func GetSignStatus(key string) (*SignStatus, error) {
 	}
 	switch signStatus.Status {
 	case "Failure":
-		log.Info("GetSignStatus Failure", "keyID", key, "status", data)
+		log.Info("getSignStatus Failure", "keyID", key, "status", data)
 		return nil, ErrGetSignStatusFailed
 	case "Timeout":
-		log.Info("GetSignStatus Timeout", "keyID", key, "status", data)
+		log.Info("getSignStatus Timeout", "keyID", key, "status", data)
 		return nil, ErrGetSignStatusTimeout
-	case "Success":
+	case successStatus:
 		return &signStatus, nil
 	default:
-		return nil, newWrongStatusError("GetSignStatus", signStatus.Status, "sign status error "+signStatus.Error)
+		return nil, newWrongStatusError("getSignStatus", signStatus.Status, "sign status error "+signStatus.Error)
 	}
 }
 
@@ -95,8 +99,8 @@ func GetCurNodeSignInfo() ([]*SignInfoData, error) {
 	if err != nil {
 		return nil, wrapPostError("dcrm_getCurNodeSignInfo", err)
 	}
-	if result.Status != "Success" {
-		return nil, newWrongStatusError("GetCurNodeSignInfo", result.Status, result.Error)
+	if result.Status != successStatus {
+		return nil, newWrongStatusError("getCurNodeSignInfo", result.Status, result.Error)
 	}
 	return result.Data, nil
 }
@@ -108,8 +112,8 @@ func Sign(raw string) (string, error) {
 	if err != nil {
 		return "", wrapPostError("dcrm_sign", err)
 	}
-	if result.Status != "Success" {
-		return "", newWrongStatusError("Sign", result.Status, result.Error)
+	if result.Status != successStatus {
+		return "", newWrongStatusError("sign", result.Status, result.Error)
 	}
 	return result.Data.Result, nil
 }
@@ -121,8 +125,8 @@ func AcceptSign(raw string) (string, error) {
 	if err != nil {
 		return "", wrapPostError("dcrm_acceptSign", err)
 	}
-	if result.Status != "Success" {
-		return "", newWrongStatusError("AcceptSign", result.Status, result.Error)
+	if result.Status != successStatus {
+		return "", newWrongStatusError("acceptSign", result.Status, result.Error)
 	}
 	return result.Data.Result, nil
 }
@@ -134,8 +138,8 @@ func GetGroupByID(groupID string) (*GroupInfo, error) {
 	if err != nil {
 		return nil, wrapPostError("dcrm_getGroupByID", err)
 	}
-	if result.Status != "Success" {
-		return nil, newWrongStatusError("GetGroupByID", result.Status, result.Error)
+	if result.Status != successStatus {
+		return nil, newWrongStatusError("getGroupByID", result.Status, result.Error)
 	}
 	return result.Data, nil
 }

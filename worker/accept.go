@@ -105,7 +105,10 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	default:
 		return errIdentifierMismatch
 	}
+	return rebuildAndVerifyMsgHash(msgHash, &args)
+}
 
+func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 	var (
 		srcBridge, dstBridge tokens.CrossChainBridge
 		memo                 string
@@ -125,7 +128,10 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	default:
 		return fmt.Errorf("unknown swap type %v", args.SwapType)
 	}
-	var swap *tokens.TxSwapInfo
+	var (
+		swap *tokens.TxSwapInfo
+		err  error
+	)
 	switch args.TxType {
 	case tokens.P2shSwapinTx:
 		if btc.BridgeInstance == nil {
@@ -161,7 +167,7 @@ type acceptSignInfo struct {
 	msgContext []string
 }
 
-func addAcceptSignHistory(keyID string, result string, msgHash []string, msgContext []string) {
+func addAcceptSignHistory(keyID, result string, msgHash, msgContext []string) {
 	// Create the new item as its own ring
 	item := ring.New(1)
 	item.Value = &acceptSignInfo{

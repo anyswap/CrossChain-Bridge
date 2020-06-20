@@ -42,11 +42,11 @@ type HexOrDecimal64 uint64
 
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (i *HexOrDecimal64) UnmarshalText(input []byte) error {
-	int, ok := ParseUint64(string(input))
+	num, ok := ParseUint64(string(input))
 	if !ok {
 		return fmt.Errorf("invalid hex or decimal integer %q", input)
 	}
-	*i = HexOrDecimal64(int)
+	*i = HexOrDecimal64(num)
 	return nil
 }
 
@@ -92,7 +92,7 @@ func MustParseUint64(s string) uint64 {
 	return v
 }
 
-// NOTE: The following methods need to be optimised using either bit checking or asm
+// NOTE: The following methods need to be optimized using either bit checking or asm
 
 // SafeSub returns subtraction result and whether overflow occurred.
 func SafeSub(x, y uint64) (uint64, bool) {

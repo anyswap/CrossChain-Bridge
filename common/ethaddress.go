@@ -68,7 +68,7 @@ func (a Address) Hex() string {
 	for i := 0; i < len(result); i++ {
 		hashByte := hash[i/2]
 		if i%2 == 0 {
-			hashByte = hashByte >> 4
+			hashByte >>= 4
 		} else {
 			hashByte &= 0xf
 		}

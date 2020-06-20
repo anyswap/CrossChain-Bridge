@@ -21,7 +21,7 @@ var (
 )
 
 // DcrmSignTransaction dcrm sign raw tx
-func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (interface{}, string, error) {
+func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signTx interface{}, txHash string, err error) {
 	swapinNonce--
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {
@@ -41,8 +41,8 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	var rsv string
 	i := 0
 	for ; i < retryCount; i++ {
-		signStatus, err := dcrm.GetSignStatus(keyID)
-		if err == nil {
+		signStatus, err2 := dcrm.GetSignStatus(keyID)
+		if err2 == nil {
 			if len(signStatus.Rsv) != 1 {
 				return nil, "", fmt.Errorf("get sign status require one rsv but have %v (keyID = %v)", len(signStatus.Rsv), keyID)
 			}
@@ -50,11 +50,11 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 			rsv = signStatus.Rsv[0]
 			break
 		}
-		switch err {
+		switch err2 {
 		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
-			return nil, "", err
+			return nil, "", err2
 		}
-		log.Debug("retry get sign status as error", "err", err, "txid", args.SwapID)
+		log.Debug("retry get sign status as error", "err", err2, "txid", args.SwapID)
 		time.Sleep(retryInterval)
 	}
 	if i == retryCount || rsv == "" {
@@ -85,7 +85,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", token.DcrmAddress)
 		return nil, "", errors.New("wrong sender address")
 	}
-	txHash := signedTx.Hash().String()
+	txHash = signedTx.Hash().String()
 	swapinNonce++
 	log.Info(b.TokenConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", swapinNonce)
 	return signedTx, txHash, err

@@ -42,13 +42,13 @@ func NewRequestWithTimeoutAndID(timeout, id int, method string, params ...interf
 }
 
 // RPCPost rpc post
-func RPCPost(result interface{}, url string, method string, params ...interface{}) error {
+func RPCPost(result interface{}, url, method string, params ...interface{}) error {
 	req := NewRequest(method, params...)
 	return RPCPostRequest(url, req, result)
 }
 
 // RPCPostWithTimeoutAndID rpc post with timeout and id
-func RPCPostWithTimeoutAndID(result interface{}, timeout, id int, url string, method string, params ...interface{}) error {
+func RPCPostWithTimeoutAndID(result interface{}, timeout, id int, url, method string, params ...interface{}) error {
 	req := NewRequestWithTimeoutAndID(timeout, id, method, params...)
 	return RPCPostRequest(url, req, result)
 }
@@ -123,12 +123,12 @@ func getResultFromJSONResponse(result interface{}, resp *http.Response) error {
 }
 
 // RPCRawPost rpc raw post
-func RPCRawPost(url string, body string) (string, error) {
+func RPCRawPost(url, body string) (string, error) {
 	return RPCRawPostWithTimeout(url, body, defaultTimeout)
 }
 
 // RPCRawPostWithTimeout rpc raw post with timeout
-func RPCRawPostWithTimeout(url string, reqBody string, timeout int) (string, error) {
+func RPCRawPostWithTimeout(url, reqBody string, timeout int) (string, error) {
 	resp, err := HTTPRawPost(url, reqBody, nil, nil, timeout)
 	if err != nil {
 		return "", err

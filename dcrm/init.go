@@ -45,7 +45,7 @@ func SetSignPubkey(pubkey string) {
 }
 
 // SetDcrmGroup set dcrm group
-func SetDcrmGroup(group string, thresh string, mod string) {
+func SetDcrmGroup(group, thresh, mod string) {
 	groupID = group
 	threshold = thresh
 	mode = mod
