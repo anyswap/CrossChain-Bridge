@@ -29,7 +29,10 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 	swapInfo.Height = txStatus.BlockHeight  // Height
 	swapInfo.Timestamp = txStatus.BlockTime // Timestamp
 	receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-	if !ok || receipt == nil || *receipt.Status != 1 {
+	if !ok || receipt == nil {
+		return swapInfo, tokens.ErrTxNotStable
+	}
+	if *receipt.Status != 1 {
 		return swapInfo, tokens.ErrTxWithWrongReceipt
 	}
 	if txStatus.BlockHeight == 0 ||
@@ -46,6 +49,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 
 	from, to, value, err := parseErc20SwapinTxLogs(receipt.Logs)
 	if err != nil {
+		log.Debug(b.TokenConfig.BlockChain+" parseErc20SwapinTxLogs failed", "err", err)
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
 	swapInfo.To = strings.ToLower(to)     // To
@@ -91,6 +95,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 	input := (*[]byte)(tx.Payload)
 	from, to, value, err := parseErc20SwapinTxInput(input)
 	if err != nil {
+		log.Debug(b.TokenConfig.BlockChain+" parseErc20SwapinTxInput failed", "err", err)
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
 	swapInfo.To = strings.ToLower(to) // To
@@ -147,7 +152,7 @@ func parseErc20SwapinTxLogs(logs []*types.RPCLog) (from, to string, value *big.I
 		if len(log.Topics) != 3 || log.Data == nil {
 			continue
 		}
-		if bytes.Equal(log.Topics[0][:], erc20CodeParts["LogTransfer"]) {
+		if !bytes.Equal(log.Topics[0][:], erc20CodeParts["LogTransfer"]) {
 			continue
 		}
 		from = common.BytesToAddress(log.Topics[1][:]).String()

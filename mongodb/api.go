@@ -164,7 +164,12 @@ func updateSwapStatus(tbName, txid string, status SwapStatus, timestamp int64, m
 	}
 	err := getCollection(tbName).UpdateId(txid, bson.M{"$set": updates})
 	if err == nil {
-		log.Info("mongodb update swap status", "txid", txid, "status", status, "isSwapin", tbName == tbSwapins)
+		printLog := log.Info
+		switch status {
+		case TxVerifyFailed, TxRecallFailed, TxSwapFailed:
+			printLog = log.Warn
+		}
+		printLog("mongodb update swap status", "txid", txid, "status", status, "isSwapin", tbName == tbSwapins)
 	} else {
 		log.Debug("mongodb update swap status", "txid", txid, "status", status, "isSwapin", tbName == tbSwapins, "err", err)
 	}

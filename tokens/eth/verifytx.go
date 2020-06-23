@@ -102,7 +102,10 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		swapInfo.Height = txStatus.BlockHeight  // Height
 		swapInfo.Timestamp = txStatus.BlockTime // Timestamp
 		receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-		if !ok || receipt == nil || *receipt.Status != 1 {
+		if !ok || receipt == nil {
+			return swapInfo, tokens.ErrTxNotStable
+		}
+		if *receipt.Status != 1 {
 			return swapInfo, tokens.ErrTxWithWrongReceipt
 		}
 		if txStatus.BlockHeight == 0 ||

@@ -28,7 +28,10 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 	swapInfo.Height = txStatus.BlockHeight  // Height
 	swapInfo.Timestamp = txStatus.BlockTime // Timestamp
 	receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-	if !ok || receipt == nil || *receipt.Status != 1 {
+	if !ok || receipt == nil {
+		return swapInfo, tokens.ErrTxNotStable
+	}
+	if *receipt.Status != 1 {
 		return swapInfo, tokens.ErrTxWithWrongReceipt
 	}
 	if txStatus.BlockHeight == 0 ||
@@ -47,7 +50,7 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 
 	bindAddress, value, err := parseSwapoutTxLogs(receipt.Logs)
 	if err != nil {
-		log.Debug("Bridge parseSwapoutTxLogs fail", "tx", txHash, "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" parseSwapoutTxLogs fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
 	if bindAddress != "" {
@@ -101,7 +104,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 	input := (*[]byte)(tx.Payload)
 	bindAddress, value, err := parseSwapoutTxInput(input)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" Bridge parseSwapoutTxInput fail", "tx", txHash, "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" parseSwapoutTxInput fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
 	if bindAddress != "" {

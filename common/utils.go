@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/json"
 	"errors"
 	"math/big"
 	"strconv"
@@ -10,6 +11,17 @@ import (
 	cmath "github.com/fsn-dev/crossChain-Bridge/common/math"
 	"golang.org/x/crypto/sha3"
 )
+
+// ToJSONString to json string
+func ToJSONString(content interface{}, pretty bool) string {
+	var data []byte
+	if pretty {
+		data, _ = json.MarshalIndent(content, "", "  ")
+	} else {
+		data, _ = json.Marshal(content)
+	}
+	return string(data)
+}
 
 // Keccak256Hash calc keccak hash.
 func Keccak256Hash(data ...[]byte) (h Hash) {
