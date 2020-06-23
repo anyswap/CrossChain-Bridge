@@ -33,6 +33,7 @@ var (
 	ErrWrongExtraArgs                = errors.New("wrong extra args")
 	ErrWrongP2shSwapin               = errors.New("wrong p2sh swapin (only btc supports)")
 	ErrWrongSwapinTxType             = errors.New("wrong swapin tx type")
+	ErrBuildSwapTxInWrongEndpoint    = errors.New("build swap in/out tx in wrong endpoint")
 
 	ErrTodo = errors.New("developing: TODO")
 

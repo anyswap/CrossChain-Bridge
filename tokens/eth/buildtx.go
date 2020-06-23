@@ -24,12 +24,24 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	if args.Input == nil {
 		switch args.SwapType {
 		case tokens.SwapinType:
+			if b.IsSrc {
+				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
+			}
 			b.buildSwapinTxInput(args)
 			input = *args.Input
-		case tokens.SwapoutType:
-			input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
-		case tokens.SwapRecallType:
-			input = []byte(tokens.RecallMemoPrefix + args.SwapID)
+		case tokens.SwapoutType, tokens.SwapRecallType:
+			if !b.IsSrc {
+				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
+			}
+			switch {
+			case b.TokenConfig.IsErc20():
+				b.buildErc20SwapoutTxInput(args)
+				input = *args.Input
+			case args.SwapType == tokens.SwapoutType:
+				input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
+			default:
+				input = []byte(tokens.RecallMemoPrefix + args.SwapID)
+			}
 		}
 	} else {
 		input = *args.Input
@@ -49,7 +61,9 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 
 	switch args.SwapType {
 	case tokens.SwapoutType, tokens.SwapRecallType:
-		value = tokens.CalcSwappedValue(value, b.IsSrc)
+		if !b.TokenConfig.IsErc20() {
+			value = tokens.CalcSwappedValue(value, false)
+		}
 	}
 
 	if args.SwapType != tokens.NoSwapType {
@@ -114,14 +128,14 @@ func (b *Bridge) getAccountNonce(from string, swapType tokens.SwapType) (noncept
 	if from == b.TokenConfig.DcrmAddress {
 		switch swapType {
 		case tokens.SwapinType:
-			if swapinNonce >= nonce {
+			if swapinNonce >= nonce && swapinNonce != 0 {
 				swapinNonce++
 				nonce = swapinNonce
 			} else {
 				swapinNonce = nonce
 			}
 		case tokens.SwapoutType, tokens.SwapRecallType:
-			if swapoutNonce >= nonce {
+			if swapoutNonce >= nonce && swapoutNonce != 0 {
 				swapoutNonce++
 				nonce = swapoutNonce
 			} else {
@@ -137,9 +151,23 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
 	funcHash := getSwapinFuncHash()
 	txHash := common.HexToHash(args.SwapID)
 	address := common.HexToAddress(args.To)
-	amount := tokens.CalcSwappedValue(args.Value, b.IsSrc)
+	amount := tokens.CalcSwappedValue(args.Value, true)
 
 	input := PackDataWithFuncHash(funcHash, txHash, address, amount)
+	args.Input = &input // input
+
+	token := b.TokenConfig
+	args.From = token.DcrmAddress   // from
+	args.To = token.ContractAddress // to
+	args.Value = big.NewInt(0)      // value
+}
+
+func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) {
+	funcHash := erc20CodeParts["transfer"]
+	address := common.HexToAddress(args.To)
+	amount := tokens.CalcSwappedValue(args.Value, false)
+
+	input := PackDataWithFuncHash(funcHash, address, amount)
 	args.Input = &input // input
 
 	token := b.TokenConfig
