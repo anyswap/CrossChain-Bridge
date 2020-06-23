@@ -93,6 +93,10 @@ func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
 	default:
 		return tokens.ErrWrongSwapinTxType
 	}
+	if swapInfo.Height != 0 &&
+		swapInfo.Height < tokens.GetTokenConfig(true).InitialHeight {
+		err = tokens.ErrTxBeforeInitialHeight
+	}
 
 	resultStatus := mongodb.MatchTxEmpty
 
@@ -118,6 +122,10 @@ func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
 func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 	txid := swap.TxID
 	swapInfo, err := tokens.DstBridge.VerifyTransaction(txid, false)
+	if swapInfo.Height != 0 &&
+		swapInfo.Height < tokens.GetTokenConfig(false).InitialHeight {
+		err = tokens.ErrTxBeforeInitialHeight
+	}
 
 	resultStatus := mongodb.MatchTxEmpty
 

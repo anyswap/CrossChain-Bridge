@@ -18,17 +18,24 @@ func (b *Bridge) StartChainTransactionScanJob() {
 
 	startHeight := tools.GetLatestScanHeight(b.IsSrc)
 	confirmations := *b.TokenConfig.Confirmations
+	initialHeight := b.TokenConfig.InitialHeight
 
 	var height uint64
-	if startHeight == 0 {
+	switch {
+	case startHeight != 0:
+		height = startHeight
+	case initialHeight != 0:
+		height = initialHeight
+	default:
 		latest := tools.LoopGetLatestBlockNumber(b)
 		if latest > confirmations {
 			height = latest - confirmations
-			_ = tools.UpdateLatestScanInfo(b.IsSrc, height)
 		}
-	} else {
-		height = startHeight
 	}
+	if height < initialHeight {
+		height = initialHeight
+	}
+	_ = tools.UpdateLatestScanInfo(b.IsSrc, height)
 	log.Info("[scanchain] start scan chain loop", "isSrc", b.IsSrc, "start", height)
 
 	for {

@@ -31,6 +31,7 @@ type TokenConfig struct {
 	MaximumSwap     *float64 // whole unit (eg. BTC, ETH, FSN), not Satoshi
 	MinimumSwap     *float64 // whole unit
 	SwapFeeRate     *float64
+	InitialHeight   uint64
 }
 
 // IsErc20 return is token is erc20

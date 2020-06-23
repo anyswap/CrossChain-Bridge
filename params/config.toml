@@ -40,6 +40,7 @@ Confirmations = 0 # suggest >= 6 for Mainnet
 MaximumSwap = 1000.0
 MinimumSwap = 0.00001
 SwapFeeRate = 0.001
+InitialHeight = 0
 
 # source blockchain gateway config
 [SrcGateway]
@@ -60,6 +61,7 @@ Confirmations = 0 # suggest >= 33 for Mainnet
 MaximumSwap = 100.0
 MinimumSwap = 0.00001
 SwapFeeRate = 0.001
+InitialHeight = 0
 
 # dest blockchain gateway config
 [DestGateway]

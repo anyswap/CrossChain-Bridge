@@ -49,8 +49,9 @@ func (b *Bridge) getSwapLogs(blockHeight uint64) ([]*types.RPCLog, error) {
 func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 	// first loop process all tx history no matter whether processed before
 	log.Info("[scanhistory] start first scan loop", "isSrc", b.IsSrc)
+	initialHeight := b.TokenConfig.InitialHeight
 	latest := tools.LoopGetLatestBlockNumber(b)
-	for height := latest; height+maxScanHeight > latest && height > 0; {
+	for height := latest; height+maxScanHeight > latest && height >= initialHeight; {
 		logs, err := b.getSwapLogs(height)
 		if err != nil {
 			log.Error("[scanhistory] get swap logs error", "isSrc", b.IsSrc, "height", height, "err", err)
@@ -63,7 +64,11 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 				b.processTransaction(txid)
 			}
 		}
-		height--
+		if height > 0 {
+			height--
+		} else {
+			break
+		}
 	}
 
 	log.Info("[scanhistory] finish first scan loop", "isSrc", b.IsSrc)
@@ -72,11 +77,12 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 	log.Info("[scanhistory] start scan swap history loop")
 	var (
-		height uint64
-		rescan = true
+		height        uint64
+		rescan        = true
+		initialHeight = b.TokenConfig.InitialHeight
 	)
 	for {
-		if rescan || height == 0 {
+		if rescan || height < initialHeight || height == 0 {
 			height = tools.LoopGetLatestBlockNumber(b)
 		}
 		logs, err := b.getSwapLogs(height)
@@ -96,7 +102,7 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 		}
 		if rescan {
 			time.Sleep(restIntervalInScanJob)
-		} else {
+		} else if height > 0 {
 			height--
 		}
 	}
