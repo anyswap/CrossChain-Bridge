@@ -1,8 +1,8 @@
 package swapapi
 
 import (
-	"github.com/fsn-dev/crossChain-Bridge/mongodb"
-	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/mongodb"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
 // ConvertMgoSwapToSwapInfo convert

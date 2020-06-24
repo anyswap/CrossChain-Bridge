@@ -4,10 +4,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/fsn-dev/crossChain-Bridge/common"
-	"github.com/fsn-dev/crossChain-Bridge/params"
-	"github.com/fsn-dev/crossChain-Bridge/tokens"
-	"github.com/fsn-dev/crossChain-Bridge/types"
+	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/params"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 var (

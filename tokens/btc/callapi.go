@@ -1,7 +1,7 @@
 package btc
 
 import (
-	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
 // GetLatestBlockNumber impl

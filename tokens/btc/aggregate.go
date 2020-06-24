@@ -3,8 +3,8 @@ package btc
 import (
 	"errors"
 
-	"github.com/fsn-dev/crossChain-Bridge/tokens"
-	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
 const (

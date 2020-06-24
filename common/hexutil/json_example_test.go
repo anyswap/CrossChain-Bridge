@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
+	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
 )
 
 type MyType [5]byte

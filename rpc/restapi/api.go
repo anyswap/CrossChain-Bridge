@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/fsn-dev/crossChain-Bridge/common"
-	"github.com/fsn-dev/crossChain-Bridge/internal/swapapi"
+	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/internal/swapapi"
 	"github.com/gorilla/mux"
 )
 

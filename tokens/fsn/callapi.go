@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
-	"github.com/fsn-dev/crossChain-Bridge/types"
+	"github.com/anyswap/CrossChain-Bridge/rpc/client"
+	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 // GetTransactionAndReceipt get tx and receipt (fsn special)

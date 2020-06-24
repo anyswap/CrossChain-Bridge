@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/fsn-dev/crossChain-Bridge/tools/keystore"
+	"github.com/anyswap/CrossChain-Bridge/tools/keystore"
 )
 
 // LoadKeyStore load keystore from keyfile and passfile

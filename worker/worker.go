@@ -3,8 +3,8 @@ package worker
 import (
 	"time"
 
-	"github.com/fsn-dev/crossChain-Bridge/rpc/client"
-	"github.com/fsn-dev/crossChain-Bridge/tokens/bridge"
+	"github.com/anyswap/CrossChain-Bridge/rpc/client"
+	"github.com/anyswap/CrossChain-Bridge/tokens/bridge"
 )
 
 const interval = 10 * time.Millisecond

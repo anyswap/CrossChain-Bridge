@@ -1,9 +1,9 @@
 package btc
 
 import (
-	"github.com/fsn-dev/crossChain-Bridge/log"
-	"github.com/fsn-dev/crossChain-Bridge/tokens"
-	"github.com/fsn-dev/crossChain-Bridge/tokens/tools"
+	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
 func (b *Bridge) processTransaction(txid string) {

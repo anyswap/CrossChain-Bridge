@@ -1,4 +1,4 @@
-module github.com/fsn-dev/crossChain-Bridge
+module github.com/anyswap/CrossChain-Bridge
 
 go 1.14
 

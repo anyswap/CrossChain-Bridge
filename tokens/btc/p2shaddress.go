@@ -3,12 +3,12 @@ package btc
 import (
 	"fmt"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
-	"github.com/fsn-dev/crossChain-Bridge/common"
-	"github.com/fsn-dev/crossChain-Bridge/tokens"
-	"github.com/fsn-dev/crossChain-Bridge/tokens/tools"
 )
 
 // GetP2shAddressWithMemo common

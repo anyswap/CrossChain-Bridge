@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/fsn-dev/crossChain-Bridge/params"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/urfave/cli/v2"
 )
 

@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/fsn-dev/crossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/urfave/cli/v2"
 )
 

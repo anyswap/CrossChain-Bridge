@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
 var (

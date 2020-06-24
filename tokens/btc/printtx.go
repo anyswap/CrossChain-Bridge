@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
-	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
 )
 
 // MarshalToJSON marshal to json

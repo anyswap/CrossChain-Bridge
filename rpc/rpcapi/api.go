@@ -3,9 +3,9 @@ package rpcapi
 import (
 	"net/http"
 
-	"github.com/fsn-dev/crossChain-Bridge/internal/swapapi"
-	"github.com/fsn-dev/crossChain-Bridge/params"
-	"github.com/fsn-dev/crossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/internal/swapapi"
+	"github.com/anyswap/CrossChain-Bridge/params"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
 // RPCAPI rpc api handler

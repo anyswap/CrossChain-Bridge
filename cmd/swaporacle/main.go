@@ -5,10 +5,10 @@ import (
 	"os"
 	"sort"
 
-	"github.com/fsn-dev/crossChain-Bridge/cmd/utils"
-	"github.com/fsn-dev/crossChain-Bridge/log"
-	"github.com/fsn-dev/crossChain-Bridge/params"
-	"github.com/fsn-dev/crossChain-Bridge/worker"
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
+	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
+	"github.com/anyswap/CrossChain-Bridge/worker"
 	"github.com/urfave/cli/v2"
 )
 
@@ -24,7 +24,7 @@ func initApp() {
 	// Initialize the CLI app and start action
 	app.Action = swaporacle
 	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2017-2020 The crossChain-Bridge Authors"
+	app.Copyright = "Copyright 2017-2020 The CrossChain-Bridge Authors"
 	app.Commands = []*cli.Command{
 		utils.LicenseCommand,
 		utils.VersionCommand,

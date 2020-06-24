@@ -1,7 +1,7 @@
 package eth
 
 import (
-	"github.com/fsn-dev/crossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/common"
 )
 
 // IsValidAddress check address

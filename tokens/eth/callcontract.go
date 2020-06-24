@@ -3,8 +3,8 @@ package eth
 import (
 	"math/big"
 
-	"github.com/fsn-dev/crossChain-Bridge/common"
-	"github.com/fsn-dev/crossChain-Bridge/common/hexutil"
+	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
 )
 
 // GetErc20Balance get erc20 balacne of address

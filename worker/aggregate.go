@@ -3,10 +3,10 @@ package worker
 import (
 	"time"
 
-	"github.com/fsn-dev/crossChain-Bridge/mongodb"
-	"github.com/fsn-dev/crossChain-Bridge/tokens"
-	"github.com/fsn-dev/crossChain-Bridge/tokens/btc"
-	"github.com/fsn-dev/crossChain-Bridge/tokens/btc/electrs"
+	"github.com/anyswap/CrossChain-Bridge/mongodb"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
 var (
