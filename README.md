@@ -4,7 +4,7 @@ cross chain bridge using DCRM technology
 ## Building
 
 ```shell
-git clone https://github.com/fsn-dev/crossChain-Bridge.git
+git clone https://github.com/anyswap/CrossChain-Bridge.git
 cd crossChain-Bridge
 make all
 ```
@@ -21,7 +21,7 @@ config.toml
 
 modify the example `config.toml` in `./build/bin` directory
 
-see more, please refer [config file example](https://github.com/fsn-dev/crossChain-Bridge/blob/master/params/config.toml)
+see more, please refer [config file example](https://github.com/anyswap/CrossChain-Bridge/blob/master/params/config.toml)
 
 ### Identifier
 
@@ -102,7 +102,7 @@ license - to show the license
 
 Running  `swapserver` and `swaporacle` to provide cross chain bridge service, we must prepare the following things firstly and config them rightly. Otherwise the program will not run or run rightly. To ensure this, we have add many checkings to the config items.
 
-For the config file, please refer [config file example](https://github.com/fsn-dev/crossChain-Bridge/blob/master/params/config.toml)
+For the config file, please refer [config file example](https://github.com/anyswap/CrossChain-Bridge/blob/master/params/config.toml)
 
 1. create Mongodb database (shared by all swap servers of the bridge provider)
 
@@ -155,7 +155,7 @@ For the config file, please refer [config file example](https://github.com/fsn-d
 
     mBTC is an smart contract inherit from `ERC20` and add two methods: `Swapin` and `Swapout`.
 
-    please see more here about [mBTC](https://github.com/fsn-dev/mBTC)
+    please see more here about [mBTC](https://github.com/anyswap/mBTC)
 
     After created mBTC, we should config `ContractAddress` in `[DestToken]` section.
 
@@ -163,7 +163,7 @@ For the config file, please refer [config file example](https://github.com/fsn-d
 
     The swap server provides RPC service to query swap status and swap history. etc.
 
-    Please see more here about [crossChain-Bridge-API](https://github.com/fsn-dev/crossChain-Bridge/wiki/crossChain-Bridge-API)
+    Please see more here about [crossChain-Bridge-API](https://github.com/anyswap/CrossChain-Bridge/wiki/crossChain-Bridge-API)
 
     We should config `Port` (defaults to `11556`), and `AllowedOrigins` (CORS defaults to empty array. `["*"]` for allow any)
 
