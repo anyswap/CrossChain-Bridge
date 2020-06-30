@@ -92,7 +92,7 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	// update database before sending transaction
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
-		SwapValue: tokens.CalcSwappedValue(value, bridge.IsSrcEndpoint()).String(),
+		SwapValue: tokens.CalcSwappedValue(value, false).String(),
 		SwapType:  tokens.SwapRecallType,
 	}
 	err = updateSwapinResult(txid, matchTx)
