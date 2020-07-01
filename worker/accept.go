@@ -62,6 +62,7 @@ func acceptSign() {
 			case errIdentifierMismatch,
 				errInitiatorMismatch,
 				errWrongMsgContext,
+				tokens.ErrNoBtcBridge,
 				tokens.ErrTxNotStable,
 				tokens.ErrTxNotFound:
 				logWorkerTrace("accept", "ignore sign info", "keyID", keyID, "err", err)
@@ -102,6 +103,9 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	switch args.Identifier {
 	case params.GetIdentifier():
 	case btc.AggregateIdentifier:
+		if btc.BridgeInstance == nil {
+			return tokens.ErrNoBtcBridge
+		}
 		return btc.BridgeInstance.VerifyAggregateMsgHash(msgHash, &args)
 	default:
 		return errIdentifierMismatch
@@ -136,7 +140,7 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 	switch args.TxType {
 	case tokens.P2shSwapinTx:
 		if btc.BridgeInstance == nil {
-			return tokens.ErrWrongP2shSwapin
+			return tokens.ErrNoBtcBridge
 		}
 		swap, err = btc.BridgeInstance.VerifyP2shTransaction(args.SwapID, args.Bind, false)
 	default:

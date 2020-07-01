@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	errSwapExist = newRPCError(-32097, "swap already exist")
-	errNotBridge = newRPCError(-32096, "bridge is not btc")
+	errSwapExist    = newRPCError(-32097, "swap already exist")
+	errNotBtcBridge = newRPCError(-32096, "bridge is not btc")
 )
 
 func newRPCError(ec rpcjson.ErrorCode, message string) error {
@@ -225,7 +225,7 @@ func GetP2shAddressInfo(p2shAddress string) (*tokens.P2shAddressInfo, error) {
 
 func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddressInfo, error) {
 	if btc.BridgeInstance == nil {
-		return nil, errNotBridge
+		return nil, errNotBtcBridge
 	}
 	p2shAddr, redeemScript, err := btc.BridgeInstance.GetP2shAddress(bindAddress)
 	if err != nil {
@@ -256,7 +256,7 @@ func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddres
 func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	log.Debug("[api] receive P2shSwapin", "txid", *txid, "bindAddress", *bindAddr)
 	if btc.BridgeInstance == nil {
-		return nil, errNotBridge
+		return nil, errNotBtcBridge
 	}
 	txidstr := *txid
 	if swap, _ := mongodb.FindSwapin(txidstr); swap != nil {

@@ -31,7 +31,7 @@ var (
 	ErrMsgHashMismatch               = errors.New("message hash mismatch")
 	ErrWrongRawTx                    = errors.New("wrong raw tx")
 	ErrWrongExtraArgs                = errors.New("wrong extra args")
-	ErrWrongP2shSwapin               = errors.New("wrong p2sh swapin (only btc supports)")
+	ErrNoBtcBridge                   = errors.New("no btc bridge exist")
 	ErrWrongSwapinTxType             = errors.New("wrong swapin tx type")
 	ErrBuildSwapTxInWrongEndpoint    = errors.New("build swap in/out tx in wrong endpoint")
 	ErrTxBeforeInitialHeight         = errors.New("transaction before initial block height")
