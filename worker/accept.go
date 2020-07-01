@@ -43,6 +43,7 @@ func acceptSign() {
 	for {
 		signInfo, err := dcrm.GetCurNodeSignInfo()
 		if err != nil {
+			logWorkerError("accept", "getCurNodeSignInfo failed", err)
 			time.Sleep(retryInterval)
 			continue
 		}
