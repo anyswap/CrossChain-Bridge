@@ -98,7 +98,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
 	dcrmAddress := b.TokenConfig.DcrmAddress
-	value, memoScript, rightReceiver := b.getReceivedValue(tx.Vout, dcrmAddress)
+	value, memoScript, rightReceiver := b.getReceivedValue(tx.Vout, dcrmAddress, p2pkhType)
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
@@ -108,7 +108,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	bindAddress, bindOk := getBindAddressFromMemoScipt(memoScript)
 	swapInfo.Bind = bindAddress // Bind
 
-	swapInfo.From = getTxFrom(tx.Vin) // From
+	swapInfo.From = getTxFrom(tx.Vin, dcrmAddress) // From
 
 	// check sender
 	if swapInfo.From == swapInfo.To {
@@ -139,13 +139,13 @@ func (b *Bridge) checkStable(txHash string) bool {
 	return txStatus.BlockHeight > 0 && txStatus.Confirmations >= *b.TokenConfig.Confirmations
 }
 
-func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver string) (value uint64, memoScript string, rightReceiver bool) {
+func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyType string) (value uint64, memoScript string, rightReceiver bool) {
 	for _, output := range vout {
 		switch *output.ScriptpubkeyType {
 		case opReturnType:
 			memoScript = *output.ScriptpubkeyAsm
 			continue
-		case p2pkhType:
+		case pubkeyType:
 			if *output.ScriptpubkeyAddress != receiver {
 				continue
 			}
@@ -156,15 +156,23 @@ func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver string) (
 	return value, memoScript, rightReceiver
 }
 
-func getTxFrom(vin []*electrs.ElectTxin) string {
+// return priorityAddress if has it in Vin
+// return the first address in Vin if has no priorityAddress
+func getTxFrom(vin []*electrs.ElectTxin, priorityAddress string) string {
+	from := ""
 	for _, input := range vin {
 		if input != nil &&
 			input.Prevout != nil &&
 			input.Prevout.ScriptpubkeyAddress != nil {
-			return *input.Prevout.ScriptpubkeyAddress
+			if *input.Prevout.ScriptpubkeyAddress == priorityAddress {
+				return priorityAddress
+			}
+			if from != "" {
+				from = *input.Prevout.ScriptpubkeyAddress
+			}
 		}
 	}
-	return ""
+	return from
 }
 
 func getBindAddressFromMemoScipt(memoScript string) (bind string, ok bool) {

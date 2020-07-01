@@ -34,7 +34,7 @@ func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable
 	if txStatus.BlockTime != nil {
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
-	value, _, rightReceiver := b.getReceivedValue(tx.Vout, p2shAddress)
+	value, _, rightReceiver := b.getReceivedValue(tx.Vout, p2shAddress, p2shType)
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
@@ -42,7 +42,7 @@ func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable
 	swapInfo.Bind = bindAddress                  // Bind
 	swapInfo.Value = common.BigFromUint64(value) // Value
 
-	swapInfo.From = getTxFrom(tx.Vin) // From
+	swapInfo.From = getTxFrom(tx.Vin, p2shAddress) // From
 
 	// check sender
 	if swapInfo.From == swapInfo.To {
