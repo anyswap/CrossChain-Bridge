@@ -20,6 +20,12 @@ func (b *Bridge) BuildAggregateTransaction(addrs []string, utxos []*electrs.Elec
 		return nil, fmt.Errorf("call BuildAggregateTransaction: count of addrs (%v) is not equal to count of utxos (%v)", len(addrs), len(utxos))
 	}
 
+	memo := "aggregate"
+	txOuts, err := b.getTxOutputs("", nil, memo)
+	if err != nil {
+		return nil, err
+	}
+
 	inputSource := func(target btcutil.Amount) (total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
 		return b.getUtxosFromElectUtxos(target, addrs, utxos)
 	}
@@ -30,7 +36,7 @@ func (b *Bridge) BuildAggregateTransaction(addrs []string, utxos []*electrs.Elec
 
 	relayFeePerKb := btcutil.Amount(tokens.BtcRelayFeePerKb)
 
-	return NewUnsignedTransaction(nil, relayFeePerKb, inputSource, changeSource)
+	return NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource)
 }
 
 func (b *Bridge) rebuildAggregateTransaction(prevOutPoints []*tokens.BtcOutPoint) (rawTx *txauthor.AuthoredTx, err error) {

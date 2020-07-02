@@ -109,11 +109,14 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 }
 
 func (b *Bridge) getTxOutputs(to string, amount *big.Int, memo string) (txOuts []*wire.TxOut, err error) {
-	pkscript, err := b.getPayToAddrScript(to)
-	if err != nil {
-		return nil, err
+	if amount == nil || amount.Sign() > 0 {
+		var pkscript []byte
+		pkscript, err = b.getPayToAddrScript(to)
+		if err != nil {
+			return nil, err
+		}
+		txOuts = append(txOuts, wire.NewTxOut(amount.Int64(), pkscript))
 	}
-	txOuts = append(txOuts, wire.NewTxOut(amount.Int64(), pkscript))
 
 	if memo != "" {
 		var nullScript []byte

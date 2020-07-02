@@ -66,9 +66,6 @@ func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err erro
 			if p2shBindAddr == "" { // use the first registered p2sh address
 				p2shAddress := *output.ScriptpubkeyAddress
 				p2shBindAddr = tools.GetP2shBindAddress(p2shAddress)
-				if p2shBindAddr == "" {
-					log.Trace("p2sh address not registered", "p2shAddress", p2shAddress)
-				}
 			}
 		}
 	}
