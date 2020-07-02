@@ -34,7 +34,7 @@ func (b *Bridge) BuildAggregateTransaction(addrs []string, utxos []*electrs.Elec
 		return b.getPayToAddrScript(b.TokenConfig.DcrmAddress)
 	}
 
-	relayFeePerKb := btcutil.Amount(tokens.BtcRelayFeePerKb)
+	relayFeePerKb := btcutil.Amount(tokens.BtcRelayFeePerKb + 2000)
 
 	return NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource)
 }
