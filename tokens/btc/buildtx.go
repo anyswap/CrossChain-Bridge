@@ -109,7 +109,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 }
 
 func (b *Bridge) getTxOutputs(to string, amount *big.Int, memo string) (txOuts []*wire.TxOut, err error) {
-	if amount == nil || amount.Sign() > 0 {
+	if amount != nil && amount.Sign() > 0 {
 		var pkscript []byte
 		pkscript, err = b.getPayToAddrScript(to)
 		if err != nil {
@@ -133,7 +133,7 @@ func (b *Bridge) getPayToAddrScript(address string) ([]byte, error) {
 	chainConfig := b.GetChainConfig()
 	toAddr, err := btcutil.DecodeAddress(address, chainConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode btc address '%v' failed. %v", address, err)
 	}
 	return txscript.PayToAddrScript(toAddr)
 }
