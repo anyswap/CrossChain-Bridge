@@ -167,7 +167,7 @@ func getTxFrom(vin []*electrs.ElectTxin, priorityAddress string) string {
 			if *input.Prevout.ScriptpubkeyAddress == priorityAddress {
 				return priorityAddress
 			}
-			if from != "" {
+			if from == "" {
 				from = *input.Prevout.ScriptpubkeyAddress
 			}
 		}
