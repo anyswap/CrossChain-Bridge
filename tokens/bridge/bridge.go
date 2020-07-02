@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -87,15 +88,11 @@ func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 
 	if btcExtra.FromPublicKey != "" {
 		tokens.BtcFromPublicKey = btcExtra.FromPublicKey
-		pk := common.FromHex(tokens.BtcFromPublicKey)
-		address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pk), btc.BridgeInstance.GetChainConfig())
-		pubkeyAddress := address.EncodeAddress()
-		log.Info("Init Btc extra", "FromPublicKey", tokens.BtcFromPublicKey, "address", pubkeyAddress)
-
-		btcDcrmAddress := btc.BridgeInstance.TokenConfig.DcrmAddress
-		if pubkeyAddress != btcDcrmAddress {
-			log.Fatal("BtcFromPublicKey's address mismatch dcrm address", "pubkeyAddress", pubkeyAddress, "dcrmAddress", btcDcrmAddress)
+		cpkData, err := btc.BridgeInstance.GetCompressedPublicKey(tokens.BtcFromPublicKey)
+		if err != nil {
+			log.Fatal("FromPublicKey config error", "err", err)
 		}
+		log.Info("Init Btc extra", "FromPublicKey", tokens.BtcFromPublicKey, "Compressed", hex.EncodeToString(cpkData))
 	}
 
 	if btcExtra.UtxoAggregateMinCount > 0 {
