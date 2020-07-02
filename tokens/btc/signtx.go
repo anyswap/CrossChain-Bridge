@@ -19,10 +19,9 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 )
 
-var (
-	retryCount    = 15
-	retryInterval = 10 * time.Second
-	waitInterval  = 10 * time.Second
+const (
+	retryGetSignStatusCount    = 70
+	retryGetSignStatusInterval = 10 * time.Second
 
 	hashType = txscript.SigHashAll
 )
@@ -86,34 +85,42 @@ func (b *Bridge) verifyPublickeyData(pkData []byte, swapType tokens.SwapType) er
 	return nil
 }
 
-// MakeSignedTransaction make signed tx
-func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash, rsv []string, sigScripts [][]byte, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
+func checkEqualLength(authoredTx *txauthor.AuthoredTx, msgHash, rsv []string, sigScripts [][]byte) error {
 	txIn := authoredTx.Tx.TxIn
 	if len(txIn) != len(msgHash) {
-		return nil, "", errors.New("mismatch number of msghashes and tx inputs")
+		return errors.New("mismatch number of msghashes and tx inputs")
 	}
 	if len(txIn) != len(rsv) {
-		return nil, "", errors.New("mismatch number of signatures and tx inputs")
+		return errors.New("mismatch number of signatures and tx inputs")
 	}
 	if sigScripts != nil && len(sigScripts) != len(txIn) {
-		return nil, "", errors.New("mismatch number of signatures scripts and tx inputs")
+		return errors.New("mismatch number of signatures scripts and tx inputs")
+	}
+	return nil
+}
+
+// MakeSignedTransaction make signed tx
+func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash, rsv []string, sigScripts [][]byte, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
+	err = checkEqualLength(authoredTx, msgHash, rsv, sigScripts)
+	if err != nil {
+		return nil, "", err
 	}
 	log.Info(b.TokenConfig.BlockChain+" Bridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
-	cPkData, err := b.getPkDataFronConfig(args)
+	cPkData, err := b.getPkDataFromConfig(args)
 	if err != nil {
 		return nil, "", err
 	}
 
 	var sigScript []byte
-	for i, txin := range txIn {
+	for i, txin := range authoredTx.Tx.TxIn {
 		signData, ok := getSigDataFromRSV(rsv[i])
 		if !ok {
 			return nil, "", errors.New("wrong RSV data")
 		}
 
 		if len(cPkData) == 0 {
-			cPkData, err = b.getPkDataFronSig(rsv[i], msgHash[i], args.SwapType)
+			cPkData, err = b.getPkDataFromSig(rsv[i], msgHash[i], args.SwapType)
 			if err != nil {
 				return nil, "", err
 			}
@@ -129,6 +136,10 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash,
 				err = fmt.Errorf("call MakeSignedTransaction spend p2sh without redeem scripts")
 			} else {
 				sigScript, err = txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).AddData(sigScripts[i]).Script()
+				if err != nil {
+					p2shAddress, _ := b.GetP2shAddressByRedeemScript(sigScripts[i])
+					log.Warn("build spend p2sh utxo failed", "p2shAddress", p2shAddress, "pkData", hex.EncodeToString(cPkData), "redeemScript", hex.EncodeToString(sigScripts[i]), "err", err)
+				}
 			}
 		default:
 			err = fmt.Errorf("unsupport to spend '%v' output", scriptClass.String())
@@ -168,7 +179,7 @@ func getSigDataFromRSV(rsv string) ([]byte, bool) {
 	return signData, true
 }
 
-func (b *Bridge) getPkDataFronConfig(args *tokens.BuildTxArgs) (cPkData []byte, err error) {
+func (b *Bridge) getPkDataFromConfig(args *tokens.BuildTxArgs) (cPkData []byte, err error) {
 	fromPublicKey := tokens.BtcFromPublicKey
 	if args != nil && args.Extra != nil {
 		extra := args.Extra.BtcExtra
@@ -187,7 +198,7 @@ func (b *Bridge) getPkDataFronConfig(args *tokens.BuildTxArgs) (cPkData []byte, 
 	return cPkData, nil
 }
 
-func (b *Bridge) getPkDataFronSig(rsv, msgHash string, swapType tokens.SwapType) (cPkData []byte, err error) {
+func (b *Bridge) getPkDataFromSig(rsv, msgHash string, swapType tokens.SwapType) (cPkData []byte, err error) {
 	rsvData := common.FromHex(rsv)
 	hashData := common.FromHex(msgHash)
 	pkData, err := crypto.Ecrecover(hashData, rsvData)
@@ -219,10 +230,10 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 		return nil, err
 	}
 	log.Info(b.TokenConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
-	time.Sleep(waitInterval)
+	time.Sleep(retryGetSignStatusInterval)
 
 	i := 0
-	for ; i < retryCount; i++ {
+	for ; i < retryGetSignStatusCount; i++ {
 		signStatus, err := dcrm.GetSignStatus(keyID)
 		if err == nil {
 			if len(signStatus.Rsv) != len(msgHash) {
@@ -235,10 +246,10 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
 			return nil, err
 		}
-		log.Warn("retry get sign status as error", "err", err, "txid", args.SwapID)
-		time.Sleep(retryInterval)
+		log.Warn("retry get sign status as error", "err", err, "txid", args.SwapID, "keyID", keyID)
+		time.Sleep(retryGetSignStatusInterval)
 	}
-	if i == retryCount || len(rsv) == 0 {
+	if i == retryGetSignStatusCount || len(rsv) == 0 {
 		return nil, errors.New("get sign status failed")
 	}
 

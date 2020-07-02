@@ -54,7 +54,7 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
 	if bindAddress != "" {
-		swapInfo.Bind = strings.ToLower(bindAddress) // Bind
+		swapInfo.Bind = bindAddress // Bind
 	} else {
 		swapInfo.Bind = swapInfo.From // Bind
 	}
@@ -108,7 +108,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
 	if bindAddress != "" {
-		swapInfo.Bind = strings.ToLower(bindAddress) // Bind
+		swapInfo.Bind = bindAddress // Bind
 	} else {
 		swapInfo.Bind = swapInfo.From // Bind
 	}

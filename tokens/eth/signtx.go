@@ -14,10 +14,9 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-var (
-	retryCount    = 15
-	retryInterval = 10 * time.Second
-	waitInterval  = 10 * time.Second
+const (
+	retryGetSignStatusCount    = 70
+	retryGetSignStatusInterval = 10 * time.Second
 )
 
 // DcrmSignTransaction dcrm sign raw tx
@@ -36,11 +35,11 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 	log.Info(b.TokenConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash.String(), "txid", args.SwapID)
-	time.Sleep(waitInterval)
+	time.Sleep(retryGetSignStatusInterval)
 
 	var rsv string
 	i := 0
-	for ; i < retryCount; i++ {
+	for ; i < retryGetSignStatusCount; i++ {
 		signStatus, err2 := dcrm.GetSignStatus(keyID)
 		if err2 == nil {
 			if len(signStatus.Rsv) != 1 {
@@ -54,10 +53,10 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
 			return nil, "", err2
 		}
-		log.Warn("retry get sign status as error", "err", err2, "txid", args.SwapID)
-		time.Sleep(retryInterval)
+		log.Warn("retry get sign status as error", "err", err2, "txid", args.SwapID, "keyID", keyID)
+		time.Sleep(retryGetSignStatusInterval)
 	}
-	if i == retryCount || rsv == "" {
+	if i == retryGetSignStatusCount || rsv == "" {
 		return nil, "", errors.New("get sign status failed")
 	}
 

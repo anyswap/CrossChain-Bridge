@@ -23,6 +23,9 @@ const (
 	p2pkhType    = "p2pkh"
 	p2shType     = "p2sh"
 	opReturnType = "op_return"
+
+	retryCount    = 3
+	retryInterval = 3 * time.Second
 )
 
 // BuildRawTransaction build raw tx
