@@ -32,6 +32,7 @@ type TokenConfig struct {
 	MinimumSwap     *float64 // whole unit
 	SwapFeeRate     *float64
 	InitialHeight   uint64
+	MinTimeToRetry  int64 // unit second
 }
 
 // IsErc20 return is token is erc20

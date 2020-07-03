@@ -332,6 +332,9 @@ func updateSwapResultStatus(tbName, txid string, status SwapStatus, timestamp in
 	updates := bson.M{"status": status, "timestamp": timestamp}
 	if memo != "" {
 		updates["memo"] = memo
+	} else if status == MatchTxEmpty {
+		updates["memo"] = ""
+		updates["swaptx"] = ""
 	}
 	err := getCollection(tbName).UpdateId(txid, bson.M{"$set": updates})
 	isSwapin := tbName == tbSwapinResults

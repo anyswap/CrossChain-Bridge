@@ -37,4 +37,7 @@ func StartWork(isServer bool) {
 	time.Sleep(interval)
 
 	go StartAggregateJob()
+	time.Sleep(interval)
+
+	go StartSwapRetryJob()
 }

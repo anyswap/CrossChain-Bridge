@@ -10,6 +10,9 @@ var (
 	maxRecallLifetime       = int64(10 * 24 * 3600)
 	restIntervalInRecallJob = 3 * time.Second
 
+	maxRetryLifetime       = int64(10 * 24 * 3600)
+	restIntervalInRetryJob = 3 * time.Second
+
 	maxVerifyLifetime       = int64(7 * 24 * 3600)
 	restIntervalInVerifyJob = 3 * time.Second
 
@@ -42,9 +45,21 @@ func logWorkerTrace(job, subject string, context ...interface{}) {
 }
 
 func getSepTimeInFind(dist int64) int64 {
-	return now() - dist
+	nowTime := now()
+	if nowTime > dist {
+		return nowTime - dist
+	}
+	return 0
 }
 
 func restInJob(duration time.Duration) {
 	time.Sleep(duration)
+}
+
+func getPassedTimeSince(startTime int64) int64 {
+	nowTime := now()
+	if nowTime > startTime {
+		return nowTime - startTime
+	}
+	return 0
 }

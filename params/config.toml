@@ -41,6 +41,7 @@ MaximumSwap = 1000.0
 MinimumSwap = 0.00001
 SwapFeeRate = 0.001
 InitialHeight = 0
+MinTimeToRetry = 0 # unit seconds, suggest >= 3600 for Mainnet
 
 # source blockchain gateway config
 [SrcGateway]
@@ -62,6 +63,7 @@ MaximumSwap = 100.0
 MinimumSwap = 0.00001
 SwapFeeRate = 0.001
 InitialHeight = 0
+MinTimeToRetry = 0 # unit seconds, suggest >= 420 for Mainnet
 
 # dest blockchain gateway config
 [DestGateway]
