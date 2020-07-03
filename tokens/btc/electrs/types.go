@@ -42,7 +42,7 @@ type ElectTxOut struct {
 type ElectOutspend struct {
 	Spent  *bool          `json:"spent"`
 	Txid   *string        `json:"txid"`
-	Vin    *ElectTxin     `json:"vin"`
+	Vin    *uint32        `json:"vin"`
 	Status *ElectTxStatus `json:"status,omitempty"`
 }
 
