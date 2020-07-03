@@ -36,6 +36,7 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 		nowTime       = time.Now().Unix()
 		lastSeenTxid  = ""
 		initialHeight = b.TokenConfig.InitialHeight
+		height        uint64
 	)
 
 	isTooOld := func(time *uint64) bool {
@@ -53,7 +54,11 @@ FIRST_LOOP:
 			break
 		}
 		for _, tx := range txHistory {
-			if tx.Status.BlockHeight != nil && *tx.Status.BlockHeight < initialHeight {
+			if tx.Status.BlockHeight == nil {
+				continue
+			}
+			height = *tx.Status.BlockHeight
+			if height < initialHeight {
 				break FIRST_LOOP
 			}
 			if isTooOld(tx.Status.BlockTime) {
@@ -61,6 +66,7 @@ FIRST_LOOP:
 			}
 			txid := *tx.Txid
 			if !isProcessed(txid) {
+				log.Info("[scanhistory] first scan loop", "isSrc", b.IsSrc, "txid", txid, "height", height)
 				_ = b.processSwapin(txid)
 			}
 		}
@@ -76,6 +82,7 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 		lastSeenTxid  = ""
 		rescan        = true
 		initialHeight = b.TokenConfig.InitialHeight
+		height        uint64
 	)
 
 	for {
@@ -90,9 +97,12 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 		} else if rescan {
 			rescan = false
 		}
-		log.Info("[scanhistory] scan swap history", "isSrc", b.IsSrc, "count", len(txHistory))
 		for _, tx := range txHistory {
-			if tx.Status.BlockHeight != nil && *tx.Status.BlockHeight < initialHeight {
+			if tx.Status.BlockHeight == nil {
+				continue
+			}
+			height = *tx.Status.BlockHeight
+			if height < initialHeight {
 				rescan = true
 				break
 			}
@@ -101,6 +111,7 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 				rescan = true
 				break // rescan if already processed
 			}
+			log.Info("[scanhistory] scanned tx", "isSrc", b.IsSrc, "txid", txid, "height", height)
 			_ = b.processSwapin(txid)
 		}
 		if rescan {

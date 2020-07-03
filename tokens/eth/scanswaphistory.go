@@ -58,9 +58,10 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
-		for _, log := range logs {
-			txid := log.TxHash.String()
+		for _, swaplog := range logs {
+			txid := swaplog.TxHash.String()
 			if !isProcessed(txid) {
+				log.Info("[scanhistory] first scan loop", "isSrc", b.IsSrc, "txid", txid, "height", height)
 				b.processTransaction(txid)
 			}
 		}
@@ -91,13 +92,13 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
-		log.Info("[scanhistory] scan swap history", "isSrc", b.IsSrc, "height", height, "count", len(logs))
-		for _, log := range logs {
-			txid := log.TxHash.String()
+		for _, swaplog := range logs {
+			txid := swaplog.TxHash.String()
 			if isProcessed(txid) {
 				rescan = true
 				break // rescan if already processed
 			}
+			log.Info("[scanhistory] scanned tx", "isSrc", b.IsSrc, "txid", txid, "height", height)
 			b.processTransaction(txid)
 		}
 		if rescan {

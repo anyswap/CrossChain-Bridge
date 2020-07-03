@@ -56,7 +56,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 				b.processTransaction(tx.String())
 			}
 			scannedBlocks.CacheScannedBlock(blockHash, h)
-			log.Info("[scanchain] scanned chain", "isSrc", b.IsSrc, "blockHash", blockHash, "height", h, "txs", len(block.Transactions))
+			log.Info("[scanchain] scanned block", "isSrc", b.IsSrc, "blockHash", blockHash, "height", h, "txs", len(block.Transactions))
 			h++
 		}
 		if latest > confirmations {

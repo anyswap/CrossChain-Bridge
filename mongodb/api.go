@@ -413,8 +413,8 @@ func UpdateSwapStatistics(value, swapValue string, isSwapin bool) error {
 		updates["totalswapinvalue"] = curVal.String()
 		updates["totalswapinfee"] = curFee.String()
 	} else {
-		curVal.SetString(curr.TotalSwapinValue, 0)
-		curFee.SetString(curr.TotalSwapinFee, 0)
+		curVal.SetString(curr.TotalSwapoutValue, 0)
+		curFee.SetString(curr.TotalSwapoutFee, 0)
 		curVal.Add(curVal, addSwapVal)
 		curFee.Add(curFee, addSwapFee)
 		updates["swapoutcount"] = curr.StableSwapoutCount + 1

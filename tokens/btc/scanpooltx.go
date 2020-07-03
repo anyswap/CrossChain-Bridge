@@ -21,11 +21,11 @@ func (b *Bridge) StartPoolTransactionScanJob() {
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
-		log.Info("[scanpool] scan pool tx", "isSrc", b.IsSrc, "txs", len(txids))
 		for _, txid := range txids {
 			if scannedTxs.IsTxScanned(txid) {
 				continue
 			}
+			log.Info("[scanpool] scanned tx", "isSrc", b.IsSrc, "txid", txid)
 			b.processTransaction(txid)
 			scannedTxs.CacheScannedTx(txid)
 		}

@@ -52,7 +52,7 @@ func acceptSign() {
 			keyID := info.Key
 			history := getAcceptSignHistory(keyID)
 			if history != nil {
-				logWorker("accept", "ignore accepted sign", "keyID", keyID, "result", history.result)
+				logWorker("accept", "history sign", "keyID", keyID, "result", history.result)
 				_, _ = dcrm.DoAcceptSign(keyID, history.result, history.msgHash, history.msgContext)
 				continue
 			}
@@ -65,7 +65,7 @@ func acceptSign() {
 				tokens.ErrNoBtcBridge,
 				tokens.ErrTxNotStable,
 				tokens.ErrTxNotFound:
-				logWorkerTrace("accept", "ignore sign info", "keyID", keyID, "err", err)
+				logWorkerTrace("accept", "ignore sign", "keyID", keyID, "err", err)
 				continue
 			}
 			if err != nil {
@@ -91,7 +91,6 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	}
 	msgHash := signInfo.MsgHash
 	msgContext := signInfo.MsgContext
-	logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
 	if len(msgContext) != 1 {
 		return errWrongMsgContext
 	}
@@ -106,10 +105,12 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 		if btc.BridgeInstance == nil {
 			return tokens.ErrNoBtcBridge
 		}
+		logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
 		return btc.BridgeInstance.VerifyAggregateMsgHash(msgHash, &args)
 	default:
 		return errIdentifierMismatch
 	}
+	logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
 	return rebuildAndVerifyMsgHash(msgHash, &args)
 }
 

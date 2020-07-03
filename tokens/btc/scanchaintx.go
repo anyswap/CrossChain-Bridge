@@ -13,7 +13,7 @@ var (
 
 // StartChainTransactionScanJob scan job
 func (b *Bridge) StartChainTransactionScanJob() {
-	log.Info("[scanchain] start scan chain tx job", "isSrc", b.IsSrc)
+	log.Info("[scanchain] start scan chain job", "isSrc", b.IsSrc)
 
 	startHeight := tools.GetLatestScanHeight(b.IsSrc)
 	confirmations := *b.TokenConfig.Confirmations
@@ -35,7 +35,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 		height = initialHeight
 	}
 	_ = tools.UpdateLatestScanInfo(b.IsSrc, height)
-	log.Info("[scanchain] start scan tx history loop", "isSrc", b.IsSrc, "start", height)
+	log.Info("[scanchain] start scan chain loop", "isSrc", b.IsSrc, "start", height)
 
 	for {
 		latest := tools.LoopGetLatestBlockNumber(b)
@@ -60,7 +60,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 				b.processTransaction(txid)
 			}
 			scannedBlocks.CacheScannedBlock(blockHash, h)
-			log.Info("[scanchain] scanned tx history", "isSrc", b.IsSrc, "blockHash", blockHash, "height", h, "txs", len(txids))
+			log.Info("[scanchain] scanned block", "isSrc", b.IsSrc, "blockHash", blockHash, "height", h, "txs", len(txids))
 			h++
 		}
 		if latest > confirmations {

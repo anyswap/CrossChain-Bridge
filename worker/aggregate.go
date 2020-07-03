@@ -16,7 +16,7 @@ var (
 	aggAddrs    []string
 	aggUtxos    []*electrs.ElectUtxo
 	aggOffset   int
-	aggInterval = 300 * time.Second
+	aggInterval = 30 * time.Minute
 )
 
 // StartAggregateJob aggregate job
