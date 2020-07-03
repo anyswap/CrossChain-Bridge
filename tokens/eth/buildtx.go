@@ -22,6 +22,9 @@ var (
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var input []byte
 	if args.Input == nil {
+		if args.SwapType != tokens.NoSwapType {
+			args.From = b.TokenConfig.DcrmAddress // from
+		}
 		switch args.SwapType {
 		case tokens.SwapinType:
 			if b.IsSrc {
@@ -157,7 +160,6 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
 	args.Input = &input // input
 
 	token := b.TokenConfig
-	args.From = token.DcrmAddress   // from
 	args.To = token.ContractAddress // to
 	args.Value = big.NewInt(0)      // value
 }
@@ -171,7 +173,6 @@ func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) {
 	args.Input = &input // input
 
 	token := b.TokenConfig
-	args.From = token.DcrmAddress   // from
 	args.To = token.ContractAddress // to
 	args.Value = big.NewInt(0)      // value
 }

@@ -58,8 +58,8 @@ func startSwapoutRetryJob() {
 			}
 			for _, swap := range res {
 				err = processRetrySwapout(swap)
-				if err != nil {
-					logWorkerError("retryswap", "process retry swapout error", err, "txid", swap.TxID)
+				if err == nil {
+					logWorker("retryswap", "process retry swapout success", "txid", swap.TxID)
 				}
 			}
 			restInJob(restIntervalInRetryJob)

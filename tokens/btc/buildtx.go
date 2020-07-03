@@ -46,6 +46,11 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	case tokens.SwapoutType, tokens.SwapRecallType:
 		from = token.DcrmAddress                        // from
 		amount = tokens.CalcSwappedValue(amount, false) // amount
+		if args.SwapType == tokens.SwapoutType {
+			memo = tokens.UnlockMemoPrefix + args.SwapID
+		} else {
+			memo = tokens.RecallMemoPrefix + args.SwapID
+		}
 	}
 
 	if from == "" {
