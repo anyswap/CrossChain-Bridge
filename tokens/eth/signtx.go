@@ -21,7 +21,6 @@ const (
 
 // DcrmSignTransaction dcrm sign raw tx
 func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signTx interface{}, txHash string, err error) {
-	swapinNonce--
 	tx, ok := rawTx.(*types.Transaction)
 	if !ok {
 		return nil, "", errors.New("wrong raw tx param")
@@ -85,7 +84,6 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", errors.New("wrong sender address")
 	}
 	txHash = signedTx.Hash().String()
-	swapinNonce++
-	log.Info(b.TokenConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", swapinNonce)
+	log.Info(b.TokenConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", signedTx.Nonce())
 	return signedTx, txHash, err
 }

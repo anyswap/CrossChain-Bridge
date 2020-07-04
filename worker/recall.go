@@ -3,7 +3,6 @@ package worker
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
@@ -104,18 +103,5 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	for i := 0; i < retrySendTxCount; i++ {
-		if _, err = bridge.SendTransaction(signedTx); err == nil {
-			if tx, _ := bridge.GetTransaction(txHash); tx != nil {
-				break
-			}
-		}
-		time.Sleep(retrySendTxInterval)
-	}
-	if err != nil {
-		_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxRecallFailed, now(), err.Error())
-		_ = mongodb.UpdateSwapinResultStatus(txid, mongodb.TxRecallFailed, now(), err.Error())
-		return err
-	}
-	return nil
+	return sendSignedTransaction(bridge, signedTx, txid, true)
 }

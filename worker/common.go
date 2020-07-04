@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"time"
+
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -125,4 +127,34 @@ func markSwapResultStable(key string, isSwapin bool) (err error) {
 		logWorker("stable", "markSwapResultStable", "txid", key, "isSwapin", isSwapin)
 	}
 	return err
+}
+
+func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid string, isSwapin bool) (err error) {
+	var (
+		txHash              string
+		retrySendTxCount    = 3
+		retrySendTxInterval = 1 * time.Second
+	)
+	for i := 0; i < retrySendTxCount; i++ {
+		if txHash, err = bridge.SendTransaction(signedTx); err == nil {
+			if tx, _ := bridge.GetTransaction(txHash); tx != nil {
+				break
+			}
+		}
+		time.Sleep(retrySendTxInterval)
+	}
+	if err != nil {
+		if isSwapin {
+			logWorkerError("sendtx", "update swapin status to TxSwapFailed", err, "txid", txid)
+			_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
+			_ = mongodb.UpdateSwapinResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
+		} else {
+			logWorkerError("sendtx", "update swapout status to TxSwapFailed", err, "txid", txid)
+			_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
+			_ = mongodb.UpdateSwapoutResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
+		}
+		return err
+	}
+	bridge.IncreaseNonce(1)
+	return nil
 }

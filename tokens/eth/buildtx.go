@@ -11,9 +11,6 @@ import (
 )
 
 var (
-	swapinNonce  uint64
-	swapoutNonce uint64
-
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
 )
@@ -129,21 +126,8 @@ func (b *Bridge) getAccountNonce(from string, swapType tokens.SwapType) (noncept
 		return nil, err
 	}
 	if from == b.TokenConfig.DcrmAddress {
-		switch swapType {
-		case tokens.SwapinType:
-			if swapinNonce >= nonce && swapinNonce != 0 {
-				swapinNonce++
-				nonce = swapinNonce
-			} else {
-				swapinNonce = nonce
-			}
-		case tokens.SwapoutType, tokens.SwapRecallType:
-			if swapoutNonce >= nonce && swapoutNonce != 0 {
-				swapoutNonce++
-				nonce = swapoutNonce
-			} else {
-				swapoutNonce = nonce
-			}
+		if swapType != tokens.NoSwapType {
+			nonce = b.AdjustNonce(nonce)
 		}
 	}
 	return &nonce, nil
