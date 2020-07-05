@@ -148,7 +148,29 @@ func parseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 	return parseEncodedData(encData)
 }
 
-func parseSwapoutTxLogs(logs []*types.RPCLog) (string, *big.Int, error) {
+func parseSwapoutTxLogs(logs []*types.RPCLog) (bind string, value *big.Int, err error) {
+	if isMbtcSwapout() {
+		return parseSwapoutToBtcTxLogs(logs)
+	}
+	logSwapoutTopic := getLogSwapoutTopic()
+	for _, log := range logs {
+		if log.Removed != nil && *log.Removed {
+			continue
+		}
+		if len(log.Topics) != 3 || log.Data == nil {
+			continue
+		}
+		if !bytes.Equal(log.Topics[0].Bytes(), logSwapoutTopic) {
+			continue
+		}
+		bind = common.BytesToAddress(log.Topics[2].Bytes()).String()
+		value = common.GetBigInt(*log.Data, 0, 32)
+		return bind, value, nil
+	}
+	return "", nil, fmt.Errorf("swapout log not found or removed")
+}
+
+func parseSwapoutToBtcTxLogs(logs []*types.RPCLog) (bind string, value *big.Int, err error) {
 	logSwapoutTopic := getLogSwapoutTopic()
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
@@ -160,28 +182,35 @@ func parseSwapoutTxLogs(logs []*types.RPCLog) (string, *big.Int, error) {
 		if !bytes.Equal(log.Topics[0].Bytes(), logSwapoutTopic) {
 			continue
 		}
-		return parseEncodedData(*log.Data)
+		return parseSwapoutToBtcEncodedData(*log.Data)
 	}
 	return "", nil, fmt.Errorf("swapout log not found or removed")
 }
 
-func parseEncodedData(encData []byte) (string, *big.Int, error) {
-	isMbtc := isMbtcSwapout()
-	if isMbtc {
-		if len(encData) < 96 {
-			return "", nil, fmt.Errorf("wrong length of encoded data")
-		}
-	} else {
-		if len(encData) != 32 {
-			return "", nil, fmt.Errorf("wrong length of encoded data")
-		}
+func parseEncodedData(encData []byte) (bind string, value *big.Int, err error) {
+	if isMbtcSwapout() {
+		return parseSwapoutToBtcEncodedData(encData)
+	}
+
+	if len(encData) != 64 {
+		return "", nil, fmt.Errorf("wrong length of encoded data")
 	}
 
 	// get value
-	value := common.GetBigInt(encData, 0, 32)
-	if !isMbtc {
-		return "", value, nil
+	value = common.GetBigInt(encData, 0, 32)
+
+	// get bind address
+	bind = common.BytesToAddress(common.GetData(encData, 32, 32)).String()
+	return bind, value, nil
+}
+
+func parseSwapoutToBtcEncodedData(encData []byte) (bind string, value *big.Int, err error) {
+	if len(encData) < 96 {
+		return "", nil, fmt.Errorf("wrong length of encoded data")
 	}
+
+	// get value
+	value = common.GetBigInt(encData, 0, 32)
 
 	// get bind address
 	offset, overflow := common.GetUint64(encData, 32, 32)
@@ -192,6 +221,6 @@ func parseEncodedData(encData []byte) (string, *big.Int, error) {
 	if overflow {
 		return "", nil, fmt.Errorf("string length overflow")
 	}
-	bind := string(common.GetData(encData, offset+32, length))
+	bind = string(common.GetData(encData, offset+32, length))
 	return bind, value, nil
 }

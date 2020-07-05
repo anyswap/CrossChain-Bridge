@@ -23,8 +23,8 @@ var (
 	mBTCLogSwapoutTopic = common.FromHex("0x9c92ad817e5474d30a4378deface765150479363a897b0590fbb12ae9d89396b")
 
 	// first 4 bytes of `Keccak256Hash([]byte("Swapout(uint256)"))`
-	mETHSwapoutFuncHash = common.FromHex("0xf1337b76")
-	mETHLogSwapoutTopic = common.FromHex("0x9711511ecf3840282a7a2f2bd0f1dcc30c8cf0913c9575c8089a8d018a2099ff")
+	mETHSwapoutFuncHash = common.FromHex("0x628d6cba")
+	mETHLogSwapoutTopic = common.FromHex("0x6b616089d04950dc06c45c6dd787d657980543f89651aec47924752c7d16c888")
 )
 
 var mBTCExtCodeParts = map[string][]byte{

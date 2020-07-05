@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
@@ -59,7 +60,12 @@ func (b *Bridge) BuildSwapoutTx(from, contract string, extraArgs *tokens.EthExtr
 
 // BuildSwapoutTxInput build swapout tx input
 func BuildSwapoutTxInput(swapoutVal *big.Int, bindAddr string) ([]byte, error) {
-	input := PackDataWithFuncHash(getSwapoutFuncHash(), swapoutVal, bindAddr)
+	var input []byte
+	if isMbtcSwapout() {
+		input = PackDataWithFuncHash(getSwapoutFuncHash(), swapoutVal, bindAddr)
+	} else {
+		input = PackDataWithFuncHash(getSwapoutFuncHash(), swapoutVal, common.HexToAddress(bindAddr))
+	}
 
 	// verify input
 	bindAddress, swapoutvalue, err := parseSwapoutTxInput(&input)

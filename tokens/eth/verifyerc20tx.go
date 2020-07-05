@@ -168,7 +168,7 @@ func parseErc20EncodedData(encData []byte, isTransferFrom bool) (from, to string
 		from = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
 		encData = encData[32:]
 	}
-	if len(encData) < 64 {
+	if len(encData) != 64 {
 		return "", "", nil, fmt.Errorf("wrong length of encoded data")
 	}
 	to = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
