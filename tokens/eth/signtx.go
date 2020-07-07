@@ -52,7 +52,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
 			return nil, "", err2
 		}
-		log.Warn("retry get sign status as error", "err", err2, "txid", args.SwapID, "keyID", keyID)
+		log.Warn("retry get sign status as error", "err", err2, "txid", args.SwapID, "keyID", keyID, "bridge", args.Identifier, "swaptype", args.SwapType.String())
 		time.Sleep(retryGetSignStatusInterval)
 	}
 	if i == retryGetSignStatusCount || rsv == "" {

@@ -263,7 +263,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
 			return nil, err
 		}
-		log.Warn("retry get sign status as error", "err", err, "txid", args.SwapID, "keyID", keyID)
+		log.Warn("retry get sign status as error", "err", err, "txid", args.SwapID, "keyID", keyID, "bridge", args.Identifier, "swaptype", args.SwapType.String())
 		time.Sleep(retryGetSignStatusInterval)
 	}
 	if i == retryGetSignStatusCount || len(rsv) == 0 {

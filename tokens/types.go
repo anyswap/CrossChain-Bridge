@@ -56,6 +56,21 @@ const (
 	SwapRecallType
 )
 
+func (s SwapType) String() string {
+	switch s {
+	case NoSwapType:
+		return "noswap"
+	case SwapinType:
+		return "swapin"
+	case SwapoutType:
+		return "swapout"
+	case SwapRecallType:
+		return "recall"
+	default:
+		return "unknown swap type"
+	}
+}
+
 // SwapTxType type
 type SwapTxType uint32
 
@@ -65,6 +80,19 @@ const (
 	SwapoutTx                      // 1
 	P2shSwapinTx                   // 2
 )
+
+func (s SwapTxType) String() string {
+	switch s {
+	case SwapinTx:
+		return "swapintx"
+	case SwapoutTx:
+		return "swapouttx"
+	case P2shSwapinTx:
+		return "p2shswapintx"
+	default:
+		return "unknown swaptx type"
+	}
+}
 
 // TxSwapInfo struct
 type TxSwapInfo struct {
