@@ -43,6 +43,7 @@ var (
 	ErrTxWithWrongReceiver = errors.New("tx with wrong receiver")
 	ErrTxWithWrongContract = errors.New("tx with wrong contract")
 	ErrTxWithWrongInput    = errors.New("tx with wrong input data")
+	ErrTxIsAggregateTx     = errors.New("tx is aggregate tx")
 
 	// errors should register
 	ErrTxWithWrongMemo    = errors.New("tx with wrong memo")

@@ -10,6 +10,8 @@ import (
 const (
 	// AggregateIdentifier used in accepting
 	AggregateIdentifier = "aggregate"
+
+	aggregateMemo = "aggregate"
 )
 
 // AggregateUtxos aggregate uxtos
