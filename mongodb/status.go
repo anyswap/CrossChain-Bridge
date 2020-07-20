@@ -1,5 +1,9 @@
 package mongodb
 
+import (
+	"github.com/anyswap/CrossChain-Bridge/log"
+)
+
 // -----------------------------------------------
 // swap status change graph
 //
@@ -61,6 +65,7 @@ func (status SwapStatus) String() string {
 	case TxWithWrongMemo:
 		return "TxWithWrongMemo"
 	default:
-		panic("unknown swap status")
+		log.Fatalf("unknown swap status %d", status)
+		return "unknown swap status"
 	}
 }

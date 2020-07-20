@@ -27,7 +27,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 	case "FUSION":
 		return fsn.NewCrossChainBridge(isSrc)
 	default:
-		panic("Unsupported block chain " + id)
+		log.Fatalf("Unsupported block chain %v", id)
+		return nil
 	}
 }
 
@@ -129,7 +130,7 @@ func initDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 
 	err := dcrm.LoadKeyStore(*dcrmConfig.KeystoreFile, *dcrmConfig.PasswordFile)
 	if err != nil {
-		panic(err)
+		log.Fatalf("load keystore error %v", err)
 	}
 	log.Info("Init dcrm, load keystore success")
 
@@ -137,8 +138,7 @@ func initDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	log.Info("Init server dcrm user success", "ServerDcrmUser", dcrm.ServerDcrmUser.String())
 
 	if isServer && !dcrm.IsSwapServer() {
-		log.Error("wrong dcrm user for server", "have", dcrm.GetDcrmUser().String(), "want", dcrm.ServerDcrmUser.String())
-		panic("wrong dcrm user for server")
+		log.Fatalf("wrong dcrm user for server. have %v, want %v", dcrm.GetDcrmUser().String(), dcrm.ServerDcrmUser.String())
 	}
 
 	selfEnode := initSelfEnode()
@@ -172,7 +172,7 @@ func initSelfEnode() string {
 func checkExist(chekcedEnode string, enodes []string) bool {
 	sepIndex := strings.Index(chekcedEnode, "@")
 	if sepIndex == -1 {
-		panic("wrong enode, has no '@' char")
+		log.Fatalf("wrong enode %v, has no '@' char", chekcedEnode)
 	}
 	for _, enode := range enodes {
 		if enode[:sepIndex] == chekcedEnode[:sepIndex] {
@@ -186,12 +186,12 @@ func verifyGroupInfo(groupID string, memberCount uint32, selfEnode string) {
 	for {
 		groupInfo, err := dcrm.GetGroupByID(groupID)
 		if err == nil && uint32(groupInfo.Count) != memberCount {
-			panic(fmt.Sprintf("dcrm group %v member count is not %v", groupID, memberCount))
+			log.Fatalf("dcrm group %v member count is not %v", groupID, memberCount)
 		}
 		if err == nil && uint32(len(groupInfo.Enodes)) == memberCount {
 			log.Info("get dcrm group info success", "groupInfo", groupInfo)
 			if !checkExist(selfEnode, groupInfo.Enodes) {
-				panic(fmt.Sprintf("self enode %v not exist in group %v, groupInfo is %v\n", selfEnode, groupID, groupInfo))
+				log.Fatalf("self enode %v not exist in group %v, groupInfo is %v\n", selfEnode, groupID, groupInfo)
 			}
 			break
 		}

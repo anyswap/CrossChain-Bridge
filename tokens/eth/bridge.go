@@ -1,7 +1,6 @@
 package eth
 
 import (
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -48,7 +47,7 @@ func (b *Bridge) VerifyChainID() {
 	case netCustom:
 		return
 	default:
-		panic(fmt.Sprintf("unsupported ethereum network: %v", tokenCfg.NetID))
+		log.Fatalf("unsupported ethereum network: %v", tokenCfg.NetID)
 	}
 
 	var (
@@ -67,7 +66,7 @@ func (b *Bridge) VerifyChainID() {
 	}
 
 	panicMismatchChainID := func() {
-		panic(fmt.Sprintf("gateway chainID %v is not %v", chainID, tokenCfg.NetID))
+		log.Fatalf("gateway chainID %v is not %v", chainID, tokenCfg.NetID)
 	}
 
 	switch networkID {
@@ -80,7 +79,7 @@ func (b *Bridge) VerifyChainID() {
 			panicMismatchChainID()
 		}
 	default:
-		panic("unsupported ethereum network")
+		log.Fatalf("unsupported ethereum network %v", networkID)
 	}
 
 	b.Signer = types.MakeSigner("EIP155", chainID)

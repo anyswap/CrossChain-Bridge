@@ -1,10 +1,10 @@
 package eth
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/log"
 )
 
 // PackDataWithFuncHash pack data with func hash
@@ -42,7 +42,7 @@ func PackData(args ...interface{}) []byte {
 		case int:
 			copy(bs[i*32:], packBigInt(big.NewInt(int64(v))))
 		default:
-			panic(fmt.Sprintf("unsupported to pack %v (%T)", v, v))
+			log.Fatalf("unsupported to pack %v (%T)", v, v)
 		}
 	}
 	return bs

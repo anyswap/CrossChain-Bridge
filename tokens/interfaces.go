@@ -4,6 +4,8 @@ import (
 	"errors"
 	"math"
 	"math/big"
+
+	"github.com/anyswap/CrossChain-Bridge/log"
 )
 
 // transaction memo prefix
@@ -159,7 +161,7 @@ func (b *CrossChainBridgeBase) SetTokenAndGateway(tokenCfg *TokenConfig, gateway
 	b.GatewayConfig = gatewayCfg
 	err := tokenCfg.CheckConfig(b.IsSrc)
 	if err != nil {
-		panic(err)
+		log.Fatalf("set token and gateway error %v", err)
 	}
 }
 

@@ -25,7 +25,7 @@ type Bridge struct {
 // NewCrossChainBridge new btc bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	if !isSrc {
-		panic(tokens.ErrBridgeDestinationNotSupported)
+		log.Fatalf("btc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
 	BridgeInstance = &Bridge{tokens.NewCrossChainBridgeBase(isSrc)}
 	return BridgeInstance

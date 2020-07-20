@@ -3,7 +3,6 @@ package params
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -222,17 +221,17 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 			// find config file in the execute directory (default).
 			dir, err := common.ExecuteDir()
 			if err != nil {
-				panic(fmt.Sprintf("LoadConfig error (get ExecuteDir): %v", err))
+				log.Fatalf("LoadConfig error (get ExecuteDir): %v", err)
 			}
 			configFile = common.AbsolutePath(dir, defServerConfigFile)
 		}
 		log.Println("Config file is", configFile)
 		if !common.FileExist(configFile) {
-			panic(fmt.Sprintf("LoadConfig error: config file %v not exist", configFile))
+			log.Fatalf("LoadConfig error: config file %v not exist", configFile)
 		}
 		config := &ServerConfig{}
 		if _, err := toml.DecodeFile(configFile, &config); err != nil {
-			panic(fmt.Sprintf("LoadConfig error (toml DecodeFile): %v", err))
+			log.Fatalf("LoadConfig error (toml DecodeFile): %v", err)
 		}
 
 		SetConfig(config)
@@ -244,7 +243,7 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 		}
 		log.Println("LoadConfig finished.", string(bs))
 		if err := CheckConfig(isServer); err != nil {
-			panic(fmt.Sprintf("Check config failed. %v", err))
+			log.Fatalf("Check config failed. %v", err)
 		}
 	})
 	return serverConfig
