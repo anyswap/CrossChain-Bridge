@@ -12,32 +12,34 @@ var (
 	database *mgo.Database
 	session  *mgo.Session
 
-	mongoURL string
-	dbName   string
+	dialInfo *mgo.DialInfo
 )
 
 // MongoServerInit int mongodb server session
-func MongoServerInit(mongourl, dbname string) {
-	initMongodb(mongourl, dbname)
+func MongoServerInit(addrs []string, dbname, user, pass string) {
+	initDialInfo(addrs, dbname, user, pass)
 	mongoConnect()
 	initCollections()
 	go checkMongoSession()
 }
 
-func initMongodb(url, db string) {
-	mongoURL = url
-	dbName = db
+func initDialInfo(addrs []string, db, user, pass string) {
+	dialInfo = &mgo.DialInfo{
+		Addrs:    addrs,
+		Database: db,
+		Username: user,
+		Password: pass,
+	}
 }
 
 func mongoConnect() {
 	if session != nil { // when reconnect
 		session.Close()
 	}
-	log.Info("[mongodb] connect database start.", "dbName", dbName)
-	url := fmt.Sprintf("mongodb://%v/%v", mongoURL, dbName)
+	log.Info("[mongodb] connect database start.", "addrs", dialInfo.Addrs, "dbName", dialInfo.Database)
 	var err error
 	for {
-		session, err = mgo.Dial(url)
+		session, err = mgo.DialWithInfo(dialInfo)
 		if err == nil {
 			break
 		}
@@ -46,9 +48,9 @@ func mongoConnect() {
 	}
 	session.SetMode(mgo.Monotonic, true)
 	session.SetSafe(&mgo.Safe{FSync: true})
-	database = session.DB(dbName)
+	database = session.DB(dialInfo.Database)
 	deinintCollections()
-	log.Info("[mongodb] connect database finished.", "dbName", dbName)
+	log.Info("[mongodb] connect database finished.", "dbName", dialInfo.Database)
 }
 
 // fix 'read tcp 127.0.0.1:43502->127.0.0.1:27917: i/o timeout'
@@ -57,7 +59,7 @@ func checkMongoSession() {
 		time.Sleep(60 * time.Second)
 		if err := ensureMongoConnected(); err != nil {
 			log.Info("[mongodb] check session error", "err", err)
-			log.Info("[mongodb] reconnect database", "dbName", dbName)
+			log.Info("[mongodb] reconnect database", "dbName", dialInfo.Database)
 			mongoConnect()
 		}
 	}
@@ -83,9 +85,9 @@ func ensureMongoConnected() (err error) {
 	err = sessionPing()
 	if err != nil {
 		log.Error("[mongodb] session ping error", "err", err)
-		log.Info("[mongodb] refresh session.", "dbName", dbName)
+		log.Info("[mongodb] refresh session.", "dbName", dialInfo.Database)
 		session.Refresh()
-		database = session.DB(dbName)
+		database = session.DB(dialInfo.Database)
 		deinintCollections()
 		err = sessionPing()
 	}

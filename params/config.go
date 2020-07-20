@@ -78,14 +78,6 @@ type MongoDBConfig struct {
 	Password string `json:"-"`
 }
 
-// GetURL get mongodb url consider user name and password
-func (cfg *MongoDBConfig) GetURL() string {
-	if cfg.UserName == "" && cfg.Password == "" {
-		return cfg.DBURL
-	}
-	return fmt.Sprintf("%s:%s@%s", cfg.UserName, cfg.Password, cfg.DBURL)
-}
-
 // GetAPIPort get api service port
 func GetAPIPort() int {
 	apiPort := GetConfig().APIServer.Port
