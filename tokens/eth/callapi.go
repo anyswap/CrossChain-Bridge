@@ -2,6 +2,7 @@ package eth
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -161,6 +162,7 @@ func (b *Bridge) SendSignedTransaction(tx *types.Transaction) error {
 }
 
 // ChainID call eth_chainId
+// Notice: eth_chainId return 0x0 for mainnet which is wrong (use net_version instead)
 func (b *Bridge) ChainID() (*big.Int, error) {
 	gateway := b.GatewayConfig
 	url := gateway.APIAddress
@@ -170,6 +172,22 @@ func (b *Bridge) ChainID() (*big.Int, error) {
 		return nil, err
 	}
 	return result.ToInt(), nil
+}
+
+// NetworkID call net_version
+func (b *Bridge) NetworkID() (*big.Int, error) {
+	gateway := b.GatewayConfig
+	url := gateway.APIAddress
+	var result string
+	err := client.RPCPost(&result, url, "net_version")
+	if err != nil {
+		return nil, err
+	}
+	version := new(big.Int)
+	if _, ok := version.SetString(result, 10); !ok {
+		return nil, fmt.Errorf("invalid net_version result %q", result)
+	}
+	return version, nil
 }
 
 // GetCode call eth_getCode
