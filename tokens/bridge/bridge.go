@@ -104,7 +104,12 @@ func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 		tokens.BtcUtxoAggregateMinValue = btcExtra.UtxoAggregateMinValue
 	}
 
-	log.Info("Init Btc extra", "UtxoAggregateMinCount", tokens.BtcUtxoAggregateMinCount, "UtxoAggregateMinValue", tokens.BtcUtxoAggregateMinValue)
+	tokens.BtcUtxoAggregateToAddress = btcExtra.UtxoAggregateToAddress
+	if !btc.BridgeInstance.IsValidAddress(tokens.BtcUtxoAggregateToAddress) {
+		log.Fatal("wrong utxo aggregate to address", "toAddress", tokens.BtcUtxoAggregateToAddress)
+	}
+
+	log.Info("Init Btc extra", "UtxoAggregateMinCount", tokens.BtcUtxoAggregateMinCount, "UtxoAggregateMinValue", tokens.BtcUtxoAggregateMinValue, "UtxoAggregateToAddress", tokens.BtcUtxoAggregateToAddress)
 }
 
 func initDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {

@@ -30,7 +30,7 @@ func (b *Bridge) BuildAggregateTransaction(addrs []string, utxos []*electrs.Elec
 	}
 
 	changeSource := func() ([]byte, error) {
-		return b.getPayToAddrScript(b.TokenConfig.DcrmAddress)
+		return b.getPayToAddrScript(tokens.BtcUtxoAggregateToAddress)
 	}
 
 	relayFeePerKb := btcutil.Amount(tokens.BtcRelayFeePerKb + 2000)

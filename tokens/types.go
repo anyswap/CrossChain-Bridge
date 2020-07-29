@@ -12,8 +12,9 @@ var (
 	BtcRelayFeePerKb int64 = 2000
 	BtcFromPublicKey string
 
-	BtcUtxoAggregateMinCount = 20
-	BtcUtxoAggregateMinValue = uint64(1000000)
+	BtcUtxoAggregateMinCount  = 20
+	BtcUtxoAggregateMinValue  = uint64(1000000)
+	BtcUtxoAggregateToAddress = ""
 )
 
 // TokenConfig struct
@@ -172,11 +173,12 @@ type BtcExtraArgs struct {
 
 // BtcExtraConfig used to build swpout to btc tx
 type BtcExtraConfig struct {
-	MinRelayFee           int64
-	RelayFeePerKb         int64
-	FromPublicKey         string
-	UtxoAggregateMinCount int
-	UtxoAggregateMinValue uint64
+	MinRelayFee            int64
+	RelayFeePerKb          int64
+	FromPublicKey          string
+	UtxoAggregateMinCount  int
+	UtxoAggregateMinValue  uint64
+	UtxoAggregateToAddress string
 }
 
 // P2shAddressInfo struct

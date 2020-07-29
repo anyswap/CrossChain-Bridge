@@ -14,14 +14,14 @@ after building, the following files will be generated in `./build/bin` directory
 ```text
 swapserver	# server provide api service, and trigger swap processing
 swaporacle      # oracle take part in dcrm signing (can disagree illegal transaction)
-config.toml
+config-example.toml
 ```
 
-## Modify config.toml
+## Modify config file
 
-modify the example `config.toml` in `./build/bin` directory
+copy the example config file `config-example.toml` in `./build/bin` directory, and modify it accordingly.
 
-see more, please refer [config file example](https://github.com/anyswap/CrossChain-Bridge/blob/master/params/config.toml)
+see more, please refer [config file example](https://github.com/anyswap/CrossChain-Bridge/blob/master/params/config-example.toml)
 
 ### Identifier
 
@@ -102,7 +102,7 @@ license - to show the license
 
 Running  `swapserver` and `swaporacle` to provide cross chain bridge service, we must prepare the following things firstly and config them rightly. Otherwise the program will not run or run rightly. To ensure this, we have add many checkings to the config items.
 
-For the config file, please refer [config file example](https://github.com/anyswap/CrossChain-Bridge/blob/master/params/config.toml)
+For the config file, please refer [config file example](https://github.com/anyswap/CrossChain-Bridge/blob/master/params/config-example.toml)
 
 1. create Mongodb database (shared by all swap servers of the bridge provider)
 

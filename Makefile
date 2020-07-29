@@ -20,8 +20,8 @@ all:
 	@echo "Done building."
 	@echo "Find binaries in \"$(GOBIN)\" directory."
 	@echo ""
-	@echo "Copy example config.toml to \"$(GOBIN)\" directory (no overwrite if exist)."
-	@cp -n params/config.toml $(GOBIN)
+	@echo "Copy config-example.toml to \"$(GOBIN)\" directory"
+	@cp params/config-example.toml $(GOBIN)
 
 test: all
 	$(GOCMD) test ./...
