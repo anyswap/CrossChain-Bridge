@@ -42,7 +42,7 @@ func (c *TokenConfig) IsErc20() bool {
 
 // GatewayConfig struct
 type GatewayConfig struct {
-	APIAddress string
+	APIAddress []string
 }
 
 // SwapType type

@@ -10,14 +10,17 @@ import (
 // GetTransactionAndReceipt get tx and receipt (fsn special)
 func (b *Bridge) GetTransactionAndReceipt(txHash string) (*types.RPCTxAndReceipt, error) {
 	gateway := b.GatewayConfig
-	url := gateway.APIAddress
 	var result *types.RPCTxAndReceipt
-	err := client.RPCPost(&result, url, "fsn_getTransactionAndReceipt", txHash)
-	if err != nil {
-		return nil, err
+	var err error
+	for _, apiAddress := range gateway.APIAddress {
+		url := apiAddress
+		err = client.RPCPost(&result, url, "fsn_getTransactionAndReceipt", txHash)
+		if err == nil && result != nil {
+			return result, nil
+		}
 	}
 	if result == nil {
 		return nil, errors.New("tx and receipt not found")
 	}
-	return result, nil
+	return nil, err
 }

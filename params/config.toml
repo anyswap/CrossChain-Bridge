@@ -45,7 +45,7 @@ MinTimeToRetry = 0 # unit seconds, suggest >= 3600 for Mainnet
 
 # source blockchain gateway config
 [SrcGateway]
-APIAddress = "http://47.107.50.83:3002"
+APIAddress = ["http://47.107.50.83:3002"]
 
 # dest token config
 [DestToken]
@@ -67,7 +67,7 @@ MinTimeToRetry = 0 # unit seconds, suggest >= 420 for Mainnet
 
 # dest blockchain gateway config
 [DestGateway]
-APIAddress = "http://5.189.139.168:8018"
+APIAddress = ["http://5.189.139.168:8018"]
 
 # DCRM config
 [Dcrm]
