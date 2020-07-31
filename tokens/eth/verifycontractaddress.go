@@ -109,8 +109,9 @@ func getSwapinFuncHash() []byte {
 	return ExtCodeParts["SwapinFuncHash"]
 }
 
-func getLogSwapinTopic() []byte {
-	return ExtCodeParts["LogSwapinTopic"]
+func getSwapinSrcLogTopics() []common.Hash {
+	transferTopic := common.BytesToHash(erc20CodeParts["LogTransfer"])
+	return []common.Hash{transferTopic}
 }
 
 func getSwapoutFuncHash() []byte {
@@ -119,4 +120,9 @@ func getSwapoutFuncHash() []byte {
 
 func getLogSwapoutTopic() []byte {
 	return ExtCodeParts["LogSwapoutTopic"]
+}
+
+func getSwapoutLogTopics() []common.Hash {
+	swapoutTopic := common.BytesToHash(ExtCodeParts["LogSwapoutTopic"])
+	return []common.Hash{swapoutTopic}
 }

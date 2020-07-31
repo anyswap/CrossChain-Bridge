@@ -113,16 +113,14 @@ func (b *Bridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, erro
 }
 
 // GetContractLogs get contract logs
-func (b *Bridge) GetContractLogs(contractAddress, logTopic string, blockHeight uint64) ([]*types.RPCLog, error) {
-	addresses := []common.Address{common.HexToAddress(contractAddress)}
-	topics := []common.Hash{common.HexToHash(logTopic)}
+func (b *Bridge) GetContractLogs(contractAddresses []common.Address, logTopics [][]common.Hash, blockHeight uint64) ([]*types.RPCLog, error) {
 	height := new(big.Int).SetUint64(blockHeight)
 
 	filter := &types.FilterQuery{
 		FromBlock: height,
 		ToBlock:   height,
-		Addresses: addresses,
-		Topics:    [][]common.Hash{topics},
+		Addresses: contractAddresses,
+		Topics:    logTopics,
 	}
 	return b.GetLogs(filter)
 }
