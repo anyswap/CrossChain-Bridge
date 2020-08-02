@@ -47,9 +47,9 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 		return swapInfo, tokens.ErrTxWithWrongContract
 	}
 
-	from, to, value, err := parseErc20SwapinTxLogs(receipt.Logs)
+	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" parseErc20SwapinTxLogs failed", "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "err", err)
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
 	swapInfo.To = strings.ToLower(to)     // To
@@ -93,9 +93,9 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 	}
 
 	input := (*[]byte)(tx.Payload)
-	from, to, value, err := parseErc20SwapinTxInput(input)
+	from, to, value, err := ParseErc20SwapinTxInput(input)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" parseErc20SwapinTxInput failed", "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" ParseErc20SwapinTxInput failed", "err", err)
 		return swapInfo, tokens.ErrTxWithWrongInput
 	}
 	swapInfo.To = strings.ToLower(to) // To
@@ -123,7 +123,8 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 	return swapInfo, nil
 }
 
-func parseErc20SwapinTxInput(input *[]byte) (from, to string, value *big.Int, err error) {
+// ParseErc20SwapinTxInput parse erc20 swapin tx input
+func ParseErc20SwapinTxInput(input *[]byte) (from, to string, value *big.Int, err error) {
 	if input == nil {
 		return "", "", nil, fmt.Errorf("empty tx input")
 	}
@@ -144,7 +145,8 @@ func parseErc20SwapinTxInput(input *[]byte) (from, to string, value *big.Int, er
 	return parseErc20EncodedData(encData, isTransferFrom)
 }
 
-func parseErc20SwapinTxLogs(logs []*types.RPCLog) (from, to string, value *big.Int, err error) {
+// ParseErc20SwapinTxLogs parse erc20 swapin tx logs
+func ParseErc20SwapinTxLogs(logs []*types.RPCLog) (from, to string, value *big.Int, err error) {
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
 			continue

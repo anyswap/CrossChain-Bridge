@@ -53,6 +53,48 @@ var (
 		Usage: "output log in color text format",
 		Value: true,
 	}
+	// StartHeightFlag --start
+	StartHeightFlag = &cli.Uint64Flag{
+		Name:  "start",
+		Usage: "start height (start inclusive)",
+	}
+	// EndHeightFlag --end
+	EndHeightFlag = &cli.Uint64Flag{
+		Name:  "end",
+		Usage: "end height (end exclusive)",
+	}
+	// StableHeightFlag --stable
+	StableHeightFlag = &cli.Uint64Flag{
+		Name:  "stable",
+		Usage: "stable height",
+		Value: 5,
+	}
+	// JobsFlag --jobs
+	JobsFlag = &cli.Uint64Flag{
+		Name:  "jobs",
+		Usage: "number of jobs",
+		Value: 4,
+	}
+	// GatewayFlag --gateway
+	GatewayFlag = &cli.StringFlag{
+		Name:  "gateway",
+		Usage: "gateway URL to connect",
+	}
+	// SwapServerFlag --swapserver
+	SwapServerFlag = &cli.StringFlag{
+		Name:  "swapserver",
+		Usage: "swap server RPC address to post swap register",
+	}
+	// DcrmAddressFlag --dcrm
+	DcrmAddressFlag = &cli.StringFlag{
+		Name:  "dcrm",
+		Usage: "dcrm address",
+	}
+	// TokenAddressFlag --token
+	TokenAddressFlag = &cli.StringFlag{
+		Name:  "token",
+		Usage: "token address",
+	}
 )
 
 // SetLogger set log level, json format, color, rotate ...
