@@ -143,14 +143,14 @@ func (b *Bridge) GetLogs(filterQuery *types.FilterQuery) (result []*types.RPCLog
 }
 
 // GetPoolNonce call eth_getTransactionCount
-func (b *Bridge) GetPoolNonce(address string) (uint64, error) {
+func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 	account := common.HexToAddress(address)
 	gateway := b.GatewayConfig
 	var result hexutil.Uint64
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress
-		err = client.RPCPost(&result, url, "eth_getTransactionCount", account, "pending")
+		err = client.RPCPost(&result, url, "eth_getTransactionCount", account, height)
 		if err == nil {
 			return uint64(result), nil
 		}

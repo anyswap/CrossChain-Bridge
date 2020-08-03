@@ -101,8 +101,10 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	if history != nil {
 		if _, err = bridge.GetTransaction(history.matchTx); err == nil {
 			matchTx := &MatchTx{
-				SwapTx:   history.matchTx,
-				SwapType: tokens.SwapinType,
+				SwapTx:    history.matchTx,
+				SwapValue: tokens.CalcSwappedValue(history.value, true).String(),
+				SwapType:  tokens.SwapinType,
+				SwapNonce: history.nonce,
 			}
 			_ = updateSwapinResult(txid, matchTx)
 			logWorker("swapin", "ignore swapped swapin", "txid", txid, "matchTx", history.matchTx)
@@ -137,12 +139,15 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
+	swapTxNonce := args.GetTxNonce()
+
 	// update database before sending transaction
-	addSwapHistory(txid, value, txHash, true)
+	addSwapHistory(txid, value, txHash, swapTxNonce, true)
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, true).String(),
 		SwapType:  tokens.SwapinType,
+		SwapNonce: swapTxNonce,
 	}
 	err = updateSwapinResult(txid, matchTx)
 	if err != nil {
@@ -177,8 +182,10 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	if history != nil {
 		if _, err = bridge.GetTransaction(history.matchTx); err == nil {
 			matchTx := &MatchTx{
-				SwapTx:   history.matchTx,
-				SwapType: tokens.SwapoutType,
+				SwapTx:    history.matchTx,
+				SwapValue: tokens.CalcSwappedValue(history.value, false).String(),
+				SwapType:  tokens.SwapoutType,
+				SwapNonce: history.nonce,
 			}
 			_ = updateSwapoutResult(txid, matchTx)
 			logWorker("swapout", "ignore swapped swapout", "txid", txid, "matchTx", history.matchTx)
@@ -211,12 +218,15 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
+	swapTxNonce := args.GetTxNonce()
+
 	// update database before sending transaction
-	addSwapHistory(txid, value, txHash, false)
+	addSwapHistory(txid, value, txHash, swapTxNonce, false)
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(value, false).String(),
 		SwapType:  tokens.SwapoutType,
+		SwapNonce: swapTxNonce,
 	}
 	err = updateSwapoutResult(txid, matchTx)
 	if err != nil {
@@ -236,16 +246,18 @@ type swapInfo struct {
 	txid     string
 	value    *big.Int
 	matchTx  string
+	nonce    uint64
 	isSwapin bool
 }
 
-func addSwapHistory(txid string, value *big.Int, matchTx string, isSwapin bool) {
+func addSwapHistory(txid string, value *big.Int, matchTx string, nonce uint64, isSwapin bool) {
 	// Create the new item as its own ring
 	item := ring.New(1)
 	item.Value = &swapInfo{
 		txid:     txid,
 		value:    value,
 		matchTx:  matchTx,
+		nonce:    nonce,
 		isSwapin: isSwapin,
 	}
 

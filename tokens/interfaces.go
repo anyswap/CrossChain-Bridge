@@ -67,6 +67,11 @@ func ShouldRegisterSwapForError(err error) bool {
 	return false
 }
 
+// NonceGetter interface
+type NonceGetter interface {
+	GetPoolNonce(address, height string) (uint64, error)
+}
+
 // CrossChainBridge interface
 type CrossChainBridge interface {
 	IsSrcEndpoint() bool

@@ -116,7 +116,7 @@ func (b *Bridge) getGasPrice() (price *big.Int, err error) {
 func (b *Bridge) getAccountNonce(from string, swapType tokens.SwapType) (nonceptr *uint64, err error) {
 	var nonce uint64
 	for i := 0; i < retryRPCCount; i++ {
-		nonce, err = b.GetPoolNonce(from)
+		nonce, err = b.GetPoolNonce(from, "pending")
 		if err == nil {
 			break
 		}

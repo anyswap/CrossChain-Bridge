@@ -259,6 +259,9 @@ func updateSwapResult(collection *mgo.Collection, txid string, items *SwapResult
 	if items.SwapType != 0 {
 		updates["swaptype"] = items.SwapType
 	}
+	if items.SwapNonce != 0 {
+		updates["swapnonce"] = items.SwapNonce
+	}
 	if items.Memo != "" {
 		updates["memo"] = items.Memo
 	} else if items.Status == MatchTxNotStable {

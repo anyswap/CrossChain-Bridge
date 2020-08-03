@@ -143,6 +143,14 @@ func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 	}
 }
 
+// GetTxNonce get tx nonce
+func (args *BuildTxArgs) GetTxNonce() uint64 {
+	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.Nonce != nil {
+		return *args.Extra.EthExtra.Nonce
+	}
+	return 0
+}
+
 // AllExtras struct
 type AllExtras struct {
 	BtcExtra *BtcExtraArgs `json:"btcExtra,omitempty"`

@@ -14,6 +14,7 @@ type MatchTx struct {
 	SwapTime   uint64
 	SwapValue  string
 	SwapType   tokens.SwapType
+	SwapNonce  uint64
 }
 
 func addInitialSwapinResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus) error {
@@ -79,6 +80,7 @@ func updateSwapResult(key string, mtx *MatchTx) (err error) {
 	if mtx.SwapTx != "" {
 		updates.SwapTx = mtx.SwapTx
 		updates.SwapValue = mtx.SwapValue
+		updates.SwapNonce = mtx.SwapNonce
 		updates.SwapHeight = 0
 		updates.SwapTime = 0
 	} else {

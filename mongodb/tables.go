@@ -40,6 +40,7 @@ type MgoSwapResult struct {
 	SwapTime   uint64     `bson:"swaptime"`
 	SwapValue  string     `bson:"swapvalue"`
 	SwapType   uint32     `bson:"swaptype"`
+	SwapNonce  uint64     `bson:"swapnonce"`
 	Status     SwapStatus `bson:"status"`
 	Timestamp  int64      `bson:"timestamp"`
 	Memo       string     `bson:"memo"`
@@ -52,6 +53,7 @@ type SwapResultUpdateItems struct {
 	SwapTime   uint64
 	SwapValue  string
 	SwapType   uint32
+	SwapNonce  uint64
 	Status     SwapStatus
 	Timestamp  int64
 	Memo       string
