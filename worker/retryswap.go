@@ -14,7 +14,7 @@ var (
 )
 
 const (
-	defMinTimeToRetry = 1800 // unit senconds
+	defMinTimeToRetry = 3600 // unit senconds
 )
 
 // StartSwapRetryJob start retry for failed swaptx
@@ -89,8 +89,12 @@ func processRetrySwapin(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
-	logWorker("retryswap", "update swapin status to TxNotSwapped to retry", "txid", txid)
-	_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxNotSwapped, now(), "")
+	logWorker("retryswap", "update swapin status to TxNotSwapped to retry", "txid", txid, "swaptx", res.SwapTx)
+	if res.SwapType == uint32(tokens.SwapRecallType) {
+		_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxToBeRecall, now(), "")
+	} else {
+		_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxNotSwapped, now(), "")
+	}
 	_ = mongodb.UpdateSwapinResultStatus(txid, mongodb.MatchTxEmpty, now(), "")
 	return nil
 }
@@ -105,18 +109,22 @@ func processRetrySwapout(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
-	logWorker("retryswap", "update swapout status to TxNotSwapped to retry", "txid", txid)
+	logWorker("retryswap", "update swapout status to TxNotSwapped to retry", "txid", txid, "swaptx", res.SwapTx)
 	_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxNotSwapped, now(), "")
 	_ = mongodb.UpdateSwapoutResultStatus(txid, mongodb.MatchTxEmpty, now(), "")
 	return nil
 }
 
 func checkSwapCanRetry(res *mongodb.MgoSwapResult, bridge tokens.CrossChainBridge) error {
+	return checkSwapCanRetryWithStatus(mongodb.TxSwapFailed, res, bridge)
+}
+
+func checkSwapCanRetryWithStatus(status mongodb.SwapStatus, res *mongodb.MgoSwapResult, bridge tokens.CrossChainBridge) error {
+	if res.Status != status {
+		return errors.New("swap result status can not retry")
+	}
 	if res.SwapTx == "" {
 		return errors.New("swap without swaptx")
-	}
-	if res.Status != mongodb.TxSwapFailed {
-		return errors.New("swap result without failed status")
 	}
 	if res.SwapHeight != 0 {
 		return errors.New("swaptx with non zero height")
