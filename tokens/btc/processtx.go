@@ -51,21 +51,21 @@ func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err erro
 		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return "", tokens.ErrTxNotFound
 	}
-	dcrmAddress := b.TokenConfig.DcrmAddress
-	txFrom := getTxFrom(tx.Vin, dcrmAddress)
+	depositAddress := b.TokenConfig.DepositAddress
+	txFrom := getTxFrom(tx.Vin, depositAddress)
 	for _, output := range tx.Vout {
 		switch *output.ScriptpubkeyType {
-		case p2pkhType:
-			if txFrom == dcrmAddress {
-				continue // p2pkh is ignore is sender is configed dcrm address
-			}
-			if *output.ScriptpubkeyAddress == dcrmAddress {
-				return "", nil // p2pkh first if exist
-			}
 		case p2shType:
 			if p2shBindAddr == "" { // use the first registered p2sh address
 				p2shAddress := *output.ScriptpubkeyAddress
 				p2shBindAddr = tools.GetP2shBindAddress(p2shAddress)
+			}
+		default:
+			if txFrom == depositAddress {
+				continue // ignore is sender is configed deposit address
+			}
+			if *output.ScriptpubkeyAddress == depositAddress {
+				return "", nil // p2pkh first if exist
 			}
 		}
 	}

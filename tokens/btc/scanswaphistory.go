@@ -45,7 +45,7 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 
 FIRST_LOOP:
 	for {
-		txHistory, err := b.GetTransactionHistory(b.TokenConfig.DcrmAddress, lastSeenTxid)
+		txHistory, err := b.GetTransactionHistory(b.TokenConfig.DepositAddress, lastSeenTxid)
 		if err != nil {
 			time.Sleep(retryIntervalInScanJob)
 			continue
@@ -86,7 +86,7 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 	)
 
 	for {
-		txHistory, err := b.GetTransactionHistory(b.TokenConfig.DcrmAddress, lastSeenTxid)
+		txHistory, err := b.GetTransactionHistory(b.TokenConfig.DepositAddress, lastSeenTxid)
 		if err != nil {
 			log.Error("[scanhistory] get tx history error", "isSrc", b.IsSrc, "err", err)
 			time.Sleep(retryIntervalInScanJob)

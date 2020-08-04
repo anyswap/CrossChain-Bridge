@@ -85,9 +85,9 @@ var (
 		Name:  "swapserver",
 		Usage: "swap server RPC address to post swap register",
 	}
-	// DcrmAddressFlag --dcrm
-	DcrmAddressFlag = &cli.StringFlag{
-		Name:  "dcrm",
+	// DepositAddressFlag --deposit
+	DepositAddressFlag = &cli.StringFlag{
+		Name:  "deposit",
 		Usage: "dcrm address",
 	}
 	// TokenAddressFlag --token

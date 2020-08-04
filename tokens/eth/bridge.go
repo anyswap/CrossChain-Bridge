@@ -94,16 +94,44 @@ func (b *Bridge) VerifyTokenCofig() {
 	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
 		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
 	}
+	if !b.IsValidAddress(tokenCfg.DepositAddress) {
+		log.Fatal("invalid deposit address", "address", tokenCfg.DepositAddress)
+	}
 
+	b.verifyDecimals()
+
+	b.verifyContractAddress()
+}
+
+func (b *Bridge) verifyDecimals() {
+	tokenCfg := b.TokenConfig
 	configedDecimals := *tokenCfg.Decimals
 	switch strings.ToUpper(tokenCfg.Symbol) {
 	case "ETH", "FSN":
 		if configedDecimals != 18 {
-			log.Fatal("invalid decimals for ETH", "configed", configedDecimals, "want", 18)
+			log.Fatal("invalid decimals", "configed", configedDecimals, "want", 18)
 		}
 		log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals)
 	}
 
+	if tokenCfg.IsErc20() {
+		for {
+			decimals, err := b.GetErc20Decimals(tokenCfg.ContractAddress)
+			if err == nil {
+				if decimals != configedDecimals {
+					log.Fatal("invalid decimals for "+tokenCfg.Symbol, "configed", configedDecimals, "want", decimals)
+				}
+				log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals)
+				break
+			}
+			log.Error("get erc20 decimals failed", "err", err)
+			time.Sleep(3 * time.Second)
+		}
+	}
+}
+
+func (b *Bridge) verifyContractAddress() {
+	tokenCfg := b.TokenConfig
 	if tokenCfg.ContractAddress != "" {
 		if !b.IsValidAddress(tokenCfg.ContractAddress) {
 			log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)
@@ -121,21 +149,6 @@ func (b *Bridge) VerifyTokenCofig() {
 			log.Fatal("unsupported type of contract address in source chain, please assign SrcToken.ID (eg. ERC20) in config file", "address", tokenCfg.ContractAddress)
 		}
 		log.Info("verify contract address pass", "address", tokenCfg.ContractAddress)
-	}
-
-	if tokenCfg.IsErc20() {
-		for {
-			decimals, err := b.GetErc20Decimals(tokenCfg.ContractAddress)
-			if err == nil {
-				if decimals != configedDecimals {
-					log.Fatal("invalid decimals for "+tokenCfg.Symbol, "configed", configedDecimals, "want", decimals)
-				}
-				log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals)
-				break
-			}
-			log.Error("get erc20 decimals failed", "err", err)
-			time.Sleep(3 * time.Second)
-		}
 	}
 }
 

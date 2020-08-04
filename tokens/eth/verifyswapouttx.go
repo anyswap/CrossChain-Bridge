@@ -60,11 +60,6 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 	}
 	swapInfo.Value = value // Value
 
-	// check sender
-	// if common.IsEqualIgnoreCase(swapInfo.From, token.DcrmAddress) {
-	// 	return swapInfo, tokens.ErrTxWithWrongSender
-	// }
-
 	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
@@ -113,11 +108,6 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 		swapInfo.Bind = swapInfo.From // Bind
 	}
 	swapInfo.Value = value // Value
-
-	// check sender
-	// if common.IsEqualIgnoreCase(swapInfo.From, token.DcrmAddress) {
-	// 	return swapInfo, tokens.ErrTxWithWrongSender
-	// }
 
 	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue

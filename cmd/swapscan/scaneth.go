@@ -30,7 +30,7 @@ distribute rewards by liquidity
 		Flags: []cli.Flag{
 			utils.GatewayFlag,
 			utils.SwapServerFlag,
-			utils.DcrmAddressFlag,
+			utils.DepositAddressFlag,
 			utils.TokenAddressFlag,
 			utils.StartHeightFlag,
 			utils.EndHeightFlag,
@@ -41,14 +41,14 @@ distribute rewards by liquidity
 )
 
 type ethSwapScanner struct {
-	gateway      string
-	swapServer   string
-	dcrmAddress  string
-	tokenAddress string
-	startHeight  uint64
-	endHeight    uint64
-	stableHeight uint64
-	jobCount     uint64
+	gateway        string
+	swapServer     string
+	depositAddress string
+	tokenAddress   string
+	startHeight    uint64
+	endHeight      uint64
+	stableHeight   uint64
+	jobCount       uint64
 
 	client *ethclient.Client
 	ctx    context.Context
@@ -66,7 +66,7 @@ func scanEth(ctx *cli.Context) error {
 	}
 	scanner.gateway = ctx.String(utils.GatewayFlag.Name)
 	scanner.swapServer = ctx.String(utils.SwapServerFlag.Name)
-	scanner.dcrmAddress = ctx.String(utils.DcrmAddressFlag.Name)
+	scanner.depositAddress = ctx.String(utils.DepositAddressFlag.Name)
 	scanner.tokenAddress = ctx.String(utils.TokenAddressFlag.Name)
 	scanner.startHeight = ctx.Uint64(utils.StartHeightFlag.Name)
 	scanner.endHeight = ctx.Uint64(utils.EndHeightFlag.Name)
@@ -76,7 +76,7 @@ func scanEth(ctx *cli.Context) error {
 	log.Info("get argument success",
 		"gateway", scanner.gateway,
 		"swapServer", scanner.swapServer,
-		"dcrmAddress", scanner.dcrmAddress,
+		"depositAddress", scanner.depositAddress,
 		"tokenAddress", scanner.tokenAddress,
 		"start", scanner.startHeight,
 		"end", scanner.endHeight,
@@ -90,8 +90,8 @@ func scanEth(ctx *cli.Context) error {
 }
 
 func (scanner *ethSwapScanner) verifyOptions() {
-	if scanner.dcrmAddress == "" {
-		log.Fatal("must specify dcrm address")
+	if scanner.depositAddress == "" {
+		log.Fatal("must specify deposit address")
 	}
 	if scanner.gateway == "" {
 		log.Fatal("must specify gateway address")
@@ -275,7 +275,7 @@ func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction) error 
 		return tokens.ErrTxWithWrongInput
 	}
 
-	if !strings.EqualFold(to, scanner.dcrmAddress) {
+	if !strings.EqualFold(to, scanner.depositAddress) {
 		return tokens.ErrTxWithWrongReceiver
 	}
 
@@ -287,7 +287,7 @@ func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction) error 
 }
 
 func (scanner *ethSwapScanner) verifySwapinTx(tx *types.Transaction) error {
-	if tx.To() == nil || !strings.EqualFold(tx.To().String(), scanner.dcrmAddress) {
+	if tx.To() == nil || !strings.EqualFold(tx.To().String(), scanner.depositAddress) {
 		return tokens.ErrTxWithWrongReceiver
 	}
 

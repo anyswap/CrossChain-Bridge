@@ -26,6 +26,7 @@ type TokenConfig struct {
 	Symbol          string
 	Decimals        *uint8
 	Description     string `json:",omitempty"`
+	DepositAddress  string `json:",omitempty"`
 	DcrmAddress     string
 	ContractAddress string `json:",omitempty"`
 	Confirmations   *uint64
@@ -232,6 +233,9 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	}
 	if c.DcrmAddress == "" {
 		return errors.New("token must config 'DcrmAddress'")
+	}
+	if isSrc && c.DepositAddress == "" {
+		return errors.New("token must config 'DepositAddress' for source chain")
 	}
 	if !isSrc && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for destination chain")

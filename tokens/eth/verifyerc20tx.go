@@ -23,7 +23,6 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
 	token := b.TokenConfig
-	dcrmAddress := token.DcrmAddress
 
 	txStatus := b.GetTransactionStatus(txHash)
 	swapInfo.Height = txStatus.BlockHeight  // Height
@@ -56,7 +55,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 	swapInfo.Value = value                // Value
 	swapInfo.Bind = strings.ToLower(from) // Bind
 
-	if !common.IsEqualIgnoreCase(swapInfo.To, dcrmAddress) {
+	if !common.IsEqualIgnoreCase(swapInfo.To, token.DepositAddress) {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
@@ -106,8 +105,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 		swapInfo.Bind = swapInfo.From // Bind
 	}
 
-	dcrmAddress := token.DcrmAddress
-	if !common.IsEqualIgnoreCase(swapInfo.To, dcrmAddress) {
+	if !common.IsEqualIgnoreCase(swapInfo.To, token.DepositAddress) {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 

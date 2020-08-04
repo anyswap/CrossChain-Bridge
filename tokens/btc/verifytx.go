@@ -97,12 +97,12 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	if txStatus.BlockTime != nil {
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
-	dcrmAddress := b.TokenConfig.DcrmAddress
-	value, memoScript, rightReceiver := b.getReceivedValue(tx.Vout, dcrmAddress, p2pkhType)
+	depositAddress := b.TokenConfig.DepositAddress
+	value, memoScript, rightReceiver := b.getReceivedValue(tx.Vout, depositAddress, anyType)
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
-	swapInfo.To = dcrmAddress                    // To
+	swapInfo.To = depositAddress                 // To
 	swapInfo.Value = common.BigFromUint64(value) // Value
 
 	memoStr, bindAddress, bindOk := getBindAddressFromMemoScipt(memoScript)
@@ -112,7 +112,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 
 	swapInfo.Bind = bindAddress // Bind
 
-	swapInfo.From = getTxFrom(tx.Vin, dcrmAddress) // From
+	swapInfo.From = getTxFrom(tx.Vin, depositAddress) // From
 
 	// check sender
 	if swapInfo.From == swapInfo.To {
@@ -149,7 +149,7 @@ func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyTy
 		case opReturnType:
 			memoScript = *output.ScriptpubkeyAsm
 			continue
-		case pubkeyType:
+		case pubkeyType, anyType:
 			if *output.ScriptpubkeyAddress != receiver {
 				continue
 			}

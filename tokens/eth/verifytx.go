@@ -80,7 +80,6 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
 	token := b.TokenConfig
-	dcrmAddress := token.DcrmAddress
 
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
@@ -114,7 +113,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		}
 	}
 
-	if !common.IsEqualIgnoreCase(swapInfo.To, dcrmAddress) {
+	if !common.IsEqualIgnoreCase(swapInfo.To, token.DepositAddress) {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 

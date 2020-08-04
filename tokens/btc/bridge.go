@@ -47,6 +47,9 @@ func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *to
 	if !b.IsP2pkhAddress(tokenCfg.DcrmAddress) {
 		log.Fatal("invalid dcrm address (not p2pkh)", "address", tokenCfg.DcrmAddress)
 	}
+	if !b.IsValidAddress(tokenCfg.DepositAddress) {
+		log.Fatal("invalid deposit address", "address", tokenCfg.DepositAddress)
+	}
 
 	if strings.EqualFold(tokenCfg.Symbol, "BTC") && *tokenCfg.Decimals != 8 {
 		log.Fatal("invalid decimals for BTC", "configed", *tokenCfg.Decimals, "want", 8)
