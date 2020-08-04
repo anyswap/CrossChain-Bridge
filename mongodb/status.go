@@ -36,6 +36,7 @@ const (
 	MatchTxNotStable                   // 9
 	MatchTxStable                      // 10
 	TxWithWrongMemo                    // 11
+	TxWithBigValue                     // 12
 )
 
 func (status SwapStatus) String() string {
@@ -64,6 +65,8 @@ func (status SwapStatus) String() string {
 		return "MatchTxStable"
 	case TxWithWrongMemo:
 		return "TxWithWrongMemo"
+	case TxWithBigValue:
+		return "TxWithBigValue"
 	default:
 		log.Fatalf("unknown swap status %d", status)
 		return "unknown swap status"

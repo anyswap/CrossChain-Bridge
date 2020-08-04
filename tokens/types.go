@@ -34,6 +34,7 @@ type TokenConfig struct {
 	Confirmations          *uint64
 	MaximumSwap            *float64 // whole unit (eg. BTC, ETH, FSN), not Satoshi
 	MinimumSwap            *float64 // whole unit
+	BigValueThreshold      *float64
 	SwapFeeRate            *float64
 	InitialHeight          uint64
 	MinTimeToRetry         int64  // unit second
@@ -236,6 +237,9 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	}
 	if c.PlusGasPricePercentage > maxPlusGasPricePercentage {
 		return errors.New("too large 'PlusGasPricePercentage' value")
+	}
+	if c.BigValueThreshold == nil {
+		return errors.New("token must config 'BigValueThreshold'")
 	}
 	if c.DcrmAddress == "" {
 		return errors.New("token must config 'DcrmAddress'")

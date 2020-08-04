@@ -211,6 +211,14 @@ func ToBits(value float64, decimals uint8) *big.Int {
 	return result
 }
 
+// GetBigValueThreshold get big value threshold
+func GetBigValueThreshold(isSrc bool) *big.Int {
+	token := GetTokenConfig(isSrc)
+	bigVal := *token.BigValueThreshold
+	decimals := *token.Decimals
+	return ToBits(bigVal, decimals)
+}
+
 // CheckSwapValue check swap value is in right range
 func CheckSwapValue(value *big.Int, isSrc bool) bool {
 	token := GetTokenConfig(isSrc)
