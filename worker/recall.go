@@ -52,6 +52,10 @@ func processRecallSwapin(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
+	if tokens.GetTokenConfig(true).DisableSwap {
+		logWorkerTrace("recall", "swapin recall is disabled")
+		return nil
+	}
 	if res.SwapTx != "" {
 		if res.Status == mongodb.TxToBeRecall {
 			_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")

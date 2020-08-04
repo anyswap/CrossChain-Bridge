@@ -90,6 +90,10 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
+	if tokens.GetTokenConfig(false).DisableSwap {
+		logWorkerTrace("swapin", "swapin is disabled")
+		return nil
+	}
 	if res.SwapTx != "" {
 		if res.Status == mongodb.TxNotSwapped {
 			_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
@@ -170,6 +174,10 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	res, err := mongodb.FindSwapoutResult(txid)
 	if err != nil {
 		return err
+	}
+	if tokens.GetTokenConfig(true).DisableSwap {
+		logWorkerTrace("swapout", "swapout is disabled")
+		return nil
 	}
 	if res.SwapTx != "" {
 		if res.Status == mongodb.TxNotSwapped {

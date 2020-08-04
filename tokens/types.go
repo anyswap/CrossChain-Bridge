@@ -39,6 +39,7 @@ type TokenConfig struct {
 	InitialHeight          uint64
 	MinTimeToRetry         int64  // unit second
 	PlusGasPricePercentage uint64 `json:",omitempty"`
+	DisableSwap            bool
 }
 
 // IsErc20 return is token is erc20
