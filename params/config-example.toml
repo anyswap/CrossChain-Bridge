@@ -44,6 +44,7 @@ MinimumSwap = 0.00001
 SwapFeeRate = 0.001
 InitialHeight = 0
 MinTimeToRetry = 0 # unit seconds, suggest >= 3600 for Mainnet
+PlusGasPricePercentage = 15 # plus 15% gas price
 
 # source blockchain gateway config
 [SrcGateway]
@@ -66,6 +67,7 @@ MinimumSwap = 0.00001
 SwapFeeRate = 0.001
 InitialHeight = 0
 MinTimeToRetry = 0 # unit seconds, suggest >= 420 for Mainnet
+PlusGasPricePercentage = 15 # plus 15% gas price
 
 # dest blockchain gateway config
 [DestGateway]

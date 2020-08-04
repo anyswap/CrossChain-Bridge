@@ -15,26 +15,29 @@ var (
 	BtcUtxoAggregateMinCount  = 20
 	BtcUtxoAggregateMinValue  = uint64(1000000)
 	BtcUtxoAggregateToAddress = ""
+
+	maxPlusGasPricePercentage uint64 = 10000
 )
 
 // TokenConfig struct
 type TokenConfig struct {
-	BlockChain      string
-	NetID           string
-	ID              string `json:",omitempty"`
-	Name            string
-	Symbol          string
-	Decimals        *uint8
-	Description     string `json:",omitempty"`
-	DepositAddress  string `json:",omitempty"`
-	DcrmAddress     string
-	ContractAddress string `json:",omitempty"`
-	Confirmations   *uint64
-	MaximumSwap     *float64 // whole unit (eg. BTC, ETH, FSN), not Satoshi
-	MinimumSwap     *float64 // whole unit
-	SwapFeeRate     *float64
-	InitialHeight   uint64
-	MinTimeToRetry  int64 // unit second
+	BlockChain             string
+	NetID                  string
+	ID                     string `json:",omitempty"`
+	Name                   string
+	Symbol                 string
+	Decimals               *uint8
+	Description            string `json:",omitempty"`
+	DepositAddress         string `json:",omitempty"`
+	DcrmAddress            string
+	ContractAddress        string `json:",omitempty"`
+	Confirmations          *uint64
+	MaximumSwap            *float64 // whole unit (eg. BTC, ETH, FSN), not Satoshi
+	MinimumSwap            *float64 // whole unit
+	SwapFeeRate            *float64
+	InitialHeight          uint64
+	MinTimeToRetry         int64  // unit second
+	PlusGasPricePercentage uint64 `json:",omitempty"`
 }
 
 // IsErc20 return is token is erc20
@@ -230,6 +233,9 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	}
 	if *c.SwapFeeRate < 0 {
 		return errors.New("token 'SwapFeeRate' is negative")
+	}
+	if c.PlusGasPricePercentage > maxPlusGasPricePercentage {
+		return errors.New("too large 'PlusGasPricePercentage' value")
 	}
 	if c.DcrmAddress == "" {
 		return errors.New("token must config 'DcrmAddress'")

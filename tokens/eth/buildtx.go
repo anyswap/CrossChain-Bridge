@@ -13,6 +13,8 @@ import (
 var (
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
+
+	defPlusGasPricePercentage uint64 = 15 // 15%
 )
 
 // BuildRawTransaction build raw tx
@@ -88,6 +90,12 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 		if err != nil {
 			return nil, err
 		}
+		addPercent := b.TokenConfig.PlusGasPricePercentage
+		if addPercent == 0 {
+			addPercent = defPlusGasPricePercentage
+		}
+		extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
+		extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
 	}
 	if extra.Nonce == nil {
 		extra.Nonce, err = b.getAccountNonce(args.From, args.SwapType)
