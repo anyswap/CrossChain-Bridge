@@ -47,6 +47,7 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 		SwapTime:   0,
 		SwapValue:  "0",
 		SwapType:   uint32(swapType),
+		SwapNonce:  0,
 		Status:     status,
 		Timestamp:  now(),
 		Memo:       "",
@@ -99,9 +100,9 @@ func updateSwapResult(key string, mtx *MatchTx) (err error) {
 		err = tokens.ErrUnknownSwapType
 	}
 	if err != nil {
-		logWorkerError("update", "updateSwapResult", err, "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "swaptype", mtx.SwapType)
+		logWorkerError("update", "updateSwapResult", err, "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "swaptype", mtx.SwapType, "swapnonce", mtx.SwapNonce)
 	} else {
-		logWorker("update", "updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "swaptype", mtx.SwapType)
+		logWorker("update", "updateSwapResult", "txid", key, "swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight, "swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue, "swaptype", mtx.SwapType, "swapnonce", mtx.SwapNonce)
 	}
 	return err
 }

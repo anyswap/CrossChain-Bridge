@@ -94,7 +94,7 @@ func (b *Bridge) VerifyTokenCofig() {
 	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
 		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
 	}
-	if !b.IsValidAddress(tokenCfg.DepositAddress) {
+	if b.IsSrc && !b.IsValidAddress(tokenCfg.DepositAddress) {
 		log.Fatal("invalid deposit address", "address", tokenCfg.DepositAddress)
 	}
 
