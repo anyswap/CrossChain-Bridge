@@ -88,7 +88,7 @@ var (
 	// DepositAddressFlag --deposit
 	DepositAddressFlag = &cli.StringFlag{
 		Name:  "deposit",
-		Usage: "dcrm address",
+		Usage: "deposit address",
 	}
 	// TokenAddressFlag --token
 	TokenAddressFlag = &cli.StringFlag{

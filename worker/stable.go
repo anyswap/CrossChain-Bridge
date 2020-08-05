@@ -96,12 +96,12 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 		if err == nil {
 			txid := swap.TxID
 			logWorker("stable", "update swapin status to TxNotSwapped to retry", "txid", txid, "swaptx", swapTxID)
+			_ = mongodb.UpdateSwapinResultStatus(txid, mongodb.MatchTxEmpty, now(), "")
 			if swap.SwapType == uint32(tokens.SwapRecallType) {
 				_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxToBeRecall, now(), "")
 			} else {
 				_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxNotSwapped, now(), "")
 			}
-			_ = mongodb.UpdateSwapinResultStatus(txid, mongodb.MatchTxEmpty, now(), "")
 		}
 		return nil
 	}
@@ -137,8 +137,8 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 		if err == nil {
 			txid := swap.TxID
 			logWorker("stable", "update swapout status to TxNotSwapped to retry", "txid", txid, "swaptx", swapTxID)
-			_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxNotSwapped, now(), "")
 			_ = mongodb.UpdateSwapoutResultStatus(txid, mongodb.MatchTxEmpty, now(), "")
+			_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxNotSwapped, now(), "")
 		}
 		return nil
 	}

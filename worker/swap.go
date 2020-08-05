@@ -95,10 +95,13 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return nil
 	}
 	if res.SwapTx != "" {
-		if res.Status == mongodb.TxNotSwapped {
-			_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+		_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+		if res.Status != mongodb.MatchTxEmpty {
+			return fmt.Errorf("%v already swapped to %v with status %v", txid, res.SwapTx, res.Status)
 		}
-		return fmt.Errorf("%v already swapped to %v", txid, res.SwapTx)
+		if _, err = bridge.GetTransaction(res.SwapTx); err == nil {
+			return fmt.Errorf("[warn] %v already swapped to %v but with status %v", txid, res.SwapTx, res.Status)
+		}
 	}
 
 	history := getSwapHistory(txid, true)
@@ -180,10 +183,13 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		return nil
 	}
 	if res.SwapTx != "" {
-		if res.Status == mongodb.TxNotSwapped {
-			_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
+		_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
+		if res.Status != mongodb.MatchTxEmpty {
+			return fmt.Errorf("%v already swapped to %v with status %v", txid, res.SwapTx, res.Status)
 		}
-		return fmt.Errorf("%v already swapped to %v", txid, res.SwapTx)
+		if _, err = bridge.GetTransaction(res.SwapTx); err == nil {
+			return fmt.Errorf("[warn] %v already swapped to %v but with status %v", txid, res.SwapTx, res.Status)
+		}
 	}
 
 	history := getSwapHistory(txid, false)
