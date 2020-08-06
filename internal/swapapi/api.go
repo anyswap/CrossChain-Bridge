@@ -15,8 +15,10 @@ import (
 )
 
 var (
-	errSwapExist    = newRPCError(-32097, "swap already exist")
-	errNotBtcBridge = newRPCError(-32096, "bridge is not btc")
+	errSwapExist       = newRPCError(-32097, "swap already exist")
+	errNotBtcBridge    = newRPCError(-32096, "bridge is not btc")
+	errSwapNotExist    = newRPCError(-32095, "swap not exist")
+	errSwapCannotRetry = newRPCError(-32094, "swap can not retry")
 )
 
 func newRPCError(ec rpcjson.ErrorCode, message string) error {
@@ -142,6 +144,28 @@ func Swapin(txid *string) (*PostResult, error) {
 		return nil, newRPCError(-32099, "verify swapin failed! "+err.Error())
 	}
 	err = addSwapToDatabase(txidstr, tokens.SwapinTx, swapInfo, err)
+	if err != nil {
+		return nil, err
+	}
+	return &SuccessPostResult, nil
+}
+
+// RetrySwapin api
+func RetrySwapin(txid *string) (*PostResult, error) {
+	log.Debug("[api] retry Swapin", "txid", *txid)
+	txidstr := *txid
+	swap, _ := mongodb.FindSwapin(txidstr)
+	if swap == nil {
+		return nil, errSwapNotExist
+	}
+	if !swap.Status.CanRetry() {
+		return nil, errSwapCannotRetry
+	}
+	_, err := tokens.SrcBridge.VerifyTransaction(txidstr, true)
+	if err != nil {
+		return nil, newRPCError(-32099, "retry swapin failed! "+err.Error())
+	}
+	err = mongodb.UpdateSwapinStatus(txidstr, mongodb.TxNotStable, time.Now().Unix(), "")
 	if err != nil {
 		return nil, err
 	}

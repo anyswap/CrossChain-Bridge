@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -12,6 +13,8 @@ import (
 const (
 	maxCountOfResults = 5000
 )
+
+var retryLock sync.Mutex
 
 // --------------- swapin --------------------------------
 
@@ -104,8 +107,16 @@ func updateSwapStatus(collection *mgo.Collection, txid string, status SwapStatus
 	updates := bson.M{"status": status, "timestamp": timestamp}
 	if memo != "" {
 		updates["memo"] = memo
-	} else if status == TxNotSwapped {
+	} else if status == TxNotSwapped || status == TxNotStable {
 		updates["memo"] = ""
+	}
+	if status == TxNotStable {
+		retryLock.Lock()
+		defer retryLock.Unlock()
+		swap, _ := findSwap(collection, txid)
+		if !swap.Status.CanRetry() {
+			return nil
+		}
 	}
 	err := collection.UpdateId(txid, bson.M{"$set": updates})
 	if err == nil {

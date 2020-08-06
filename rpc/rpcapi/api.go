@@ -129,6 +129,15 @@ func (s *RPCAPI) Swapin(r *http.Request, txid *string, result *swapapi.PostResul
 	return err
 }
 
+// RetrySwapin api
+func (s *RPCAPI) RetrySwapin(r *http.Request, txid *string, result *swapapi.PostResult) error {
+	res, err := swapapi.RetrySwapin(txid)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
 // RPCP2shSwapinArgs args
 type RPCP2shSwapinArgs struct {
 	TxID string `json:"txid"`

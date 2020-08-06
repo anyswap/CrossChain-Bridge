@@ -40,6 +40,16 @@ const (
 	TxSenderNotRegistered                   // 13
 )
 
+// CanRetry can retry
+func (status SwapStatus) CanRetry() bool {
+	switch status {
+	case TxSenderNotRegistered:
+		return true
+	default:
+		return false
+	}
+}
+
 // nolint:gocyclo // allow large switch
 func (status SwapStatus) String() string {
 	switch status {

@@ -59,6 +59,7 @@ func initRouter() *mux.Router {
 	r.HandleFunc("/serverinfo", restapi.SeverInfoHandler).Methods("GET")
 	r.HandleFunc("/statistics", restapi.StatisticsHandler).Methods("GET")
 	r.HandleFunc("/swapin/post/{txid}", restapi.PostSwapinHandler).Methods("POST")
+	r.HandleFunc("/swapin/retry/{txid}", restapi.RetrySwapinHandler).Methods("POST")
 	r.HandleFunc("/swapin/post/{txid}/{bind}", restapi.PostP2shSwapinHandler).Methods("POST")
 	r.HandleFunc("/swapout/post/{txid}", restapi.PostSwapoutHandler).Methods("POST")
 	r.HandleFunc("/swapin/recall/{txid}", restapi.RecallSwapinHandler).Methods("POST")
