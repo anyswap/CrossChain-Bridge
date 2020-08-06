@@ -24,21 +24,23 @@ type SwapStatus uint16
 
 // swap status values
 const (
-	TxNotStable      SwapStatus = iota // 0
-	TxVerifyFailed                     // 1
-	TxCanRecall                        // 2
-	TxToBeRecall                       // 3
-	TxRecallFailed                     // 4
-	TxNotSwapped                       // 5
-	TxSwapFailed                       // 6
-	TxProcessed                        // 7
-	MatchTxEmpty                       // 8
-	MatchTxNotStable                   // 9
-	MatchTxStable                      // 10
-	TxWithWrongMemo                    // 11
-	TxWithBigValue                     // 12
+	TxNotStable           SwapStatus = iota // 0
+	TxVerifyFailed                          // 1
+	TxCanRecall                             // 2
+	TxToBeRecall                            // 3
+	TxRecallFailed                          // 4
+	TxNotSwapped                            // 5
+	TxSwapFailed                            // 6
+	TxProcessed                             // 7
+	MatchTxEmpty                            // 8
+	MatchTxNotStable                        // 9
+	MatchTxStable                           // 10
+	TxWithWrongMemo                         // 11
+	TxWithBigValue                          // 12
+	TxSenderNotRegistered                   // 13
 )
 
+// nolint:gocyclo // allow large switch
 func (status SwapStatus) String() string {
 	switch status {
 	case TxNotStable:
@@ -67,6 +69,8 @@ func (status SwapStatus) String() string {
 		return "TxWithWrongMemo"
 	case TxWithBigValue:
 		return "TxWithBigValue"
+	case TxSenderNotRegistered:
+		return "TxSenderNotRegistered"
 	default:
 		log.Fatalf("unknown swap status %d", status)
 		return "unknown swap status"

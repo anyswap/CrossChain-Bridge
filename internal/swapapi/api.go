@@ -2,6 +2,7 @@ package swapapi
 
 import (
 	"encoding/hex"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -290,4 +291,21 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 // GetLatestScanInfo api
 func GetLatestScanInfo(isSrc bool) (*LatestScanInfo, error) {
 	return mongodb.FindLatestScanInfo(isSrc)
+}
+
+// RegisterAddress register address
+func RegisterAddress(address string) (*PostResult, error) {
+	address = strings.ToLower(address)
+	err := mongodb.AddRegisteredAddress(address)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("[api] register address", "address", address)
+	return &SuccessPostResult, nil
+}
+
+// GetRegisteredAddress get registered address
+func GetRegisteredAddress(address string) (*RegisteredAddress, error) {
+	address = strings.ToLower(address)
+	return mongodb.FindRegisteredAddress(address)
 }

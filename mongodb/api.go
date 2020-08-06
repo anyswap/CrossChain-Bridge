@@ -509,3 +509,30 @@ func FindLatestScanInfo(isSrc bool) (*MgoLatestScanInfo, error) {
 	err := collLatestScanInfo.FindId(key).One(&result)
 	return &result, mgoError(err)
 }
+
+// ------------------------ register address ------------------------------
+
+// AddRegisteredAddress add register address
+func AddRegisteredAddress(address string) error {
+	ma := &MgoRegisteredAddress{
+		Key:       address,
+		Timestamp: time.Now().Unix(),
+	}
+	err := collRegisteredAddress.Insert(ma)
+	if err == nil {
+		log.Info("mongodb add register address", "key", ma.Key)
+	} else {
+		log.Debug("mongodb add register address", "key", ma.Key, "err", err)
+	}
+	return mgoError(err)
+}
+
+// FindRegisteredAddress find register address
+func FindRegisteredAddress(key string) (*MgoRegisteredAddress, error) {
+	var result MgoRegisteredAddress
+	err := collRegisteredAddress.FindId(key).One(&result)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+	return &result, nil
+}

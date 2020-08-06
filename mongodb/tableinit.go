@@ -5,13 +5,14 @@ import (
 )
 
 var (
-	collSwapin         *mgo.Collection
-	collSwapout        *mgo.Collection
-	collSwapinResult   *mgo.Collection
-	collSwapoutResult  *mgo.Collection
-	collP2shAddress    *mgo.Collection
-	collSwapStatistics *mgo.Collection
-	collLatestScanInfo *mgo.Collection
+	collSwapin            *mgo.Collection
+	collSwapout           *mgo.Collection
+	collSwapinResult      *mgo.Collection
+	collSwapoutResult     *mgo.Collection
+	collP2shAddress       *mgo.Collection
+	collSwapStatistics    *mgo.Collection
+	collLatestScanInfo    *mgo.Collection
+	collRegisteredAddress *mgo.Collection
 )
 
 func isSwapin(collection *mgo.Collection) bool {
@@ -27,6 +28,7 @@ func deinintCollections() {
 	collP2shAddress = database.C(tbP2shAddresses)
 	collSwapStatistics = database.C(tbSwapStatistics)
 	collLatestScanInfo = database.C(tbLatestScanInfo)
+	collRegisteredAddress = database.C(tbRegisteredAddress)
 }
 
 func initCollections() {
@@ -37,6 +39,7 @@ func initCollections() {
 	initCollection(tbP2shAddresses, &collP2shAddress, "p2shaddress")
 	initCollection(tbSwapStatistics, &collSwapStatistics)
 	initCollection(tbLatestScanInfo, &collLatestScanInfo)
+	initCollection(tbRegisteredAddress, &collRegisteredAddress)
 
 	initDefaultValue()
 }

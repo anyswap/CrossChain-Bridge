@@ -191,3 +191,21 @@ func GetP2shAddressInfo(w http.ResponseWriter, r *http.Request) {
 	res, err := swapapi.GetP2shAddressInfo(address)
 	writeResponse(w, res, err)
 }
+
+// RegisterAddress handler
+func RegisterAddress(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	address := vars["address"]
+	res, err := swapapi.RegisterAddress(address)
+	writeResponse(w, res, err)
+}
+
+// GetRegisteredAddress handler
+func GetRegisteredAddress(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	address := vars["address"]
+	res, err := swapapi.GetRegisteredAddress(address)
+	writeResponse(w, res, err)
+}

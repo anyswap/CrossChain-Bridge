@@ -1,13 +1,14 @@
 package mongodb
 
 const (
-	tbSwapins        string = "Swapins"
-	tbSwapouts       string = "Swapouts"
-	tbSwapinResults  string = "SwapinResults"
-	tbSwapoutResults string = "SwapoutResults"
-	tbP2shAddresses  string = "P2shAddresses"
-	tbSwapStatistics string = "SwapStatistics"
-	tbLatestScanInfo string = "LatestScanInfo"
+	tbSwapins           string = "Swapins"
+	tbSwapouts          string = "Swapouts"
+	tbSwapinResults     string = "SwapinResults"
+	tbSwapoutResults    string = "SwapoutResults"
+	tbP2shAddresses     string = "P2shAddresses"
+	tbSwapStatistics    string = "SwapStatistics"
+	tbLatestScanInfo    string = "LatestScanInfo"
+	tbRegisteredAddress string = "RegisteredAddress"
 
 	keyOfSwapStatistics    string = "latest"
 	keyOfSrcLatestScanInfo string = "srclatest"
@@ -63,6 +64,12 @@ type SwapResultUpdateItems struct {
 type MgoP2shAddress struct {
 	Key         string `bson:"_id"`
 	P2shAddress string `bson:"p2shaddress"`
+}
+
+// MgoRegisteredAddress key is address (in whitelist)
+type MgoRegisteredAddress struct {
+	Key       string `bson:"_id"`
+	Timestamp int64  `bson:"timestamp"`
 }
 
 // MgoSwapStatistics swap statistics

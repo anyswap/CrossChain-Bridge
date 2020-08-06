@@ -20,6 +20,9 @@ type SwapStatistics = mongodb.SwapStatistics
 // LatestScanInfo type alias
 type LatestScanInfo = mongodb.MgoLatestScanInfo
 
+// RegisteredAddress type alias
+type RegisteredAddress = mongodb.MgoRegisteredAddress
+
 // ServerInfo server info
 type ServerInfo struct {
 	Identifier string

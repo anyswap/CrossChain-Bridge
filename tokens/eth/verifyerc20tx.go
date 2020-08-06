@@ -8,6 +8,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
@@ -60,12 +61,17 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 	}
 
 	// check sender
-	if swapInfo.From == swapInfo.To {
+	if swapInfo.Bind == swapInfo.To {
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 
 	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
+	}
+
+	_, err = mongodb.FindRegisteredAddress(swapInfo.Bind)
+	if err != nil {
+		return swapInfo, tokens.ErrTxSenderNotRegistered
 	}
 
 	log.Debug("verify erc20 swapin pass", "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
@@ -110,12 +116,17 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 	}
 
 	// check sender
-	if swapInfo.From == swapInfo.To {
+	if swapInfo.Bind == swapInfo.To {
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 
 	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
+	}
+
+	_, err = mongodb.FindRegisteredAddress(swapInfo.Bind)
+	if err != nil {
+		return swapInfo, tokens.ErrTxSenderNotRegistered
 	}
 
 	return swapInfo, nil

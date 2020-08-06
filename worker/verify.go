@@ -113,6 +113,8 @@ func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
 			resultStatus = mongodb.TxWithBigValue
 		}
 		err = mongodb.UpdateSwapinStatus(txid, status, now(), "")
+	case tokens.ErrTxSenderNotRegistered:
+		return mongodb.UpdateSwapinStatus(txid, mongodb.TxSenderNotRegistered, now(), err.Error())
 	default:
 		return mongodb.UpdateSwapinStatus(txid, mongodb.TxVerifyFailed, now(), err.Error())
 	}

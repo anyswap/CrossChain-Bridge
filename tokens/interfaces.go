@@ -48,10 +48,11 @@ var (
 	ErrTxIsAggregateTx     = errors.New("tx is aggregate tx")
 
 	// errors should register
-	ErrTxWithWrongMemo    = errors.New("tx with wrong memo")
-	ErrTxWithWrongValue   = errors.New("tx with wrong value")
-	ErrTxWithWrongReceipt = errors.New("tx with wrong receipt")
-	ErrTxWithWrongSender  = errors.New("tx with wrong sender")
+	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
+	ErrTxWithWrongValue      = errors.New("tx with wrong value")
+	ErrTxWithWrongReceipt    = errors.New("tx with wrong receipt")
+	ErrTxWithWrongSender     = errors.New("tx with wrong sender")
+	ErrTxSenderNotRegistered = errors.New("tx sender not registered")
 )
 
 // ShouldRegisterSwapForError return true if this error should record in database
@@ -61,7 +62,8 @@ func ShouldRegisterSwapForError(err error) bool {
 		ErrTxWithWrongMemo,
 		ErrTxWithWrongValue,
 		ErrTxWithWrongReceipt,
-		ErrTxWithWrongSender:
+		ErrTxWithWrongSender,
+		ErrTxSenderNotRegistered:
 		return true
 	}
 	return false

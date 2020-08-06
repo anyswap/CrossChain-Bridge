@@ -72,6 +72,8 @@ func initRouter() *mux.Router {
 	r.HandleFunc("/swapout/history/{address}", restapi.SwapoutHistoryHandler).Methods("GET")
 	r.HandleFunc("/p2sh/{address}", restapi.GetP2shAddressInfo).Methods("GET", "POST")
 	r.HandleFunc("/p2sh/bind/{address}", restapi.RegisterP2shAddress).Methods("GET", "POST")
+	r.HandleFunc("/registered/{address}", restapi.GetRegisteredAddress).Methods("GET", "POST")
+	r.HandleFunc("/register/{address}", restapi.RegisterAddress).Methods("GET", "POST")
 
 	methodsExcluesGet := []string{"POST", "HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
 	methodsExcluesPost := []string{"GET", "HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
@@ -93,6 +95,8 @@ func initRouter() *mux.Router {
 	r.HandleFunc("/swapout/history/{address}", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/p2sh/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
 	r.HandleFunc("/p2sh/bind/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
+	r.HandleFunc("/registered/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
+	r.HandleFunc("/register/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
 
 	return r
 }

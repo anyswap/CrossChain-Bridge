@@ -17,7 +17,7 @@ type RPCNullArgs struct{}
 // GetVersionInfo api
 func (s *RPCAPI) GetVersionInfo(r *http.Request, args *RPCNullArgs, result *string) error {
 	version := params.VersionWithMeta
-	revision := "-rev1"
+	revision := "-rev2"
 	version += revision
 	*result = version
 	return nil
@@ -195,6 +195,24 @@ func (s *RPCAPI) GetP2shAddressInfo(r *http.Request, p2shAddress *string, result
 // GetLatestScanInfo api
 func (s *RPCAPI) GetLatestScanInfo(r *http.Request, isSrc *bool, result *swapapi.LatestScanInfo) error {
 	res, err := swapapi.GetLatestScanInfo(*isSrc)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+// RegisterAddress api
+func (s *RPCAPI) RegisterAddress(r *http.Request, address *string, result *swapapi.PostResult) error {
+	res, err := swapapi.RegisterAddress(*address)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+// GetRegisteredAddress api
+func (s *RPCAPI) GetRegisteredAddress(r *http.Request, address *string, result *swapapi.RegisteredAddress) error {
+	res, err := swapapi.GetRegisteredAddress(*address)
 	if err == nil && res != nil {
 		*result = *res
 	}
