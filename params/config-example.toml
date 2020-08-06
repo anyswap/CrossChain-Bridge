@@ -42,6 +42,8 @@ Confirmations = 0 # suggest >= 6 for Mainnet
 MaximumSwap = 1000.0
 MinimumSwap = 0.00001
 SwapFeeRate = 0.001
+MaximumSwapFee = 0.01
+MinimumSwapFee = 0.00001
 InitialHeight = 0
 MinTimeToRetry = 0 # unit seconds, suggest >= 3600 for Mainnet
 PlusGasPricePercentage = 15 # plus 15% gas price
@@ -67,6 +69,8 @@ Confirmations = 0 # suggest >= 33 for Mainnet
 MaximumSwap = 100.0
 MinimumSwap = 0.00001
 SwapFeeRate = 0.001
+MaximumSwapFee = 0.01
+MinimumSwapFee = 0.00001
 InitialHeight = 0
 MinTimeToRetry = 0 # unit seconds, suggest >= 420 for Mainnet
 PlusGasPricePercentage = 15 # plus 15% gas price

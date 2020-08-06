@@ -214,35 +214,45 @@ func ToBits(value float64, decimals uint8) *big.Int {
 // GetBigValueThreshold get big value threshold
 func GetBigValueThreshold(isSrc bool) *big.Int {
 	token := GetTokenConfig(isSrc)
-	bigVal := *token.BigValueThreshold
-	decimals := *token.Decimals
-	return ToBits(bigVal, decimals)
+	return token.bigValThreshhold
 }
 
 // CheckSwapValue check swap value is in right range
 func CheckSwapValue(value *big.Int, isSrc bool) bool {
 	token := GetTokenConfig(isSrc)
-	decimals := *token.Decimals
-	minValue := ToBits(*token.MinimumSwap, decimals)
-	toleranceBits := big.NewInt(100)
-	if new(big.Int).Add(value, toleranceBits).Cmp(minValue) < 0 {
+	if value.Cmp(token.minSwap) < 0 {
 		return false
 	}
-	maxValue := ToBits(*token.MaximumSwap, decimals)
-	return new(big.Int).Sub(value, toleranceBits).Cmp(maxValue) <= 0
+	if value.Cmp(token.maxSwap) > 0 {
+		return false
+	}
+	swappedValue := CalcSwappedValue(value, isSrc)
+	return swappedValue.Sign() > 0
 }
 
 // CalcSwappedValue calc swapped value (get rid of fee)
 func CalcSwappedValue(value *big.Int, isSrc bool) *big.Int {
 	token := GetTokenConfig(isSrc)
 
-	swapFeeRate := new(big.Float).SetFloat64(*token.SwapFeeRate)
+	if *token.SwapFeeRate == 0.0 {
+		return value
+	}
+
 	swapValue := new(big.Float).SetInt(value)
-	swapFee := new(big.Float).Mul(swapValue, swapFeeRate)
+	swapFeeRate := new(big.Float).SetFloat64(*token.SwapFeeRate)
+	swapFeeFloat := new(big.Float).Mul(swapValue, swapFeeRate)
 
-	swappedValue := new(big.Float).Sub(swapValue, swapFee)
+	swapFee := big.NewInt(0)
+	swapFeeFloat.Int(swapFee)
 
-	result := big.NewInt(0)
-	swappedValue.Int(result)
-	return result
+	if swapFee.Cmp(token.minSwapFee) < 0 {
+		swapFee = token.minSwapFee
+	} else if swapFee.Cmp(token.maxSwapFee) > 0 {
+		swapFee = token.maxSwapFee
+	}
+
+	if value.Cmp(swapFee) > 0 {
+		return new(big.Int).Sub(value, swapFee)
+	}
+	return big.NewInt(0)
 }

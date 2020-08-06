@@ -36,10 +36,19 @@ type TokenConfig struct {
 	MinimumSwap            *float64 // whole unit
 	BigValueThreshold      *float64
 	SwapFeeRate            *float64
+	MaximumSwapFee         *float64
+	MinimumSwapFee         *float64
 	InitialHeight          uint64
 	MinTimeToRetry         int64  // unit second
 	PlusGasPricePercentage uint64 `json:",omitempty"`
 	DisableSwap            bool
+
+	// calced value
+	maxSwap          *big.Int
+	minSwap          *big.Int
+	maxSwapFee       *big.Int
+	minSwapFee       *big.Int
+	bigValThreshhold *big.Int
 }
 
 // IsErc20 return is token is erc20
@@ -218,23 +227,32 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.Confirmations == nil {
 		return errors.New("token must config 'Confirmations'")
 	}
-	if c.MaximumSwap == nil {
-		return errors.New("token must config 'MaximumSwap'")
+	if c.MaximumSwap == nil || *c.MaximumSwap < 0 {
+		return errors.New("token must config 'MaximumSwap' (non-negative)")
 	}
-	if *c.MaximumSwap < 0 {
-		return errors.New("token 'MaximumSwap' is negative")
+	if c.MinimumSwap == nil || *c.MinimumSwap < 0 {
+		return errors.New("token must config 'MinimumSwap' (non-negative)")
 	}
-	if c.MinimumSwap == nil {
-		return errors.New("token must config 'MinimumSwap'")
+	if *c.MinimumSwap > *c.MaximumSwap {
+		return errors.New("wrong token config, MinimumSwap > MaximumSwap")
 	}
-	if *c.MinimumSwap < 0 {
-		return errors.New("token 'MinimumSwap' is negative")
+	if c.SwapFeeRate == nil || *c.SwapFeeRate < 0 || *c.SwapFeeRate > 1 {
+		return errors.New("token must config 'SwapFeeRate' (in range (0,1))")
 	}
-	if c.SwapFeeRate == nil {
-		return errors.New("token must config 'SwapFeeRate'")
+	if c.MaximumSwapFee == nil || *c.MaximumSwapFee < 0 {
+		return errors.New("token must config 'MaximumSwapFee' (non-negative)")
 	}
-	if *c.SwapFeeRate < 0 {
-		return errors.New("token 'SwapFeeRate' is negative")
+	if c.MinimumSwapFee == nil || *c.MinimumSwapFee < 0 {
+		return errors.New("token must config 'MinimumSwapFee' (non-negative)")
+	}
+	if *c.MinimumSwapFee > *c.MaximumSwapFee {
+		return errors.New("wrong token config, MinimumSwapFee > MaximumSwapFee")
+	}
+	if *c.MinimumSwap < *c.MinimumSwapFee {
+		return errors.New("wrong token config, MinimumSwap < MinimumSwapFee")
+	}
+	if *c.SwapFeeRate == 0.0 && *c.MinimumSwapFee > 0.0 {
+		return errors.New("wrong token config, MinimumSwapFee should be 0 if SwapFeeRate is 0")
 	}
 	if c.PlusGasPricePercentage > maxPlusGasPricePercentage {
 		return errors.New("too large 'PlusGasPricePercentage' value")
@@ -254,5 +272,16 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if isSrc && c.IsErc20() && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
 	}
+	// calc value and store
+	c.CalcAndStoreValue()
 	return nil
+}
+
+// CalcAndStoreValue calc and store value (minus duplicate calculation)
+func (c *TokenConfig) CalcAndStoreValue() {
+	c.maxSwap = ToBits(*c.MaximumSwap, *c.Decimals)
+	c.minSwap = ToBits(*c.MinimumSwap, *c.Decimals)
+	c.maxSwapFee = ToBits(*c.MaximumSwapFee, *c.Decimals)
+	c.minSwapFee = ToBits(*c.MinimumSwapFee, *c.Decimals)
+	c.bigValThreshhold = ToBits(*c.BigValueThreshold, *c.Decimals)
 }
