@@ -132,6 +132,31 @@ func markSwapResultStable(key string, isSwapin bool) (err error) {
 	return err
 }
 
+func markSwapinResultFailed(key string) error {
+	return markSwapResultFailed(key, true)
+}
+
+func markSwapoutResultFailed(key string) error {
+	return markSwapResultFailed(key, false)
+}
+
+func markSwapResultFailed(key string, isSwapin bool) (err error) {
+	status := mongodb.MatchTxFailed
+	timestamp := now()
+	memo := "" // unchange
+	if isSwapin {
+		err = mongodb.UpdateSwapinResultStatus(key, status, timestamp, memo)
+	} else {
+		err = mongodb.UpdateSwapoutResultStatus(key, status, timestamp, memo)
+	}
+	if err != nil {
+		logWorkerError("stable", "markSwapResultFailed", err, "txid", key, "isSwapin", isSwapin)
+	} else {
+		logWorker("stable", "markSwapResultFailed", "txid", key, "isSwapin", isSwapin)
+	}
+	return err
+}
+
 func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid string, isSwapin bool) (err error) {
 	var (
 		txHash              string

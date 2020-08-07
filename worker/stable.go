@@ -5,6 +5,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 var (
@@ -78,16 +79,17 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 	swapTxID := swap.SwapTx
 	logWorker("stable", "start processSwapinStable", "swaptxid", swapTxID, "status", swap.Status)
 	var (
+		token         *tokens.TokenConfig
 		txStatus      *tokens.TxStatus
 		confirmations uint64
 	)
 	if swap.SwapType == uint32(tokens.SwapRecallType) {
 		txStatus = tokens.SrcBridge.GetTransactionStatus(swapTxID)
-		token, _ := tokens.SrcBridge.GetTokenAndGateway()
+		token, _ = tokens.SrcBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
 	} else {
 		txStatus = tokens.DstBridge.GetTransactionStatus(swapTxID)
-		token, _ := tokens.DstBridge.GetTokenAndGateway()
+		token, _ = tokens.DstBridge.GetTokenAndGateway()
 		confirmations = *token.Confirmations
 	}
 
@@ -107,10 +109,18 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 	}
 
 	if swap.SwapHeight != 0 {
-		if txStatus.Confirmations >= confirmations {
-			return markSwapinResultStable(swap.Key)
+		if txStatus.Confirmations < confirmations {
+			return nil
 		}
-		return nil
+		receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
+		txFailed := !ok || receipt == nil || *receipt.Status != 1
+		if !txFailed && token.ContractAddress != "" && len(receipt.Logs) == 0 {
+			txFailed = true
+		}
+		if txFailed {
+			return markSwapinResultFailed(swap.Key)
+		}
+		return markSwapinResultStable(swap.Key)
 	}
 
 	matchTx := &MatchTx{
@@ -144,10 +154,18 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	}
 
 	if swap.SwapHeight != 0 {
-		if txStatus.Confirmations >= confirmations {
-			return markSwapoutResultStable(swap.Key)
+		if txStatus.Confirmations < confirmations {
+			return nil
 		}
-		return nil
+		receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
+		txFailed := !ok || receipt == nil || *receipt.Status != 1
+		if !txFailed && token.ContractAddress != "" && len(receipt.Logs) == 0 {
+			txFailed = true
+		}
+		if txFailed {
+			return markSwapoutResultFailed(swap.Key)
+		}
+		return markSwapoutResultStable(swap.Key)
 	}
 
 	matchTx := &MatchTx{
