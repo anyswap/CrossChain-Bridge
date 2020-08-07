@@ -260,3 +260,18 @@ func (b *Bridge) CallContract(contract string, data hexutil.Bytes, blockNumber s
 	}
 	return "", err
 }
+
+// GetBalance call eth_getBalance
+func (b *Bridge) GetBalance(account string) (*big.Int, error) {
+	gateway := b.GatewayConfig
+	var result hexutil.Big
+	var err error
+	for _, apiAddress := range gateway.APIAddress {
+		url := apiAddress
+		err = client.RPCPost(&result, url, "eth_getBalance", account, "pending")
+		if err == nil {
+			return result.ToInt(), nil
+		}
+	}
+	return nil, err
+}

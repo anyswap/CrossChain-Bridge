@@ -1,10 +1,12 @@
 package eth
 
 import (
+	"errors"
 	"math/big"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
@@ -29,7 +31,10 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 			if b.IsSrc {
 				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
 			}
-			b.buildSwapinTxInput(args)
+			err = b.buildSwapinTxInput(args)
+			if err != nil {
+				return nil, err
+			}
 			input = *args.Input
 		case tokens.SwapoutType, tokens.SwapRecallType:
 			if !b.IsSrc {
@@ -37,7 +42,10 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 			}
 			switch {
 			case b.TokenConfig.IsErc20():
-				b.buildErc20SwapoutTxInput(args)
+				err = b.buildErc20SwapoutTxInput(args)
+				if err != nil {
+					return nil, err
+				}
 				input = *args.Input
 			case args.SwapType == tokens.SwapoutType:
 				input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
@@ -53,6 +61,11 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	if err != nil {
 		return nil, err
 	}
+
+	return b.buildTx(args, extra, input)
+}
+
+func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, input []byte) (rawTx interface{}, err error) {
 	var (
 		to       = common.HexToAddress(args.To)
 		value    = args.Value
@@ -70,6 +83,23 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 
 	if args.SwapType != tokens.NoSwapType {
 		args.Identifier = params.GetIdentifier()
+	}
+
+	if value != nil && value.Sign() > 0 {
+		var balance *big.Int
+		for i := 0; i < retryRPCCount; i++ {
+			balance, err = b.GetBalance(args.From)
+			if err == nil {
+				break
+			}
+			time.Sleep(retryRPCInterval)
+		}
+		if err == nil && balance.Cmp(value) < 0 {
+			return nil, errors.New("not enough coin balance")
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
@@ -142,10 +172,14 @@ func (b *Bridge) getAccountNonce(from string, swapType tokens.SwapType) (noncept
 }
 
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
-func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
+func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 	funcHash := getSwapinFuncHash()
 	txHash := common.HexToHash(args.SwapID)
 	address := common.HexToAddress(args.To)
+	if address == (common.Address{}) || !common.IsHexAddress(args.To) {
+		log.Warn("swapin to wrong address", "address", args.To)
+		return errors.New("can not swapin to empty or invalid address")
+	}
 	amount := tokens.CalcSwappedValue(args.Value, true)
 
 	input := PackDataWithFuncHash(funcHash, txHash, address, amount)
@@ -154,11 +188,16 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) {
 	token := b.TokenConfig
 	args.To = token.ContractAddress // to
 	args.Value = big.NewInt(0)      // value
+	return nil
 }
 
-func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) {
+func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) {
 	funcHash := erc20CodeParts["transfer"]
 	address := common.HexToAddress(args.To)
+	if address == (common.Address{}) || !common.IsHexAddress(args.To) {
+		log.Warn("swapout to wrong address", "address", args.To)
+		return errors.New("can not swapout to empty or invalid address")
+	}
 	amount := tokens.CalcSwappedValue(args.Value, false)
 
 	input := PackDataWithFuncHash(funcHash, address, amount)
@@ -167,4 +206,17 @@ func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) {
 	token := b.TokenConfig
 	args.To = token.ContractAddress // to
 	args.Value = big.NewInt(0)      // value
+
+	var balance *big.Int
+	for i := 0; i < retryRPCCount; i++ {
+		balance, err = b.GetErc20Balance(token.ContractAddress, token.DcrmAddress)
+		if err == nil {
+			break
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	if err == nil && balance.Cmp(amount) < 0 {
+		return errors.New("not enough token balance to swapout")
+	}
+	return err
 }
