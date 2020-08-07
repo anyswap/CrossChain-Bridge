@@ -94,17 +94,6 @@ func processSwapinStable(swap *mongodb.MgoSwapResult) error {
 	}
 
 	if txStatus == nil || txStatus.BlockHeight == 0 {
-		err := checkSwapCanRetryInStable(swap, tokens.DstBridge)
-		if err == nil {
-			txid := swap.TxID
-			logWorker("stable", "update swapin status to TxNotSwapped to retry", "txid", txid, "swaptx", swapTxID)
-			_ = mongodb.UpdateSwapinResultStatus(txid, mongodb.MatchTxEmpty, now(), "")
-			if swap.SwapType == uint32(tokens.SwapRecallType) {
-				_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxToBeRecall, now(), "")
-			} else {
-				_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxNotSwapped, now(), "")
-			}
-		}
 		return nil
 	}
 
@@ -143,13 +132,6 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	confirmations = *token.Confirmations
 
 	if txStatus == nil || txStatus.BlockHeight == 0 {
-		err := checkSwapCanRetryInStable(swap, tokens.SrcBridge)
-		if err == nil {
-			txid := swap.TxID
-			logWorker("stable", "update swapout status to TxNotSwapped to retry", "txid", txid, "swaptx", swapTxID)
-			_ = mongodb.UpdateSwapoutResultStatus(txid, mongodb.MatchTxEmpty, now(), "")
-			_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxNotSwapped, now(), "")
-		}
 		return nil
 	}
 
@@ -174,8 +156,4 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 		SwapType:   tokens.SwapoutType,
 	}
 	return updateSwapoutResult(swap.Key, matchTx)
-}
-
-func checkSwapCanRetryInStable(res *mongodb.MgoSwapResult, bridge tokens.CrossChainBridge) error {
-	return checkSwapCanRetryWithStatus(mongodb.MatchTxNotStable, res, bridge)
 }
