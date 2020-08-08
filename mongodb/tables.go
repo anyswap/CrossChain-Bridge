@@ -9,6 +9,7 @@ const (
 	tbSwapStatistics    string = "SwapStatistics"
 	tbLatestScanInfo    string = "LatestScanInfo"
 	tbRegisteredAddress string = "RegisteredAddress"
+	tbBlacklist         string = "Blacklist"
 
 	keyOfSwapStatistics    string = "latest"
 	keyOfSrcLatestScanInfo string = "srclatest"
@@ -88,4 +89,10 @@ type MgoLatestScanInfo struct {
 	Key         string `bson:"_id"`
 	BlockHeight uint64 `bson:"blockheight"`
 	Timestamp   int64  `bson:"timestamp"`
+}
+
+// MgoBlackAccount key is address
+type MgoBlackAccount struct {
+	Key       string `bson:"_id"`
+	Timestamp int64  `bson:"timestamp"`
 }

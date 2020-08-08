@@ -95,6 +95,16 @@ var (
 		Name:  "token",
 		Usage: "token address",
 	}
+	// KeystoreFileFlag --keystore
+	KeystoreFileFlag = &cli.StringFlag{
+		Name:  "keystore",
+		Usage: "keystore file",
+	}
+	// PasswordFileFlag --password
+	PasswordFileFlag = &cli.StringFlag{
+		Name:  "password",
+		Usage: "Password file",
+	}
 )
 
 // SetLogger set log level, json format, color, rotate ...

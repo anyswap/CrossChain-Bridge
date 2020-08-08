@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -42,6 +43,7 @@ type ServerConfig struct {
 	Dcrm        *DcrmConfig
 	Oracle      *OracleConfig          `toml:",omitempty"`
 	BtcExtra    *tokens.BtcExtraConfig `toml:",omitempty"`
+	Admins      []string
 }
 
 // DcrmConfig dcrm related config
@@ -255,4 +257,14 @@ func SetDataDir(datadir string) {
 		DataDir = datadir
 	}
 	_ = os.MkdirAll(DataDir, os.ModePerm)
+}
+
+// IsAdmin is admin
+func IsAdmin(account string) bool {
+	for _, admin := range serverConfig.Admins {
+		if strings.EqualFold(account, admin) {
+			return true
+		}
+	}
+	return false
 }
