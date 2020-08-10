@@ -50,7 +50,6 @@ SwapFeeRate = 0.001
 MaximumSwapFee = 0.01
 MinimumSwapFee = 0.00001
 InitialHeight = 0
-MinTimeToRetry = 0 # unit seconds, suggest >= 3600 for Mainnet
 PlusGasPricePercentage = 15 # plus 15% gas price
 BigValueThreshold = 5.0
 DisableSwap = false
@@ -77,7 +76,6 @@ SwapFeeRate = 0.001
 MaximumSwapFee = 0.01
 MinimumSwapFee = 0.00001
 InitialHeight = 0
-MinTimeToRetry = 0 # unit seconds, suggest >= 420 for Mainnet
 PlusGasPricePercentage = 15 # plus 15% gas price
 BigValueThreshold = 50.0
 DisableSwap = false

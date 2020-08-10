@@ -39,7 +39,6 @@ type TokenConfig struct {
 	MaximumSwapFee         *float64
 	MinimumSwapFee         *float64
 	InitialHeight          uint64
-	MinTimeToRetry         int64  // unit second
 	PlusGasPricePercentage uint64 `json:",omitempty"`
 	DisableSwap            bool
 
