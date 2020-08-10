@@ -14,7 +14,10 @@ const (
 	maxCountOfResults = 5000
 )
 
-var retryLock sync.Mutex
+var (
+	retryLock  sync.Mutex
+	recallLock sync.Mutex
+)
 
 // --------------- swapin --------------------------------
 
@@ -110,11 +113,19 @@ func updateSwapStatus(collection *mgo.Collection, txid string, status SwapStatus
 	} else if status == TxNotSwapped || status == TxNotStable {
 		updates["memo"] = ""
 	}
-	if status == TxNotStable {
+	switch status {
+	case TxNotStable:
 		retryLock.Lock()
 		defer retryLock.Unlock()
 		swap, _ := findSwap(collection, txid)
 		if !swap.Status.CanRetry() {
+			return nil
+		}
+	case TxToBeRecall:
+		recallLock.Lock()
+		defer recallLock.Unlock()
+		swap, _ := findSwap(collection, txid)
+		if swap.Status != TxCanRecall {
 			return nil
 		}
 	}

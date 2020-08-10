@@ -49,11 +49,3 @@ func getSepTimeInFind(dist int64) int64 {
 func restInJob(duration time.Duration) {
 	time.Sleep(duration)
 }
-
-func getPassedTimeSince(startTime int64) int64 {
-	nowTime := now()
-	if nowTime > startTime {
-		return nowTime - startTime
-	}
-	return 0
-}

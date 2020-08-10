@@ -6,17 +6,26 @@ import (
 
 // -----------------------------------------------
 // swap status change graph
+// symbol '--->' mean transfer only under checked condition (eg. manual process)
+//
+// -----------------------------------------------
+// 1. swap register status change graph
 //
 // TxNotStable -> |- TxVerifyFailed -> stop
-//                |- TxCanRecall -> TxToBeRecall -> |- TxRecallFailed -> retry
+//                |- TxCanRecall -> TxToBeRecall -> |- TxRecallFailed -> manual
 //                                                  |- TxProcessed (->MatchTxNotStable)
-//                |- TxNotSwapped -> |- TxSwapFailed -> retry
+//                |- TxWithBigValue        ---> TxNotSwapped
+//                |- TxSenderNotRegistered ---> TxNotStable
+//                |- TxNotSwapped -> |- TxSwapFailed -> manual
 //                                   |- TxProcessed (->MatchTxNotStable)
 // -----------------------------------------------
-// swap result status change graph
+// 2. swap result status change graph
 //
-// TxWithWrongMemo -> |
-// MatchTxEmpty    -> | MatchTxNotStable -> MatchTxStable
+// TxWithWrongMemo -> manual
+// TxWithBigValue        ---> MatchTxEmpty
+// TxSenderNotRegistered ---> MatchTxEmpty
+// MatchTxEmpty          -> | MatchTxNotStable -> |- MatchTxStable
+//                                                |- MatchTxFailed -> manual
 // -----------------------------------------------
 
 // SwapStatus swap status

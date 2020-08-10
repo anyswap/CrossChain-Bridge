@@ -1,6 +1,7 @@
 # a short string to identify the bridge
 Identifier = "BTC2ETH"
 
+# administrators who can do admin work like maintain blacklist etc.
 Admins = [
 	"0x3dfaef310a1044fd7d96750b42b44cf3775c00bf",
 	"0x46cbe22b687d4b72c8913e4784dfe5b20fdc2b0e"
@@ -35,23 +36,37 @@ UtxoAggregateToAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 [SrcToken]
 BlockChain = "Bitcoin"
 NetID = "TestNet3"
+# ID must be ERC20 if source token is erc20 token
 ID = "BTC"
 Name = "Bitcoin Coin"
 Symbol = "BTC"
 Decimals = 8
 Description = "Bitcoin Coin"
+# if ID is ERC20, this is the erc20 token's contract address
 ContractAddress = ""
+# deposit address
 DepositAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
+# withdraw address
 DcrmAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
+# tx should be in chain with at least so many confirmations to be valid
 Confirmations = 0 # suggest >= 6 for Mainnet
+# maximum deposit or withdraw value
 MaximumSwap = 1000.0
+# minimum deposit or withdraw value
 MinimumSwap = 0.00001
+# calced swap fee = swap value * this rate (when in [min, max] swap fee range)
 SwapFeeRate = 0.001
+# maximum swap fee, if calced swap fee is larger than this fee, then use this value as swap fee
 MaximumSwapFee = 0.01
+# minimum swap fee, if calced swap fee is smaller than this fee, then use this value as swap fee
 MinimumSwapFee = 0.00001
+# only tx with block height >= this initial height should be considered valid
 InitialHeight = 0
+# plus this percentage of gas price to make tx more easier to be mined in block
 PlusGasPricePercentage = 15 # plus 15% gas price
+# if deposit or withdraw value is larger than this value then need more verify strategy
 BigValueThreshold = 5.0
+# disable deposit or withdraw function if this flag is true
 DisableSwap = false
 
 # source blockchain gateway config
