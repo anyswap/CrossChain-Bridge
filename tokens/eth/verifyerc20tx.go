@@ -8,8 +8,8 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
@@ -69,8 +69,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
-	_, err = mongodb.FindRegisteredAddress(swapInfo.Bind)
-	if err != nil {
+	if !tools.IsAddressRegistered(swapInfo.Bind) {
 		return swapInfo, tokens.ErrTxSenderNotRegistered
 	}
 
@@ -124,8 +123,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
-	_, err = mongodb.FindRegisteredAddress(swapInfo.Bind)
-	if err != nil {
+	if !tools.IsAddressRegistered(swapInfo.Bind) {
 		return swapInfo, tokens.ErrTxSenderNotRegistered
 	}
 

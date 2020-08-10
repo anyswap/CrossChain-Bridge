@@ -173,3 +173,20 @@ func UpdateLatestScanInfo(isSrc bool, height uint64) error {
 	}
 	return nil
 }
+
+// IsAddressRegistered is address registered
+func IsAddressRegistered(address string) bool {
+	if dcrm.IsSwapServer() {
+		result, _ := mongodb.FindRegisteredAddress(address)
+		return result != nil
+	}
+	var result interface{}
+	for i := 0; i < retryRPCCount; i++ {
+		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetRegisteredAddress", address)
+		if err == nil {
+			return result != nil
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	return false
+}
