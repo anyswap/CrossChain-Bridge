@@ -82,6 +82,20 @@ func findSwapoutsToSwap() ([]*mongodb.MgoSwap, error) {
 	return mongodb.FindSwapoutsWithStatus(status, septime)
 }
 
+func isSwapInBlacklist(swap *mongodb.MgoSwapResult) (isBlacked bool, err error) {
+	isBlacked, err = mongodb.QueryBlacklist(swap.From)
+	if err != nil {
+		return isBlacked, err
+	}
+	if !isBlacked && swap.Bind != swap.From {
+		isBlacked, err = mongodb.QueryBlacklist(swap.Bind)
+		if err != nil {
+			return isBlacked, err
+		}
+	}
+	return isBlacked, nil
+}
+
 func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxID
 	bridge := tokens.DstBridge
@@ -92,6 +106,16 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	if tokens.GetTokenConfig(false).DisableSwap {
 		logWorkerTrace("swapin", "swapin is disabled")
+		return nil
+	}
+	isBlacked, err := isSwapInBlacklist(res)
+	if err != nil {
+		return err
+	}
+	if isBlacked {
+		logWorkerTrace("swapin", "address is in blacklist", "txid", txid)
+		err = tokens.ErrAddressIsInBlacklist
+		_ = mongodb.UpdateSwapinStatus(txid, mongodb.SwapInBlacklist, now(), err.Error())
 		return nil
 	}
 	if res.SwapTx != "" {
@@ -134,40 +158,8 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		To:    res.Bind,
 		Value: value,
 	}
-	rawTx, err := bridge.BuildRawTransaction(args)
-	if err != nil {
-		logWorkerError("swapin", "BuildRawTransaction failed", err, "txid", txid)
-		return err
-	}
 
-	signedTx, txHash, err := dcrmSignTransaction(bridge, rawTx, args.GetExtraArgs())
-	if err != nil {
-		logWorkerError("swapin", "DcrmSignTransaction failed", err, "txid", txid)
-		return err
-	}
-
-	swapTxNonce := args.GetTxNonce()
-
-	// update database before sending transaction
-	addSwapHistory(txid, value, txHash, swapTxNonce, true)
-	matchTx := &MatchTx{
-		SwapTx:    txHash,
-		SwapValue: tokens.CalcSwappedValue(value, true).String(),
-		SwapType:  tokens.SwapinType,
-		SwapNonce: swapTxNonce,
-	}
-	err = updateSwapinResult(txid, matchTx)
-	if err != nil {
-		logWorkerError("swapin", "updateSwapinResult failed", err, "txid", txid)
-		return err
-	}
-	err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
-	if err != nil {
-		logWorkerError("swapin", "UpdateSwapinStatus failed", err, "txid", txid)
-		return err
-	}
-
-	return sendSignedTransaction(bridge, signedTx, txid, true)
+	return doSwap(bridge, txid, args)
 }
 
 func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
@@ -180,6 +172,16 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	}
 	if tokens.GetTokenConfig(true).DisableSwap {
 		logWorkerTrace("swapout", "swapout is disabled")
+		return nil
+	}
+	isBlacked, err := isSwapInBlacklist(res)
+	if err != nil {
+		return err
+	}
+	if isBlacked {
+		logWorkerTrace("swapout", "address is in blacklist", "txid", txid)
+		err = tokens.ErrAddressIsInBlacklist
+		_ = mongodb.UpdateSwapoutStatus(txid, mongodb.SwapInBlacklist, now(), err.Error())
 		return nil
 	}
 	if res.SwapTx != "" {
@@ -220,40 +222,54 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		To:    res.Bind,
 		Value: value,
 	}
+	return doSwap(bridge, txid, args)
+}
+
+func doSwap(bridge tokens.CrossChainBridge, txid string, args *tokens.BuildTxArgs) (err error) {
 	rawTx, err := bridge.BuildRawTransaction(args)
 	if err != nil {
-		logWorkerError("swapout", "BuildRawTransaction failed", err, "txid", txid)
+		logWorkerError("doSwap", "BuildRawTransaction failed", err, "txid", txid)
 		return err
 	}
 
 	signedTx, txHash, err := dcrmSignTransaction(bridge, rawTx, args.GetExtraArgs())
 	if err != nil {
-		logWorkerError("swapout", "DcrmSignTransaction failed", err, "txid", txid)
+		logWorkerError("doSwap", "DcrmSignTransaction failed", err, "txid", txid)
 		return err
 	}
 
 	swapTxNonce := args.GetTxNonce()
+	isSwapin := args.SwapInfo.SwapType == tokens.SwapinType
 
 	// update database before sending transaction
-	addSwapHistory(txid, value, txHash, swapTxNonce, false)
+	addSwapHistory(txid, args.Value, txHash, swapTxNonce, isSwapin)
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
-		SwapValue: tokens.CalcSwappedValue(value, false).String(),
-		SwapType:  tokens.SwapoutType,
+		SwapValue: tokens.CalcSwappedValue(args.Value, isSwapin).String(),
+		SwapType:  args.SwapInfo.SwapType,
 		SwapNonce: swapTxNonce,
 	}
-	err = updateSwapoutResult(txid, matchTx)
-	if err != nil {
-		logWorkerError("swapout", "updateSwapoutResult failed", err, "txid", txid)
-		return err
+	if isSwapin {
+		err = updateSwapinResult(txid, matchTx)
+	} else {
+		err = updateSwapoutResult(txid, matchTx)
 	}
-	err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
 	if err != nil {
-		logWorkerError("swapout", "UpdateSwapoutStatus failed", err, "txid", txid)
+		logWorkerError("doSwap", "update swap result failed", err, "txid", txid)
 		return err
 	}
 
-	return sendSignedTransaction(bridge, signedTx, txid, false)
+	if isSwapin {
+		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+	} else {
+		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
+	}
+	if err != nil {
+		logWorkerError("doSwap", "update swap status failed", err, "txid", txid)
+		return err
+	}
+
+	return sendSignedTransaction(bridge, signedTx, txid, isSwapin)
 }
 
 type swapInfo struct {

@@ -48,6 +48,7 @@ const (
 	TxWithBigValue                          // 12
 	TxSenderNotRegistered                   // 13
 	MatchTxFailed                           // 14
+	SwapInBlacklist                         // 15
 )
 
 // CanRetry can retry
@@ -93,6 +94,8 @@ func (status SwapStatus) String() string {
 		return "TxSenderNotRegistered"
 	case MatchTxFailed:
 		return "MatchTxFailed"
+	case SwapInBlacklist:
+		return "SwapInBlacklist"
 	default:
 		log.Fatalf("unknown swap status %d", status)
 		return "unknown swap status"

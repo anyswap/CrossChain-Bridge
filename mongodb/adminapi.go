@@ -43,6 +43,9 @@ func QueryBlacklist(address string) (isBlacked bool, err error) {
 	if err == nil {
 		return true, nil
 	}
+	if err == mgo.ErrNotFound {
+		return false, nil
+	}
 	return false, err
 }
 

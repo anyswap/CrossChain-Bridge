@@ -79,6 +79,20 @@ func findSwapoutsToVerify() ([]*mongodb.MgoSwap, error) {
 	return mongodb.FindSwapoutsWithStatus(status, septime)
 }
 
+func isInBlacklist(swapInfo *tokens.TxSwapInfo) (isBlacked bool, err error) {
+	isBlacked, err = mongodb.QueryBlacklist(swapInfo.From)
+	if err != nil {
+		return isBlacked, err
+	}
+	if !isBlacked && swapInfo.Bind != swapInfo.From {
+		isBlacked, err = mongodb.QueryBlacklist(swapInfo.Bind)
+		if err != nil {
+			return isBlacked, err
+		}
+	}
+	return isBlacked, nil
+}
+
 func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
 	txid := swap.TxID
 	var swapInfo *tokens.TxSwapInfo
@@ -96,8 +110,20 @@ func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
 	if swapInfo.Height != 0 &&
 		swapInfo.Height < tokens.GetTokenConfig(true).InitialHeight {
 		err = tokens.ErrTxBeforeInitialHeight
+		return mongodb.UpdateSwapinStatus(txid, mongodb.TxVerifyFailed, now(), err.Error())
 	}
+	isBlacked, errf := isInBlacklist(swapInfo)
+	if errf != nil {
+		return errf
+	}
+	if isBlacked {
+		err = tokens.ErrAddressIsInBlacklist
+		return mongodb.UpdateSwapinStatus(txid, mongodb.SwapInBlacklist, now(), err.Error())
+	}
+	return updateSwapinStatus(txid, swapInfo, err)
+}
 
+func updateSwapinStatus(txid string, swapInfo *tokens.TxSwapInfo, err error) error {
 	resultStatus := mongodb.MatchTxEmpty
 
 	switch err {
@@ -132,8 +158,20 @@ func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 	if swapInfo.Height != 0 &&
 		swapInfo.Height < tokens.GetTokenConfig(false).InitialHeight {
 		err = tokens.ErrTxBeforeInitialHeight
+		return mongodb.UpdateSwapoutStatus(txid, mongodb.TxVerifyFailed, now(), err.Error())
 	}
+	isBlacked, errf := isInBlacklist(swapInfo)
+	if errf != nil {
+		return errf
+	}
+	if isBlacked {
+		err = tokens.ErrAddressIsInBlacklist
+		return mongodb.UpdateSwapoutStatus(txid, mongodb.SwapInBlacklist, now(), err.Error())
+	}
+	return updateSwapoutStatus(txid, swapInfo, err)
+}
 
+func updateSwapoutStatus(txid string, swapInfo *tokens.TxSwapInfo, err error) error {
 	resultStatus := mongodb.MatchTxEmpty
 
 	switch err {
