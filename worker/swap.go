@@ -140,7 +140,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	signedTx, txHash, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+	signedTx, txHash, err := dcrmSignTransaction(bridge, rawTx, args.GetExtraArgs())
 	if err != nil {
 		logWorkerError("swapin", "DcrmSignTransaction failed", err, "txid", txid)
 		return err
@@ -226,7 +226,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 
-	signedTx, txHash, err := bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+	signedTx, txHash, err := dcrmSignTransaction(bridge, rawTx, args.GetExtraArgs())
 	if err != nil {
 		logWorkerError("swapout", "DcrmSignTransaction failed", err, "txid", txid)
 		return err

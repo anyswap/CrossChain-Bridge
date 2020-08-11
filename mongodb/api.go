@@ -158,7 +158,7 @@ func findSwapsOrSwapResultsWithStatus(result interface{}, collection *mgo.Collec
 	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qtime, qstatus}
-	q := collection.Find(bson.M{"$and": queries}).Limit(maxCountOfResults)
+	q := collection.Find(bson.M{"$and": queries}).Sort("timestamp").Limit(maxCountOfResults)
 	return mgoError(q.All(result))
 }
 
