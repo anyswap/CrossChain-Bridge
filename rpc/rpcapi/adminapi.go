@@ -39,6 +39,8 @@ func doCall(args *admin.CallArgs, result *string) error {
 	switch args.Method {
 	case "blacklist":
 		return blacklist(args, result)
+	case "bigvalue":
+		return bigvalue(args, result)
 	default:
 		return fmt.Errorf("unknown admin method '%v'", args.Method)
 	}
@@ -73,6 +75,28 @@ func blacklist(args *admin.CallArgs, result *string) (err error) {
 		} else {
 			*result = successReuslt
 		}
+	} else {
+		*result = err.Error()
+	}
+	return err
+}
+
+func bigvalue(args *admin.CallArgs, result *string) (err error) {
+	if len(args.Params) != 2 {
+		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+	}
+	operation := args.Params[0]
+	txid := args.Params[1]
+	switch operation {
+	case "passswapin":
+		err = mongodb.PassSwapinBigValue(txid)
+	case "passswapout":
+		err = mongodb.PassSwapoutBigValue(txid)
+	default:
+		return fmt.Errorf("unknown operation '%v'", operation)
+	}
+	if err == nil {
+		*result = successReuslt
 	} else {
 		*result = err.Error()
 	}

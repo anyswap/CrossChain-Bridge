@@ -1,9 +1,11 @@
 package mongodb
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"gopkg.in/mgo.v2"
 )
 
 // --------------- blacklist --------------------------------
@@ -42,4 +44,34 @@ func QueryBlacklist(address string) (isBlacked bool, err error) {
 		return true, nil
 	}
 	return false, err
+}
+
+// PassSwapinBigValue pass swapin big value
+func PassSwapinBigValue(txid string) error {
+	return passBigValue(txid, true)
+}
+
+// PassSwapoutBigValue pass swapout big value
+func PassSwapoutBigValue(txid string) error {
+	return passBigValue(txid, false)
+}
+
+func passBigValue(txid string, isSwapin bool) error {
+	var coll *mgo.Collection
+	if isSwapin {
+		coll = collSwapin
+	} else {
+		coll = collSwapout
+	}
+	swap, err := findSwap(coll, txid)
+	if err != nil {
+		return err
+	}
+	if swap == nil {
+		return ErrSwapNotFound
+	}
+	if swap.Status != TxWithBigValue {
+		return fmt.Errorf("swap status is %v, not big value status %v", swap.Status.String(), TxWithBigValue.String())
+	}
+	return updateSwapStatus(coll, txid, TxNotSwapped, time.Now().Unix(), "")
 }
