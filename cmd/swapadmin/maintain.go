@@ -9,21 +9,21 @@ import (
 )
 
 var (
-	bigvalueCommand = &cli.Command{
-		Action:    bigvalue,
-		Name:      "bigvalue",
-		Usage:     "admin bigvalue",
-		ArgsUsage: "<passswapin|passswapout> <txid>",
+	maintainCommand = &cli.Command{
+		Action:    maintain,
+		Name:      "maintain",
+		Usage:     "admin maintain",
+		ArgsUsage: "<open|close> <deposit|withdraw|both>",
 		Description: `
-admin bigvalue swap
+admin maintain, open or close deposit and withdraw
 `,
 		Flags: commonAdminFlags,
 	}
 )
 
-func bigvalue(ctx *cli.Context) error {
+func maintain(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
-	method := "bigvalue"
+	method := "maintain"
 	if ctx.NArg() != 2 {
 		_ = cli.ShowCommandHelp(ctx, method)
 		fmt.Println()
@@ -36,17 +36,23 @@ func bigvalue(ctx *cli.Context) error {
 	}
 
 	operation := ctx.Args().Get(0)
-	txid := ctx.Args().Get(1)
+	direction := ctx.Args().Get(1)
 
 	switch operation {
-	case "passswapin", "passswapout":
+	case "open", "close":
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
 
-	log.Printf("admin bigvalue: %v %v", operation, txid)
+	switch direction {
+	case "deposit", "withdraw", "both":
+	default:
+		return fmt.Errorf("unknown direction '%v'", direction)
+	}
 
-	params := []string{operation, txid}
+	log.Printf("admin maintain: %v %v", operation, direction)
+
+	params := []string{operation, direction}
 	result, err := adminCall(method, params)
 
 	log.Printf("result is '%v'", result)

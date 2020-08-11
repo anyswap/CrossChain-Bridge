@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	// swapAdminToAddress used in swap admin sign and accept
+	// swapAdminToAddress used in swap admin sign and verify
 	swapAdminToAddress = "0x00000000000000000000000000000000000000cc"
 	// swapAdminChainID to make swap admin signer
 	swapAdminChainID = 30300
@@ -27,6 +27,7 @@ var (
 
 	keyWrapper *keystore.Key
 
+	// admin tx lifetime
 	maxExpireSeconds int64 = 60
 	maxFutureSeconds int64 = 30
 )

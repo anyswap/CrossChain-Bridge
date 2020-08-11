@@ -7,6 +7,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/admin"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tools/rlp"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
@@ -41,6 +42,8 @@ func doCall(args *admin.CallArgs, result *string) error {
 		return blacklist(args, result)
 	case "bigvalue":
 		return bigvalue(args, result)
+	case "maintain":
+		return maintain(args, result)
 	default:
 		return fmt.Errorf("unknown admin method '%v'", args.Method)
 	}
@@ -65,20 +68,19 @@ func blacklist(args *admin.CallArgs, result *string) (err error) {
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
-	if err == nil {
-		if isQuery {
-			if isBlacked {
-				*result = "is in blacklist"
-			} else {
-				*result = "is not in blacklist"
-			}
+	if err != nil {
+		return err
+	}
+	if isQuery {
+		if isBlacked {
+			*result = "is in blacklist"
 		} else {
-			*result = successReuslt
+			*result = "is not in blacklist"
 		}
 	} else {
-		*result = err.Error()
+		*result = successReuslt
 	}
-	return err
+	return nil
 }
 
 func bigvalue(args *admin.CallArgs, result *string) (err error) {
@@ -95,10 +97,42 @@ func bigvalue(args *admin.CallArgs, result *string) (err error) {
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
-	if err == nil {
-		*result = successReuslt
-	} else {
-		*result = err.Error()
+	if err != nil {
+		return err
 	}
-	return err
+	*result = successReuslt
+	return nil
+}
+
+func maintain(args *admin.CallArgs, result *string) (err error) {
+	if len(args.Params) != 2 {
+		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+	}
+	operation := args.Params[0]
+	direction := args.Params[1]
+
+	var newDisableFlag bool
+	switch operation {
+	case "open":
+		newDisableFlag = false
+	case "close":
+		newDisableFlag = true
+	default:
+		return fmt.Errorf("unknown operation '%v'", operation)
+	}
+
+	switch direction {
+	case "deposit":
+		tokens.GetTokenConfig(false).DisableSwap = newDisableFlag
+	case "withdraw":
+		tokens.GetTokenConfig(true).DisableSwap = newDisableFlag
+	case "both":
+		tokens.GetTokenConfig(true).DisableSwap = newDisableFlag
+		tokens.GetTokenConfig(false).DisableSwap = newDisableFlag
+	default:
+		return fmt.Errorf("unknown direction '%v'", direction)
+	}
+
+	*result = successReuslt
+	return nil
 }

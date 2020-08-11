@@ -11,6 +11,12 @@ import (
 
 var (
 	swapServer string
+
+	commonAdminFlags = []cli.Flag{
+		utils.SwapServerFlag,
+		utils.KeystoreFileFlag,
+		utils.PasswordFileFlag,
+	}
 )
 
 func adminCall(method string, params []string) (result interface{}, err error) {

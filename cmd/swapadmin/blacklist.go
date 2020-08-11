@@ -17,11 +17,7 @@ var (
 		Description: `
 admin blacklist
 `,
-		Flags: []cli.Flag{
-			utils.SwapServerFlag,
-			utils.KeystoreFileFlag,
-			utils.PasswordFileFlag,
-		},
+		Flags: commonAdminFlags,
 	}
 )
 

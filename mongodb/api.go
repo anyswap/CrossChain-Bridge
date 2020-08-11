@@ -32,9 +32,6 @@ func RecallSwapin(txid string) error {
 	if err != nil {
 		return err
 	}
-	if swap == nil {
-		return ErrSwapNotFound
-	}
 	switch swap.Status {
 	case TxNotStable:
 		return ErrSwapinTxNotStable

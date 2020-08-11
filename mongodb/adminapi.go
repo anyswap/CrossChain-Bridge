@@ -67,9 +67,6 @@ func passBigValue(txid string, isSwapin bool) error {
 	if err != nil {
 		return err
 	}
-	if swap == nil {
-		return ErrSwapNotFound
-	}
 	if swap.Status != TxWithBigValue {
 		return fmt.Errorf("swap status is %v, not big value status %v", swap.Status.String(), TxWithBigValue.String())
 	}
