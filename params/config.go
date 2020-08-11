@@ -259,6 +259,11 @@ func SetDataDir(datadir string) {
 	_ = os.MkdirAll(DataDir, os.ModePerm)
 }
 
+// HasAdmin has admin
+func HasAdmin() bool {
+	return len(serverConfig.Admins) != 0
+}
+
 // IsAdmin is admin
 func IsAdmin(account string) bool {
 	for _, admin := range serverConfig.Admins {

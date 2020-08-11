@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/rpc/rpcapi"
 	"github.com/urfave/cli/v2"
 )
 
@@ -36,12 +34,7 @@ func blacklist(ctx *cli.Context) error {
 		return fmt.Errorf("invalid arguments: %q", ctx.Args())
 	}
 
-	err := loadKeyStore(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = initSwapServer(ctx)
+	err := prepare(ctx)
 	if err != nil {
 		return err
 	}
@@ -57,12 +50,8 @@ func blacklist(ctx *cli.Context) error {
 
 	log.Printf("admin blacklist: %v %v", operation, address)
 
-	args := &rpcapi.AdminCallArg{
-		Method:    method,
-		Params:    []string{operation, address},
-		Timestamp: time.Now().Unix(),
-	}
-	result, err := adminCall(args)
+	params := []string{operation, address}
+	result, err := adminCall(method, params)
 
 	log.Printf("result is '%v'", result)
 	return err
