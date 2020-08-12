@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tools"
 	"github.com/anyswap/CrossChain-Bridge/tools/keystore"
@@ -28,7 +29,7 @@ var (
 	keyWrapper *keystore.Key
 
 	// admin tx lifetime
-	maxExpireSeconds int64 = 60
+	maxExpireSeconds int64 = 120
 	maxFutureSeconds int64 = 30
 )
 
@@ -120,4 +121,20 @@ func VerifyTransaction(tx *types.Transaction) (*common.Address, *CallArgs, error
 		return nil, nil, err
 	}
 	return &sender, args, nil
+}
+
+// DecodeTransaction decode tx from hex string
+func DecodeTransaction(rawTx string) (*types.Transaction, error) {
+	data, err := hexutil.Decode(rawTx)
+	if err != nil {
+		return nil, err
+	}
+
+	var tx types.Transaction
+	err = rlp.DecodeBytes(data, &tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tx, nil
 }

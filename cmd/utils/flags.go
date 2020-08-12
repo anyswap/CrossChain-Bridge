@@ -83,7 +83,7 @@ var (
 	// SwapServerFlag --swapserver
 	SwapServerFlag = &cli.StringFlag{
 		Name:  "swapserver",
-		Usage: "swap server RPC address to post swap register",
+		Usage: "swap server RPC address",
 	}
 	// DepositAddressFlag --deposit
 	DepositAddressFlag = &cli.StringFlag{

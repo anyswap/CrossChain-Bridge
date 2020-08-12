@@ -8,8 +8,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tools/rlp"
-	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 const (
@@ -23,12 +21,11 @@ func (s *RPCAPI) AdminCall(r *http.Request, rawTx, result *string) (err error) {
 	if !params.HasAdmin() {
 		return fmt.Errorf("no admin is configed")
 	}
-	var tx types.Transaction
-	err = rlp.DecodeBytes([]byte(*rawTx), &tx)
+	tx, err := admin.DecodeTransaction(*rawTx)
 	if err != nil {
 		return err
 	}
-	sender, args, err := admin.VerifyTransaction(&tx)
+	sender, args, err := admin.VerifyTransaction(tx)
 	if err != nil {
 		return err
 	}
