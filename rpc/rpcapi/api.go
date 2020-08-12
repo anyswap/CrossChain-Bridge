@@ -162,15 +162,6 @@ func (s *RPCAPI) Swapout(r *http.Request, txid *string, result *swapapi.PostResu
 	return err
 }
 
-// RecallSwapin api
-func (s *RPCAPI) RecallSwapin(r *http.Request, txid *string, result *swapapi.PostResult) error {
-	res, err := swapapi.RecallSwapin(txid)
-	if err == nil && res != nil {
-		*result = *res
-	}
-	return err
-}
-
 // IsValidSwapinBindAddress api
 func (s *RPCAPI) IsValidSwapinBindAddress(r *http.Request, address *string, result *bool) error {
 	*result = swapapi.IsValidSwapinBindAddress(address)

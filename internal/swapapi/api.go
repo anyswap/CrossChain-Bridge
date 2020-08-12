@@ -212,18 +212,6 @@ func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.T
 	return mongodb.AddSwapout(swap)
 }
 
-// RecallSwapin api
-func RecallSwapin(txid *string) (*PostResult, error) {
-	log.Debug("[api] receive RecallSwapin", "txid", *txid)
-	txidstr := *txid
-	err := mongodb.RecallSwapin(txidstr)
-	if err != nil {
-		return nil, err
-	}
-	log.Info("[api] add recall swap", "txid", txidstr)
-	return &SuccessPostResult, nil
-}
-
 // IsValidSwapinBindAddress api
 func IsValidSwapinBindAddress(address *string) bool {
 	return tokens.DstBridge.IsValidAddress(*address)

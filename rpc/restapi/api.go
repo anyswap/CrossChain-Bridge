@@ -174,15 +174,6 @@ func PostSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-// RecallSwapinHandler handler
-func RecallSwapinHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	w.WriteHeader(http.StatusOK)
-	txid := vars["txid"]
-	res, err := swapapi.RecallSwapin(&txid)
-	writeResponse(w, res, err)
-}
-
 // RegisterP2shAddress handler
 func RegisterP2shAddress(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
