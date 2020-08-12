@@ -7,9 +7,6 @@ import (
 )
 
 var (
-	maxRecallLifetime       = int64(10 * 24 * 3600)
-	restIntervalInRecallJob = 3 * time.Second
-
 	maxVerifyLifetime       = int64(7 * 24 * 3600)
 	restIntervalInVerifyJob = 3 * time.Second
 

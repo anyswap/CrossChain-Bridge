@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 )
@@ -68,7 +69,6 @@ const (
 	NoSwapType SwapType = iota
 	SwapinType
 	SwapoutType
-	SwapRecallType
 )
 
 func (s SwapType) String() string {
@@ -79,10 +79,8 @@ func (s SwapType) String() string {
 		return "swapin"
 	case SwapoutType:
 		return "swapout"
-	case SwapRecallType:
-		return "recall"
 	default:
-		return "unknown swap type"
+		return fmt.Sprintf("unknown swap type %d", s)
 	}
 }
 
@@ -105,7 +103,7 @@ func (s SwapTxType) String() string {
 	case P2shSwapinTx:
 		return "p2shswapintx"
 	default:
-		return "unknown swaptx type"
+		return fmt.Sprintf("unknown swaptx type %d", s)
 	}
 }
 

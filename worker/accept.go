@@ -127,10 +127,6 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 		srcBridge = tokens.DstBridge
 		dstBridge = tokens.SrcBridge
 		memo = fmt.Sprintf("%s%s", tokens.UnlockMemoPrefix, args.SwapID)
-	case tokens.SwapRecallType:
-		srcBridge = tokens.SrcBridge
-		dstBridge = tokens.SrcBridge
-		memo = fmt.Sprintf("%s%s", tokens.RecallMemoPrefix, args.SwapID)
 	default:
 		return fmt.Errorf("unknown swap type %v", args.SwapType)
 	}

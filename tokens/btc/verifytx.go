@@ -123,7 +123,6 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
-	// NOTE: must verify memo at last step (as it can be recall)
 	if !bindOk {
 		log.Debug("wrong memo", "memo", memoScript)
 		return swapInfo, tokens.ErrTxWithWrongMemo

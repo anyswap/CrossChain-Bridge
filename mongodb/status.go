@@ -1,5 +1,9 @@
 package mongodb
 
+import (
+	"fmt"
+)
+
 // -----------------------------------------------
 // swap status change graph
 // symbol '--->' mean transfer only under checked condition (eg. manual process)
@@ -8,8 +12,7 @@ package mongodb
 // 1. swap register status change graph
 //
 // TxNotStable -> |- TxVerifyFailed -> manaul
-//                |- TxCanRecall -> TxToBeRecall -> |- TxRecallFailed -> manual
-//                                                  |- TxProcessed (->MatchTxNotStable)
+//                |- TxWithWrongMemo -> manaul
 //                |- TxWithBigValue        ---> TxNotSwapped
 //                |- TxSenderNotRegistered ---> TxNotStable
 //                |- TxNotSwapped -> |- TxSwapFailed -> manual
@@ -31,9 +34,9 @@ type SwapStatus uint16
 const (
 	TxNotStable           SwapStatus = iota // 0
 	TxVerifyFailed                          // 1
-	TxCanRecall                             // 2
-	TxToBeRecall                            // 3
-	TxRecallFailed                          // 4
+	TxCanRecall                             // 2 // unused
+	TxToBeRecall                            // 3 // unused
+	TxRecallFailed                          // 4 // unused
 	TxNotSwapped                            // 5
 	TxSwapFailed                            // 6
 	TxProcessed                             // 7
@@ -57,19 +60,12 @@ func (status SwapStatus) CanRetry() bool {
 	}
 }
 
-// nolint:gocyclo // allow large switch
 func (status SwapStatus) String() string {
 	switch status {
 	case TxNotStable:
 		return "TxNotStable"
 	case TxVerifyFailed:
 		return "TxVerifyFailed"
-	case TxCanRecall:
-		return "TxCanRecall"
-	case TxToBeRecall:
-		return "TxToBeRecall"
-	case TxRecallFailed:
-		return "TxRecallFailed"
 	case TxNotSwapped:
 		return "TxNotSwapped"
 	case TxSwapFailed:
@@ -93,6 +89,6 @@ func (status SwapStatus) String() string {
 	case SwapInBlacklist:
 		return "SwapInBlacklist"
 	default:
-		return "unknown swap status"
+		return fmt.Sprintf("unknown swap status %d", status)
 	}
 }

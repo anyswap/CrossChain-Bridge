@@ -131,7 +131,7 @@ func updateSwapinStatus(txid string, swapInfo *tokens.TxSwapInfo, err error) err
 		return err
 	case tokens.ErrTxWithWrongMemo:
 		resultStatus = mongodb.TxWithWrongMemo
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxCanRecall, now(), err.Error())
+		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxWithWrongMemo, now(), err.Error())
 	case nil:
 		status := mongodb.TxNotSwapped
 		if swapInfo.Value.Cmp(tokens.GetBigValueThreshold(true)) > 0 {
@@ -179,7 +179,7 @@ func updateSwapoutStatus(txid string, swapInfo *tokens.TxSwapInfo, err error) er
 		return err
 	case tokens.ErrTxWithWrongMemo:
 		resultStatus = mongodb.TxWithWrongMemo
-		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxCanRecall, now(), err.Error())
+		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxWithWrongMemo, now(), err.Error())
 	case nil:
 		status := mongodb.TxNotSwapped
 		if swapInfo.Value.Cmp(tokens.GetBigValueThreshold(false)) > 0 {

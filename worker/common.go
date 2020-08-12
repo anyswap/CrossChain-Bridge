@@ -89,9 +89,6 @@ func updateSwapResult(key string, mtx *MatchTx) (err error) {
 		updates.SwapTime = mtx.SwapTime
 	}
 	switch mtx.SwapType {
-	case tokens.SwapRecallType:
-		updates.SwapType = uint32(mtx.SwapType)
-		fallthrough
 	case tokens.SwapinType:
 		err = mongodb.UpdateSwapinResult(key, updates)
 	case tokens.SwapoutType:

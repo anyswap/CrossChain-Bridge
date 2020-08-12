@@ -64,7 +64,6 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
-	// NOTE: must verify memo at last step (as it can be recall)
 	if !tokens.SrcBridge.IsValidAddress(swapInfo.Bind) {
 		log.Debug("wrong bind address in swapout", "bind", swapInfo.Bind)
 		return swapInfo, tokens.ErrTxWithWrongMemo

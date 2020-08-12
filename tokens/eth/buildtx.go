@@ -36,21 +36,18 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 				return nil, err
 			}
 			input = *args.Input
-		case tokens.SwapoutType, tokens.SwapRecallType:
+		case tokens.SwapoutType:
 			if !b.IsSrc {
 				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
 			}
-			switch {
-			case b.TokenConfig.IsErc20():
+			if b.TokenConfig.IsErc20() {
 				err = b.buildErc20SwapoutTxInput(args)
 				if err != nil {
 					return nil, err
 				}
 				input = *args.Input
-			case args.SwapType == tokens.SwapoutType:
+			} else {
 				input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
-			default:
-				input = []byte(tokens.RecallMemoPrefix + args.SwapID)
 			}
 		}
 	} else {
@@ -74,8 +71,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		gasPrice = extra.GasPrice
 	)
 
-	switch args.SwapType {
-	case tokens.SwapoutType, tokens.SwapRecallType:
+	if args.SwapType == tokens.SwapoutType {
 		if !b.TokenConfig.IsErc20() {
 			value = tokens.CalcSwappedValue(value, false)
 		}

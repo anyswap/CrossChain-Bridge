@@ -33,7 +33,7 @@ func ConvertMgoSwapResultToSwapInfo(mr *mongodb.MgoSwapResult) *SwapInfo {
 		switch mr.SwapType {
 		case uint32(tokens.SwapinType):
 			latest = tokens.DstLatestBlockHeight
-		case uint32(tokens.SwapoutType), uint32(tokens.SwapRecallType):
+		case uint32(tokens.SwapoutType):
 			latest = tokens.SrcLatestBlockHeight
 		}
 		if latest > mr.SwapHeight {

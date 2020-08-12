@@ -12,7 +12,6 @@ import (
 const (
 	LockMemoPrefix   = "SWAPTO:"
 	UnlockMemoPrefix = "SWAPTX:"
-	RecallMemoPrefix = "RECALL:"
 )
 
 // common variables

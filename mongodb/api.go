@@ -15,8 +15,7 @@ const (
 )
 
 var (
-	retryLock  sync.Mutex
-	recallLock sync.Mutex
+	retryLock sync.Mutex
 )
 
 // --------------- swapin --------------------------------
@@ -24,24 +23,6 @@ var (
 // AddSwapin add swapin
 func AddSwapin(ms *MgoSwap) error {
 	return addSwap(collSwapin, ms)
-}
-
-// RecallSwapin recall swapin
-func RecallSwapin(txid string) error {
-	swap, err := findSwap(collSwapin, txid)
-	if err != nil {
-		return err
-	}
-	switch swap.Status {
-	case TxNotStable:
-		return ErrSwapinTxNotStable
-	case TxToBeRecall:
-		return ErrSwapinRecallExist
-	case TxCanRecall:
-		return updateSwapStatus(collSwapin, txid, TxToBeRecall, time.Now().Unix(), "")
-	default:
-		return ErrSwapinRecalledOrForbidden
-	}
 }
 
 // UpdateSwapinStatus update swapin status
@@ -110,19 +91,11 @@ func updateSwapStatus(collection *mgo.Collection, txid string, status SwapStatus
 	} else if status == TxNotSwapped || status == TxNotStable {
 		updates["memo"] = ""
 	}
-	switch status {
-	case TxNotStable:
+	if status == TxNotStable {
 		retryLock.Lock()
 		defer retryLock.Unlock()
 		swap, _ := findSwap(collection, txid)
 		if !swap.Status.CanRetry() {
-			return nil
-		}
-	case TxToBeRecall:
-		recallLock.Lock()
-		defer recallLock.Unlock()
-		swap, _ := findSwap(collection, txid)
-		if swap.Status != TxCanRecall {
 			return nil
 		}
 	}
@@ -130,7 +103,7 @@ func updateSwapStatus(collection *mgo.Collection, txid string, status SwapStatus
 	if err == nil {
 		printLog := log.Info
 		switch status {
-		case TxVerifyFailed, TxRecallFailed, TxSwapFailed:
+		case TxVerifyFailed, TxSwapFailed:
 			printLog = log.Warn
 		}
 		printLog("mongodb update swap status", "txid", txid, "status", status, "isSwapin", isSwapin(collection))
