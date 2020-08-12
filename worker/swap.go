@@ -226,27 +226,28 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 }
 
 func doSwap(bridge tokens.CrossChainBridge, txid string, args *tokens.BuildTxArgs) (err error) {
+	swapType := args.SwapType
+	isSwapin := swapType == tokens.SwapinType
 	rawTx, err := bridge.BuildRawTransaction(args)
 	if err != nil {
-		logWorkerError("doSwap", "BuildRawTransaction failed", err, "txid", txid)
+		logWorkerError("doSwap", "BuildRawTransaction failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 
 	signedTx, txHash, err := dcrmSignTransaction(bridge, rawTx, args.GetExtraArgs())
 	if err != nil {
-		logWorkerError("doSwap", "DcrmSignTransaction failed", err, "txid", txid)
+		logWorkerError("doSwap", "DcrmSignTransaction failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 
 	swapTxNonce := args.GetTxNonce()
-	isSwapin := args.SwapInfo.SwapType == tokens.SwapinType
 
 	// update database before sending transaction
 	addSwapHistory(txid, args.Value, txHash, swapTxNonce, isSwapin)
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(args.Value, isSwapin).String(),
-		SwapType:  args.SwapInfo.SwapType,
+		SwapType:  swapType,
 		SwapNonce: swapTxNonce,
 	}
 	if isSwapin {
@@ -255,7 +256,7 @@ func doSwap(bridge tokens.CrossChainBridge, txid string, args *tokens.BuildTxArg
 		err = updateSwapoutResult(txid, matchTx)
 	}
 	if err != nil {
-		logWorkerError("doSwap", "update swap result failed", err, "txid", txid)
+		logWorkerError("doSwap", "update swap result failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 
@@ -265,7 +266,7 @@ func doSwap(bridge tokens.CrossChainBridge, txid string, args *tokens.BuildTxArg
 		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
 	}
 	if err != nil {
-		logWorkerError("doSwap", "update swap status failed", err, "txid", txid)
+		logWorkerError("doSwap", "update swap status failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 
