@@ -3,6 +3,7 @@ package mongodb
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -15,7 +16,7 @@ import (
 // AddToBlacklist add to blacklist
 func AddToBlacklist(address string) error {
 	mb := &MgoBlackAccount{
-		Key:       address,
+		Key:       strings.ToLower(address),
 		Timestamp: time.Now().Unix(),
 	}
 	err := collBlacklist.Insert(mb)
@@ -29,7 +30,7 @@ func AddToBlacklist(address string) error {
 
 // RemoveFromBlacklist remove from blacklist
 func RemoveFromBlacklist(address string) error {
-	err := collBlacklist.RemoveId(address)
+	err := collBlacklist.RemoveId(strings.ToLower(address))
 	if err == nil {
 		log.Info("mongodb remove from black list success", "address", address)
 	} else {
@@ -41,7 +42,7 @@ func RemoveFromBlacklist(address string) error {
 // QueryBlacklist query if is blacked
 func QueryBlacklist(address string) (isBlacked bool, err error) {
 	var result MgoBlackAccount
-	err = collBlacklist.FindId(address).One(&result)
+	err = collBlacklist.FindId(strings.ToLower(address)).One(&result)
 	if err == nil {
 		return true, nil
 	}
