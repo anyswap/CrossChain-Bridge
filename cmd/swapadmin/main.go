@@ -26,6 +26,8 @@ func initApp() {
 		maintainCommand,
 		bigvalueCommand,
 		blacklistCommand,
+		reverifyCommand,
+		reswapCommand,
 		utils.LicenseCommand,
 		utils.VersionCommand,
 	}

@@ -14,6 +14,8 @@ import (
 
 const (
 	successReuslt = "Success"
+	swapinOp      = "swapin"
+	swapoutOp     = "swapout"
 )
 
 // AdminCall admin call
@@ -44,6 +46,10 @@ func doCall(args *admin.CallArgs, result *string) error {
 		return bigvalue(args, result)
 	case "maintain":
 		return maintain(args, result)
+	case "reverify":
+		return reverify(args, result)
+	case "reswap":
+		return reswap(args, result)
 	default:
 		return fmt.Errorf("unknown admin method '%v'", args.Method)
 	}
@@ -133,6 +139,48 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 		return fmt.Errorf("unknown direction '%v'", direction)
 	}
 
+	*result = successReuslt
+	return nil
+}
+
+func reverify(args *admin.CallArgs, result *string) (err error) {
+	if len(args.Params) != 2 {
+		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+	}
+	operation := args.Params[0]
+	txid := args.Params[1]
+	switch operation {
+	case swapinOp:
+		err = mongodb.ReverifySwapin(txid)
+	case swapoutOp:
+		err = mongodb.ReverifySwapout(txid)
+	default:
+		return fmt.Errorf("unknown operation '%v'", operation)
+	}
+	if err != nil {
+		return err
+	}
+	*result = successReuslt
+	return nil
+}
+
+func reswap(args *admin.CallArgs, result *string) (err error) {
+	if len(args.Params) != 2 {
+		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+	}
+	operation := args.Params[0]
+	txid := args.Params[1]
+	switch operation {
+	case swapinOp:
+		err = mongodb.Reswapin(txid)
+	case swapoutOp:
+		err = mongodb.Reswapout(txid)
+	default:
+		return fmt.Errorf("unknown operation '%v'", operation)
+	}
+	if err != nil {
+		return err
+	}
 	*result = successReuslt
 	return nil
 }

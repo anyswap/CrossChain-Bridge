@@ -1,9 +1,5 @@
 package mongodb
 
-import (
-	"github.com/anyswap/CrossChain-Bridge/log"
-)
-
 // -----------------------------------------------
 // swap status change graph
 // symbol '--->' mean transfer only under checked condition (eg. manual process)
@@ -11,7 +7,7 @@ import (
 // -----------------------------------------------
 // 1. swap register status change graph
 //
-// TxNotStable -> |- TxVerifyFailed -> stop
+// TxNotStable -> |- TxVerifyFailed -> manaul
 //                |- TxCanRecall -> TxToBeRecall -> |- TxRecallFailed -> manual
 //                                                  |- TxProcessed (->MatchTxNotStable)
 //                |- TxWithBigValue        ---> TxNotSwapped
@@ -97,7 +93,6 @@ func (status SwapStatus) String() string {
 	case SwapInBlacklist:
 		return "SwapInBlacklist"
 	default:
-		log.Fatalf("unknown swap status %d", status)
 		return "unknown swap status"
 	}
 }
