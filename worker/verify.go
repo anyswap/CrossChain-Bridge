@@ -94,12 +94,26 @@ func isInBlacklist(swapInfo *tokens.TxSwapInfo) (isBlacked bool, err error) {
 }
 
 func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
-	isSwapin := true
+	return processSwapVerify(swap, true)
+}
+
+func processSwapoutVerify(swap *mongodb.MgoSwap) error {
+	return processSwapVerify(swap, false)
+}
+
+func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	txid := swap.TxID
+	var bridge tokens.CrossChainBridge
+	if isSwapin {
+		bridge = tokens.SrcBridge
+	} else {
+		bridge = tokens.DstBridge
+	}
+
 	var swapInfo *tokens.TxSwapInfo
 	switch tokens.SwapTxType(swap.TxType) {
-	case tokens.SwapinTx:
-		swapInfo, err = tokens.SrcBridge.VerifyTransaction(txid, false)
+	case tokens.SwapinTx, tokens.SwapoutTx:
+		swapInfo, err = bridge.VerifyTransaction(txid, false)
 	case tokens.P2shSwapinTx:
 		if btc.BridgeInstance == nil {
 			return tokens.ErrNoBtcBridge
@@ -121,11 +135,10 @@ func processSwapinVerify(swap *mongodb.MgoSwap) (err error) {
 		err = tokens.ErrAddressIsInBlacklist
 		return mongodb.UpdateSwapinStatus(txid, mongodb.SwapInBlacklist, now(), err.Error())
 	}
-	return updateSwapinStatus(txid, swapInfo, err)
+	return updateSwapStatus(txid, swapInfo, isSwapin, err)
 }
 
-func updateSwapinStatus(txid string, swapInfo *tokens.TxSwapInfo, err error) error {
-	isSwapin := true
+func updateSwapStatus(txid string, swapInfo *tokens.TxSwapInfo, isSwapin bool, err error) error {
 	resultStatus := mongodb.MatchTxEmpty
 
 	switch err {
@@ -133,71 +146,23 @@ func updateSwapinStatus(txid string, swapInfo *tokens.TxSwapInfo, err error) err
 		return err
 	case tokens.ErrTxWithWrongMemo:
 		resultStatus = mongodb.TxWithWrongMemo
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxWithWrongMemo, now(), err.Error())
+		err = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxWithWrongMemo, now(), err.Error())
 	case nil:
 		status := mongodb.TxNotSwapped
 		if swapInfo.Value.Cmp(tokens.GetBigValueThreshold(isSwapin)) > 0 {
 			status = mongodb.TxWithBigValue
 			resultStatus = mongodb.TxWithBigValue
 		}
-		err = mongodb.UpdateSwapinStatus(txid, status, now(), "")
+		err = mongodb.UpdateSwapStatus(isSwapin, txid, status, now(), "")
 	case tokens.ErrTxSenderNotRegistered:
-		return mongodb.UpdateSwapinStatus(txid, mongodb.TxSenderNotRegistered, now(), err.Error())
+		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxSenderNotRegistered, now(), err.Error())
 	default:
-		return mongodb.UpdateSwapinStatus(txid, mongodb.TxVerifyFailed, now(), err.Error())
+		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxVerifyFailed, now(), err.Error())
 	}
 
 	if err != nil {
-		logWorkerError("verify", "processSwapinVerify", err, "txid", txid)
+		logWorkerError("verify", "update swap status", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
-	return addInitialSwapinResult(swapInfo, resultStatus)
-}
-
-func processSwapoutVerify(swap *mongodb.MgoSwap) error {
-	isSwapin := false
-	txid := swap.TxID
-	swapInfo, err := tokens.DstBridge.VerifyTransaction(txid, false)
-	if swapInfo.Height != 0 &&
-		swapInfo.Height < tokens.GetTokenConfig(isSwapin).InitialHeight {
-		err = tokens.ErrTxBeforeInitialHeight
-		return mongodb.UpdateSwapoutStatus(txid, mongodb.TxVerifyFailed, now(), err.Error())
-	}
-	isBlacked, errf := isInBlacklist(swapInfo)
-	if errf != nil {
-		return errf
-	}
-	if isBlacked {
-		err = tokens.ErrAddressIsInBlacklist
-		return mongodb.UpdateSwapoutStatus(txid, mongodb.SwapInBlacklist, now(), err.Error())
-	}
-	return updateSwapoutStatus(txid, swapInfo, err)
-}
-
-func updateSwapoutStatus(txid string, swapInfo *tokens.TxSwapInfo, err error) error {
-	isSwapin := false
-	resultStatus := mongodb.MatchTxEmpty
-
-	switch err {
-	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
-		return err
-	case tokens.ErrTxWithWrongMemo:
-		resultStatus = mongodb.TxWithWrongMemo
-		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxWithWrongMemo, now(), err.Error())
-	case nil:
-		status := mongodb.TxNotSwapped
-		if swapInfo.Value.Cmp(tokens.GetBigValueThreshold(isSwapin)) > 0 {
-			status = mongodb.TxWithBigValue
-			resultStatus = mongodb.TxWithBigValue
-		}
-		err = mongodb.UpdateSwapoutStatus(txid, status, now(), "")
-	default:
-		return mongodb.UpdateSwapoutStatus(txid, mongodb.TxVerifyFailed, now(), err.Error())
-	}
-
-	if err != nil {
-		logWorkerError("verify", "processSwapoutVerify", err, "txid", txid)
-		return err
-	}
-	return addInitialSwapoutResult(swapInfo, resultStatus)
+	return addInitialSwapResult(swapInfo, resultStatus, isSwapin)
 }

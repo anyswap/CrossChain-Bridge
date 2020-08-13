@@ -97,16 +97,33 @@ func isSwapInBlacklist(swap *mongodb.MgoSwapResult) (isBlacked bool, err error) 
 }
 
 func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
-	isSwapin := true
+	return processSwap(swap, true)
+}
+
+func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
+	return processSwap(swap, false)
+}
+
+func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	txid := swap.TxID
-	bridge := tokens.DstBridge
-	logWorker("swapin", "start processSwapinSwap", "txid", txid, "status", swap.Status)
-	res, err := mongodb.FindSwapinResult(txid)
+	logWorker("swap", "start process swap", "txid", txid, "status", swap.Status, "isSwapin", isSwapin)
+
+	var resBridge tokens.CrossChainBridge
+	var swapType tokens.SwapType
+	if isSwapin {
+		resBridge = tokens.DstBridge
+		swapType = tokens.SwapinType
+	} else {
+		resBridge = tokens.SrcBridge
+		swapType = tokens.SwapoutType
+	}
+
+	res, err := mongodb.FindSwapResult(isSwapin, txid)
 	if err != nil {
 		return err
 	}
 	if tokens.GetTokenConfig(isSwapin).DisableSwap {
-		logWorkerTrace("swapin", "swapin is disabled")
+		logWorkerTrace("swap", "swap is disabled", "isSwapin", isSwapin)
 		return nil
 	}
 	isBlacked, err := isSwapInBlacklist(res)
@@ -114,32 +131,32 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		return err
 	}
 	if isBlacked {
-		logWorkerTrace("swapin", "address is in blacklist", "txid", txid)
+		logWorkerTrace("swap", "address is in blacklist", "txid", txid, "isSwapin", isSwapin)
 		err = tokens.ErrAddressIsInBlacklist
-		_ = mongodb.UpdateSwapinStatus(txid, mongodb.SwapInBlacklist, now(), err.Error())
+		_ = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.SwapInBlacklist, now(), err.Error())
 		return nil
 	}
 	if res.SwapTx != "" {
-		_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
+		_ = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxProcessed, now(), "")
 		if res.Status != mongodb.MatchTxEmpty {
 			return fmt.Errorf("%v already swapped to %v with status %v", txid, res.SwapTx, res.Status)
 		}
-		if _, err = bridge.GetTransaction(res.SwapTx); err == nil {
+		if _, err = resBridge.GetTransaction(res.SwapTx); err == nil {
 			return fmt.Errorf("[warn] %v already swapped to %v but with status %v", txid, res.SwapTx, res.Status)
 		}
 	}
 
 	history := getSwapHistory(txid, isSwapin)
 	if history != nil {
-		if _, err = bridge.GetTransaction(history.matchTx); err == nil {
+		if _, err = resBridge.GetTransaction(history.matchTx); err == nil {
 			matchTx := &MatchTx{
 				SwapTx:    history.matchTx,
 				SwapValue: tokens.CalcSwappedValue(history.value, isSwapin).String(),
-				SwapType:  tokens.SwapinType,
+				SwapType:  swapType,
 				SwapNonce: history.nonce,
 			}
-			_ = updateSwapinResult(txid, matchTx)
-			logWorker("swapin", "ignore swapped swapin", "txid", txid, "matchTx", history.matchTx)
+			_ = updateSwapResult(txid, matchTx)
+			logWorker("swap", "ignore swapped swap", "txid", txid, "matchTx", history.matchTx, "isSwapin", isSwapin)
 			return fmt.Errorf("found swapped in history, txid=%v, matchTx=%v", txid, history.matchTx)
 		}
 	}
@@ -151,92 +168,35 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
-			SwapID:   res.TxID,
-			SwapType: tokens.SwapinType,
-			TxType:   tokens.SwapTxType(swap.TxType),
-			Bind:     swap.Bind,
+			SwapID:   txid,
+			SwapType: swapType,
 		},
 		To:    res.Bind,
 		Value: value,
 	}
 
-	return doSwap(bridge, txid, args)
+	if isSwapin {
+		args.TxType = tokens.SwapTxType(swap.TxType)
+		args.Bind = swap.Bind
+	}
+
+	return doSwap(resBridge, args, isSwapin)
 }
 
-func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
-	isSwapin := false
-	txid := swap.TxID
-	bridge := tokens.SrcBridge
-	logWorker("swapout", "start processSwapoutSwap", "txid", txid, "status", swap.Status)
-	res, err := mongodb.FindSwapoutResult(txid)
-	if err != nil {
-		return err
-	}
-	if tokens.GetTokenConfig(isSwapin).DisableSwap {
-		logWorkerTrace("swapout", "swapout is disabled")
-		return nil
-	}
-	isBlacked, err := isSwapInBlacklist(res)
-	if err != nil {
-		return err
-	}
-	if isBlacked {
-		logWorkerTrace("swapout", "address is in blacklist", "txid", txid)
-		err = tokens.ErrAddressIsInBlacklist
-		_ = mongodb.UpdateSwapoutStatus(txid, mongodb.SwapInBlacklist, now(), err.Error())
-		return nil
-	}
-	if res.SwapTx != "" {
-		_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
-		if res.Status != mongodb.MatchTxEmpty {
-			return fmt.Errorf("%v already swapped to %v with status %v", txid, res.SwapTx, res.Status)
-		}
-		if _, err = bridge.GetTransaction(res.SwapTx); err == nil {
-			return fmt.Errorf("[warn] %v already swapped to %v but with status %v", txid, res.SwapTx, res.Status)
-		}
-	}
-
-	history := getSwapHistory(txid, isSwapin)
-	if history != nil {
-		if _, err = bridge.GetTransaction(history.matchTx); err == nil {
-			matchTx := &MatchTx{
-				SwapTx:    history.matchTx,
-				SwapValue: tokens.CalcSwappedValue(history.value, isSwapin).String(),
-				SwapType:  tokens.SwapoutType,
-				SwapNonce: history.nonce,
-			}
-			_ = updateSwapoutResult(txid, matchTx)
-			logWorker("swapout", "ignore swapped swapout", "txid", txid, "matchTx", history.matchTx)
-			return fmt.Errorf("found swapped out history, txid=%v, matchTx=%v", txid, history.matchTx)
-		}
-	}
-
-	value, err := common.GetBigIntFromStr(res.Value)
-	if err != nil {
-		return fmt.Errorf("wrong value %v", res.Value)
-	}
-
-	args := &tokens.BuildTxArgs{
-		SwapInfo: tokens.SwapInfo{
-			SwapID:   res.TxID,
-			SwapType: tokens.SwapoutType,
-		},
-		To:    res.Bind,
-		Value: value,
-	}
-	return doSwap(bridge, txid, args)
-}
-
-func doSwap(bridge tokens.CrossChainBridge, txid string, args *tokens.BuildTxArgs) (err error) {
+func doSwap(resBridge tokens.CrossChainBridge, args *tokens.BuildTxArgs, isSwapin bool) (err error) {
+	txid := args.SwapID
 	swapType := args.SwapType
-	isSwapin := swapType == tokens.SwapinType
-	rawTx, err := bridge.BuildRawTransaction(args)
+	originValue := args.Value
+	if isSwapin != (swapType == tokens.SwapinType) {
+		return fmt.Errorf("mismatch isSwapin=%v but swapType=%v", isSwapin, swapType.String())
+	}
+	rawTx, err := resBridge.BuildRawTransaction(args)
 	if err != nil {
 		logWorkerError("doSwap", "BuildRawTransaction failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 
-	signedTx, txHash, err := dcrmSignTransaction(bridge, rawTx, args.GetExtraArgs())
+	signedTx, txHash, err := dcrmSignTransaction(resBridge, rawTx, args.GetExtraArgs())
 	if err != nil {
 		logWorkerError("doSwap", "DcrmSignTransaction failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
@@ -245,34 +205,26 @@ func doSwap(bridge tokens.CrossChainBridge, txid string, args *tokens.BuildTxArg
 	swapTxNonce := args.GetTxNonce()
 
 	// update database before sending transaction
-	addSwapHistory(txid, args.Value, txHash, swapTxNonce, isSwapin)
+	addSwapHistory(txid, originValue, txHash, swapTxNonce, isSwapin)
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
-		SwapValue: tokens.CalcSwappedValue(args.Value, isSwapin).String(),
+		SwapValue: tokens.CalcSwappedValue(originValue, isSwapin).String(),
 		SwapType:  swapType,
 		SwapNonce: swapTxNonce,
 	}
-	if isSwapin {
-		err = updateSwapinResult(txid, matchTx)
-	} else {
-		err = updateSwapoutResult(txid, matchTx)
-	}
+	err = updateSwapResult(txid, matchTx)
 	if err != nil {
 		logWorkerError("doSwap", "update swap result failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 
-	if isSwapin {
-		err = mongodb.UpdateSwapinStatus(txid, mongodb.TxProcessed, now(), "")
-	} else {
-		err = mongodb.UpdateSwapoutStatus(txid, mongodb.TxProcessed, now(), "")
-	}
+	err = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxProcessed, now(), "")
 	if err != nil {
 		logWorkerError("doSwap", "update swap status failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 
-	return sendSignedTransaction(bridge, signedTx, txid, isSwapin)
+	return sendSignedTransaction(resBridge, signedTx, txid, isSwapin)
 }
 
 type swapInfo struct {

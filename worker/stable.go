@@ -88,22 +88,22 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	swapTxID := swap.SwapTx
 
-	var bridge tokens.CrossChainBridge
+	var resBridge tokens.CrossChainBridge
 	var swapType tokens.SwapType
 	if isSwapin {
-		bridge = tokens.DstBridge
+		resBridge = tokens.DstBridge
 		swapType = tokens.SwapinType
 	} else {
-		bridge = tokens.SrcBridge
+		resBridge = tokens.SrcBridge
 		swapType = tokens.SwapoutType
 	}
 
-	txStatus := bridge.GetTransactionStatus(swapTxID)
+	txStatus := resBridge.GetTransactionStatus(swapTxID)
 	if txStatus == nil || txStatus.BlockHeight == 0 {
 		return nil
 	}
 
-	token, _ := bridge.GetTokenAndGateway()
+	token, _ := resBridge.GetTokenAndGateway()
 	confirmations := *token.Confirmations
 
 	if swap.SwapHeight != 0 {
@@ -116,15 +116,9 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 			txFailed = true
 		}
 		if txFailed {
-			if isSwapin {
-				return markSwapinResultFailed(swap.Key)
-			}
-			return markSwapoutResultFailed(swap.Key)
+			return markSwapResultFailed(swap.Key, isSwapin)
 		}
-		if isSwapin {
-			return markSwapinResultStable(swap.Key)
-		}
-		return markSwapoutResultStable(swap.Key)
+		return markSwapResultStable(swap.Key, isSwapin)
 	}
 
 	matchTx := &MatchTx{
@@ -132,8 +126,5 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 		SwapTime:   txStatus.BlockTime,
 		SwapType:   swapType,
 	}
-	if isSwapin {
-		return updateSwapinResult(swap.Key, matchTx)
-	}
-	return updateSwapoutResult(swap.Key, matchTx)
+	return updateSwapResult(swap.Key, matchTx)
 }

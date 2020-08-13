@@ -18,6 +18,32 @@ var (
 	retryLock sync.Mutex
 )
 
+// --------------- swapin and swapout uniform --------------------------------
+
+// UpdateSwapStatus update swap status
+func UpdateSwapStatus(isSwapin bool, txid string, status SwapStatus, timestamp int64, memo string) error {
+	if isSwapin {
+		return updateSwapStatus(collSwapin, txid, status, timestamp, memo)
+	}
+	return updateSwapStatus(collSwapout, txid, status, timestamp, memo)
+}
+
+// UpdateSwapResultStatus update swap result status
+func UpdateSwapResultStatus(isSwapin bool, txid string, status SwapStatus, timestamp int64, memo string) error {
+	if isSwapin {
+		return updateSwapResultStatus(collSwapinResult, txid, status, timestamp, memo)
+	}
+	return updateSwapResultStatus(collSwapoutResult, txid, status, timestamp, memo)
+}
+
+// FindSwapResult find swap result
+func FindSwapResult(isSwapin bool, txid string) (*MgoSwapResult, error) {
+	if isSwapin {
+		return findSwapResult(collSwapinResult, txid)
+	}
+	return findSwapResult(collSwapoutResult, txid)
+}
+
 // --------------- swapin --------------------------------
 
 // AddSwapin add swapin

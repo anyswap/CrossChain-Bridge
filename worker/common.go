@@ -17,14 +17,6 @@ type MatchTx struct {
 	SwapNonce  uint64
 }
 
-func addInitialSwapinResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus) error {
-	return addInitialSwapResult(tx, status, true)
-}
-
-func addInitialSwapoutResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus) error {
-	return addInitialSwapResult(tx, status, false)
-}
-
 func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSwapin bool) (err error) {
 	txid := tx.Hash
 	var swapType tokens.SwapType
@@ -65,14 +57,6 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 	return err
 }
 
-func updateSwapinResult(key string, mtx *MatchTx) error {
-	return updateSwapResult(key, mtx)
-}
-
-func updateSwapoutResult(key string, mtx *MatchTx) error {
-	return updateSwapResult(key, mtx)
-}
-
 func updateSwapResult(key string, mtx *MatchTx) (err error) {
 	updates := &mongodb.SwapResultUpdateItems{
 		Status:    mongodb.MatchTxNotStable,
@@ -104,23 +88,11 @@ func updateSwapResult(key string, mtx *MatchTx) (err error) {
 	return err
 }
 
-func markSwapinResultStable(key string) error {
-	return markSwapResultStable(key, true)
-}
-
-func markSwapoutResultStable(key string) error {
-	return markSwapResultStable(key, false)
-}
-
 func markSwapResultStable(key string, isSwapin bool) (err error) {
 	status := mongodb.MatchTxStable
 	timestamp := now()
 	memo := "" // unchange
-	if isSwapin {
-		err = mongodb.UpdateSwapinResultStatus(key, status, timestamp, memo)
-	} else {
-		err = mongodb.UpdateSwapoutResultStatus(key, status, timestamp, memo)
-	}
+	err = mongodb.UpdateSwapResultStatus(isSwapin, key, status, timestamp, memo)
 	if err != nil {
 		logWorkerError("stable", "markSwapResultStable", err, "txid", key, "isSwapin", isSwapin)
 	} else {
@@ -129,23 +101,11 @@ func markSwapResultStable(key string, isSwapin bool) (err error) {
 	return err
 }
 
-func markSwapinResultFailed(key string) error {
-	return markSwapResultFailed(key, true)
-}
-
-func markSwapoutResultFailed(key string) error {
-	return markSwapResultFailed(key, false)
-}
-
 func markSwapResultFailed(key string, isSwapin bool) (err error) {
 	status := mongodb.MatchTxFailed
 	timestamp := now()
 	memo := "" // unchange
-	if isSwapin {
-		err = mongodb.UpdateSwapinResultStatus(key, status, timestamp, memo)
-	} else {
-		err = mongodb.UpdateSwapoutResultStatus(key, status, timestamp, memo)
-	}
+	err = mongodb.UpdateSwapResultStatus(isSwapin, key, status, timestamp, memo)
 	if err != nil {
 		logWorkerError("stable", "markSwapResultFailed", err, "txid", key, "isSwapin", isSwapin)
 	} else {
@@ -183,15 +143,9 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		time.Sleep(retrySendTxInterval)
 	}
 	if err != nil {
-		if isSwapin {
-			logWorkerError("sendtx", "update swapin status to TxSwapFailed", err, "txid", txid)
-			_ = mongodb.UpdateSwapinStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
-			_ = mongodb.UpdateSwapinResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
-		} else {
-			logWorkerError("sendtx", "update swapout status to TxSwapFailed", err, "txid", txid)
-			_ = mongodb.UpdateSwapoutStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
-			_ = mongodb.UpdateSwapoutResultStatus(txid, mongodb.TxSwapFailed, now(), err.Error())
-		}
+		logWorkerError("sendtx", "update swap status to TxSwapFailed", err, "txid", txid, "isSwapin", isSwapin)
+		_ = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxSwapFailed, now(), err.Error())
+		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, mongodb.TxSwapFailed, now(), err.Error())
 		return err
 	}
 	bridge.IncreaseNonce(1)
