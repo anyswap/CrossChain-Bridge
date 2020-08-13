@@ -97,6 +97,7 @@ func isSwapInBlacklist(swap *mongodb.MgoSwapResult) (isBlacked bool, err error) 
 }
 
 func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
+	isSwapin := true
 	txid := swap.TxID
 	bridge := tokens.DstBridge
 	logWorker("swapin", "start processSwapinSwap", "txid", txid, "status", swap.Status)
@@ -104,7 +105,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
-	if tokens.GetTokenConfig(false).DisableSwap {
+	if tokens.GetTokenConfig(isSwapin).DisableSwap {
 		logWorkerTrace("swapin", "swapin is disabled")
 		return nil
 	}
@@ -128,12 +129,12 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 		}
 	}
 
-	history := getSwapHistory(txid, true)
+	history := getSwapHistory(txid, isSwapin)
 	if history != nil {
 		if _, err = bridge.GetTransaction(history.matchTx); err == nil {
 			matchTx := &MatchTx{
 				SwapTx:    history.matchTx,
-				SwapValue: tokens.CalcSwappedValue(history.value, true).String(),
+				SwapValue: tokens.CalcSwappedValue(history.value, isSwapin).String(),
 				SwapType:  tokens.SwapinType,
 				SwapNonce: history.nonce,
 			}
@@ -163,6 +164,7 @@ func processSwapinSwap(swap *mongodb.MgoSwap) (err error) {
 }
 
 func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
+	isSwapin := false
 	txid := swap.TxID
 	bridge := tokens.SrcBridge
 	logWorker("swapout", "start processSwapoutSwap", "txid", txid, "status", swap.Status)
@@ -170,7 +172,7 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 	if err != nil {
 		return err
 	}
-	if tokens.GetTokenConfig(true).DisableSwap {
+	if tokens.GetTokenConfig(isSwapin).DisableSwap {
 		logWorkerTrace("swapout", "swapout is disabled")
 		return nil
 	}
@@ -194,12 +196,12 @@ func processSwapoutSwap(swap *mongodb.MgoSwap) (err error) {
 		}
 	}
 
-	history := getSwapHistory(txid, false)
+	history := getSwapHistory(txid, isSwapin)
 	if history != nil {
 		if _, err = bridge.GetTransaction(history.matchTx); err == nil {
 			matchTx := &MatchTx{
 				SwapTx:    history.matchTx,
-				SwapValue: tokens.CalcSwappedValue(history.value, false).String(),
+				SwapValue: tokens.CalcSwappedValue(history.value, isSwapin).String(),
 				SwapType:  tokens.SwapoutType,
 				SwapNonce: history.nonce,
 			}

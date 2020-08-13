@@ -124,16 +124,26 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
 
+	isDeposit := false
+	isWithdraw := false
 	switch direction {
 	case "deposit":
-		tokens.GetTokenConfig(false).DisableSwap = newDisableFlag
+		isDeposit = true
 	case "withdraw":
-		tokens.GetTokenConfig(true).DisableSwap = newDisableFlag
+		isWithdraw = true
 	case "both":
-		tokens.GetTokenConfig(true).DisableSwap = newDisableFlag
-		tokens.GetTokenConfig(false).DisableSwap = newDisableFlag
+		isDeposit = true
+		isWithdraw = true
 	default:
 		return fmt.Errorf("unknown direction '%v'", direction)
+	}
+
+	if isDeposit {
+		tokens.GetTokenConfig(true).DisableSwap = newDisableFlag
+	}
+
+	if isWithdraw {
+		tokens.GetTokenConfig(false).DisableSwap = newDisableFlag
 	}
 
 	*result = successReuslt
