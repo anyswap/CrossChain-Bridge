@@ -39,7 +39,7 @@ func bigvalue(ctx *cli.Context) error {
 	txid := ctx.Args().Get(1)
 
 	switch operation {
-	case "passswapin", "passswapout":
+	case passSwapinOp, passSwapoutOp:
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}

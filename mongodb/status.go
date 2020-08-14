@@ -15,7 +15,9 @@ import (
 //                |- TxWithWrongMemo   -> manual
 //                |- TxWithWrongSender -> manual
 //                |- TxWithWrongValue  -> manual
+//                |- SwapInBlacklist   -> manual
 //                |- TxIncompatible    -> manual
+//                |- ManualMakeFail    -> manual
 //                |- TxWithBigValue        ---> TxNotSwapped
 //                |- TxSenderNotRegistered ---> TxNotStable
 //                |- TxNotSwapped -> |- TxSwapFailed -> manual
@@ -51,6 +53,7 @@ const (
 	TxSenderNotRegistered                   // 13
 	MatchTxFailed                           // 14
 	SwapInBlacklist                         // 15
+	ManualMakeFail                          // 16
 )
 
 // CanRetry can retry
@@ -98,6 +101,8 @@ func (status SwapStatus) String() string {
 		return "MatchTxFailed"
 	case SwapInBlacklist:
 		return "SwapInBlacklist"
+	case ManualMakeFail:
+		return "ManualMakeFail"
 	default:
 		return fmt.Sprintf("unknown swap status %d", status)
 	}

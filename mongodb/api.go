@@ -44,6 +44,14 @@ func FindSwapResult(isSwapin bool, txid string) (*MgoSwapResult, error) {
 	return findSwapResult(collSwapoutResult, txid)
 }
 
+// FindSwap find swap
+func FindSwap(isSwapin bool, txid string) (*MgoSwap, error) {
+	if isSwapin {
+		return findSwap(collSwapin, txid)
+	}
+	return findSwap(collSwapout, txid)
+}
+
 // --------------- swapin --------------------------------
 
 // AddSwapin add swapin

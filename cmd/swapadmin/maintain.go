@@ -12,10 +12,10 @@ var (
 	maintainCommand = &cli.Command{
 		Action:    maintain,
 		Name:      "maintain",
-		Usage:     "admin maintain",
+		Usage:     "maintain deposit and withdraw switch",
 		ArgsUsage: "<open|close> <deposit|withdraw|both>",
 		Description: `
-admin maintain, open or close deposit and withdraw
+maintain service, open or close deposit and withdraw
 `,
 		Flags: commonAdminFlags,
 	}

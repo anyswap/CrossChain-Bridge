@@ -14,6 +14,10 @@ const (
 	successReuslt = "Success"
 	swapinOp      = "swapin"
 	swapoutOp     = "swapout"
+	passSwapinOp  = "passswapin"
+	passSwapoutOp = "passswapout"
+	failSwapinOp  = "failswapin"
+	failSwapoutOp = "failswapout"
 )
 
 // AdminCall admin call
@@ -47,6 +51,8 @@ func doCall(args *admin.CallArgs, result *string) error {
 		return reverify(args, result)
 	case "reswap":
 		return reswap(args, result)
+	case "manual":
+		return manual(args, result)
 	default:
 		return fmt.Errorf("unknown admin method '%v'", args.Method)
 	}
@@ -185,6 +191,43 @@ func reswap(args *admin.CallArgs, result *string) (err error) {
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
+	if err != nil {
+		return err
+	}
+	*result = successReuslt
+	return nil
+}
+
+func manual(args *admin.CallArgs, result *string) (err error) {
+	if !(len(args.Params) == 2 || len(args.Params) == 3) {
+		return fmt.Errorf("wrong number of params, have %v want 2 or 3", len(args.Params))
+	}
+	operation := args.Params[0]
+	txid := args.Params[1]
+
+	var memo string
+	if len(args.Params) > 2 {
+		memo = args.Params[2]
+	}
+
+	var isSwapin, isPass bool
+	switch operation {
+	case passSwapinOp:
+		isSwapin = true
+		isPass = true
+	case failSwapinOp:
+		isSwapin = true
+		isPass = false
+	case passSwapoutOp:
+		isSwapin = false
+		isPass = true
+	case failSwapoutOp:
+		isSwapin = false
+		isPass = false
+	default:
+		return fmt.Errorf("unknown operation '%v'", operation)
+	}
+	err = mongodb.ManualManageSwap(txid, memo, isSwapin, isPass)
 	if err != nil {
 		return err
 	}

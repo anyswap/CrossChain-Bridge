@@ -63,20 +63,14 @@ func PassSwapoutBigValue(txid string) error {
 }
 
 func passBigValue(txid string, isSwapin bool) error {
-	var coll *mgo.Collection
-	if isSwapin {
-		coll = collSwapin
-	} else {
-		coll = collSwapout
-	}
-	swap, err := findSwap(coll, txid)
+	swap, err := FindSwap(isSwapin, txid)
 	if err != nil {
 		return err
 	}
 	if swap.Status != TxWithBigValue {
 		return fmt.Errorf("swap status is %v, not big value status %v", swap.Status.String(), TxWithBigValue.String())
 	}
-	return updateSwapStatus(coll, txid, TxNotSwapped, time.Now().Unix(), "")
+	return UpdateSwapStatus(isSwapin, txid, TxNotSwapped, time.Now().Unix(), "")
 }
 
 // ReverifySwapin reverify swapin
@@ -90,13 +84,7 @@ func ReverifySwapout(txid string) error {
 }
 
 func reverifySwap(txid string, isSwapin bool) error {
-	var coll *mgo.Collection
-	if isSwapin {
-		coll = collSwapin
-	} else {
-		coll = collSwapout
-	}
-	swap, err := findSwap(coll, txid)
+	swap, err := FindSwap(isSwapin, txid)
 	if err != nil {
 		return err
 	}
@@ -104,10 +92,12 @@ func reverifySwap(txid string, isSwapin bool) error {
 	case TxVerifyFailed:
 	case TxSenderNotRegistered:
 	case SwapInBlacklist:
+	case ManualMakeFail:
+	case TxIncompatible:
 	default:
 		return fmt.Errorf("swap status is %v, no need to reverify", swap.Status.String())
 	}
-	return updateSwapStatus(coll, txid, TxNotStable, time.Now().Unix(), "")
+	return UpdateSwapStatus(isSwapin, txid, TxNotStable, time.Now().Unix(), "")
 }
 
 // Reswapin reswapin
@@ -121,15 +111,7 @@ func Reswapout(txid string) error {
 }
 
 func reswap(txid string, isSwapin bool) error {
-	var coll, collResult *mgo.Collection
-	if isSwapin {
-		coll = collSwapin
-		collResult = collSwapinResult
-	} else {
-		coll = collSwapout
-		collResult = collSwapoutResult
-	}
-	swap, err := findSwap(coll, txid)
+	swap, err := FindSwap(isSwapin, txid)
 	if err != nil {
 		return err
 	}
@@ -139,7 +121,7 @@ func reswap(txid string, isSwapin bool) error {
 	default:
 		return fmt.Errorf("swap status is %v, can not reswap", swap.Status.String())
 	}
-	swapResult, err := findSwapResult(collResult, txid)
+	swapResult, err := FindSwapResult(isSwapin, txid)
 	if err != nil {
 		return err
 	}
@@ -149,12 +131,12 @@ func reswap(txid string, isSwapin bool) error {
 	}
 
 	log.Info("[reswap] update status to TxNotSwapped to retry", "txid", txid, "swaptx", swapResult.SwapTx)
-	err = updateSwapResultStatus(collResult, txid, MatchTxEmpty, time.Now().Unix(), "")
+	err = UpdateSwapResultStatus(isSwapin, txid, MatchTxEmpty, time.Now().Unix(), "")
 	if err != nil {
 		return err
 	}
 
-	return updateSwapStatus(coll, txid, TxNotSwapped, time.Now().Unix(), "")
+	return UpdateSwapStatus(isSwapin, txid, TxNotSwapped, time.Now().Unix(), "")
 }
 
 func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
@@ -205,4 +187,39 @@ func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
 		return errors.New("can not retry swap with lower nonce")
 	}
 	return nil
+}
+
+// ManualManageSwap manual manage swap
+func ManualManageSwap(txid, memo string, isSwapin, isPass bool) error {
+	swap, err := FindSwap(isSwapin, txid)
+	if err != nil {
+		return err
+	}
+	canPass := false
+	canFail := false
+	switch swap.Status {
+	case
+		TxNotStable,
+		TxNotSwapped:
+		canFail = true
+	case
+		TxWithBigValue,
+		TxVerifyFailed,
+		TxSenderNotRegistered,
+		SwapInBlacklist,
+		ManualMakeFail,
+		TxIncompatible:
+		canPass = true
+	}
+	if (isPass && !canPass) || (!isPass && !canFail) {
+		return fmt.Errorf("swap status is %v, can not operate. txid=%v isSwapin=%v isPass=%v", swap.Status.String(), txid, isSwapin, isPass)
+	}
+	if isPass {
+		newStatus := TxNotStable
+		if swap.Status == TxWithBigValue {
+			newStatus = TxNotSwapped
+		}
+		return UpdateSwapStatus(isSwapin, txid, newStatus, time.Now().Unix(), memo)
+	}
+	return UpdateSwapStatus(isSwapin, txid, ManualMakeFail, time.Now().Unix(), memo)
 }

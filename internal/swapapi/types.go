@@ -53,6 +53,7 @@ type SwapInfo struct {
 	SwapType      uint32     `json:"swaptype"`
 	SwapNonce     uint64     `json:"swapnonce"`
 	Status        SwapStatus `json:"status"`
+	StatusMsg     string     `json:"statusmsg"`
 	Timestamp     int64      `json:"timestamp"`
 	Memo          string     `json:"memo"`
 	Confirmations uint64     `json:"confirmations"`
