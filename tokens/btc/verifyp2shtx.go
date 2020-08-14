@@ -1,8 +1,6 @@
 package btc
 
 import (
-	"fmt"
-
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -17,7 +15,7 @@ func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable
 	}
 	p2shAddress, _, err := b.GetP2shAddress(bindAddress)
 	if err != nil {
-		return swapInfo, fmt.Errorf("verify p2sh tx, wrong bind address %v", bindAddress)
+		return swapInfo, tokens.ErrWrongP2shBindAddress
 	}
 	if !allowUnstable && !b.checkStable(txHash) {
 		return swapInfo, tokens.ErrTxNotStable

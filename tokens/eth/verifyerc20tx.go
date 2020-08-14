@@ -2,7 +2,6 @@ package eth
 
 import (
 	"bytes"
-	"fmt"
 	"math/big"
 	"strings"
 
@@ -50,7 +49,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs)
 	if err != nil {
 		log.Debug(b.TokenConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "err", err)
-		return swapInfo, tokens.ErrTxWithWrongInput
+		return swapInfo, err
 	}
 	swapInfo.To = strings.ToLower(to)     // To
 	swapInfo.Value = value                // Value
@@ -99,8 +98,8 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 	input := (*[]byte)(tx.Payload)
 	from, to, value, err := ParseErc20SwapinTxInput(input)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" ParseErc20SwapinTxInput failed", "err", err)
-		return swapInfo, tokens.ErrTxWithWrongInput
+		log.Debug(b.TokenConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", txHash, "err", err)
+		return swapInfo, err
 	}
 	swapInfo.To = strings.ToLower(to) // To
 	swapInfo.Value = value            // Value
@@ -132,13 +131,10 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 
 // ParseErc20SwapinTxInput parse erc20 swapin tx input
 func ParseErc20SwapinTxInput(input *[]byte) (from, to string, value *big.Int, err error) {
-	if input == nil {
-		return "", "", nil, fmt.Errorf("empty tx input")
+	if input == nil || len(*input) < 4 {
+		return "", "", nil, tokens.ErrTxWithWrongInput
 	}
 	data := *input
-	if len(data) < 4 {
-		return "", "", nil, fmt.Errorf("wrong tx input %x", data)
-	}
 	funcHash := data[:4]
 	isTransferFrom := false
 	switch {
@@ -146,7 +142,7 @@ func ParseErc20SwapinTxInput(input *[]byte) (from, to string, value *big.Int, er
 	case bytes.Equal(funcHash, erc20CodeParts["transferFrom"]):
 		isTransferFrom = true
 	default:
-		return "", "", nil, fmt.Errorf("func hash of Erc20 Transfer is not found")
+		return "", "", nil, tokens.ErrTxFuncHashMismatch
 	}
 	encData := data[4:]
 	return parseErc20EncodedData(encData, isTransferFrom)
@@ -169,16 +165,18 @@ func ParseErc20SwapinTxLogs(logs []*types.RPCLog) (from, to string, value *big.I
 		value = new(big.Int).SetBytes(*log.Data)
 		return from, to, value, nil
 	}
-	return "", "", nil, fmt.Errorf("log of Erc20 Transfer is not found or removed")
+	return "", "", nil, tokens.ErrDepositLogNotFound
 }
 
 func parseErc20EncodedData(encData []byte, isTransferFrom bool) (from, to string, value *big.Int, err error) {
 	if isTransferFrom {
+		if len(encData) != 96 {
+			return "", "", nil, tokens.ErrTxIncompatible
+		}
 		from = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
 		encData = encData[32:]
-	}
-	if len(encData) != 64 {
-		return "", "", nil, fmt.Errorf("wrong length of encoded data")
+	} else if len(encData) != 64 {
+		return "", "", nil, tokens.ErrTxIncompatible
 	}
 	to = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
 	value = common.GetBigInt(encData, 32, 32)

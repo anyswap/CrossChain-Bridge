@@ -2,7 +2,6 @@ package eth
 
 import (
 	"bytes"
-	"fmt"
 	"math/big"
 	"strings"
 
@@ -51,7 +50,7 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 	bindAddress, value, err := parseSwapoutTxLogs(receipt.Logs)
 	if err != nil {
 		log.Debug(b.TokenConfig.BlockChain+" parseSwapoutTxLogs fail", "tx", txHash, "err", err)
-		return swapInfo, tokens.ErrTxWithWrongInput
+		return swapInfo, err
 	}
 	if bindAddress != "" {
 		swapInfo.Bind = bindAddress // Bind
@@ -99,7 +98,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 	bindAddress, value, err := parseSwapoutTxInput(input)
 	if err != nil {
 		log.Debug(b.TokenConfig.BlockChain+" parseSwapoutTxInput fail", "tx", txHash, "err", err)
-		return swapInfo, tokens.ErrTxWithWrongInput
+		return swapInfo, err
 	}
 	if bindAddress != "" {
 		swapInfo.Bind = bindAddress // Bind
@@ -121,20 +120,17 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 }
 
 func parseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
-	if input == nil {
-		return "", nil, fmt.Errorf("empty tx input")
+	if input == nil || len(*input) < 4 {
+		return "", nil, tokens.ErrTxWithWrongInput
 	}
 	data := *input
-	if len(data) < 4 {
-		return "", nil, fmt.Errorf("wrong tx input %x", data)
-	}
 	funcHash := data[:4]
 	swapoutFuncHash := getSwapoutFuncHash()
 	if !bytes.Equal(funcHash, swapoutFuncHash) {
-		return "", nil, fmt.Errorf("wrong func hash, have %x want %x", funcHash, swapoutFuncHash)
+		return "", nil, tokens.ErrTxFuncHashMismatch
 	}
 	encData := data[4:]
-	return parseEncodedData(encData)
+	return parseTxInputEncodedData(encData)
 }
 
 func parseSwapoutTxLogs(logs []*types.RPCLog) (bind string, value *big.Int, err error) {
@@ -156,7 +152,7 @@ func parseSwapoutTxLogs(logs []*types.RPCLog) (bind string, value *big.Int, err 
 		value = common.GetBigInt(*log.Data, 0, 32)
 		return bind, value, nil
 	}
-	return "", nil, fmt.Errorf("swapout log not found or removed")
+	return "", nil, tokens.ErrSwapoutLogNotFound
 }
 
 func parseSwapoutToBtcTxLogs(logs []*types.RPCLog) (bind string, value *big.Int, err error) {
@@ -171,18 +167,18 @@ func parseSwapoutToBtcTxLogs(logs []*types.RPCLog) (bind string, value *big.Int,
 		if !bytes.Equal(log.Topics[0].Bytes(), logSwapoutTopic) {
 			continue
 		}
-		return parseSwapoutToBtcEncodedData(*log.Data)
+		return parseSwapoutToBtcEncodedData(*log.Data, false)
 	}
-	return "", nil, fmt.Errorf("swapout log not found or removed")
+	return "", nil, tokens.ErrSwapoutLogNotFound
 }
 
-func parseEncodedData(encData []byte) (bind string, value *big.Int, err error) {
+func parseTxInputEncodedData(encData []byte) (bind string, value *big.Int, err error) {
 	if isMbtcSwapout() {
-		return parseSwapoutToBtcEncodedData(encData)
+		return parseSwapoutToBtcEncodedData(encData, true)
 	}
 
 	if len(encData) != 64 {
-		return "", nil, fmt.Errorf("wrong length of encoded data")
+		return "", nil, tokens.ErrTxIncompatible
 	}
 
 	// get value
@@ -193,9 +189,16 @@ func parseEncodedData(encData []byte) (bind string, value *big.Int, err error) {
 	return bind, value, nil
 }
 
-func parseSwapoutToBtcEncodedData(encData []byte) (bind string, value *big.Int, err error) {
-	if len(encData) < 96 {
-		return "", nil, fmt.Errorf("wrong length of encoded data")
+func parseSwapoutToBtcEncodedData(encData []byte, isInTxInput bool) (bind string, value *big.Int, err error) {
+	if isInTxInput {
+		err = tokens.ErrTxWithWrongInput
+	} else {
+		err = tokens.ErrTxWithWrongLogData
+	}
+
+	encDataLength := uint64(len(encData))
+	if encDataLength < 96 || encDataLength%32 != 0 {
+		return "", nil, err
 	}
 
 	// get value
@@ -204,11 +207,17 @@ func parseSwapoutToBtcEncodedData(encData []byte) (bind string, value *big.Int, 
 	// get bind address
 	offset, overflow := common.GetUint64(encData, 32, 32)
 	if overflow {
-		return "", nil, fmt.Errorf("string offset overflow")
+		return "", nil, err
+	}
+	if encDataLength < offset+32 {
+		return "", nil, err
 	}
 	length, overflow := common.GetUint64(encData, offset, 32)
 	if overflow {
-		return "", nil, fmt.Errorf("string length overflow")
+		return "", nil, err
+	}
+	if encDataLength < offset+32+length || encDataLength >= offset+32+length+32 {
+		return "", nil, err
 	}
 	bind = string(common.GetData(encData, offset+32, length))
 	return bind, value, nil

@@ -11,8 +11,11 @@ import (
 // -----------------------------------------------
 // 1. swap register status change graph
 //
-// TxNotStable -> |- TxVerifyFailed -> manaul
-//                |- TxWithWrongMemo -> manaul
+// TxNotStable -> |- TxVerifyFailed    -> manual
+//                |- TxWithWrongMemo   -> manual
+//                |- TxWithWrongSender -> manual
+//                |- TxWithWrongValue  -> manual
+//                |- TxIncompatible    -> manual
 //                |- TxWithBigValue        ---> TxNotSwapped
 //                |- TxSenderNotRegistered ---> TxNotStable
 //                |- TxNotSwapped -> |- TxSwapFailed -> manual
@@ -34,9 +37,9 @@ type SwapStatus uint16
 const (
 	TxNotStable           SwapStatus = iota // 0
 	TxVerifyFailed                          // 1
-	TxCanRecall                             // 2 // unused
-	TxToBeRecall                            // 3 // unused
-	TxRecallFailed                          // 4 // unused
+	TxWithWrongSender                       // 2
+	TxWithWrongValue                        // 3
+	TxIncompatible                          // 4
 	TxNotSwapped                            // 5
 	TxSwapFailed                            // 6
 	TxProcessed                             // 7
@@ -60,12 +63,19 @@ func (status SwapStatus) CanRetry() bool {
 	}
 }
 
+// nolint:gocyclo // allow big simple switch
 func (status SwapStatus) String() string {
 	switch status {
 	case TxNotStable:
 		return "TxNotStable"
 	case TxVerifyFailed:
 		return "TxVerifyFailed"
+	case TxWithWrongSender:
+		return "TxWithWrongSender"
+	case TxWithWrongValue:
+		return "TxWithWrongValue"
+	case TxIncompatible:
+		return "TxIncompatible"
 	case TxNotSwapped:
 		return "TxNotSwapped"
 	case TxSwapFailed:

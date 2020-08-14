@@ -272,7 +272,7 @@ func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction) error 
 	input := tx.Data()
 	_, to, value, err := eth.ParseErc20SwapinTxInput(&input)
 	if err != nil {
-		return tokens.ErrTxWithWrongInput
+		return err
 	}
 
 	if !strings.EqualFold(to, scanner.depositAddress) {

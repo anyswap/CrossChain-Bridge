@@ -30,6 +30,7 @@ var (
 	ErrBridgeDestinationNotSupported = errors.New("bridge destination not supported")
 	ErrUnknownSwapType               = errors.New("unknown swap type")
 	ErrMsgHashMismatch               = errors.New("message hash mismatch")
+	ErrWrongCountOfMsgHashes         = errors.New("wrong count of msg hashed")
 	ErrWrongRawTx                    = errors.New("wrong raw tx")
 	ErrWrongExtraArgs                = errors.New("wrong extra args")
 	ErrNoBtcBridge                   = errors.New("no btc bridge exist")
@@ -40,12 +41,17 @@ var (
 
 	ErrTodo = errors.New("developing: TODO")
 
-	ErrTxNotFound          = errors.New("tx not found")
-	ErrTxNotStable         = errors.New("tx not stable")
-	ErrTxWithWrongReceiver = errors.New("tx with wrong receiver")
-	ErrTxWithWrongContract = errors.New("tx with wrong contract")
-	ErrTxWithWrongInput    = errors.New("tx with wrong input data")
-	ErrTxIsAggregateTx     = errors.New("tx is aggregate tx")
+	ErrTxNotFound           = errors.New("tx not found")
+	ErrTxNotStable          = errors.New("tx not stable")
+	ErrTxWithWrongReceiver  = errors.New("tx with wrong receiver")
+	ErrTxWithWrongContract  = errors.New("tx with wrong contract")
+	ErrTxWithWrongInput     = errors.New("tx with wrong input data")
+	ErrTxWithWrongLogData   = errors.New("tx with wrong log data")
+	ErrTxIsAggregateTx      = errors.New("tx is aggregate tx")
+	ErrWrongP2shBindAddress = errors.New("wrong p2sh bind address")
+	ErrTxFuncHashMismatch   = errors.New("tx func hash mismatch")
+	ErrDepositLogNotFound   = errors.New("deposit log not found or removed")
+	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
@@ -53,6 +59,7 @@ var (
 	ErrTxWithWrongReceipt    = errors.New("tx with wrong receipt")
 	ErrTxWithWrongSender     = errors.New("tx with wrong sender")
 	ErrTxSenderNotRegistered = errors.New("tx sender not registered")
+	ErrTxIncompatible        = errors.New("tx incompatible")
 )
 
 // ShouldRegisterSwapForError return true if this error should record in database
@@ -63,7 +70,8 @@ func ShouldRegisterSwapForError(err error) bool {
 		ErrTxWithWrongValue,
 		ErrTxWithWrongReceipt,
 		ErrTxWithWrongSender,
-		ErrTxSenderNotRegistered:
+		ErrTxSenderNotRegistered,
+		ErrTxIncompatible:
 		return true
 	}
 	return false

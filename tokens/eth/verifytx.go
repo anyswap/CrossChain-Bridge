@@ -1,7 +1,6 @@
 package eth
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -54,7 +53,7 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string, extra inte
 		return tokens.ErrWrongRawTx
 	}
 	if len(msgHashes) != 1 {
-		return fmt.Errorf("require one msgHash but have %v", len(msgHashes))
+		return tokens.ErrWrongCountOfMsgHashes
 	}
 	msgHash := msgHashes[0]
 	signer := b.Signer
