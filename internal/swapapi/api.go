@@ -200,7 +200,7 @@ func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.T
 		TxID:      txid,
 		TxType:    uint32(txType),
 		Bind:      swapInfo.Bind,
-		Status:    mongodb.TxNotStable,
+		Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
 		Timestamp: time.Now().Unix(),
 		Memo:      memo,
 	}
@@ -288,7 +288,7 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 		TxID:      txidstr,
 		TxType:    uint32(tokens.P2shSwapinTx),
 		Bind:      *bindAddr,
-		Status:    mongodb.TxNotStable,
+		Status:    mongodb.GetStatusByTokenVerifyError(err),
 		Timestamp: time.Now().Unix(),
 		Memo:      memo,
 	}

@@ -155,11 +155,11 @@ func updateSwapStatus(txid string, swapInfo *tokens.TxSwapInfo, isSwapin bool, e
 		}
 		err = mongodb.UpdateSwapStatus(isSwapin, txid, status, now(), "")
 	case tokens.ErrTxSenderNotRegistered:
-		err = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxSenderNotRegistered, now(), err.Error())
+		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxSenderNotRegistered, now(), err.Error())
 	case tokens.ErrTxWithWrongSender:
 		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxWithWrongSender, now(), err.Error())
 	case tokens.ErrTxWithWrongValue:
-		err = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxWithWrongValue, now(), err.Error())
+		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxWithWrongValue, now(), err.Error())
 	case tokens.ErrTxIncompatible:
 		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxIncompatible, now(), err.Error())
 	default:

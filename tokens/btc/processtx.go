@@ -23,26 +23,12 @@ func (b *Bridge) processTransaction(txid string) {
 
 func (b *Bridge) processSwapin(txid string) error {
 	swapInfo, err := b.VerifyTransaction(txid, true)
-	if !tokens.ShouldRegisterSwapForError(err) {
-		return err
-	}
-	err = tools.RegisterSwapin(txid, swapInfo.Bind)
-	if err != nil {
-		log.Trace("[scan] processSwapin", "txid", txid, "err", err)
-	}
-	return err
+	return tools.RegisterSwapin(txid, swapInfo.Bind, err)
 }
 
 func (b *Bridge) processP2shSwapin(txid, bindAddress string) error {
 	swapInfo, err := b.VerifyP2shTransaction(txid, bindAddress, true)
-	if !tokens.ShouldRegisterSwapForError(err) {
-		return err
-	}
-	err = tools.RegisterP2shSwapin(txid, swapInfo.Bind)
-	if err != nil {
-		log.Trace("[scan] processP2shSwapin", "txid", txid, "err", err)
-	}
-	return err
+	return tools.RegisterP2shSwapin(txid, swapInfo.Bind, err)
 }
 
 func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err error) {

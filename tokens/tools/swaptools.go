@@ -51,36 +51,65 @@ func IsSwapoutExist(txid string) bool {
 }
 
 // RegisterSwapin register swapin
-func RegisterSwapin(txid, bind string) error {
+func RegisterSwapin(txid, bind string, verifyError error) error {
+	return registerSwap(true, txid, bind, verifyError)
+}
+
+// RegisterSwapout register swapout
+func RegisterSwapout(txid, bind string, verifyError error) error {
+	return registerSwap(false, txid, bind, verifyError)
+}
+
+func registerSwap(isSwapin bool, txid, bind string, verifyError error) error {
+	if !tokens.ShouldRegisterSwapForError(verifyError) {
+		return verifyError
+	}
 	isServer := dcrm.IsSwapServer()
-	log.Info("[scan] register swapin", "isServer", isServer, "tx", txid, "bind", bind)
+	log.Info("[scan] register swap", "isSwapin", isSwapin, "isServer", isServer, "tx", txid, "bind", bind)
 	if isServer {
+		var memo string
+		if verifyError != nil {
+			memo = verifyError.Error()
+		}
 		swap := &mongodb.MgoSwap{
 			Key:       txid,
-			TxType:    uint32(tokens.SwapinTx),
-			Bind:      bind,
 			TxID:      txid,
-			Status:    mongodb.TxNotStable,
+			Bind:      bind,
+			Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
 			Timestamp: time.Now().Unix(),
+			Memo:      memo,
 		}
-		return mongodb.AddSwapin(swap)
+		if isSwapin {
+			swap.TxType = uint32(tokens.SwapinTx)
+			return mongodb.AddSwapin(swap)
+		}
+		swap.TxType = uint32(tokens.SwapoutTx)
+		return mongodb.AddSwapout(swap)
 	}
 	var result interface{}
-	return client.RPCPost(&result, params.ServerAPIAddress, "swap.Swapin", txid)
+	if isSwapin {
+		return client.RPCPost(&result, params.ServerAPIAddress, "swap.Swapin", txid)
+	}
+	return client.RPCPost(&result, params.ServerAPIAddress, "swap.Swapout", txid)
 }
 
 // RegisterP2shSwapin register p2sh swapin
-func RegisterP2shSwapin(txid, bind string) error {
+func RegisterP2shSwapin(txid, bind string, verifyError error) error {
 	isServer := dcrm.IsSwapServer()
 	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid, "bind", bind)
 	if isServer {
+		var memo string
+		if verifyError != nil {
+			memo = verifyError.Error()
+		}
 		swap := &mongodb.MgoSwap{
 			Key:       txid,
 			TxID:      txid,
 			TxType:    uint32(tokens.P2shSwapinTx),
 			Bind:      bind,
-			Status:    mongodb.TxNotStable,
+			Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
 			Timestamp: time.Now().Unix(),
+			Memo:      memo,
 		}
 		return mongodb.AddSwapin(swap)
 	}
@@ -107,25 +136,6 @@ func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
 		time.Sleep(retryRPCInterval)
 	}
 	return ""
-}
-
-// RegisterSwapout register swapout
-func RegisterSwapout(txid, bind string) error {
-	isServer := dcrm.IsSwapServer()
-	log.Info("[scan] register swapout", "isServer", isServer, "txid", txid, "bind", bind)
-	if isServer {
-		swap := &mongodb.MgoSwap{
-			Key:       txid,
-			TxID:      txid,
-			TxType:    uint32(tokens.SwapoutTx),
-			Bind:      bind,
-			Status:    mongodb.TxNotStable,
-			Timestamp: time.Now().Unix(),
-		}
-		return mongodb.AddSwapout(swap)
-	}
-	var result interface{}
-	return client.RPCPost(&result, params.ServerAPIAddress, "swap.Swapout", txid)
 }
 
 // GetLatestScanHeight get latest scanned block height

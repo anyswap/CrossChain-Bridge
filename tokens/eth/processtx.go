@@ -1,7 +1,6 @@
 package eth
 
 import (
-	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
@@ -18,10 +17,7 @@ func (b *Bridge) processSwapin(txid string) error {
 		return nil
 	}
 	swapInfo, err := b.VerifyTransaction(txid, true)
-	if !tokens.ShouldRegisterSwapForError(err) {
-		return err
-	}
-	return tools.RegisterSwapin(txid, swapInfo.Bind)
+	return tools.RegisterSwapin(txid, swapInfo.Bind, err)
 }
 
 func (b *Bridge) processSwapout(txid string) error {
@@ -29,8 +25,5 @@ func (b *Bridge) processSwapout(txid string) error {
 		return nil
 	}
 	swapInfo, err := b.VerifyTransaction(txid, true)
-	if !tokens.ShouldRegisterSwapForError(err) {
-		return err
-	}
-	return tools.RegisterSwapout(txid, swapInfo.Bind)
+	return tools.RegisterSwapout(txid, swapInfo.Bind, err)
 }
