@@ -21,8 +21,21 @@ type RiskConfig struct {
 	DestToken   *tokens.TokenConfig
 	DestGateway *tokens.GatewayConfig
 
+	Email *EmailConfig
+
 	InitialDiffValue  float64
 	MaxAuditDiffValue float64
+}
+
+// EmailConfig email config
+type EmailConfig struct {
+	Server   string
+	Port     int
+	From     string
+	FromName string
+	Password string `json:"-"`
+	To       []string
+	Cc       []string
 }
 
 // GetConfig get config

@@ -2,6 +2,15 @@
 InitialDiffValue = 81000.0
 MaxAuditDiffValue = 100.0
 
+[Email]
+Server = "smtp.gmail.com"
+Port = 25
+From = "from@gmail.com"
+FromName = "Risk Control"
+Password = "***"
+To = ["to1@gmail.com", "to2@gmail.com"]
+Cc = ["cc1@gmail.com", "cc2@gmail.com"]
+
 # source token config
 [SrcToken]
 BlockChain = "Ethereum"

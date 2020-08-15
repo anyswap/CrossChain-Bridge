@@ -1,6 +1,7 @@
 package riskctrl
 
 import (
+	"fmt"
 	"math/big"
 	"time"
 
@@ -21,6 +22,8 @@ var (
 
 	initialDiffValue  float64
 	maxAuditDiffValue float64
+
+	retryInterval = time.Second
 )
 
 // Work start risk control work
@@ -28,6 +31,7 @@ func Work() {
 	log.Info("start risk control work")
 	client.InitHTTPClient()
 	InitCrossChainBridge()
+	InitEmailConfig()
 
 	exitCh := make(chan struct{})
 
@@ -51,14 +55,14 @@ func audit() {
 	initialDiffValue = riskConfig.InitialDiffValue
 	maxAuditDiffValue = riskConfig.MaxAuditDiffValue
 
-	log.Info("start audit work",
-		"depositAddress", depositAddress,
-		"withdrawAddress", withdrawAddress,
-		"srcTokenAddress", srcTokenAddress,
-		"dstTokenAddress", dstTokenAddress,
-		"initialDiffValue", initialDiffValue,
-		"maxAuditDiffValue", maxAuditDiffValue,
-	)
+	log.Info(fmt.Sprintf(`------ start audit work ------
+srcTokenAddress   = %v
+dstTokenAddress   = %v
+depositAddress    = %v
+withdrawAddress   = %v
+initialDiffValue  = %v
+maxAuditDiffValue = %v
+`, srcTokenAddress, dstTokenAddress, depositAddress, withdrawAddress, initialDiffValue, maxAuditDiffValue))
 
 	for {
 		auditOnce()
@@ -67,16 +71,75 @@ func audit() {
 }
 
 func auditOnce() {
+	srcLatest, _ := srcBridge.GetLatestBlockNumber()
+	dstLatest, _ := dstBridge.GetLatestBlockNumber()
+	log.Info("get latest block number success", "srcLatest", srcLatest, "dstLatest", dstLatest)
+
+	depositBalance := getDepositBalance()
+	withdrawBalance := getWithdrawBalance()
+	totalSupply := getTotalSupply()
+
+	fDepositBalance := tokens.FromBits(depositBalance, srcDecimals)
+	fWithdrawBalance := tokens.FromBits(withdrawBalance, srcDecimals)
+	fTotalBalance := fDepositBalance + fWithdrawBalance
+	fTotalSupply := tokens.FromBits(totalSupply, dstDecimals)
+
+	diffValue := fTotalBalance - fTotalSupply
+	diffValue -= initialDiffValue
+
+	var subject string
+	var isNormal bool
+	logFn := log.Error
+
+	switch {
+	case diffValue > maxAuditDiffValue:
+		subject = "[risk] balance larger than total supply"
+	case diffValue < -maxAuditDiffValue:
+		subject = "[risk] balance smaller than total supply"
+	default:
+		subject = "[risk] normal balance and total supply"
+		isNormal = true
+		logFn = log.Info
+	}
+
+	content := fmt.Sprintf(`%v
+
+fDepositBalance   = %v
+fWithdrawBalance  = %v
+fTotalBalance     = %v
+fTotalSupply      = %v
+initialDiffValue  = %v
+diffValue         = %v
+maxAuditDiffValue = %v
+`, subject, fDepositBalance, fWithdrawBalance, fTotalBalance, fTotalSupply, initialDiffValue, diffValue, maxAuditDiffValue)
+
+	logFn(content)
+
+	if isNormal {
+		return
+	}
+
+	now := time.Now().Unix()
+	datetime := time.Unix(now, 0).Format("2006-01-02 15:04:05")
+
+	content += fmt.Sprintf(`
+srcTokenAddress   = %v
+dstTokenAddress   = %v
+depositAddress    = %v
+withdrawAddress   = %v
+srcLatestBlock    = %v
+dstLatestBlock    = %v
+datetime          = %v
+`, srcTokenAddress, dstTokenAddress, depositAddress, withdrawAddress, srcLatest, dstLatest, datetime)
+
+	_ = sendAuditEmail(subject, content)
+}
+
+func getDepositBalance() *big.Int {
 	var (
-		depositBalance  *big.Int
-		withdrawBalance *big.Int
-		totalBalance    *big.Int
-		totalSupply     *big.Int
-		err             error
-
-		retryInterval = time.Second
+		depositBalance *big.Int
+		err            error
 	)
-
 	for {
 		if srcTokenAddress != "" {
 			depositBalance, err = srcBridge.GetErc20Balance(srcTokenAddress, depositAddress)
@@ -90,7 +153,14 @@ func auditOnce() {
 		log.Warn("get deposit address balance failed", "token", srcTokenAddress, "depositAddress", depositAddress, "err", err)
 		time.Sleep(retryInterval)
 	}
+	return depositBalance
+}
 
+func getWithdrawBalance() *big.Int {
+	var (
+		withdrawBalance *big.Int
+		err             error
+	)
 	for {
 		if srcTokenAddress != "" {
 			withdrawBalance, err = srcBridge.GetErc20Balance(srcTokenAddress, withdrawAddress)
@@ -104,9 +174,14 @@ func auditOnce() {
 		log.Warn("get withdraw address balance failed", "token", srcTokenAddress, "withdrawAddress", withdrawAddress, "err", err)
 		time.Sleep(retryInterval)
 	}
+	return withdrawBalance
+}
 
-	totalBalance = new(big.Int).Add(depositBalance, withdrawBalance)
-
+func getTotalSupply() *big.Int {
+	var (
+		totalSupply *big.Int
+		err         error
+	)
 	for {
 		totalSupply, err = dstBridge.GetErc20TotalSupply(dstTokenAddress)
 		if err == nil {
@@ -116,19 +191,5 @@ func auditOnce() {
 		log.Warn("get total supply failed", "token", dstTokenAddress, "err", err)
 		time.Sleep(retryInterval)
 	}
-
-	fTotalBalance := tokens.FromBits(totalBalance, srcDecimals)
-	fTotalSupply := tokens.FromBits(totalSupply, dstDecimals)
-
-	diffValue := fTotalBalance - fTotalSupply
-	diffValue -= initialDiffValue
-
-	switch {
-	case diffValue > maxAuditDiffValue:
-		log.Error("[risk] balance larger than total supply", "totalBalance", fTotalBalance, "totalSupply", fTotalSupply, "diffValue", diffValue, "initialDiffValue", initialDiffValue)
-	case diffValue < -maxAuditDiffValue:
-		log.Error("[risk] balance smaller than total supply", "totalBalance", fTotalBalance, "totalSupply", fTotalSupply, "diffValue", -diffValue, "initialDiffValue", initialDiffValue)
-	default:
-		log.Info("[risk] normal balance and total supply", "totalBalance", fTotalBalance, "totalSupply", fTotalSupply, "diffValue", diffValue, "initialDiffValue", initialDiffValue)
-	}
+	return totalSupply
 }

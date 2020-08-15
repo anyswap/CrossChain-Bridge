@@ -6,6 +6,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
+	"github.com/anyswap/CrossChain-Bridge/tools"
 )
 
 var (
@@ -44,4 +45,19 @@ func InitCrossChainBridge() {
 
 	srcBridge.VerifyConfig()
 	dstBridge.VerifyConfig()
+}
+
+// InitEmailConfig init email config
+func InitEmailConfig() {
+	if riskConfig.Email == nil {
+		log.Info("no email is config, ignore it")
+		return
+	}
+	server := riskConfig.Email.Server
+	port := riskConfig.Email.Port
+	from := riskConfig.Email.From
+	name := riskConfig.Email.FromName
+	password := riskConfig.Email.Password
+	tools.InitEmailConfig(server, port, from, name, password)
+	log.Info("init email config", "server", server, "port", port, "from", from, "name", name)
 }
