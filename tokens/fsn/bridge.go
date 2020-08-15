@@ -36,6 +36,12 @@ func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *to
 	b.InitLatestBlockNumber()
 }
 
+// VerifyConfig verify config
+func (b *Bridge) VerifyConfig() {
+	b.VerifyChainID()
+	b.VerifyTokenCofig()
+}
+
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
 	tokenCfg := b.TokenConfig

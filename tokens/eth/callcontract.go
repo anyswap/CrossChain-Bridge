@@ -7,6 +7,17 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
 )
 
+// GetErc20TotalSupply get erc20 total supply of address
+func (b *Bridge) GetErc20TotalSupply(contract string) (*big.Int, error) {
+	data := make(hexutil.Bytes, 4)
+	copy(data[:4], erc20CodeParts["totalSupply"])
+	result, err := b.CallContract(contract, data, "pending")
+	if err != nil {
+		return nil, err
+	}
+	return common.GetBigIntFromStr(result)
+}
+
 // GetErc20Balance get erc20 balacne of address
 func (b *Bridge) GetErc20Balance(contract, address string) (*big.Int, error) {
 	data := make(hexutil.Bytes, 36)
