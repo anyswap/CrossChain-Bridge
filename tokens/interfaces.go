@@ -108,6 +108,12 @@ type CrossChainBridge interface {
 
 	AdjustNonce(value uint64) (nonce uint64)
 	IncreaseNonce(value uint64)
+
+	VerifyConfig()
+
+	GetBalance(accountAddress string) (*big.Int, error)
+	GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error)
+	GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error)
 }
 
 // SetLatestBlockHeight set latest block height

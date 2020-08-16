@@ -1,10 +1,17 @@
 package eth
 
 import (
+	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
+)
+
+// token types (should be all upper case)
+const (
+	ERC20TokenType = "ERC20"
 )
 
 // GetErc20TotalSupply get erc20 total supply of address
@@ -40,4 +47,24 @@ func (b *Bridge) GetErc20Decimals(contract string) (uint8, error) {
 	}
 	decimals, err := common.GetUint64FromStr(result)
 	return uint8(decimals), err
+}
+
+// GetTokenBalance api
+func (b *Bridge) GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error) {
+	switch strings.ToUpper(tokenType) {
+	case ERC20TokenType:
+		return b.GetErc20Balance(tokenAddress, accountAddress)
+	default:
+		return nil, fmt.Errorf("[%v] can not get token balance of token with type '%v'", b.TokenConfig.BlockChain, tokenType)
+	}
+}
+
+// GetTokenSupply impl
+func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error) {
+	switch strings.ToUpper(tokenType) {
+	case ERC20TokenType:
+		return b.GetErc20TotalSupply(tokenAddress)
+	default:
+		return nil, fmt.Errorf("[%v] can not get token supply of token with type '%v'", b.TokenConfig.BlockChain, tokenType)
+	}
 }

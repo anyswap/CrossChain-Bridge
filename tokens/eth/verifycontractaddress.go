@@ -22,7 +22,7 @@ var (
 	mBTCSwapoutFuncHash = common.FromHex("0xad54056d")
 	mBTCLogSwapoutTopic = common.FromHex("0x9c92ad817e5474d30a4378deface765150479363a897b0590fbb12ae9d89396b")
 
-	// first 4 bytes of `Keccak256Hash([]byte("Swapout(uint256)"))`
+	// first 4 bytes of `Keccak256Hash([]byte("Swapout(uint256,address)"))`
 	mETHSwapoutFuncHash = common.FromHex("0x628d6cba")
 	mETHLogSwapoutTopic = common.FromHex("0x6b616089d04950dc06c45c6dd787d657980543f89651aec47924752c7d16c888")
 )
@@ -91,7 +91,7 @@ func (b *Bridge) VerifyMbtcContractAddress(contract string) (err error) {
 }
 
 // InitExtCodeParts int extended code parts
-func InitExtCodeParts() {
+func (b *Bridge) InitExtCodeParts() {
 	switch {
 	case isMbtcSwapout():
 		ExtCodeParts = mBTCExtCodeParts

@@ -34,7 +34,13 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 // SetTokenAndGateway set token and gateway config
 func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
+	b.VerifyConfig()
+	b.InitLatestBlockNumber()
+}
 
+// VerifyConfig verify config
+func (b *Bridge) VerifyConfig() {
+	tokenCfg := b.TokenConfig
 	networkID := strings.ToLower(tokenCfg.NetID)
 	switch networkID {
 	case netMainnet, netTestnet3:
@@ -54,7 +60,12 @@ func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *to
 	if strings.EqualFold(tokenCfg.Symbol, "BTC") && *tokenCfg.Decimals != 8 {
 		log.Fatal("invalid decimals for BTC", "configed", *tokenCfg.Decimals, "want", 8)
 	}
+}
 
+// InitLatestBlockNumber init latest block number
+func (b *Bridge) InitLatestBlockNumber() {
+	tokenCfg := b.TokenConfig
+	gatewayCfg := b.GatewayConfig
 	var latest uint64
 	var err error
 	for {

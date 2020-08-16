@@ -1,6 +1,9 @@
 package btc
 
 import (
+	"fmt"
+	"math/big"
+
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
@@ -57,4 +60,27 @@ func (b *Bridge) GetBlockHash(height uint64) (string, error) {
 // GetBlockTxids impl
 func (b *Bridge) GetBlockTxids(blockHash string) ([]string, error) {
 	return electrs.GetBlockTxids(b, blockHash)
+}
+
+// GetBalance impl
+func (b *Bridge) GetBalance(account string) (*big.Int, error) {
+	utxos, err := b.FindUtxos(account)
+	if err != nil {
+		return nil, err
+	}
+	var balance uint64
+	for _, utxo := range utxos {
+		balance += *utxo.Value
+	}
+	return new(big.Int).SetUint64(balance), nil
+}
+
+// GetTokenBalance impl
+func (b *Bridge) GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error) {
+	return nil, fmt.Errorf("[%v] can not get token balance of token with type '%v'", b.TokenConfig.BlockChain, tokenType)
+}
+
+// GetTokenSupply impl
+func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error) {
+	return nil, fmt.Errorf("[%v] can not get token supply of token with type '%v'", b.TokenConfig.BlockChain, tokenType)
 }

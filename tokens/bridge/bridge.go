@@ -58,8 +58,6 @@ func InitCrossChainBridge(isServer bool) {
 	initBtcExtra(cfg.BtcExtra)
 
 	initDcrm(cfg.Dcrm, isServer)
-
-	eth.InitExtCodeParts()
 }
 
 func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
