@@ -117,6 +117,7 @@ maxAuditDiffValue = %v
 	logFn(content)
 
 	if isNormal {
+		prevSendAuditEmailTimestamp = 0 // reset frequency check
 		return
 	}
 
