@@ -49,10 +49,10 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge = NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
 
-	tokens.SrcBridge.SetTokenAndGateway(srcToken, srcGateway)
+	tokens.SrcBridge.SetTokenAndGateway(srcToken, srcGateway, true)
 	log.Info("Init bridge source", "token", srcToken.Symbol, "gateway", srcGateway)
 
-	tokens.DstBridge.SetTokenAndGateway(dstToken, dstGateway)
+	tokens.DstBridge.SetTokenAndGateway(dstToken, dstGateway, true)
 	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
 
 	initBtcExtra(cfg.BtcExtra)

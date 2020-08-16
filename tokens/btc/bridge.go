@@ -32,8 +32,8 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 }
 
 // SetTokenAndGateway set token and gateway config
-func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
-	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
+func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
+	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg, check)
 	b.VerifyConfig()
 	b.InitLatestBlockNumber()
 }

@@ -29,14 +29,11 @@ func InitCrossChainBridge() {
 	dstBridge = bridge.NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
 
-	srcBridge.SetTokenAndGatewayWithoutCheck(srcToken, srcGateway)
+	srcBridge.SetTokenAndGateway(srcToken, srcGateway, false)
 	log.Info("Init bridge source", "token", srcToken.Symbol, "gateway", srcGateway)
 
-	dstBridge.SetTokenAndGatewayWithoutCheck(dstToken, dstGateway)
+	dstBridge.SetTokenAndGateway(dstToken, dstGateway, false)
 	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
-
-	srcBridge.VerifyConfig()
-	dstBridge.VerifyConfig()
 }
 
 // InitEmailConfig init email config

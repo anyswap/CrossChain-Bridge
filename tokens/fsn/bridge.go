@@ -29,17 +29,11 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 }
 
 // SetTokenAndGateway set token and gateway config
-func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig) {
-	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg)
-	b.VerifyConfig()
-	b.InitExtCodeParts()
-	b.InitLatestBlockNumber()
-}
-
-// VerifyConfig verify config
-func (b *Bridge) VerifyConfig() {
+func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
+	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg, check)
 	b.VerifyChainID()
-	b.VerifyTokenCofig()
+	b.VerifyConfig()
+	b.Init()
 }
 
 // VerifyChainID verify chain id

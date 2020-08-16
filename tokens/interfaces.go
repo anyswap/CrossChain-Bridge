@@ -86,8 +86,7 @@ type NonceGetter interface {
 type CrossChainBridge interface {
 	IsSrcEndpoint() bool
 	GetTokenAndGateway() (*TokenConfig, *GatewayConfig)
-	SetTokenAndGateway(*TokenConfig, *GatewayConfig)
-	SetTokenAndGatewayWithoutCheck(*TokenConfig, *GatewayConfig)
+	SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig, check bool)
 
 	IsValidAddress(address string) bool
 
@@ -178,19 +177,16 @@ func (b *CrossChainBridgeBase) GetTokenAndGateway() (*TokenConfig, *GatewayConfi
 }
 
 // SetTokenAndGateway set token and gateway config
-func (b *CrossChainBridgeBase) SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig) {
+func (b *CrossChainBridgeBase) SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig, check bool) {
 	b.TokenConfig = tokenCfg
 	b.GatewayConfig = gatewayCfg
+	if !check {
+		return
+	}
 	err := tokenCfg.CheckConfig(b.IsSrc)
 	if err != nil {
 		log.Fatalf("set token and gateway error %v", err)
 	}
-}
-
-// SetTokenAndGatewayWithoutCheck set token and gateway config without check
-func (b *CrossChainBridgeBase) SetTokenAndGatewayWithoutCheck(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig) {
-	b.TokenConfig = tokenCfg
-	b.GatewayConfig = gatewayCfg
 }
 
 // GetCrossChainBridge get bridge of specified endpoint
