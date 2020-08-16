@@ -14,6 +14,7 @@ var (
 	depositAddress  string
 	withdrawAddress string
 
+	tokenType       = "ERC20"
 	srcTokenAddress string
 	dstTokenAddress string
 
@@ -142,7 +143,7 @@ func getDepositBalance() *big.Int {
 	)
 	for {
 		if srcTokenAddress != "" {
-			depositBalance, err = srcBridge.GetErc20Balance(srcTokenAddress, depositAddress)
+			depositBalance, err = srcBridge.GetTokenBalance(tokenType, srcTokenAddress, depositAddress)
 		} else {
 			depositBalance, err = srcBridge.GetBalance(depositAddress)
 		}
@@ -163,7 +164,7 @@ func getWithdrawBalance() *big.Int {
 	)
 	for {
 		if srcTokenAddress != "" {
-			withdrawBalance, err = srcBridge.GetErc20Balance(srcTokenAddress, withdrawAddress)
+			withdrawBalance, err = srcBridge.GetTokenBalance(tokenType, srcTokenAddress, withdrawAddress)
 		} else {
 			withdrawBalance, err = srcBridge.GetBalance(withdrawAddress)
 		}
@@ -183,7 +184,7 @@ func getTotalSupply() *big.Int {
 		err         error
 	)
 	for {
-		totalSupply, err = dstBridge.GetErc20TotalSupply(dstTokenAddress)
+		totalSupply, err = dstBridge.GetTokenSupply(tokenType, dstTokenAddress)
 		if err == nil {
 			log.Info("get total supply success", "token", dstTokenAddress, "totalSupply", totalSupply)
 			break

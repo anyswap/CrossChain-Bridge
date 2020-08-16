@@ -1,17 +1,15 @@
 package riskctrl
 
 import (
-	"strings"
-
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
-	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/bridge"
 	"github.com/anyswap/CrossChain-Bridge/tools"
 )
 
 var (
-	srcBridge *eth.Bridge
-	dstBridge *fsn.Bridge
+	srcBridge tokens.CrossChainBridge
+	dstBridge tokens.CrossChainBridge
 )
 
 // InitCrossChainBridge init bridge
@@ -27,12 +25,8 @@ func InitCrossChainBridge() {
 	srcNet := srcToken.NetID
 	dstNet := dstToken.NetID
 
-	if !strings.EqualFold(srcID, "ETHEREUM") || !strings.EqualFold(dstID, "FUSION") {
-		log.Fatal("risk control only support eth 2 fsn bridge at present!!!")
-	}
-
-	srcBridge = eth.NewCrossChainBridge(true)
-	dstBridge = fsn.NewCrossChainBridge(false)
+	srcBridge = bridge.NewCrossChainBridge(srcID, true)
+	dstBridge = bridge.NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
 
 	srcBridge.SetTokenAndGatewayWithoutCheck(srcToken, srcGateway)
@@ -40,8 +34,6 @@ func InitCrossChainBridge() {
 
 	dstBridge.SetTokenAndGatewayWithoutCheck(dstToken, dstGateway)
 	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
-
-	eth.InitExtCodeParts()
 
 	srcBridge.VerifyConfig()
 	dstBridge.VerifyConfig()
