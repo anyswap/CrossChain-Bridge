@@ -53,6 +53,8 @@ var (
 	ErrDepositLogNotFound   = errors.New("deposit log not found or removed")
 	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
 
+	ErrTxWithLockTimeOrSequence = errors.New("tx with lock time or sequenece")
+
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
 	ErrTxWithWrongValue      = errors.New("tx with wrong value")

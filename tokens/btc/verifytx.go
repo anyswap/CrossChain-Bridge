@@ -10,6 +10,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 )
 
@@ -21,19 +22,22 @@ func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
 // GetTransactionStatus impl
 func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	txStatus := &tokens.TxStatus{}
-	elcstStatus, err := b.GetElectTransactionStatus(txHash)
+	electStatus, err := b.GetElectTransactionStatus(txHash)
 	if err != nil {
 		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
 		return txStatus
 	}
-	if elcstStatus.BlockHash != nil {
-		txStatus.BlockHash = *elcstStatus.BlockHash
+	if !*electStatus.Confirmed {
+		return txStatus
 	}
-	if elcstStatus.BlockTime != nil {
-		txStatus.BlockTime = *elcstStatus.BlockTime
+	if electStatus.BlockHash != nil {
+		txStatus.BlockHash = *electStatus.BlockHash
 	}
-	if elcstStatus.BlockHeight != nil {
-		txStatus.BlockHeight = *elcstStatus.BlockHeight
+	if electStatus.BlockTime != nil {
+		txStatus.BlockTime = *electStatus.BlockTime
+	}
+	if electStatus.BlockHeight != nil {
+		txStatus.BlockHeight = *electStatus.BlockHeight
 		latest, err := b.GetLatestBlockNumber()
 		if err != nil {
 			log.Debug(b.TokenConfig.BlockChain+" Bridge::GetLatestBlockNumber fail", "err", err)
@@ -79,6 +83,18 @@ func (b *Bridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.T
 	return nil, tokens.ErrBridgeDestinationNotSupported
 }
 
+func hasLockTimeOrSequence(tx *electrs.ElectTx) bool {
+	if *tx.Locktime != 0 {
+		return true
+	}
+	for _, input := range tx.Vin {
+		if *input.Sequence != wire.MaxTxInSequenceNum {
+			return true
+		}
+	}
+	return false
+}
+
 func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
@@ -89,6 +105,9 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	if err != nil {
 		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
+	}
+	if hasLockTimeOrSequence(tx) {
+		return swapInfo, tokens.ErrTxWithLockTimeOrSequence
 	}
 	txStatus := tx.Status
 	if txStatus.BlockHeight != nil {
