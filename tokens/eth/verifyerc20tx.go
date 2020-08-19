@@ -46,18 +46,14 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 		return swapInfo, tokens.ErrTxWithWrongContract
 	}
 
-	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs)
+	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.DepositAddress)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", txHash, "err", err)
 		return swapInfo, err
 	}
 	swapInfo.To = strings.ToLower(to)     // To
 	swapInfo.Value = value                // Value
 	swapInfo.Bind = strings.ToLower(from) // Bind
-
-	if !common.IsEqualIgnoreCase(swapInfo.To, token.DepositAddress) {
-		return swapInfo, tokens.ErrTxWithWrongReceiver
-	}
 
 	// check sender
 	if swapInfo.Bind == swapInfo.To {
@@ -96,7 +92,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 	}
 
 	input := (*[]byte)(tx.Payload)
-	from, to, value, err := ParseErc20SwapinTxInput(input)
+	from, to, value, err := ParseErc20SwapinTxInput(input, token.DepositAddress)
 	if err != nil {
 		log.Debug(b.TokenConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", txHash, "err", err)
 		return swapInfo, err
@@ -107,10 +103,6 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 		swapInfo.Bind = strings.ToLower(from) // Bind
 	} else {
 		swapInfo.Bind = swapInfo.From // Bind
-	}
-
-	if !common.IsEqualIgnoreCase(swapInfo.To, token.DepositAddress) {
-		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
 	// check sender
@@ -130,7 +122,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 }
 
 // ParseErc20SwapinTxInput parse erc20 swapin tx input
-func ParseErc20SwapinTxInput(input *[]byte) (from, to string, value *big.Int, err error) {
+func ParseErc20SwapinTxInput(input *[]byte, checkToAddress string) (from, to string, value *big.Int, err error) {
 	if input == nil || len(*input) < 4 {
 		return "", "", nil, tokens.ErrTxWithWrongInput
 	}
@@ -145,11 +137,11 @@ func ParseErc20SwapinTxInput(input *[]byte) (from, to string, value *big.Int, er
 		return "", "", nil, tokens.ErrTxFuncHashMismatch
 	}
 	encData := data[4:]
-	return parseErc20EncodedData(encData, isTransferFrom)
+	return parseErc20EncodedData(encData, isTransferFrom, checkToAddress)
 }
 
 // ParseErc20SwapinTxLogs parse erc20 swapin tx logs
-func ParseErc20SwapinTxLogs(logs []*types.RPCLog) (from, to string, value *big.Int, err error) {
+func ParseErc20SwapinTxLogs(logs []*types.RPCLog, checkToAddress string) (from, to string, value *big.Int, err error) {
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
 			continue
@@ -162,23 +154,35 @@ func ParseErc20SwapinTxLogs(logs []*types.RPCLog) (from, to string, value *big.I
 		}
 		from = common.BytesToAddress(log.Topics[1][:]).String()
 		to = common.BytesToAddress(log.Topics[2][:]).String()
-		value = new(big.Int).SetBytes(*log.Data)
-		return from, to, value, nil
+		value = common.GetBigInt(*log.Data, 0, 32)
+		if !common.IsEqualIgnoreCase(to, checkToAddress) {
+			err = tokens.ErrTxWithWrongReceiver
+		}
+		return from, to, value, err
 	}
 	return "", "", nil, tokens.ErrDepositLogNotFound
 }
 
-func parseErc20EncodedData(encData []byte, isTransferFrom bool) (from, to string, value *big.Int, err error) {
+func parseErc20EncodedData(encData []byte, isTransferFrom bool, checkToAddress string) (from, to string, value *big.Int, err error) {
+	// use common GetData and GetBigInt to prevent index overflow
 	if isTransferFrom {
-		if len(encData) != 96 {
-			return "", "", nil, tokens.ErrTxIncompatible
-		}
 		from = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
-		encData = encData[32:]
-	} else if len(encData) != 64 {
-		return "", "", nil, tokens.ErrTxIncompatible
+		to = common.BytesToAddress(common.GetData(encData, 32, 32)).String()
+		value = common.GetBigInt(encData, 64, 32)
+		if len(encData) != 96 {
+			err = tokens.ErrTxIncompatible
+		}
+	} else {
+		to = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
+		value = common.GetBigInt(encData, 32, 32)
+		if len(encData) != 64 {
+			err = tokens.ErrTxIncompatible
+		}
 	}
-	to = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
-	value = common.GetBigInt(encData, 32, 32)
-	return from, to, value, nil
+	// error ErrTxWithWrongReceiver has highest priority,
+	// because this error means we don't care about this tx.
+	if !common.IsEqualIgnoreCase(to, checkToAddress) {
+		err = tokens.ErrTxWithWrongReceiver
+	}
+	return from, to, value, err
 }

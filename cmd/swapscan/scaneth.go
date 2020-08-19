@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -90,8 +91,11 @@ func scanEth(ctx *cli.Context) error {
 }
 
 func (scanner *ethSwapScanner) verifyOptions() {
-	if scanner.depositAddress == "" {
-		log.Fatal("must specify deposit address")
+	if !common.IsHexAddress(scanner.depositAddress) {
+		log.Fatalf("invalid deposit address '%v'", scanner.depositAddress)
+	}
+	if !common.IsHexAddress(scanner.tokenAddress) {
+		log.Fatalf("invalid token address '%v'", scanner.tokenAddress)
 	}
 	if scanner.gateway == "" {
 		log.Fatal("must specify gateway address")
@@ -270,13 +274,9 @@ func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction) error 
 	}
 
 	input := tx.Data()
-	_, to, value, err := eth.ParseErc20SwapinTxInput(&input)
+	_, _, value, err := eth.ParseErc20SwapinTxInput(&input, scanner.depositAddress)
 	if err != nil {
 		return err
-	}
-
-	if !strings.EqualFold(to, scanner.depositAddress) {
-		return tokens.ErrTxWithWrongReceiver
 	}
 
 	if value.Sign() <= 0 {
