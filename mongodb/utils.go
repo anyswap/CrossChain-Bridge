@@ -10,8 +10,12 @@ func GetStatusByTokenVerifyError(err error) SwapStatus {
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return TxVerifyFailed
 	}
+	// TxNotStable status will be reverify at work/verify, add store in result table
 	switch err {
-	case nil, tokens.ErrTxWithWrongMemo:
+	case nil,
+		tokens.ErrTxWithWrongMemo,
+		tokens.ErrTxWithWrongValue,
+		tokens.ErrBindAddrIsContract:
 		return TxNotStable
 	case tokens.ErrTxWithWrongReceipt:
 		return TxVerifyFailed
@@ -19,12 +23,8 @@ func GetStatusByTokenVerifyError(err error) SwapStatus {
 		return TxSenderNotRegistered
 	case tokens.ErrTxWithWrongSender:
 		return TxWithWrongSender
-	case tokens.ErrTxWithWrongValue:
-		return TxWithWrongValue
 	case tokens.ErrTxIncompatible:
 		return TxIncompatible
-	case tokens.ErrBindAddrIsContract:
-		return BindAddrIsContract
 	case tokens.ErrRPCQueryError:
 		return RPCQueryError
 	default:

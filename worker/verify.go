@@ -154,16 +154,18 @@ func updateSwapStatus(txid string, swapInfo *tokens.TxSwapInfo, isSwapin bool, e
 	case tokens.ErrTxWithWrongMemo:
 		resultStatus = mongodb.TxWithWrongMemo
 		err = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxWithWrongMemo, now(), err.Error())
+	case tokens.ErrBindAddrIsContract:
+		resultStatus = mongodb.BindAddrIsContract
+		err = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.BindAddrIsContract, now(), err.Error())
+	case tokens.ErrTxWithWrongValue:
+		resultStatus = mongodb.TxWithWrongValue
+		err = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxWithWrongValue, now(), err.Error())
 	case tokens.ErrTxSenderNotRegistered:
 		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxSenderNotRegistered, now(), err.Error())
 	case tokens.ErrTxWithWrongSender:
 		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxWithWrongSender, now(), err.Error())
-	case tokens.ErrTxWithWrongValue:
-		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxWithWrongValue, now(), err.Error())
 	case tokens.ErrTxIncompatible:
 		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxIncompatible, now(), err.Error())
-	case tokens.ErrBindAddrIsContract:
-		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.BindAddrIsContract, now(), err.Error())
 	case tokens.ErrTxWithWrongReceipt:
 		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxVerifyFailed, now(), err.Error())
 	case tokens.ErrRPCQueryError:

@@ -88,16 +88,7 @@ func reverifySwap(txid string, isSwapin bool) error {
 	if err != nil {
 		return err
 	}
-	switch swap.Status {
-	case
-		TxVerifyFailed,
-		TxSenderNotRegistered,
-		SwapInBlacklist,
-		ManualMakeFail,
-		TxIncompatible,
-		BindAddrIsContract,
-		RPCQueryError:
-	default:
+	if !swap.Status.CanReverify() {
 		return fmt.Errorf("swap status is %v, no need to reverify", swap.Status.String())
 	}
 	return UpdateSwapStatus(isSwapin, txid, TxNotStable, time.Now().Unix(), "")
@@ -118,10 +109,7 @@ func reswap(txid string, isSwapin bool) error {
 	if err != nil {
 		return err
 	}
-	switch swap.Status {
-	case TxSwapFailed:
-	case TxProcessed:
-	default:
+	if !swap.Status.CanReswap() {
 		return fmt.Errorf("swap status is %v, can not reswap", swap.Status.String())
 	}
 	swapResult, err := FindSwapResult(isSwapin, txid)
@@ -198,33 +186,15 @@ func ManualManageSwap(txid, memo string, isSwapin, isPass bool) error {
 	if err != nil {
 		return err
 	}
-	canPass := false
-	canFail := false
-	switch swap.Status {
-	case
-		TxNotStable,
-		TxNotSwapped:
-		canFail = true
-	case
-		TxWithBigValue,
-		TxVerifyFailed,
-		TxSenderNotRegistered,
-		SwapInBlacklist,
-		ManualMakeFail,
-		TxIncompatible,
-		BindAddrIsContract,
-		RPCQueryError:
-		canPass = true
-	}
-	if (isPass && !canPass) || (!isPass && !canFail) {
-		return fmt.Errorf("swap status is %v, can not operate. txid=%v isSwapin=%v isPass=%v", swap.Status.String(), txid, isSwapin, isPass)
-	}
 	if isPass {
-		newStatus := TxNotStable
-		if swap.Status == TxWithBigValue {
-			newStatus = TxNotSwapped
+		if swap.Status.CanManualMakePass() {
+			return UpdateSwapStatus(isSwapin, txid, TxNotSwapped, time.Now().Unix(), memo)
 		}
-		return UpdateSwapStatus(isSwapin, txid, newStatus, time.Now().Unix(), memo)
+		if swap.Status.CanReverify() {
+			return UpdateSwapStatus(isSwapin, txid, TxNotStable, time.Now().Unix(), memo)
+		}
+	} else if swap.Status.CanManualMakeFail() {
+		return UpdateSwapStatus(isSwapin, txid, ManualMakeFail, time.Now().Unix(), memo)
 	}
-	return UpdateSwapStatus(isSwapin, txid, ManualMakeFail, time.Now().Unix(), memo)
+	return fmt.Errorf("swap status is %v, can not operate. txid=%v isSwapin=%v isPass=%v", swap.Status.String(), txid, isSwapin, isPass)
 }
