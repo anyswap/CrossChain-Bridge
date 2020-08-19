@@ -63,6 +63,7 @@ var (
 	ErrTxSenderNotRegistered = errors.New("tx sender not registered")
 	ErrTxIncompatible        = errors.New("tx incompatible")
 	ErrBindAddrIsContract    = errors.New("bind address is contract")
+	ErrRPCQueryError         = errors.New("rpc query error")
 )
 
 // ShouldRegisterSwapForError return true if this error should record in database
@@ -75,7 +76,8 @@ func ShouldRegisterSwapForError(err error) bool {
 		ErrTxWithWrongSender,
 		ErrTxSenderNotRegistered,
 		ErrTxIncompatible,
-		ErrBindAddrIsContract:
+		ErrBindAddrIsContract,
+		ErrRPCQueryError:
 		return true
 	}
 	return false

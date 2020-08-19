@@ -89,11 +89,14 @@ func reverifySwap(txid string, isSwapin bool) error {
 		return err
 	}
 	switch swap.Status {
-	case TxVerifyFailed:
-	case TxSenderNotRegistered:
-	case SwapInBlacklist:
-	case ManualMakeFail:
-	case TxIncompatible:
+	case
+		TxVerifyFailed,
+		TxSenderNotRegistered,
+		SwapInBlacklist,
+		ManualMakeFail,
+		TxIncompatible,
+		BindAddrIsContract,
+		RPCQueryError:
 	default:
 		return fmt.Errorf("swap status is %v, no need to reverify", swap.Status.String())
 	}
@@ -208,7 +211,9 @@ func ManualManageSwap(txid, memo string, isSwapin, isPass bool) error {
 		TxSenderNotRegistered,
 		SwapInBlacklist,
 		ManualMakeFail,
-		TxIncompatible:
+		TxIncompatible,
+		BindAddrIsContract,
+		RPCQueryError:
 		canPass = true
 	}
 	if (isPass && !canPass) || (!isPass && !canFail) {

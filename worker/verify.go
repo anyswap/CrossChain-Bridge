@@ -166,6 +166,8 @@ func updateSwapStatus(txid string, swapInfo *tokens.TxSwapInfo, isSwapin bool, e
 		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.BindAddrIsContract, now(), err.Error())
 	case tokens.ErrTxWithWrongReceipt:
 		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxVerifyFailed, now(), err.Error())
+	case tokens.ErrRPCQueryError:
+		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.RPCQueryError, now(), err.Error())
 	default:
 		logWorkerWarn("verify", "maybe not considered tx verify error", "err", err)
 		return mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxVerifyFailed, now(), err.Error())
