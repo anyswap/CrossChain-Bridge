@@ -74,7 +74,8 @@ func ShouldRegisterSwapForError(err error) bool {
 		ErrTxWithWrongReceipt,
 		ErrTxWithWrongSender,
 		ErrTxSenderNotRegistered,
-		ErrTxIncompatible:
+		ErrTxIncompatible,
+		ErrBindAddrIsContract:
 		return true
 	}
 	return false

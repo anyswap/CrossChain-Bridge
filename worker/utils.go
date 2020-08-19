@@ -25,6 +25,10 @@ func logWorker(job, subject string, context ...interface{}) {
 	log.Info("["+job+"] "+subject, context...)
 }
 
+func logWorkerWarn(job, subject string, context ...interface{}) {
+	log.Warn("["+job+"] "+subject, context...)
+}
+
 func logWorkerError(job, subject string, err error, context ...interface{}) {
 	fields := []interface{}{"err", err}
 	fields = append(fields, context...)

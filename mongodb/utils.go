@@ -23,8 +23,10 @@ func GetStatusByTokenVerifyError(err error) SwapStatus {
 		return TxWithWrongValue
 	case tokens.ErrTxIncompatible:
 		return TxIncompatible
+	case tokens.ErrBindAddrIsContract:
+		return BindAddrIsContract
 	default:
-		log.Warn("maybe not considered tx verify error", "err", err)
+		log.Warn("[mongodb] maybe not considered tx verify error", "err", err)
 		return TxNotStable
 	}
 }

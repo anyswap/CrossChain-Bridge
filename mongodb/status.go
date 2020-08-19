@@ -18,6 +18,7 @@ import (
 //                |- SwapInBlacklist   -> manual
 //                |- TxIncompatible    -> manual
 //                |- ManualMakeFail    -> manual
+//                |- BindAddrIsContract-> manual
 //                |- TxWithBigValue        ---> TxNotSwapped
 //                |- TxSenderNotRegistered ---> TxNotStable
 //                |- TxNotSwapped -> |- TxSwapFailed -> manual
@@ -54,6 +55,7 @@ const (
 	MatchTxFailed                           // 14
 	SwapInBlacklist                         // 15
 	ManualMakeFail                          // 16
+	BindAddrIsContract                      // 17
 )
 
 // CanRetry can retry
@@ -103,6 +105,8 @@ func (status SwapStatus) String() string {
 		return "SwapInBlacklist"
 	case ManualMakeFail:
 		return "ManualMakeFail"
+	case BindAddrIsContract:
+		return "BindAddrIsContract"
 	default:
 		return fmt.Sprintf("unknown swap status %d", status)
 	}
