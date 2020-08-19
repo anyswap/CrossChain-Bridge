@@ -62,6 +62,7 @@ var (
 	ErrTxWithWrongSender     = errors.New("tx with wrong sender")
 	ErrTxSenderNotRegistered = errors.New("tx sender not registered")
 	ErrTxIncompatible        = errors.New("tx incompatible")
+	ErrBindAddrIsContract    = errors.New("bind address is contract")
 )
 
 // ShouldRegisterSwapForError return true if this error should record in database

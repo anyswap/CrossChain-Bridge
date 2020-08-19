@@ -126,10 +126,25 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
-	if !tools.IsAddressRegistered(swapInfo.Bind) {
-		return swapInfo, tokens.ErrTxSenderNotRegistered
+	err = b.checkSwapinBindAddress(swapInfo.Bind)
+	if err != nil {
+		return swapInfo, err
 	}
 
 	log.Debug("verify swapin stable pass", "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	return swapInfo, nil
+}
+
+func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
+	if !tools.IsAddressRegistered(bindAddr) {
+		return tokens.ErrTxSenderNotRegistered
+	}
+	isContract, err := b.IsContractAddress(bindAddr)
+	if err != nil {
+		return err
+	}
+	if isContract {
+		return tokens.ErrBindAddrIsContract
+	}
+	return nil
 }

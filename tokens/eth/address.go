@@ -1,6 +1,8 @@
 package eth
 
 import (
+	"time"
+
 	"github.com/anyswap/CrossChain-Bridge/common"
 )
 
@@ -17,4 +19,18 @@ func (b *Bridge) IsValidAddress(address string) bool {
 		}
 	}
 	return ok
+}
+
+// IsContractAddress is contract address
+func (b *Bridge) IsContractAddress(address string) (bool, error) {
+	var code []byte
+	var err error
+	for i := 0; i < retryRPCCount; i++ {
+		code, err = b.GetCode(address)
+		if err == nil {
+			return len(code) != 0, nil
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	return false, err
 }

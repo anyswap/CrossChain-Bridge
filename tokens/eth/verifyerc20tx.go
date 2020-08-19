@@ -8,7 +8,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
@@ -64,8 +63,9 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
-	if !tools.IsAddressRegistered(swapInfo.Bind) {
-		return swapInfo, tokens.ErrTxSenderNotRegistered
+	err = b.checkSwapinBindAddress(swapInfo.Bind)
+	if err != nil {
+		return swapInfo, err
 	}
 
 	log.Debug("verify erc20 swapin pass", "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
@@ -114,8 +114,9 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
-	if !tools.IsAddressRegistered(swapInfo.Bind) {
-		return swapInfo, tokens.ErrTxSenderNotRegistered
+	err = b.checkSwapinBindAddress(swapInfo.Bind)
+	if err != nil {
+		return swapInfo, err
 	}
 
 	return swapInfo, nil
