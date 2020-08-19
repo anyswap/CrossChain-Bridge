@@ -82,7 +82,7 @@ func auditOnce() {
 
 	fDepositBalance := tokens.FromBits(depositBalance, srcDecimals)
 	fWithdrawBalance := tokens.FromBits(withdrawBalance, srcDecimals)
-	fTotalBalance := fDepositBalance + fWithdrawBalance
+	fTotalBalance := tokens.FromBits(new(big.Int).Add(depositBalance, withdrawBalance), srcDecimals)
 	fTotalSupply := tokens.FromBits(totalSupply, dstDecimals)
 
 	diffValue := fTotalBalance - fTotalSupply
