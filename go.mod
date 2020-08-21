@@ -21,6 +21,7 @@ require (
 	github.com/lestrrat-go/strftime v1.0.1 // indirect
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.5.0
 	github.com/stretchr/testify v1.5.1
 	github.com/tebeka/strftime v0.1.5 // indirect

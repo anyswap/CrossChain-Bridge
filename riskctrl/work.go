@@ -8,6 +8,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -21,8 +22,8 @@ var (
 	srcDecimals uint8
 	dstDecimals uint8
 
-	initialDiffValue  float64
-	maxAuditDiffValue float64
+	initialDiffValue  decimal.Decimal
+	maxAuditDiffValue decimal.Decimal
 
 	retryInterval = time.Second
 )
@@ -53,8 +54,8 @@ func audit() {
 	srcDecimals = *config.SrcToken.Decimals
 	dstDecimals = *config.DestToken.Decimals
 
-	initialDiffValue = riskConfig.InitialDiffValue
-	maxAuditDiffValue = riskConfig.MaxAuditDiffValue
+	initialDiffValue = decimal.NewFromFloat(riskConfig.InitialDiffValue)
+	maxAuditDiffValue = decimal.NewFromFloat(riskConfig.MaxAuditDiffValue)
 
 	log.Info(fmt.Sprintf(`------ start audit work ------
 srcTokenAddress   = %v
@@ -80,23 +81,25 @@ func auditOnce() {
 	withdrawBalance := getWithdrawBalance()
 	totalSupply := getTotalSupply()
 
-	fDepositBalance := tokens.FromBits(depositBalance, srcDecimals)
-	fWithdrawBalance := tokens.FromBits(withdrawBalance, srcDecimals)
-	fTotalBalance := tokens.FromBits(new(big.Int).Add(depositBalance, withdrawBalance), srcDecimals)
-	fTotalSupply := tokens.FromBits(totalSupply, dstDecimals)
+	fDepositBalance := decimal.NewFromFloat(tokens.FromBits(depositBalance, srcDecimals))
+	fWithdrawBalance := decimal.NewFromFloat(tokens.FromBits(withdrawBalance, srcDecimals))
+	fTotalBalance := fDepositBalance.Add(fWithdrawBalance)
+	fTotalSupply := decimal.NewFromFloat(tokens.FromBits(totalSupply, dstDecimals))
 
-	diffValue := fTotalBalance - fTotalSupply
-	diffValue -= initialDiffValue
+	diffValue := fTotalBalance.Sub(fTotalSupply).Sub(initialDiffValue)
+	absDiffValue := diffValue.Abs()
 
 	var subject string
 	var isNormal bool
 	logFn := log.Error
 
 	switch {
-	case diffValue > maxAuditDiffValue:
-		subject = "[risk] balance larger than total supply"
-	case diffValue < -maxAuditDiffValue:
-		subject = "[risk] balance smaller than total supply"
+	case absDiffValue.Cmp(maxAuditDiffValue) > 0:
+		if diffValue.Sign() > 0 {
+			subject = "[risk] balance larger than total supply"
+		} else {
+			subject = "[risk] balance smaller than total supply"
+		}
 	default:
 		subject = "[risk] normal balance and total supply"
 		isNormal = true
