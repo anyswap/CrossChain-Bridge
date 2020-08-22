@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -8,14 +9,15 @@ import (
 )
 
 var (
-	maxScanLifetime        = int64(3 * 24 * 3600)
+	maxScanHeight          = uint64(100)
+	maxFirstScanHeight     = uint64(1000)
 	retryIntervalInScanJob = 3 * time.Second
 	restIntervalInScanJob  = 3 * time.Second
 )
 
 // StartSwapHistoryScanJob scan job
 func (b *Bridge) StartSwapHistoryScanJob() {
-	log.Info("[scanhistory] start scan swap history job", "isSrc", b.IsSrc)
+	log.Infof("[swaphistory] start scan %v swap history job", b.TokenConfig.BlockChain)
 
 	isProcessed := func(txid string) bool {
 		if b.IsSrc {
@@ -31,17 +33,15 @@ func (b *Bridge) StartSwapHistoryScanJob() {
 
 func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 	// first loop process all tx history no matter whether processed before
-	log.Info("[scanhistory] start first scan loop", "isSrc", b.IsSrc)
-	var (
-		nowTime       = time.Now().Unix()
-		lastSeenTxid  = ""
-		initialHeight = b.TokenConfig.InitialHeight
-		height        uint64
-	)
-
-	isTooOld := func(time *uint64) bool {
-		return time != nil && int64(*time)+maxScanLifetime < nowTime
+	latest := tools.LoopGetLatestBlockNumber(b)
+	minHeight := b.TokenConfig.InitialHeight
+	if minHeight+maxFirstScanHeight < latest {
+		minHeight = latest - maxFirstScanHeight
 	}
+	chainName := b.TokenConfig.BlockChain
+	log.Infof("[scanFirstLoop] start %v first scan loop to min height %v", chainName, minHeight)
+
+	lastSeenTxid := ""
 
 FIRST_LOOP:
 	for {
@@ -57,38 +57,43 @@ FIRST_LOOP:
 			if tx.Status.BlockHeight == nil {
 				continue
 			}
-			height = *tx.Status.BlockHeight
-			if height < initialHeight {
-				break FIRST_LOOP
-			}
-			if isTooOld(tx.Status.BlockTime) {
+			height := *tx.Status.BlockHeight
+			if height < minHeight {
 				break FIRST_LOOP
 			}
 			txid := *tx.Txid
 			if !isProcessed(txid) {
-				log.Info("[scanhistory] first scan loop", "isSrc", b.IsSrc, "txid", txid, "height", height)
+				log.Debugf("[scanFirstLoop] process %v tx. txid=%v height=%v", chainName, txid, height)
 				_ = b.processSwapin(txid)
 			}
 		}
 		lastSeenTxid = *txHistory[len(txHistory)-1].Txid
 	}
 
-	log.Info("[scanhistory] finish first scan loop", "isSrc", b.IsSrc)
+	log.Infof("[scanFirstLoop] finish %v first scan loop to min height %v", chainName, minHeight)
 }
 
 func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
-	log.Info("[scanhistory] start scan swap history loop", "isSrc", b.IsSrc)
 	var (
-		lastSeenTxid  = ""
-		rescan        = true
-		initialHeight = b.TokenConfig.InitialHeight
-		height        uint64
+		lastSeenTxid = ""
+		rescan       = true
 	)
+
+	latest := tools.LoopGetLatestBlockNumber(b)
+	minHeight := b.TokenConfig.InitialHeight
+	if minHeight+maxScanHeight < latest {
+		minHeight = latest - maxScanHeight
+	}
+
+	chainName := b.TokenConfig.BlockChain
+	errorSubject := fmt.Sprintf("[scanhistory] get %v tx history failed", chainName)
+	scanSubject := fmt.Sprintf("[scanhistory] scanned %v tx", chainName)
+	log.Infof("[scanhistory] start %v scan swap history loop from height %v", chainName, minHeight)
 
 	for {
 		txHistory, err := b.GetTransactionHistory(b.TokenConfig.DepositAddress, lastSeenTxid)
 		if err != nil {
-			log.Error("[scanhistory] get tx history error", "isSrc", b.IsSrc, "err", err)
+			log.Error(errorSubject, "err", err)
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
@@ -101,8 +106,8 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 			if tx.Status.BlockHeight == nil {
 				continue
 			}
-			height = *tx.Status.BlockHeight
-			if height < initialHeight {
+			height := *tx.Status.BlockHeight
+			if height < minHeight {
 				rescan = true
 				break
 			}
@@ -111,7 +116,7 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 				rescan = true
 				break // rescan if already processed
 			}
-			log.Info("[scanhistory] scanned tx", "isSrc", b.IsSrc, "txid", txid, "height", height)
+			log.Info(scanSubject, "txid", txid, "height", height)
 			_ = b.processSwapin(txid)
 		}
 		if rescan {

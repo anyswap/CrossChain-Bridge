@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	maxScanHeight          = uint64(15000)
+	maxScanHeight          = uint64(100)
+	maxFirstScanHeight     = uint64(10000)
 	retryIntervalInScanJob = 3 * time.Second
 	restIntervalInScanJob  = 3 * time.Second
 
@@ -26,7 +27,7 @@ func (b *Bridge) StartSwapHistoryScanJob() {
 	if b.TokenConfig.ContractAddress == "" {
 		return
 	}
-	log.Info("[swaphistory] start scan swap history job", "isSrc", b.IsSrc)
+	log.Infof("[swaphistory] start scan %v swap history job", b.TokenConfig.BlockChain)
 
 	isProcessed := func(txid string) bool {
 		if b.IsSrc {
@@ -53,20 +54,24 @@ func (b *Bridge) getSwapLogs(blockHeight uint64) ([]*types.RPCLog, error) {
 
 func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 	// first loop process all tx history no matter whether processed before
-	log.Info("[scanhistory] start first scan loop", "isSrc", b.IsSrc)
-	initialHeight := b.TokenConfig.InitialHeight
 	latest := tools.LoopGetLatestBlockNumber(b)
-	for height := latest; height+maxScanHeight > latest && height >= initialHeight; {
+	minHeight := b.TokenConfig.InitialHeight
+	if minHeight+maxFirstScanHeight < latest {
+		minHeight = latest - maxFirstScanHeight
+	}
+	chainName := b.TokenConfig.BlockChain
+	log.Infof("[scanFirstLoop] start %v first scan loop to min height %v", chainName, minHeight)
+	for height := latest; height >= minHeight; {
 		logs, err := b.getSwapLogs(height)
 		if err != nil {
-			log.Error("[scanhistory] get swap logs error", "isSrc", b.IsSrc, "height", height, "err", err)
+			log.Errorf("[scanFirstLoop] get %v swap logs error. height=%v err=%v", chainName, height, err)
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
 		for _, swaplog := range logs {
 			txid := swaplog.TxHash.String()
 			if !isProcessed(txid) {
-				log.Debug("[scanhistory] first scan loop", "isSrc", b.IsSrc, "txid", txid, "height", height)
+				log.Debugf("[scanFirstLoop] process %v tx. txid=%v height=%v", chainName, txid, height)
 				b.processTransaction(txid)
 			}
 		}
@@ -77,19 +82,19 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 		}
 	}
 
-	log.Info("[scanhistory] finish first scan loop", "isSrc", b.IsSrc)
+	log.Infof("[scanFirstLoop] finish %v first scan loop to min height %v", chainName, minHeight)
 }
 
 func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
-	log.Info("[scanhistory] start scan swap history loop")
-	height := tools.LoopGetLatestBlockNumber(b)
-	intialHeight := b.TokenConfig.InitialHeight
-	if height < intialHeight {
-		height = intialHeight
-	}
+	chainName := b.TokenConfig.BlockChain
 	latest := tools.LoopGetLatestBlockNumber(b)
-	if latest > height {
-		go b.quickSyncHistory(height, latest)
+	minHeight := b.TokenConfig.InitialHeight
+	if minHeight+maxScanHeight < latest {
+		minHeight = latest - maxScanHeight
+	}
+	log.Infof("[scanhistory] start %v scan swap history loop from height %v", chainName, minHeight)
+	if latest > minHeight {
+		go b.quickSyncHistory(minHeight, latest)
 	}
 
 	confirmations := *b.TokenConfig.Confirmations
@@ -99,37 +104,44 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 		capacity = maxCapacity
 	}
 	scannedHistoryTxs = tools.NewCachedScannedTxs(capacity)
-	chainName := b.TokenConfig.BlockChain
 	stable := latest
 	errorSubject := fmt.Sprintf("[scanhistory] get %v swap logs failed", chainName)
 	scanSubject := fmt.Sprintf("[scanhistory] scanned %v block", chainName)
 	for {
 		latest := tools.LoopGetLatestBlockNumber(b)
-		for h := stable + 1; h <= latest; {
+		for h := latest; h > stable; {
 			logs, err := b.getSwapLogs(h)
 			if err != nil {
 				log.Error(errorSubject, "height", h, "err", err)
 				time.Sleep(retryIntervalInScanJob)
 				continue
 			}
+			hasNewTx := false
 			for _, swaplog := range logs {
 				txid := swaplog.TxHash.String()
 				if scannedHistoryTxs.IsTxScanned(txid) || isProcessed(txid) {
 					continue
 				}
+				hasNewTx = true
 				b.processTransaction(txid)
 				scannedHistoryTxs.CacheScannedTx(txid)
 			}
+			if !hasNewTx {
+				break
+			}
 			log.Info(scanSubject, "height", h)
-			h++
+			h--
 		}
 		if stable+confirmations < latest {
 			stable = latest - confirmations
 		}
+		time.Sleep(restIntervalInScanJob)
 	}
 }
 
 func (b *Bridge) quickSyncHistory(start, end uint64) {
+	chainName := b.TokenConfig.BlockChain
+	log.Printf("[scanhistory] begin %v syncRange job. start=%v end=%v", chainName, start, end)
 	count := end - start
 	workers := quickSyncHistoryWorkers
 	if count < 10 {
@@ -147,12 +159,14 @@ func (b *Bridge) quickSyncHistory(start, end uint64) {
 		go b.quickSyncHistoryRange(i+1, wstt, wend, wg)
 	}
 	wg.Wait()
+	log.Printf("[scanhistory] finish %v syncRange job. start=%v end=%v", chainName, start, end)
 }
 
 func (b *Bridge) quickSyncHistoryRange(idx, start, end uint64, wg *sync.WaitGroup) {
 	defer wg.Done()
-
 	chainName := b.TokenConfig.BlockChain
+	log.Printf("[scanhistory] id=%v begin %v syncRange start=%v end=%v", idx, chainName, start, end)
+
 	for h := start; h < end; {
 		logs, err := b.getSwapLogs(h)
 		if err != nil {
@@ -167,4 +181,6 @@ func (b *Bridge) quickSyncHistoryRange(idx, start, end uint64, wg *sync.WaitGrou
 		log.Debugf("[scanhistory] id=%v scanned %v block, height=%v", idx, chainName, h)
 		h++
 	}
+
+	log.Printf("[scanhistory] id=%v finish %v syncRange start=%v end=%v", idx, chainName, start, end)
 }

@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -13,11 +14,14 @@ var (
 
 // StartChainTransactionScanJob scan job
 func (b *Bridge) StartChainTransactionScanJob() {
-	log.Info("[scanchain] start scan chain job", "isSrc", b.IsSrc)
+	chainName := b.TokenConfig.BlockChain
+	log.Infof("[scanchain] start %v scan chain job", chainName)
 
 	startHeight := tools.GetLatestScanHeight(b.IsSrc)
 	confirmations := *b.TokenConfig.Confirmations
 	initialHeight := b.TokenConfig.InitialHeight
+
+	latest := tools.LoopGetLatestBlockNumber(b)
 
 	var height uint64
 	switch {
@@ -26,7 +30,6 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	case initialHeight != 0:
 		height = initialHeight
 	default:
-		latest := tools.LoopGetLatestBlockNumber(b)
 		if latest > confirmations {
 			height = latest - confirmations
 		}
@@ -34,15 +37,21 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	if height < initialHeight {
 		height = initialHeight
 	}
+	if height+maxScanHeight < latest {
+		height = latest - maxScanHeight
+	}
 	_ = tools.UpdateLatestScanInfo(b.IsSrc, height)
-	log.Info("[scanchain] start scan chain loop", "isSrc", b.IsSrc, "start", height)
+	log.Infof("[scanchain] start %v scan chain loop from %v latest=%v", chainName, height, latest)
 
+	stable := height
+	errorSubject := fmt.Sprintf("[scanchain] get %v block failed", chainName)
+	scanSubject := fmt.Sprintf("[scanchain] scanned %v block", chainName)
 	for {
 		latest := tools.LoopGetLatestBlockNumber(b)
-		for h := height + 1; h <= latest; {
+		for h := stable + 1; h <= latest; {
 			blockHash, err := b.GetBlockHash(h)
 			if err != nil {
-				log.Error("[scanchain] get block hash failed", "isSrc", b.IsSrc, "height", h, "err", err)
+				log.Error(errorSubject, "height", h, "err", err)
 				time.Sleep(retryIntervalInScanJob)
 				continue
 			}
@@ -52,7 +61,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 			}
 			txids, err := b.GetBlockTxids(blockHash)
 			if err != nil {
-				log.Error("[scanchain] get block txids failed", "isSrc", b.IsSrc, "height", h, "blockHash", blockHash, "err", err)
+				log.Error(errorSubject, "height", h, "blockHash", blockHash, "err", err)
 				time.Sleep(retryIntervalInScanJob)
 				continue
 			}
@@ -60,15 +69,12 @@ func (b *Bridge) StartChainTransactionScanJob() {
 				b.processTransaction(txid)
 			}
 			scannedBlocks.CacheScannedBlock(blockHash, h)
-			log.Info("[scanchain] scanned block", "isSrc", b.IsSrc, "blockHash", blockHash, "height", h, "txs", len(txids))
+			log.Info(scanSubject, "blockHash", blockHash, "height", h, "txs", len(txids))
 			h++
 		}
-		if latest > confirmations {
-			latestStable := latest - confirmations
-			if height < latestStable {
-				height = latestStable
-				_ = tools.UpdateLatestScanInfo(b.IsSrc, height)
-			}
+		if stable+confirmations < latest {
+			stable = latest - confirmations
+			_ = tools.UpdateLatestScanInfo(b.IsSrc, stable)
 		}
 		time.Sleep(restIntervalInScanJob)
 	}
