@@ -1,6 +1,7 @@
 # risk control config
 InitialDiffValue = 81000.0
 MaxAuditDiffValue = 100.0
+MinWithdrawReserve = 10000.0
 
 [Email]
 Server = "smtp.gmail.com"

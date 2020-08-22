@@ -22,8 +22,9 @@ var (
 	srcDecimals uint8
 	dstDecimals uint8
 
-	initialDiffValue  decimal.Decimal
-	maxAuditDiffValue decimal.Decimal
+	initialDiffValue   decimal.Decimal
+	maxAuditDiffValue  decimal.Decimal
+	minWithdrawReserve decimal.Decimal
 
 	retryInterval = time.Second
 )
@@ -56,15 +57,17 @@ func audit() {
 
 	initialDiffValue = decimal.NewFromFloat(riskConfig.InitialDiffValue)
 	maxAuditDiffValue = decimal.NewFromFloat(riskConfig.MaxAuditDiffValue)
+	minWithdrawReserve = decimal.NewFromFloat(riskConfig.MinWithdrawReserve)
 
 	log.Info(fmt.Sprintf(`------ start audit work ------
-srcTokenAddress   = %v
-dstTokenAddress   = %v
-depositAddress    = %v
-withdrawAddress   = %v
-initialDiffValue  = %v
-maxAuditDiffValue = %v
-`, srcTokenAddress, dstTokenAddress, depositAddress, withdrawAddress, initialDiffValue, maxAuditDiffValue))
+srcTokenAddress    = %v
+dstTokenAddress    = %v
+depositAddress     = %v
+withdrawAddress    = %v
+initialDiffValue   = %v
+maxAuditDiffValue  = %v
+minWithdrawReserve = %v
+`, srcTokenAddress, dstTokenAddress, depositAddress, withdrawAddress, initialDiffValue, maxAuditDiffValue, minWithdrawReserve))
 
 	for {
 		auditOnce()
@@ -73,6 +76,12 @@ maxAuditDiffValue = %v
 }
 
 func auditOnce() {
+	auditBalanceDeviation()
+	auditReserveBalance()
+	log.Info("audit finish one turn")
+}
+
+func auditBalanceDeviation() {
 	srcLatest, _ := srcBridge.GetLatestBlockNumber()
 	dstLatest, _ := dstBridge.GetLatestBlockNumber()
 	log.Info("get latest block number success", "srcLatest", srcLatest, "dstLatest", dstLatest)
@@ -89,21 +98,22 @@ func auditOnce() {
 	diffValue := fTotalBalance.Sub(fTotalSupply).Sub(initialDiffValue)
 	absDiffValue := diffValue.Abs()
 
-	var subject string
-	var isNormal bool
-	logFn := log.Error
-
-	switch {
-	case absDiffValue.Cmp(maxAuditDiffValue) > 0:
+	isNormal := true
+	subject := "[risk] normal balance and total supply."
+	if absDiffValue.Cmp(maxAuditDiffValue) > 0 {
+		isNormal = false
 		if diffValue.Sign() > 0 {
-			subject = "[risk] balance larger than total supply"
+			subject = "[risk] balance larger than total supply."
 		} else {
-			subject = "[risk] balance smaller than total supply"
+			subject = "[risk] balance smaller than total supply."
 		}
-	default:
-		subject = "[risk] normal balance and total supply"
-		isNormal = true
-		logFn = log.Info
+	} else {
+		prevSendAuditTimestamp = 0 // reset frequency check
+	}
+
+	logFn := log.Info
+	if !isNormal {
+		logFn = log.Error
 	}
 
 	content := fmt.Sprintf(`%v
@@ -120,7 +130,6 @@ maxAuditDiffValue = %v
 	logFn(content)
 
 	if isNormal {
-		prevSendAuditEmailTimestamp = 0 // reset frequency check
 		return
 	}
 
@@ -138,6 +147,51 @@ datetime          = %v
 `, srcTokenAddress, dstTokenAddress, depositAddress, withdrawAddress, srcLatest, dstLatest, datetime)
 
 	_ = sendAuditEmail(subject, content)
+}
+
+func auditReserveBalance() {
+	srcLatest, _ := srcBridge.GetLatestBlockNumber()
+	withdrawBalance := getWithdrawBalance()
+
+	fWithdrawBalance := decimal.NewFromFloat(tokens.FromBits(withdrawBalance, srcDecimals))
+
+	isNormal := true
+	subject := "[risk] normal withdraw reserve."
+	if fWithdrawBalance.Cmp(minWithdrawReserve) < 0 {
+		isNormal = false
+		subject = "[risk] too low withdraw reserve."
+	} else {
+		prevSendLowReserveTimestamp = 0 // reset frequency check
+	}
+
+	logFn := log.Info
+	if !isNormal {
+		logFn = log.Error
+	}
+
+	content := fmt.Sprintf(`%v
+
+fWithdrawBalance   = %v
+minWithdrawReserve = %v
+`, subject, fWithdrawBalance, minWithdrawReserve)
+
+	logFn(content)
+
+	if isNormal {
+		return
+	}
+
+	now := time.Now().Unix()
+	datetime := time.Unix(now, 0).Format("2006-01-02 15:04:05")
+
+	content += fmt.Sprintf(`
+withdrawAddress    = %v
+srcTokenAddress    = %v
+srcLatestBlock     = %v
+datetime           = %v
+`, withdrawAddress, srcTokenAddress, srcLatest, datetime)
+
+	_ = sendLowReserveEmail(subject, content)
 }
 
 func getDepositBalance() *big.Int {

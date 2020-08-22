@@ -9,8 +9,11 @@ import (
 )
 
 var (
-	prevSendAuditEmailTimestamp int64
-	minSendAuditEmailInterval   int64 = 1800 // unit seconds
+	prevSendAuditTimestamp int64
+	minSendAuditInterval   int64 = 1800 // unit seconds
+
+	prevSendLowReserveTimestamp int64
+	minSendLowReserveInterval   int64 = 3600 // unit seconds
 )
 
 func sendEmail(subject, content, topic string) error {
@@ -30,9 +33,21 @@ func sendAuditEmail(subject, content string) error {
 		return nil
 	}
 	now := time.Now().Unix()
-	if prevSendAuditEmailTimestamp+minSendAuditEmailInterval > now {
+	if prevSendAuditTimestamp+minSendAuditInterval > now {
 		return nil // too frequently
 	}
-	prevSendAuditEmailTimestamp = now
-	return sendEmail(subject, content, "audit")
+	prevSendAuditTimestamp = now
+	return sendEmail(subject, content, "balance deviation")
+}
+
+func sendLowReserveEmail(subject, content string) error {
+	if riskConfig.Email == nil {
+		return nil
+	}
+	now := time.Now().Unix()
+	if prevSendLowReserveTimestamp+minSendLowReserveInterval > now {
+		return nil // too frequently
+	}
+	prevSendLowReserveTimestamp = now
+	return sendEmail(subject, content, "low reserve")
 }

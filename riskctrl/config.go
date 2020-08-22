@@ -23,8 +23,9 @@ type RiskConfig struct {
 
 	Email *EmailConfig
 
-	InitialDiffValue  float64
-	MaxAuditDiffValue float64
+	InitialDiffValue   float64
+	MaxAuditDiffValue  float64
+	MinWithdrawReserve float64
 }
 
 // EmailConfig email config
