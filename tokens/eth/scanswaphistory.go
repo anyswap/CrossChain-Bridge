@@ -13,7 +13,7 @@ import (
 
 var (
 	maxScanHeight          = uint64(100)
-	maxFirstScanHeight     = uint64(10000)
+	maxFirstScanHeight     = uint64(1000)
 	retryIntervalInScanJob = 3 * time.Second
 	restIntervalInScanJob  = 3 * time.Second
 
@@ -94,47 +94,36 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 	}
 	log.Infof("[scanhistory] start %v scan swap history loop from height %v", chainName, minHeight)
 	if latest > minHeight {
-		go b.quickSyncHistory(minHeight, latest)
+		go b.quickSyncHistory(minHeight, latest+1)
 	}
 
-	confirmations := *b.TokenConfig.Confirmations
-	capacity := int(confirmations*200 + 500)
-	maxCapacity := 20000
-	if capacity > maxCapacity {
-		capacity = maxCapacity
-	}
-	scannedHistoryTxs = tools.NewCachedScannedTxs(capacity)
+	scannedHistoryTxs = tools.NewCachedScannedTxs(500)
 	stable := latest
 	errorSubject := fmt.Sprintf("[scanhistory] get %v swap logs failed", chainName)
 	scanSubject := fmt.Sprintf("[scanhistory] scanned %v block", chainName)
 	for {
 		latest := tools.LoopGetLatestBlockNumber(b)
-		for h := latest; h > stable; {
+		for h := stable; h <= latest; {
 			logs, err := b.getSwapLogs(h)
 			if err != nil {
 				log.Error(errorSubject, "height", h, "err", err)
 				time.Sleep(retryIntervalInScanJob)
 				continue
 			}
-			hasNewTx := false
 			for _, swaplog := range logs {
 				txid := swaplog.TxHash.String()
 				if scannedHistoryTxs.IsTxScanned(txid) || isProcessed(txid) {
 					continue
 				}
-				hasNewTx = true
 				b.processTransaction(txid)
 				scannedHistoryTxs.CacheScannedTx(txid)
 			}
-			if !hasNewTx {
-				break
+			if h != stable {
+				log.Info(scanSubject, "height", h)
 			}
-			log.Info(scanSubject, "height", h)
-			h--
+			h++
 		}
-		if stable+confirmations < latest {
-			stable = latest - confirmations
-		}
+		stable = latest
 		time.Sleep(restIntervalInScanJob)
 	}
 }

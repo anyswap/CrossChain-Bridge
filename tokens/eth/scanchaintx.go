@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"sync"
@@ -17,47 +18,67 @@ var (
 	quickSyncWorkers = uint64(4)
 )
 
+func (b *Bridge) getStartAndLatestHeight() (start, latest uint64) {
+	startHeight := tools.GetLatestScanHeight(b.IsSrc)
+	confirmations := *b.TokenConfig.Confirmations
+	initialHeight := b.TokenConfig.InitialHeight
+
+	latest = tools.LoopGetLatestBlockNumber(b)
+
+	switch {
+	case startHeight != 0:
+		start = startHeight
+	case initialHeight != 0:
+		start = initialHeight
+	default:
+		if latest > confirmations {
+			start = latest - confirmations
+		}
+	}
+	if start < initialHeight {
+		start = initialHeight
+	}
+	if start+maxScanHeight < latest {
+		start = latest - maxScanHeight
+	}
+	return start, latest
+}
+
 // StartChainTransactionScanJob scan job
 func (b *Bridge) StartChainTransactionScanJob() {
 	chainName := b.TokenConfig.BlockChain
 	log.Infof("[scanchain] start %v scan chain job", chainName)
 
-	startHeight := tools.GetLatestScanHeight(b.IsSrc)
-	confirmations := *b.TokenConfig.Confirmations
-	initialHeight := b.TokenConfig.InitialHeight
+	start, latest := b.getStartAndLatestHeight()
+	_ = tools.UpdateLatestScanInfo(b.IsSrc, start)
+	log.Infof("[scanchain] start %v scan chain loop from %v latest=%v", chainName, start, latest)
 
-	latest := tools.LoopGetLatestBlockNumber(b)
-
-	var height uint64
-	switch {
-	case startHeight != 0:
-		height = startHeight
-	case initialHeight != 0:
-		height = initialHeight
-	default:
-		if latest > confirmations {
-			height = latest - confirmations
-		}
-	}
-	if height < initialHeight {
-		height = initialHeight
-	}
-	if height+maxScanHeight < latest {
-		height = latest - maxScanHeight
-	}
-	_ = tools.UpdateLatestScanInfo(b.IsSrc, height)
-	log.Infof("[scanchain] start %v scan chain loop from %v latest=%v", chainName, height, latest)
-
-	if latest > height {
-		go b.quickSync(height, latest)
+	if latest > start {
+		go b.quickSync(context.Background(), nil, start, latest+1)
 	}
 
 	stable := latest
 	errorSubject := fmt.Sprintf("[scanchain] get %v block failed", chainName)
 	scanSubject := fmt.Sprintf("[scanchain] scanned %v block", chainName)
+
+	var quickSyncCtx context.Context
+	var quickSyncCancel context.CancelFunc
 	for {
 		latest = tools.LoopGetLatestBlockNumber(b)
-		for h := stable + 1; h <= latest; {
+		if stable+maxScanHeight < latest {
+			if quickSyncCancel != nil {
+				select {
+				case <-quickSyncCtx.Done():
+				default:
+					log.Warn("cancel quick sync range", "stable", stable, "latest", latest)
+					quickSyncCancel()
+				}
+			}
+			quickSyncCtx, quickSyncCancel = context.WithCancel(context.Background())
+			go b.quickSync(quickSyncCtx, quickSyncCancel, stable+1, latest)
+			stable = latest
+		}
+		for h := stable; h <= latest; {
 			block, err := b.GetBlockByNumber(new(big.Int).SetUint64(h))
 			if err != nil {
 				log.Error(errorSubject, "height", h, "err", err)
@@ -76,17 +97,15 @@ func (b *Bridge) StartChainTransactionScanJob() {
 			log.Info(scanSubject, "blockHash", blockHash, "height", h, "txs", len(block.Transactions))
 			h++
 		}
-		if stable+confirmations < latest {
-			stable = latest - confirmations
-			if quickSyncFinish {
-				_ = tools.UpdateLatestScanInfo(b.IsSrc, stable)
-			}
+		stable = latest
+		if quickSyncFinish {
+			_ = tools.UpdateLatestScanInfo(b.IsSrc, stable)
 		}
 		time.Sleep(restIntervalInScanJob)
 	}
 }
 
-func (b *Bridge) quickSync(start, end uint64) {
+func (b *Bridge) quickSync(ctx context.Context, cancel context.CancelFunc, start, end uint64) {
 	chainName := b.TokenConfig.BlockChain
 	log.Printf("[scanchain] begin %v syncRange job. start=%v end=%v", chainName, start, end)
 	count := end - start
@@ -103,19 +122,28 @@ func (b *Bridge) quickSync(start, end uint64) {
 		if i+1 == workers {
 			wend = end + 1
 		}
-		go b.quickSyncRange(i+1, wstt, wend, wg)
+		go b.quickSyncRange(ctx, i+1, wstt, wend, wg)
 	}
 	wg.Wait()
-	quickSyncFinish = true
+	if cancel != nil {
+		cancel()
+	} else {
+		quickSyncFinish = true
+	}
 	log.Printf("[scanchain] finish %v syncRange job. start=%v end=%v", chainName, start, end)
 }
 
-func (b *Bridge) quickSyncRange(idx, start, end uint64, wg *sync.WaitGroup) {
+func (b *Bridge) quickSyncRange(ctx context.Context, idx, start, end uint64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	chainName := b.TokenConfig.BlockChain
 	log.Printf("[scanchain] id=%v begin %v syncRange start=%v end=%v", idx, chainName, start, end)
 
 	for h := start; h < end; {
+		select {
+		case <-ctx.Done():
+			break
+		default:
+		}
 		block, err := b.GetBlockByNumber(new(big.Int).SetUint64(h))
 		if err != nil {
 			log.Errorf("[scanchain] id=%v get %v block failed at height %v. err=%v", idx, chainName, h, err)
