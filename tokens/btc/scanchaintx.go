@@ -14,7 +14,7 @@ var (
 
 // StartChainTransactionScanJob scan job
 func (b *Bridge) StartChainTransactionScanJob() {
-	chainName := b.TokenConfig.BlockChain
+	chainName := b.ChainConfig.BlockChain
 	log.Infof("[scanchain] start %v scan chain job", chainName)
 
 	startHeight := tools.GetLatestScanHeight(b.IsSrc)

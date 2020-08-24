@@ -24,7 +24,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	txStatus := &tokens.TxStatus{}
 	electStatus, err := b.GetElectTransactionStatus(txHash)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
+		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
 		return txStatus
 	}
 	if !*electStatus.Confirmed {
@@ -40,7 +40,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 		txStatus.BlockHeight = *electStatus.BlockHeight
 		latest, err := b.GetLatestBlockNumber()
 		if err != nil {
-			log.Debug(b.TokenConfig.BlockChain+" Bridge::GetLatestBlockNumber fail", "err", err)
+			log.Debug(b.ChainConfig.BlockChain+" Bridge::GetLatestBlockNumber fail", "err", err)
 			return txStatus
 		}
 		if latest > txStatus.BlockHeight {
@@ -103,7 +103,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	txStatus := tx.Status

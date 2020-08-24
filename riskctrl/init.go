@@ -15,24 +15,26 @@ var (
 // InitCrossChainBridge init bridge
 func InitCrossChainBridge() {
 	cfg := GetConfig()
+	srcChain := cfg.SrcChain
+	dstChain := cfg.DestChain
 	srcToken := cfg.SrcToken
 	dstToken := cfg.DestToken
 	srcGateway := cfg.SrcGateway
 	dstGateway := cfg.DestGateway
 
-	srcID := srcToken.BlockChain
-	dstID := dstToken.BlockChain
-	srcNet := srcToken.NetID
-	dstNet := dstToken.NetID
+	srcID := srcChain.BlockChain
+	dstID := dstChain.BlockChain
+	srcNet := srcChain.NetID
+	dstNet := dstChain.NetID
 
 	srcBridge = bridge.NewCrossChainBridge(srcID, true)
 	dstBridge = bridge.NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
 
-	srcBridge.SetTokenAndGateway(srcToken, srcGateway, false)
+	srcBridge.SetTokenAndGateway(srcChain, srcToken, srcGateway, false)
 	log.Info("Init bridge source", "token", srcToken.Symbol, "gateway", srcGateway)
 
-	dstBridge.SetTokenAndGateway(dstToken, dstGateway, false)
+	dstBridge.SetTokenAndGateway(dstChain, dstToken, dstGateway, false)
 	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
 }
 

@@ -36,8 +36,10 @@ type ServerConfig struct {
 	Identifier  string
 	MongoDB     *MongoDBConfig   `toml:",omitempty"`
 	APIServer   *APIServerConfig `toml:",omitempty"`
+	SrcChain    *tokens.ChainConfig
 	SrcToken    *tokens.TokenConfig
 	SrcGateway  *tokens.GatewayConfig
+	DestChain   *tokens.ChainConfig
 	DestToken   *tokens.TokenConfig
 	DestGateway *tokens.GatewayConfig
 	Dcrm        *DcrmConfig
@@ -130,17 +132,9 @@ func CheckConfig(isServer bool) (err error) {
 			return err
 		}
 	}
-	if config.SrcToken == nil {
-		return errors.New("server must config 'SrcToken'")
-	}
-	if config.SrcGateway == nil {
-		return errors.New("server must config 'SrcGateway'")
-	}
-	if config.DestToken == nil {
-		return errors.New("server must config 'DestToken'")
-	}
-	if config.DestGateway == nil {
-		return errors.New("server must config 'DestGateway'")
+	err = checkTokenConfig()
+	if err != nil {
+		return err
 	}
 	if config.Dcrm == nil {
 		return errors.New("server must config 'Dcrm'")
@@ -149,7 +143,38 @@ func CheckConfig(isServer bool) (err error) {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func checkTokenConfig() (err error) {
+	config := GetConfig()
+	if config.SrcChain == nil {
+		return errors.New("server must config 'SrcChain'")
+	}
+	if config.SrcToken == nil {
+		return errors.New("server must config 'SrcToken'")
+	}
+	if config.SrcGateway == nil {
+		return errors.New("server must config 'SrcGateway'")
+	}
+	if config.DestChain == nil {
+		return errors.New("server must config 'DestChain'")
+	}
+	if config.DestToken == nil {
+		return errors.New("server must config 'DestToken'")
+	}
+	if config.DestGateway == nil {
+		return errors.New("server must config 'DestGateway'")
+	}
+	err = config.SrcChain.CheckConfig()
+	if err != nil {
+		return err
+	}
 	err = config.SrcToken.CheckConfig(true)
+	if err != nil {
+		return err
+	}
+	err = config.DestChain.CheckConfig()
 	if err != nil {
 		return err
 	}

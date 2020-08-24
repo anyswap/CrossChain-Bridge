@@ -16,8 +16,11 @@ var (
 
 // RiskConfig risk config
 type RiskConfig struct {
-	SrcToken    *tokens.TokenConfig
-	SrcGateway  *tokens.GatewayConfig
+	SrcChain   *tokens.ChainConfig
+	SrcToken   *tokens.TokenConfig
+	SrcGateway *tokens.GatewayConfig
+
+	DestChain   *tokens.ChainConfig
 	DestToken   *tokens.TokenConfig
 	DestGateway *tokens.GatewayConfig
 

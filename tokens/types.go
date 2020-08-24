@@ -20,10 +20,14 @@ var (
 	maxPlusGasPricePercentage uint64 = 10000
 )
 
+// ChainConfig struct
+type ChainConfig struct {
+	BlockChain string
+	NetID      string
+}
+
 // TokenConfig struct
 type TokenConfig struct {
-	BlockChain             string
-	NetID                  string
 	ID                     string `json:",omitempty"`
 	Name                   string
 	Symbol                 string
@@ -209,15 +213,20 @@ type P2shAddressInfo struct {
 	RedeemScriptDisasm string
 }
 
-// CheckConfig check config
-//nolint:gocyclo // keep TokenConfig check as whole
-func (c *TokenConfig) CheckConfig(isSrc bool) error {
+// CheckConfig check chain config
+func (c *ChainConfig) CheckConfig() error {
 	if c.BlockChain == "" {
 		return errors.New("token must config 'BlockChain'")
 	}
 	if c.NetID == "" {
 		return errors.New("token must config 'NetID'")
 	}
+	return nil
+}
+
+// CheckConfig check token config
+//nolint:gocyclo // keep TokenConfig check as whole
+func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.Decimals == nil {
 		return errors.New("token must config 'Decimals'")
 	}

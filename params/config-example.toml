@@ -37,10 +37,13 @@ UtxoAggregateMinValue = 100000 # unit satoshi
 # aggreate to this address
 UtxoAggregateToAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 
-# source token config
-[SrcToken]
+# source chain config
+[SrcChain]
 BlockChain = "Bitcoin"
 NetID = "TestNet3"
+
+# source token config
+[SrcToken]
 # ID must be ERC20 if source token is erc20 token
 ID = "BTC"
 Name = "Bitcoin Coin"
@@ -79,10 +82,13 @@ DisableSwap = false
 [SrcGateway]
 APIAddress = ["http://47.107.50.83:3002"]
 
-# dest token config
-[DestToken]
+# dest chain config
+[DestChain]
 BlockChain = "Ethereum"
 NetID = "Rinkeby"
+
+# dest token config
+[DestToken]
 ID = "mBTC"
 Name = "SMPC Bitcoin"
 Symbol = "mBTC"

@@ -17,7 +17,7 @@ var (
 
 // StartSwapHistoryScanJob scan job
 func (b *Bridge) StartSwapHistoryScanJob() {
-	log.Infof("[swaphistory] start scan %v swap history job", b.TokenConfig.BlockChain)
+	log.Infof("[swaphistory] start scan %v swap history job", b.ChainConfig.BlockChain)
 
 	isProcessed := func(txid string) bool {
 		if b.IsSrc {
@@ -38,7 +38,7 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 	if minHeight+maxFirstScanHeight < latest {
 		minHeight = latest - maxFirstScanHeight
 	}
-	chainName := b.TokenConfig.BlockChain
+	chainName := b.ChainConfig.BlockChain
 	log.Infof("[scanFirstLoop] start %v first scan loop to min height %v", chainName, minHeight)
 
 	lastSeenTxid := ""
@@ -85,7 +85,7 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 		minHeight = latest - maxScanHeight
 	}
 
-	chainName := b.TokenConfig.BlockChain
+	chainName := b.ChainConfig.BlockChain
 	errorSubject := fmt.Sprintf("[scanhistory] get %v tx history failed", chainName)
 	scanSubject := fmt.Sprintf("[scanhistory] scanned %v tx", chainName)
 	log.Infof("[scanhistory] start %v scan swap history loop from height %v", chainName, minHeight)

@@ -34,7 +34,7 @@ func (b *Bridge) processP2shSwapin(txid, bindAddress string) error {
 func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err error) {
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return "", tokens.ErrTxNotFound
 	}
 	depositAddress := b.TokenConfig.DepositAddress

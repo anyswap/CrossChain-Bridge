@@ -55,7 +55,7 @@ func (b *Bridge) GetTokenBalance(tokenType, tokenAddress, accountAddress string)
 	case ERC20TokenType:
 		return b.GetErc20Balance(tokenAddress, accountAddress)
 	default:
-		return nil, fmt.Errorf("[%v] can not get token balance of token with type '%v'", b.TokenConfig.BlockChain, tokenType)
+		return nil, fmt.Errorf("[%v] can not get token balance of token with type '%v'", b.ChainConfig.BlockChain, tokenType)
 	}
 }
 
@@ -65,6 +65,6 @@ func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error
 	case ERC20TokenType:
 		return b.GetErc20TotalSupply(tokenAddress)
 	default:
-		return nil, fmt.Errorf("[%v] can not get token supply of token with type '%v'", b.TokenConfig.BlockChain, tokenType)
+		return nil, fmt.Errorf("[%v] can not get token supply of token with type '%v'", b.ChainConfig.BlockChain, tokenType)
 	}
 }

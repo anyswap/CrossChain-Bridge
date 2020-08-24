@@ -92,7 +92,7 @@ type NonceGetter interface {
 type CrossChainBridge interface {
 	IsSrcEndpoint() bool
 	GetTokenAndGateway() (*TokenConfig, *GatewayConfig)
-	SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig, check bool)
+	SetTokenAndGateway(chainCfg *ChainConfig, tokenCfg *TokenConfig, gatewayCfg *GatewayConfig, check bool)
 
 	IsValidAddress(address string) bool
 
@@ -132,6 +132,7 @@ func SetLatestBlockHeight(latest uint64, isSrc bool) {
 
 // CrossChainBridgeBase base bridge
 type CrossChainBridgeBase struct {
+	ChainConfig   *ChainConfig
 	TokenConfig   *TokenConfig
 	GatewayConfig *GatewayConfig
 	IsSrc         bool
@@ -183,7 +184,8 @@ func (b *CrossChainBridgeBase) GetTokenAndGateway() (*TokenConfig, *GatewayConfi
 }
 
 // SetTokenAndGateway set token and gateway config
-func (b *CrossChainBridgeBase) SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig, check bool) {
+func (b *CrossChainBridgeBase) SetTokenAndGateway(chainCfg *ChainConfig, tokenCfg *TokenConfig, gatewayCfg *GatewayConfig, check bool) {
+	b.ChainConfig = chainCfg
 	b.TokenConfig = tokenCfg
 	b.GatewayConfig = gatewayCfg
 	if !check {

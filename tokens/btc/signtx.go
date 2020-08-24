@@ -92,7 +92,7 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash,
 	if err != nil {
 		return nil, "", err
 	}
-	log.Info(b.TokenConfig.BlockChain+" Bridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
+	log.Info(b.ChainConfig.BlockChain+" Bridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
 	cPkData, err := b.getPkDataFromConfig(args)
 	if err != nil {
@@ -137,7 +137,7 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash,
 		txin.SignatureScript = sigScript
 	}
 	txHash = authoredTx.Tx.TxHash().String()
-	log.Info(b.TokenConfig.BlockChain+" MakeSignedTransaction success", "txhash", txHash)
+	log.Info(b.ChainConfig.BlockChain+" MakeSignedTransaction success", "txhash", txHash)
 	return authoredTx, txHash, nil
 }
 
@@ -246,7 +246,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	if err != nil {
 		return nil, err
 	}
-	log.Info(b.TokenConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
+	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
 	time.Sleep(retryGetSignStatusInterval)
 
 	i := 0
@@ -270,7 +270,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 		return nil, errors.New("get sign status failed")
 	}
 
-	log.Trace(b.TokenConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
+	log.Trace(b.ChainConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
 	return rsv, nil
 }
 

@@ -27,7 +27,7 @@ func (b *Bridge) StartSwapHistoryScanJob() {
 	if b.TokenConfig.ContractAddress == "" {
 		return
 	}
-	log.Infof("[swaphistory] start scan %v swap history job", b.TokenConfig.BlockChain)
+	log.Infof("[swaphistory] start scan %v swap history job", b.ChainConfig.BlockChain)
 
 	isProcessed := func(txid string) bool {
 		if b.IsSrc {
@@ -59,7 +59,7 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 	if minHeight+maxFirstScanHeight < latest {
 		minHeight = latest - maxFirstScanHeight
 	}
-	chainName := b.TokenConfig.BlockChain
+	chainName := b.ChainConfig.BlockChain
 	log.Infof("[scanFirstLoop] start %v first scan loop to min height %v", chainName, minHeight)
 	for height := latest; height >= minHeight; {
 		logs, err := b.getSwapLogs(height)
@@ -86,7 +86,7 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 }
 
 func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
-	chainName := b.TokenConfig.BlockChain
+	chainName := b.ChainConfig.BlockChain
 	latest := tools.LoopGetLatestBlockNumber(b)
 	minHeight := b.TokenConfig.InitialHeight
 	if minHeight+maxScanHeight < latest {
@@ -129,7 +129,7 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 }
 
 func (b *Bridge) quickSyncHistory(start, end uint64) {
-	chainName := b.TokenConfig.BlockChain
+	chainName := b.ChainConfig.BlockChain
 	log.Printf("[scanhistory] begin %v syncRange job. start=%v end=%v", chainName, start, end)
 	count := end - start
 	workers := quickSyncHistoryWorkers
@@ -153,7 +153,7 @@ func (b *Bridge) quickSyncHistory(start, end uint64) {
 
 func (b *Bridge) quickSyncHistoryRange(idx, start, end uint64, wg *sync.WaitGroup) {
 	defer wg.Done()
-	chainName := b.TokenConfig.BlockChain
+	chainName := b.ChainConfig.BlockChain
 	log.Printf("[scanhistory] id=%v begin %v syncRange start=%v end=%v", idx, chainName, start, end)
 
 	for h := start; h < end; {

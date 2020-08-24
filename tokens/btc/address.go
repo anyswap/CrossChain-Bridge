@@ -47,8 +47,7 @@ func (b *Bridge) IsP2shAddress(addr string) bool {
 
 // GetChainConfig get chain config (net params)
 func (b *Bridge) GetChainConfig() *chaincfg.Params {
-	token := b.TokenConfig
-	networkID := strings.ToLower(token.NetID)
+	networkID := strings.ToLower(b.ChainConfig.NetID)
 	switch networkID {
 	case netMainnet:
 		return &chaincfg.MainNetParams

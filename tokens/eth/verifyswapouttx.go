@@ -49,7 +49,7 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 
 	bindAddress, value, err := parseSwapoutTxLogs(receipt.Logs)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" parseSwapoutTxLogs fail", "tx", txHash, "err", err)
+		log.Debug(b.ChainConfig.BlockChain+" parseSwapoutTxLogs fail", "tx", txHash, "err", err)
 		return swapInfo, err
 	}
 	if bindAddress != "" {
@@ -77,7 +77,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 	swapInfo.Hash = txHash // Hash
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	if tx.BlockNumber != nil {
@@ -97,7 +97,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 	input := (*[]byte)(tx.Payload)
 	bindAddress, value, err := parseSwapoutTxInput(input)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" parseSwapoutTxInput fail", "tx", txHash, "err", err)
+		log.Debug(b.ChainConfig.BlockChain+" parseSwapoutTxInput fail", "tx", txHash, "err", err)
 		return swapInfo, err
 	}
 	if bindAddress != "" {

@@ -47,7 +47,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.DepositAddress)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", txHash, "err", err)
+		log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", txHash, "err", err)
 		return swapInfo, err
 	}
 	swapInfo.To = strings.ToLower(to)     // To
@@ -77,7 +77,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 	swapInfo.Hash = txHash // Hash
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	if tx.BlockNumber != nil {
@@ -94,7 +94,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 	input := (*[]byte)(tx.Payload)
 	from, to, value, err := ParseErc20SwapinTxInput(input, token.DepositAddress)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", txHash, "err", err)
+		log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", txHash, "err", err)
 		return swapInfo, err
 	}
 	swapInfo.To = strings.ToLower(to) // To

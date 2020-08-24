@@ -29,8 +29,8 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 }
 
 // SetTokenAndGateway set token and gateway config
-func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
-	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg, check)
+func (b *Bridge) SetTokenAndGateway(chainCfg *tokens.ChainConfig, tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
+	b.CrossChainBridgeBase.SetTokenAndGateway(chainCfg, tokenCfg, gatewayCfg, check)
 	b.VerifyChainID()
 	b.VerifyConfig()
 	b.Init()
@@ -38,17 +38,13 @@ func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *to
 
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
-	tokenCfg := b.TokenConfig
-	gatewayCfg := b.GatewayConfig
-
-	networkID := strings.ToLower(tokenCfg.NetID)
-
+	networkID := strings.ToLower(b.ChainConfig.NetID)
 	switch networkID {
 	case netMainnet, netTestnet, netDevnet:
 	case netCustom:
 		return
 	default:
-		log.Fatalf("unsupported fusion network: %v", tokenCfg.NetID)
+		log.Fatalf("unsupported fusion network: %v", b.ChainConfig.NetID)
 	}
 
 	var (
@@ -63,12 +59,12 @@ func (b *Bridge) VerifyChainID() {
 			break
 		}
 		log.Errorf("can not get gateway chainID. %v", err)
-		log.Println("retry query gateway", gatewayCfg.APIAddress)
+		log.Println("retry query gateway", b.GatewayConfig.APIAddress)
 		time.Sleep(3 * time.Second)
 	}
 
 	panicMismatchChainID := func() {
-		log.Fatalf("gateway chainID %v is not %v", chainID, tokenCfg.NetID)
+		log.Fatalf("gateway chainID %v is not %v", chainID, b.ChainConfig.NetID)
 	}
 
 	switch networkID {

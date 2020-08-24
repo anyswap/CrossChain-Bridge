@@ -77,10 +77,10 @@ func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 
 // GetTokenBalance impl
 func (b *Bridge) GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error) {
-	return nil, fmt.Errorf("[%v] can not get token balance of token with type '%v'", b.TokenConfig.BlockChain, tokenType)
+	return nil, fmt.Errorf("[%v] can not get token balance of token with type '%v'", b.ChainConfig.BlockChain, tokenType)
 }
 
 // GetTokenSupply impl
 func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error) {
-	return nil, fmt.Errorf("[%v] can not get token supply of token with type '%v'", b.TokenConfig.BlockChain, tokenType)
+	return nil, fmt.Errorf("[%v] can not get token supply of token with type '%v'", b.ChainConfig.BlockChain, tokenType)
 }

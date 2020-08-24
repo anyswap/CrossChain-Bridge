@@ -28,8 +28,8 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 }
 
 // SetTokenAndGateway set token and gateway config
-func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
-	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg, check)
+func (b *Bridge) SetTokenAndGateway(chainCfg *tokens.ChainConfig, tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
+	b.CrossChainBridgeBase.SetTokenAndGateway(chainCfg, tokenCfg, gatewayCfg, check)
 	b.VerifyChainID()
 	b.VerifyConfig()
 	b.Init()
@@ -48,17 +48,13 @@ func (b *Bridge) Init() {
 
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
-	tokenCfg := b.TokenConfig
-	gatewayCfg := b.GatewayConfig
-
-	networkID := strings.ToLower(tokenCfg.NetID)
-
+	networkID := strings.ToLower(b.ChainConfig.NetID)
 	switch networkID {
 	case netMainnet, netRinkeby:
 	case netCustom:
 		return
 	default:
-		log.Fatalf("unsupported ethereum network: %v", tokenCfg.NetID)
+		log.Fatalf("unsupported ethereum network: %v", b.ChainConfig.NetID)
 	}
 
 	var (
@@ -73,12 +69,12 @@ func (b *Bridge) VerifyChainID() {
 			break
 		}
 		log.Errorf("can not get gateway chainID. %v", err)
-		log.Println("retry query gateway", gatewayCfg.APIAddress)
+		log.Println("retry query gateway", b.GatewayConfig.APIAddress)
 		time.Sleep(3 * time.Second)
 	}
 
 	panicMismatchChainID := func() {
-		log.Fatalf("gateway chainID %v is not %v", chainID, tokenCfg.NetID)
+		log.Fatalf("gateway chainID %v is not %v", chainID, b.ChainConfig.NetID)
 	}
 
 	switch networkID {
@@ -166,21 +162,19 @@ func (b *Bridge) verifyContractAddress() {
 // InitLatestBlockNumber init latest block number
 func (b *Bridge) InitLatestBlockNumber() {
 	var (
-		tokenCfg   = b.TokenConfig
-		gatewayCfg = b.GatewayConfig
-		latest     uint64
-		err        error
+		latest uint64
+		err    error
 	)
 
 	for {
 		latest, err = b.GetLatestBlockNumber()
 		if err == nil {
 			tokens.SetLatestBlockHeight(latest, b.IsSrc)
-			log.Info("get latst block number succeed.", "number", latest, "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID)
+			log.Info("get latst block number succeed.", "number", latest, "BlockChain", b.ChainConfig.BlockChain, "NetID", b.ChainConfig.NetID)
 			break
 		}
-		log.Error("get latst block number failed.", "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID, "err", err)
-		log.Println("retry query gateway", gatewayCfg.APIAddress)
+		log.Error("get latst block number failed.", "BlockChain", b.ChainConfig.BlockChain, "NetID", b.ChainConfig.NetID, "err", err)
+		log.Println("retry query gateway", b.GatewayConfig.APIAddress)
 		time.Sleep(3 * time.Second)
 	}
 }

@@ -46,7 +46,7 @@ func (b *Bridge) getStartAndLatestHeight() (start, latest uint64) {
 
 // StartChainTransactionScanJob scan job
 func (b *Bridge) StartChainTransactionScanJob() {
-	chainName := b.TokenConfig.BlockChain
+	chainName := b.ChainConfig.BlockChain
 	log.Infof("[scanchain] start %v scan chain job", chainName)
 
 	start, latest := b.getStartAndLatestHeight()
@@ -106,7 +106,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 }
 
 func (b *Bridge) quickSync(ctx context.Context, cancel context.CancelFunc, start, end uint64) {
-	chainName := b.TokenConfig.BlockChain
+	chainName := b.ChainConfig.BlockChain
 	log.Printf("[scanchain] begin %v syncRange job. start=%v end=%v", chainName, start, end)
 	count := end - start
 	workers := quickSyncWorkers
@@ -135,7 +135,7 @@ func (b *Bridge) quickSync(ctx context.Context, cancel context.CancelFunc, start
 
 func (b *Bridge) quickSyncRange(ctx context.Context, idx, start, end uint64, wg *sync.WaitGroup) {
 	defer wg.Done()
-	chainName := b.TokenConfig.BlockChain
+	chainName := b.ChainConfig.BlockChain
 	log.Printf("[scanchain] id=%v begin %v syncRange start=%v end=%v", idx, chainName, start, end)
 
 	for h := start; h < end; {

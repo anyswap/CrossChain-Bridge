@@ -32,22 +32,23 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 }
 
 // SetTokenAndGateway set token and gateway config
-func (b *Bridge) SetTokenAndGateway(tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
-	b.CrossChainBridgeBase.SetTokenAndGateway(tokenCfg, gatewayCfg, check)
+func (b *Bridge) SetTokenAndGateway(chainCfg *tokens.ChainConfig, tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
+	b.CrossChainBridgeBase.SetTokenAndGateway(chainCfg, tokenCfg, gatewayCfg, check)
 	b.VerifyConfig()
 	b.InitLatestBlockNumber()
 }
 
 // VerifyConfig verify config
 func (b *Bridge) VerifyConfig() {
+	chainCfg := b.ChainConfig
 	tokenCfg := b.TokenConfig
-	networkID := strings.ToLower(tokenCfg.NetID)
+	networkID := strings.ToLower(chainCfg.NetID)
 	switch networkID {
 	case netMainnet, netTestnet3:
 	case netCustom:
 		return
 	default:
-		log.Fatal("unsupported bitcoin network", "netID", tokenCfg.NetID)
+		log.Fatal("unsupported bitcoin network", "netID", chainCfg.NetID)
 	}
 
 	if !b.IsP2pkhAddress(tokenCfg.DcrmAddress) {
@@ -64,7 +65,7 @@ func (b *Bridge) VerifyConfig() {
 
 // InitLatestBlockNumber init latest block number
 func (b *Bridge) InitLatestBlockNumber() {
-	tokenCfg := b.TokenConfig
+	chainCfg := b.ChainConfig
 	gatewayCfg := b.GatewayConfig
 	var latest uint64
 	var err error
@@ -72,10 +73,10 @@ func (b *Bridge) InitLatestBlockNumber() {
 		latest, err = b.GetLatestBlockNumber()
 		if err == nil {
 			tokens.SetLatestBlockHeight(latest, b.IsSrc)
-			log.Info("get latst block number succeed.", "number", latest, "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID)
+			log.Info("get latst block number succeed.", "number", latest, "BlockChain", chainCfg.BlockChain, "NetID", chainCfg.NetID)
 			break
 		}
-		log.Error("get latst block number failed.", "BlockChain", tokenCfg.BlockChain, "NetID", tokenCfg.NetID, "err", err)
+		log.Error("get latst block number failed.", "BlockChain", chainCfg.BlockChain, "NetID", chainCfg.NetID, "err", err)
 		log.Println("retry query gateway", gatewayCfg.APIAddress)
 		time.Sleep(3 * time.Second)
 	}

@@ -12,10 +12,13 @@ Password = "***"
 To = ["to1@gmail.com", "to2@gmail.com"]
 Cc = ["cc1@gmail.com", "cc2@gmail.com"]
 
-# source token config
-[SrcToken]
+# source chain config
+[SrcChain]
 BlockChain = "Ethereum"
 NetID = "Rinkeby"
+
+# source token config
+[SrcToken]
 ID = "ERC20"
 Name = "USDTERC20"
 Symbol = "USDT"
@@ -29,10 +32,13 @@ DcrmAddress = "0xb09bad01684f6d47fc7dc9591889cc77eaed8d22"
 [SrcGateway]
 APIAddress = ["http://5.189.139.168:8018"]
 
-# dest token config
-[DestToken]
+# dest chain config
+[DestChain]
 BlockChain = "Fusion"
 NetID = "Testnet"
+
+# dest token config
+[DestToken]
 ID = "mUSDT"
 Name = "SMPC ERC20 USDT"
 Symbol = "mUSDT"
