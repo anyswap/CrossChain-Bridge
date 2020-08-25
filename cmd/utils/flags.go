@@ -18,6 +18,11 @@ var (
 		Aliases: []string{"c"},
 		Usage:   "Specify config file",
 	}
+	// TokenPairsDirFlag --pairsdir
+	TokenPairsDirFlag = &cli.StringFlag{
+		Name:  "pairsdir",
+		Usage: "Specify token pairs directory",
+	}
 	// LogFileFlag --log
 	LogFileFlag = &cli.StringFlag{
 		Name:  "log",
@@ -125,4 +130,9 @@ func SetLogger(ctx *cli.Context) {
 // GetConfigFilePath specified by `-c|--config`
 func GetConfigFilePath(ctx *cli.Context) string {
 	return ctx.String(ConfigFileFlag.Name)
+}
+
+// GetTokenPairsDir specified by `--pairsdir`
+func GetTokenPairsDir(ctx *cli.Context) string {
+	return ctx.String(TokenPairsDirFlag.Name)
 }

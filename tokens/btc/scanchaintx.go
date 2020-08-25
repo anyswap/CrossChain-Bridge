@@ -10,40 +10,53 @@ import (
 
 var (
 	scannedBlocks = tools.NewCachedScannedBlocks(13)
+
+	maxScanHeight          = uint64(100)
+	retryIntervalInScanJob = 3 * time.Second
+	restIntervalInScanJob  = 3 * time.Second
 )
+
+func (b *Bridge) getStartAndLatestHeight() (start, latest uint64) {
+	startHeight := tools.GetLatestScanHeight(b.IsSrc)
+
+	chainCfg := b.GetChainConfig()
+	confirmations := *chainCfg.Confirmations
+	initialHeight := *chainCfg.InitialHeight
+
+	latest = tools.LoopGetLatestBlockNumber(b)
+
+	switch {
+	case startHeight != 0:
+		start = startHeight
+	case initialHeight != 0:
+		start = initialHeight
+	default:
+		if latest > confirmations {
+			start = latest - confirmations
+		}
+	}
+	if start < initialHeight {
+		start = initialHeight
+	}
+	if start+maxScanHeight < latest {
+		start = latest - maxScanHeight
+	}
+	return start, latest
+}
 
 // StartChainTransactionScanJob scan job
 func (b *Bridge) StartChainTransactionScanJob() {
 	chainName := b.ChainConfig.BlockChain
 	log.Infof("[scanchain] start %v scan chain job", chainName)
 
-	startHeight := tools.GetLatestScanHeight(b.IsSrc)
-	confirmations := *b.TokenConfig.Confirmations
-	initialHeight := b.TokenConfig.InitialHeight
+	start, latest := b.getStartAndLatestHeight()
+	_ = tools.UpdateLatestScanInfo(b.IsSrc, start)
+	log.Infof("[scanchain] start %v scan chain loop from %v latest=%v", chainName, start, latest)
 
-	latest := tools.LoopGetLatestBlockNumber(b)
+	chainCfg := b.GetChainConfig()
+	confirmations := *chainCfg.Confirmations
 
-	var height uint64
-	switch {
-	case startHeight != 0:
-		height = startHeight
-	case initialHeight != 0:
-		height = initialHeight
-	default:
-		if latest > confirmations {
-			height = latest - confirmations
-		}
-	}
-	if height < initialHeight {
-		height = initialHeight
-	}
-	if height+maxScanHeight < latest {
-		height = latest - maxScanHeight
-	}
-	_ = tools.UpdateLatestScanInfo(b.IsSrc, height)
-	log.Infof("[scanchain] start %v scan chain loop from %v latest=%v", chainName, height, latest)
-
-	stable := height
+	stable := start
 	errorSubject := fmt.Sprintf("[scanchain] get %v block failed", chainName)
 	scanSubject := fmt.Sprintf("[scanchain] scanned %v block", chainName)
 	for {

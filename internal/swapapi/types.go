@@ -26,8 +26,8 @@ type RegisteredAddress = mongodb.MgoRegisteredAddress
 // ServerInfo server info
 type ServerInfo struct {
 	Identifier string
-	SrcToken   *tokens.TokenConfig
-	DestToken  *tokens.TokenConfig
+	SrcChain   *tokens.ChainConfig
+	DestChain  *tokens.ChainConfig
 	Version    string
 }
 

@@ -37,8 +37,6 @@ func InitCrossChainBridge(isServer bool) {
 	cfg := params.GetConfig()
 	srcChain := cfg.SrcChain
 	dstChain := cfg.DestChain
-	srcToken := cfg.SrcToken
-	dstToken := cfg.DestToken
 	srcGateway := cfg.SrcGateway
 	dstGateway := cfg.DestGateway
 
@@ -51,11 +49,13 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge = NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
 
-	tokens.SrcBridge.SetTokenAndGateway(srcChain, srcToken, srcGateway, true)
-	log.Info("Init bridge source", "token", srcToken.Symbol, "gateway", srcGateway)
+	tokens.SrcBridge.SetChainAndGateway(srcChain, srcGateway)
+	log.Info("Init bridge source", "source", srcID, "gateway", srcGateway)
 
-	tokens.DstBridge.SetTokenAndGateway(dstChain, dstToken, dstGateway, true)
-	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
+	tokens.DstBridge.SetChainAndGateway(dstChain, dstGateway)
+	log.Info("Init bridge destation", "dest", dstID, "gateway", dstGateway)
+
+	tokens.LoadTokenPairsConfig(true)
 
 	initBtcExtra(cfg.BtcExtra)
 
@@ -65,6 +65,9 @@ func InitCrossChainBridge(isServer bool) {
 func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 	if btc.BridgeInstance == nil || btcExtra == nil {
 		return
+	}
+	if len(tokens.GetTokenPairsConfig()) != 1 {
+		log.Fatalf("Btc bridge does not support multiple tokens")
 	}
 
 	if btcExtra.MinRelayFee > 0 {
@@ -89,7 +92,7 @@ func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 
 	if btcExtra.FromPublicKey != "" {
 		tokens.BtcFromPublicKey = btcExtra.FromPublicKey
-		cpkData, err := btc.BridgeInstance.GetCompressedPublicKey(tokens.BtcFromPublicKey)
+		cpkData, err := btc.BridgeInstance.GetCompressedPublicKey("PAIRID", tokens.BtcFromPublicKey)
 		if err != nil {
 			log.Fatal("FromPublicKey config error", "err", err)
 		}

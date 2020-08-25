@@ -148,6 +148,6 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, mongodb.TxSwapFailed, now(), err.Error())
 		return err
 	}
-	bridge.IncreaseNonce(1)
+	bridge.IncreaseNonce("PAIRID", 1)
 	return nil
 }

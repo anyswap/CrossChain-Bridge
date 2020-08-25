@@ -144,12 +144,13 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 		return fmt.Errorf("unknown direction '%v'", direction)
 	}
 
+	pairID := "PAIRID"
 	if isDeposit {
-		tokens.GetTokenConfig(true).DisableSwap = newDisableFlag
+		tokens.GetTokenConfig(pairID, true).DisableSwap = newDisableFlag
 	}
 
 	if isWithdraw {
-		tokens.GetTokenConfig(false).DisableSwap = newDisableFlag
+		tokens.GetTokenConfig(pairID, false).DisableSwap = newDisableFlag
 	}
 
 	*result = successReuslt

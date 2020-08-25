@@ -161,7 +161,7 @@ func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
 	if !ok {
 		return nil
 	}
-	tokenCfg := tokens.GetTokenConfig(bridge.IsSrcEndpoint())
+	tokenCfg := bridge.GetTokenConfig("PAIRID")
 	// eth enhanced, if we fail at nonce a, we should retry after nonce a
 	// to ensure tx with nonce a is on blockchain to prevent double swapping
 	var nonce uint64

@@ -139,7 +139,7 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 		if btc.BridgeInstance == nil {
 			return tokens.ErrNoBtcBridge
 		}
-		swap, err = btc.BridgeInstance.VerifyP2shTransaction(args.SwapID, args.Bind, false)
+		swap, err = btc.BridgeInstance.VerifyP2shTransaction(args.PairID, args.SwapID, args.Bind, false)
 	default:
 		swap, err = srcBridge.VerifyTransaction(args.SwapID, false)
 	}
@@ -159,7 +159,7 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 	if err != nil {
 		return err
 	}
-	return dstBridge.VerifyMsgHash(rawTx, msgHash, args.Extra)
+	return dstBridge.VerifyMsgHash(args.PairID, rawTx, msgHash, args.Extra)
 }
 
 type acceptSignInfo struct {

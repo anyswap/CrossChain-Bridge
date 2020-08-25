@@ -22,8 +22,16 @@ var (
 
 // ChainConfig struct
 type ChainConfig struct {
-	BlockChain string
-	NetID      string
+	BlockChain    string
+	NetID         string
+	Confirmations *uint64
+	InitialHeight *uint64
+	EnableScan    bool
+}
+
+// GatewayConfig struct
+type GatewayConfig struct {
+	APIAddress []string
 }
 
 // TokenConfig struct
@@ -35,15 +43,13 @@ type TokenConfig struct {
 	Description            string `json:",omitempty"`
 	DepositAddress         string `json:",omitempty"`
 	DcrmAddress            string
-	ContractAddress        string `json:",omitempty"`
-	Confirmations          *uint64
+	ContractAddress        string   `json:",omitempty"`
 	MaximumSwap            *float64 // whole unit (eg. BTC, ETH, FSN), not Satoshi
 	MinimumSwap            *float64 // whole unit
 	BigValueThreshold      *float64
 	SwapFeeRate            *float64
 	MaximumSwapFee         *float64
 	MinimumSwapFee         *float64
-	InitialHeight          uint64
 	PlusGasPricePercentage uint64 `json:",omitempty"`
 	DisableSwap            bool
 
@@ -58,11 +64,6 @@ type TokenConfig struct {
 // IsErc20 return is token is erc20
 func (c *TokenConfig) IsErc20() bool {
 	return strings.EqualFold(c.ID, "ERC20")
-}
-
-// GatewayConfig struct
-type GatewayConfig struct {
-	APIAddress []string
 }
 
 // SwapType type
@@ -113,6 +114,7 @@ func (s SwapTxType) String() string {
 
 // TxSwapInfo struct
 type TxSwapInfo struct {
+	PairID    string   `json:"pairid"`
 	Hash      string   `json:"hash"`
 	Height    uint64   `json:"height"`
 	Timestamp uint64   `json:"timestamp"`
@@ -133,6 +135,7 @@ type TxStatus struct {
 
 // SwapInfo struct
 type SwapInfo struct {
+	PairID     string     `json:"pairid,omitempty"`
 	SwapID     string     `json:"swapid,omitempty"`
 	SwapType   SwapType   `json:"swaptype,omitempty"`
 	TxType     SwapTxType `json:"txtype,omitempty"`
@@ -221,6 +224,12 @@ func (c *ChainConfig) CheckConfig() error {
 	if c.NetID == "" {
 		return errors.New("token must config 'NetID'")
 	}
+	if c.Confirmations == nil {
+		return errors.New("token must config 'Confirmations'")
+	}
+	if c.InitialHeight == nil {
+		return errors.New("token must config 'InitialHeight'")
+	}
 	return nil
 }
 
@@ -229,9 +238,6 @@ func (c *ChainConfig) CheckConfig() error {
 func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.Decimals == nil {
 		return errors.New("token must config 'Decimals'")
-	}
-	if c.Confirmations == nil {
-		return errors.New("token must config 'Confirmations'")
 	}
 	if c.MaximumSwap == nil || *c.MaximumSwap < 0 {
 		return errors.New("token must config 'MaximumSwap' (non-negative)")

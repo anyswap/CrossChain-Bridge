@@ -28,11 +28,10 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	return &Bridge{Bridge: eth.NewCrossChainBridge(isSrc)}
 }
 
-// SetTokenAndGateway set token and gateway config
-func (b *Bridge) SetTokenAndGateway(chainCfg *tokens.ChainConfig, tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
-	b.CrossChainBridgeBase.SetTokenAndGateway(chainCfg, tokenCfg, gatewayCfg, check)
+// SetChainAndGateway set token and gateway config
+func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *tokens.GatewayConfig) {
+	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
 	b.VerifyChainID()
-	b.VerifyConfig()
 	b.Init()
 }
 

@@ -10,7 +10,7 @@ import (
 
 // GetLatestBlockNumber call /blocks/tip/height
 func GetLatestBlockNumber(b tokens.CrossChainBridge) (result uint64, err error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/blocks/tip/height"
 		err = client.RPCGet(&result, url)
@@ -23,7 +23,7 @@ func GetLatestBlockNumber(b tokens.CrossChainBridge) (result uint64, err error) 
 
 // GetTransactionByHash call /tx/{txHash}
 func GetTransactionByHash(b tokens.CrossChainBridge, txHash string) (*ElectTx, error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	var result ElectTx
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
@@ -38,7 +38,7 @@ func GetTransactionByHash(b tokens.CrossChainBridge, txHash string) (*ElectTx, e
 
 // GetElectTransactionStatus call /tx/{txHash}/status
 func GetElectTransactionStatus(b tokens.CrossChainBridge, txHash string) (*ElectTxStatus, error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	var result ElectTxStatus
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
@@ -53,7 +53,7 @@ func GetElectTransactionStatus(b tokens.CrossChainBridge, txHash string) (*Elect
 
 // FindUtxos call /address/{add}/utxo (confirmed first, then big value first)
 func FindUtxos(b tokens.CrossChainBridge, addr string) (result []*ElectUtxo, err error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/address/" + addr + "/utxo"
 		err = client.RPCGet(&result, url)
@@ -67,7 +67,7 @@ func FindUtxos(b tokens.CrossChainBridge, addr string) (result []*ElectUtxo, err
 
 // GetPoolTxidList call /mempool/txids
 func GetPoolTxidList(b tokens.CrossChainBridge) (result []string, err error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/mempool/txids"
 		err = client.RPCGet(&result, url)
@@ -80,7 +80,7 @@ func GetPoolTxidList(b tokens.CrossChainBridge) (result []string, err error) {
 
 // GetPoolTransactions call /address/{addr}/txs/mempool
 func GetPoolTransactions(b tokens.CrossChainBridge, addr string) (result []*ElectTx, err error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/address/" + addr + "/txs/mempool"
 		err = client.RPCGet(&result, url)
@@ -93,7 +93,7 @@ func GetPoolTransactions(b tokens.CrossChainBridge, addr string) (result []*Elec
 
 // GetTransactionHistory call /address/{addr}/txs/chain
 func GetTransactionHistory(b tokens.CrossChainBridge, addr, lastSeenTxid string) (result []*ElectTx, err error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/address/" + addr + "/txs/chain"
 		if lastSeenTxid != "" {
@@ -109,7 +109,7 @@ func GetTransactionHistory(b tokens.CrossChainBridge, addr, lastSeenTxid string)
 
 // GetOutspend call /tx/{txHash}/outspend/{vout}
 func GetOutspend(b tokens.CrossChainBridge, txHash string, vout uint32) (*ElectOutspend, error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	var result ElectOutspend
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
@@ -124,7 +124,7 @@ func GetOutspend(b tokens.CrossChainBridge, txHash string, vout uint32) (*ElectO
 
 // PostTransaction call post to /tx
 func PostTransaction(b tokens.CrossChainBridge, txHex string) (txHash string, err error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/tx"
 		txHash, err = client.RPCRawPost(url, txHex)
@@ -137,7 +137,7 @@ func PostTransaction(b tokens.CrossChainBridge, txHex string) (txHash string, er
 
 // GetBlockHash call /block-height/{height}
 func GetBlockHash(b tokens.CrossChainBridge, height uint64) (blockHash string, err error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/block-height/" + fmt.Sprintf("%d", height)
 		blockHash, err = client.RPCRawGet(url)
@@ -150,7 +150,7 @@ func GetBlockHash(b tokens.CrossChainBridge, height uint64) (blockHash string, e
 
 // GetBlockTxids call /block/{blockHash}/txids
 func GetBlockTxids(b tokens.CrossChainBridge, blockHash string) (result []string, err error) {
-	_, gateway := b.GetTokenAndGateway()
+	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/block/" + blockHash + "/txids"
 		err = client.RPCGet(&result, url)

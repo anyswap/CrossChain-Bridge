@@ -122,7 +122,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	if err != nil {
 		return err
 	}
-	if tokens.GetTokenConfig(isSwapin).DisableSwap {
+	if tokens.GetTokenConfig(swap.PairID, isSwapin).DisableSwap {
 		logWorkerTrace("swap", "swap is disabled", "isSwapin", isSwapin)
 		return nil
 	}
@@ -151,7 +151,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		if _, err = resBridge.GetTransaction(history.matchTx); err == nil {
 			matchTx := &MatchTx{
 				SwapTx:    history.matchTx,
-				SwapValue: tokens.CalcSwappedValue(history.value, isSwapin).String(),
+				SwapValue: tokens.CalcSwappedValue(swap.PairID, history.value, isSwapin).String(),
 				SwapType:  swapType,
 				SwapNonce: history.nonce,
 			}
@@ -208,7 +208,7 @@ func doSwap(resBridge tokens.CrossChainBridge, args *tokens.BuildTxArgs, isSwapi
 	addSwapHistory(txid, originValue, txHash, swapTxNonce, isSwapin)
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
-		SwapValue: tokens.CalcSwappedValue(originValue, isSwapin).String(),
+		SwapValue: tokens.CalcSwappedValue(args.PairID, originValue, isSwapin).String(),
 		SwapType:  swapType,
 		SwapNonce: swapTxNonce,
 	}

@@ -12,16 +12,20 @@ import (
 )
 
 var (
-	scannedBlocks = tools.NewCachedScannedBlocks(67)
-
 	quickSyncFinish  bool
 	quickSyncWorkers = uint64(4)
+
+	maxScanHeight          = uint64(100)
+	retryIntervalInScanJob = 3 * time.Second
+	restIntervalInScanJob  = 3 * time.Second
 )
 
 func (b *Bridge) getStartAndLatestHeight() (start, latest uint64) {
 	startHeight := tools.GetLatestScanHeight(b.IsSrc)
-	confirmations := *b.TokenConfig.Confirmations
-	initialHeight := b.TokenConfig.InitialHeight
+
+	chainCfg := b.GetChainConfig()
+	confirmations := *chainCfg.Confirmations
+	initialHeight := *chainCfg.InitialHeight
 
 	latest = tools.LoopGetLatestBlockNumber(b)
 
@@ -61,6 +65,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	errorSubject := fmt.Sprintf("[scanchain] get %v block failed", chainName)
 	scanSubject := fmt.Sprintf("[scanchain] scanned %v block", chainName)
 
+	scannedBlocks := tools.NewCachedScannedBlocks(67)
 	var quickSyncCtx context.Context
 	var quickSyncCancel context.CancelFunc
 	for {

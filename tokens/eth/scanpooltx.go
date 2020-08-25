@@ -7,13 +7,10 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
-var (
-	scannedTxs = tools.NewCachedScannedTxs(300)
-)
-
 // StartPoolTransactionScanJob scan job
 func (b *Bridge) StartPoolTransactionScanJob() {
 	log.Info("[scanpool] start scan tx pool loop", "isSrc", b.IsSrc)
+	scannedTxs := tools.NewCachedScannedTxs(300)
 	for {
 		txs, err := b.GetPendingTransactions()
 		if err != nil {

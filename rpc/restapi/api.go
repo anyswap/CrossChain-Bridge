@@ -32,7 +32,9 @@ func SeverInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 // StatisticsHandler handler
 func StatisticsHandler(w http.ResponseWriter, r *http.Request) {
-	res, err := swapapi.GetSwapStatistics()
+	vars := mux.Vars(r)
+	pairID := vars["pairid"]
+	res, err := swapapi.GetSwapStatistics(pairID)
 	writeResponse(w, res, err)
 }
 

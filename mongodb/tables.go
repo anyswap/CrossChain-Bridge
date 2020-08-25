@@ -11,7 +11,6 @@ const (
 	tbRegisteredAddress string = "RegisteredAddress"
 	tbBlacklist         string = "Blacklist"
 
-	keyOfSwapStatistics    string = "latest"
 	keyOfSrcLatestScanInfo string = "srclatest"
 	keyOfDstLatestScanInfo string = "dstlatest"
 )
@@ -19,8 +18,10 @@ const (
 // MgoSwap registered swap
 type MgoSwap struct {
 	Key       string     `bson:"_id"`
+	PairID    string     `bson:"pairid"`
 	TxID      string     `bson:"txid"`
 	TxType    uint32     `bson:"txtype"`
+	TxTo      string     `bson:"txto"`
 	Bind      string     `bson:"bind"`
 	Status    SwapStatus `bson:"status"`
 	Timestamp int64      `bson:"timestamp"`
@@ -30,6 +31,7 @@ type MgoSwap struct {
 // MgoSwapResult swap result (verified swap)
 type MgoSwapResult struct {
 	Key        string     `bson:"_id"`
+	PairID     string     `bson:"pairid"`
 	TxID       string     `bson:"txid"`
 	TxHeight   uint64     `bson:"txheight"`
 	TxTime     uint64     `bson:"txtime"`
@@ -64,6 +66,7 @@ type SwapResultUpdateItems struct {
 // MgoP2shAddress key is the bind address
 type MgoP2shAddress struct {
 	Key         string `bson:"_id"`
+	PairID      string `bson:"pairid"`
 	P2shAddress string `bson:"p2shaddress"`
 }
 
@@ -75,7 +78,8 @@ type MgoRegisteredAddress struct {
 
 // MgoSwapStatistics swap statistics
 type MgoSwapStatistics struct {
-	Key                string `bson:"_id"`
+	Key                string `bson:"_id"` // pairid
+	PairID             string `bson:"pairid"`
 	StableSwapinCount  int    `bson:"swapincount"`
 	TotalSwapinValue   string `bson:"totalswapinvalue"`
 	TotalSwapinFee     string `bson:"totalswapinfee"`
@@ -94,5 +98,6 @@ type MgoLatestScanInfo struct {
 // MgoBlackAccount key is address
 type MgoBlackAccount struct {
 	Key       string `bson:"_id"`
+	PairID    string `bson:"pairid"`
 	Timestamp int64  `bson:"timestamp"`
 }

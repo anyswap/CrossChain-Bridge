@@ -9,7 +9,7 @@ import (
 
 // IsValidAddress check address
 func (b *Bridge) IsValidAddress(addr string) bool {
-	chainConfig := b.GetChainConfig()
+	chainConfig := b.GetChainParams()
 	address, err := btcutil.DecodeAddress(addr, chainConfig)
 	if err != nil {
 		return false
@@ -19,7 +19,7 @@ func (b *Bridge) IsValidAddress(addr string) bool {
 
 // IsP2pkhAddress check p2pkh addrss
 func (b *Bridge) IsP2pkhAddress(addr string) bool {
-	chainConfig := b.GetChainConfig()
+	chainConfig := b.GetChainParams()
 	address, err := btcutil.DecodeAddress(addr, chainConfig)
 	if err != nil {
 		return false
@@ -33,7 +33,7 @@ func (b *Bridge) IsP2pkhAddress(addr string) bool {
 
 // IsP2shAddress check p2sh addrss
 func (b *Bridge) IsP2shAddress(addr string) bool {
-	chainConfig := b.GetChainConfig()
+	chainConfig := b.GetChainParams()
 	address, err := btcutil.DecodeAddress(addr, chainConfig)
 	if err != nil {
 		return false
@@ -45,8 +45,8 @@ func (b *Bridge) IsP2shAddress(addr string) bool {
 	return ok
 }
 
-// GetChainConfig get chain config (net params)
-func (b *Bridge) GetChainConfig() *chaincfg.Params {
+// GetChainParams get chain config (net params)
+func (b *Bridge) GetChainParams() *chaincfg.Params {
 	networkID := strings.ToLower(b.ChainConfig.NetID)
 	switch networkID {
 	case netMainnet:

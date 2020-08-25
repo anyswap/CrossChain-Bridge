@@ -31,13 +31,14 @@ func GetP2shAddressWithMemo(memo, pubKeyHash []byte, net *chaincfg.Params) (p2sh
 }
 
 // GetP2shAddress get p2sh address from bind address
-func (b *Bridge) GetP2shAddress(bindAddr string) (p2shAddress string, redeemScript []byte, err error) {
+func (b *Bridge) GetP2shAddress(pairID, bindAddr string) (p2shAddress string, redeemScript []byte, err error) {
 	if !tokens.GetCrossChainBridge(!b.IsSrc).IsValidAddress(bindAddr) {
 		return "", nil, fmt.Errorf("invalid bind address %v", bindAddr)
 	}
 	memo := common.FromHex(bindAddr)
-	net := b.GetChainConfig()
-	dcrmAddress := b.TokenConfig.DcrmAddress
+	net := b.GetChainParams()
+	tokenCfg := b.GetTokenConfig(pairID)
+	dcrmAddress := tokenCfg.DcrmAddress
 	address, _ := btcutil.DecodeAddress(dcrmAddress, net)
 	pubKeyHash := address.ScriptAddress()
 	return GetP2shAddressWithMemo(memo, pubKeyHash, net)
@@ -48,7 +49,7 @@ func (b *Bridge) getRedeemScriptByOutputScrpit(preScript []byte) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	p2shAddress, err := pkScript.Address(b.GetChainConfig())
+	p2shAddress, err := pkScript.Address(b.GetChainParams())
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +59,7 @@ func (b *Bridge) getRedeemScriptByOutputScrpit(preScript []byte) ([]byte, error)
 		return nil, fmt.Errorf("ps2h address %v is registered", p2shAddr)
 	}
 	var address string
-	address, redeemScript, _ := b.GetP2shAddress(bindAddr)
+	address, redeemScript, _ := b.GetP2shAddress("PAIRID", bindAddr)
 	if address != p2shAddr {
 		return nil, fmt.Errorf("ps2h address mismatch for bind address %v, have %v want %v", bindAddr, p2shAddr, address)
 	}
@@ -67,7 +68,7 @@ func (b *Bridge) getRedeemScriptByOutputScrpit(preScript []byte) ([]byte, error)
 
 // GetP2shAddressByRedeemScript get p2sh address by redeem script
 func (b *Bridge) GetP2shAddressByRedeemScript(redeemScript []byte) (string, error) {
-	net := b.GetChainConfig()
+	net := b.GetChainParams()
 	addressScriptHash, err := btcutil.NewAddressScriptHash(redeemScript, net)
 	if err != nil {
 		return "", err

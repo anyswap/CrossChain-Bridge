@@ -11,6 +11,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	rpcserver "github.com/anyswap/CrossChain-Bridge/rpc/server"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/worker"
 	"github.com/urfave/cli/v2"
 )
@@ -35,6 +36,7 @@ func initApp() {
 	app.Flags = []cli.Flag{
 		utils.DataDirFlag,
 		utils.ConfigFileFlag,
+		utils.TokenPairsDirFlag,
 		utils.LogFileFlag,
 		utils.LogRotationFlag,
 		utils.LogMaxAgeFlag,
@@ -63,6 +65,7 @@ func swapserver(ctx *cli.Context) error {
 	config := params.LoadConfig(configFile, true)
 
 	params.SetDataDir(ctx.String(utils.DataDirFlag.Name))
+	tokens.SetTokenPairsDir(utils.GetTokenPairsDir(ctx))
 
 	dbConfig := config.MongoDB
 	mongodb.MongoServerInit([]string{dbConfig.DBURL}, dbConfig.DBName, dbConfig.UserName, dbConfig.Password)

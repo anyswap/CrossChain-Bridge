@@ -20,8 +20,9 @@ all:
 	@echo "Done building."
 	@echo "Find binaries in \"$(GOBIN)\" directory."
 	@echo ""
-	@echo "Copy config-example.toml to \"$(GOBIN)\" directory"
+	@echo "Copy config-example.toml and config-tokens-example.toml to \"$(GOBIN)\" directory"
 	@cp params/config-example.toml $(GOBIN)
+	@cp params/config-tokens-example.toml $(GOBIN)
 
 test: all
 	$(GOCMD) test ./...

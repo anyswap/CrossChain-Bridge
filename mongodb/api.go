@@ -75,8 +75,8 @@ func FindSwapinsWithStatus(status SwapStatus, septime int64) ([]*MgoSwap, error)
 }
 
 // GetCountOfSwapinsWithStatus get count of swapins with status
-func GetCountOfSwapinsWithStatus(status SwapStatus) (int, error) {
-	return getCountWithStatus(collSwapin, status)
+func GetCountOfSwapinsWithStatus(pairID string, status SwapStatus) (int, error) {
+	return getCountWithStatus(pairID, collSwapin, status)
 }
 
 // --------------- swapout --------------------------------
@@ -102,8 +102,8 @@ func FindSwapoutsWithStatus(status SwapStatus, septime int64) ([]*MgoSwap, error
 }
 
 // GetCountOfSwapoutsWithStatus get count of swapout with status
-func GetCountOfSwapoutsWithStatus(status SwapStatus) (int, error) {
-	return getCountWithStatus(collSwapout, status)
+func GetCountOfSwapoutsWithStatus(pairID string, status SwapStatus) (int, error) {
+	return getCountWithStatus(pairID, collSwapout, status)
 }
 
 // ------------------ swapin / swapout common ------------------------
@@ -202,13 +202,13 @@ func FindSwapinResults(address string, offset, limit int) ([]*MgoSwapResult, err
 }
 
 // GetCountOfSwapinResults get count of swapin results
-func GetCountOfSwapinResults() (int, error) {
-	return getCount(collSwapinResult)
+func GetCountOfSwapinResults(pairID string) (int, error) {
+	return getCount(pairID, collSwapinResult)
 }
 
 // GetCountOfSwapinResultsWithStatus get count of swapin results with status
-func GetCountOfSwapinResultsWithStatus(status SwapStatus) (int, error) {
-	return getCountWithStatus(collSwapinResult, status)
+func GetCountOfSwapinResultsWithStatus(pairID string, status SwapStatus) (int, error) {
+	return getCountWithStatus(pairID, collSwapinResult, status)
 }
 
 // --------------- swapout result --------------------------------
@@ -244,13 +244,13 @@ func FindSwapoutResults(address string, offset, limit int) ([]*MgoSwapResult, er
 }
 
 // GetCountOfSwapoutResults get count of swapout results
-func GetCountOfSwapoutResults() (int, error) {
-	return getCount(collSwapoutResult)
+func GetCountOfSwapoutResults(pairID string) (int, error) {
+	return getCount(pairID, collSwapoutResult)
 }
 
 // GetCountOfSwapoutResultsWithStatus get count of swapout results with status
-func GetCountOfSwapoutResultsWithStatus(status SwapStatus) (int, error) {
-	return getCountWithStatus(collSwapoutResult, status)
+func GetCountOfSwapoutResultsWithStatus(pairID string, status SwapStatus) (int, error) {
+	return getCountWithStatus(pairID, collSwapoutResult, status)
 }
 
 // ------------------ swapin / swapout result common ------------------------
@@ -319,7 +319,7 @@ func updateSwapResultStatus(collection *mgo.Collection, txid string, status Swap
 	}
 	if status == MatchTxStable {
 		if swapResult, errq := findSwapResult(collection, txid); errq == nil {
-			_ = UpdateSwapStatistics(swapResult.Value, swapResult.SwapValue, isSwapin)
+			_ = UpdateSwapStatistics(swapResult.PairID, swapResult.Value, swapResult.SwapValue, isSwapin)
 		}
 	}
 	return mgoError(err)
@@ -354,22 +354,32 @@ func findSwapResults(collection *mgo.Collection, address string, offset, limit i
 	return result, nil
 }
 
-func getCount(collection *mgo.Collection) (int, error) {
-	return collection.Find(nil).Count()
+func getCount(pairID string, collection *mgo.Collection) (int, error) {
+	return collection.Find(bson.M{"pairid": pairID}).Count()
 }
 
-func getCountWithStatus(collection *mgo.Collection, status SwapStatus) (int, error) {
-	return collection.Find(bson.M{"status": status}).Count()
+func getCountWithStatus(pairID string, collection *mgo.Collection, status SwapStatus) (int, error) {
+	qpair := bson.M{"pairid": pairID}
+	qstatus := bson.M{"status": status}
+	queries := []bson.M{qpair, qstatus}
+	return collection.Find(bson.M{"$and": queries}).Count()
 }
 
 // ------------------ statistics ------------------------
 
 // UpdateSwapStatistics update swap statistics
-func UpdateSwapStatistics(value, swapValue string, isSwapin bool) error {
-	curr, err := FindSwapStatistics()
+func UpdateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error {
+	curr, err := FindSwapStatistics(pairID)
 	if err != nil {
 		curr = &MgoSwapStatistics{
-			Key: keyOfSwapStatistics,
+			Key:                pairID,
+			PairID:             pairID,
+			StableSwapinCount:  0,
+			TotalSwapinValue:   "0",
+			TotalSwapinFee:     "0",
+			StableSwapoutCount: 0,
+			TotalSwapoutValue:  "0",
+			TotalSwapoutFee:    "0",
 		}
 	}
 
@@ -398,7 +408,7 @@ func UpdateSwapStatistics(value, swapValue string, isSwapin bool) error {
 		updates["totalswapoutvalue"] = curVal.String()
 		updates["totalswapoutfee"] = curFee.String()
 	}
-	err = collSwapStatistics.UpdateId(keyOfSwapStatistics, bson.M{"$set": updates})
+	_, err = collSwapStatistics.UpsertId(pairID, bson.M{"$set": updates})
 	if err == nil {
 		log.Info("mongodb update swap statistics", "updates", updates)
 	} else {
@@ -408,14 +418,15 @@ func UpdateSwapStatistics(value, swapValue string, isSwapin bool) error {
 }
 
 // FindSwapStatistics find swap statistics
-func FindSwapStatistics() (*MgoSwapStatistics, error) {
+func FindSwapStatistics(pairID string) (*MgoSwapStatistics, error) {
 	var result MgoSwapStatistics
-	err := collSwapStatistics.FindId(keyOfSwapStatistics).One(&result)
+	err := collSwapStatistics.FindId(pairID).One(&result)
 	return &result, mgoError(err)
 }
 
 // SwapStatistics rpc return struct
 type SwapStatistics struct {
+	PairID              string
 	TotalSwapinCount    int
 	TotalSwapoutCount   int
 	PendingSwapinCount  int
@@ -429,10 +440,10 @@ type SwapStatistics struct {
 }
 
 // GetSwapStatistics get swap statistics
-func GetSwapStatistics() (*SwapStatistics, error) {
-	stat := &SwapStatistics{}
+func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
+	stat := &SwapStatistics{PairID: pairID}
 
-	if curr, _ := FindSwapStatistics(); curr != nil {
+	if curr, _ := FindSwapStatistics(pairID); curr != nil {
 		stat.StableSwapinCount = curr.StableSwapinCount
 		stat.TotalSwapinValue = curr.TotalSwapinValue
 		stat.TotalSwapinFee = curr.TotalSwapinFee
@@ -441,10 +452,10 @@ func GetSwapStatistics() (*SwapStatistics, error) {
 		stat.TotalSwapoutFee = curr.TotalSwapoutFee
 	}
 
-	stat.TotalSwapinCount, _ = GetCountOfSwapinResults()
-	stat.TotalSwapoutCount, _ = GetCountOfSwapoutResults()
-	stat.PendingSwapinCount, _ = GetCountOfSwapinResultsWithStatus(MatchTxEmpty)
-	stat.PendingSwapoutCount, _ = GetCountOfSwapoutResultsWithStatus(MatchTxEmpty)
+	stat.TotalSwapinCount, _ = GetCountOfSwapinResults(pairID)
+	stat.TotalSwapoutCount, _ = GetCountOfSwapoutResults(pairID)
+	stat.PendingSwapinCount, _ = GetCountOfSwapinResultsWithStatus(pairID, MatchTxEmpty)
+	stat.PendingSwapoutCount, _ = GetCountOfSwapoutResultsWithStatus(pairID, MatchTxEmpty)
 
 	return stat, nil
 }

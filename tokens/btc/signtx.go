@@ -99,6 +99,7 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash,
 		return nil, "", err
 	}
 
+	pairID := args.PairID
 	var sigScript []byte
 	for i, txin := range authoredTx.Tx.TxIn {
 		signData, ok := getSigDataFromRSV(rsv[i])
@@ -107,7 +108,7 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash,
 		}
 
 		if len(cPkData) == 0 {
-			cPkData, err = b.getPkDataFromSig(rsv[i], msgHash[i], true)
+			cPkData, err = b.getPkDataFromSig(pairID, rsv[i], msgHash[i], true)
 			if err != nil {
 				return nil, "", err
 			}
@@ -177,10 +178,11 @@ func getSigDataFromRSV(rsv string) ([]byte, bool) {
 	return signData, true
 }
 
-func (b *Bridge) verifyPublickeyData(pkData []byte) error {
-	dcrmAddress := b.TokenConfig.DcrmAddress
-	address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkData), b.GetChainConfig())
-	if address.EncodeAddress() != b.TokenConfig.DcrmAddress {
+func (b *Bridge) verifyPublickeyData(pairID string, pkData []byte) error {
+	tokenCfg := b.GetTokenConfig(pairID)
+	dcrmAddress := tokenCfg.DcrmAddress
+	address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkData), b.GetChainParams())
+	if address.EncodeAddress() != dcrmAddress {
 		return fmt.Errorf("public key address %v is not the configed dcrm address %v", address, dcrmAddress)
 	}
 	return nil
@@ -194,11 +196,11 @@ func (b *Bridge) getPkDataFromConfig(args *tokens.BuildTxArgs) (cPkData []byte, 
 			fromPublicKey = *extra.FromPublicKey
 		}
 	}
-	return b.GetCompressedPublicKey(fromPublicKey)
+	return b.GetCompressedPublicKey(args.PairID, fromPublicKey)
 }
 
 // GetCompressedPublicKey get compressed public key
-func (b *Bridge) GetCompressedPublicKey(fromPublicKey string) (cPkData []byte, err error) {
+func (b *Bridge) GetCompressedPublicKey(pairID, fromPublicKey string) (cPkData []byte, err error) {
 	if fromPublicKey == "" {
 		return nil, nil
 	}
@@ -208,14 +210,14 @@ func (b *Bridge) GetCompressedPublicKey(fromPublicKey string) (cPkData []byte, e
 		return nil, err
 	}
 	cPkData = pubKey.SerializeCompressed()
-	err = b.verifyPublickeyData(cPkData)
+	err = b.verifyPublickeyData(pairID, cPkData)
 	if err != nil {
 		return nil, err
 	}
 	return cPkData, nil
 }
 
-func (b *Bridge) getPkDataFromSig(rsv, msgHash string, compressed bool) (pkData []byte, err error) {
+func (b *Bridge) getPkDataFromSig(pairID, rsv, msgHash string, compressed bool) (pkData []byte, err error) {
 	rsvData := common.FromHex(rsv)
 	hashData := common.FromHex(msgHash)
 	pub, err := crypto.SigToPub(hashData, rsvData)
@@ -227,7 +229,7 @@ func (b *Bridge) getPkDataFromSig(rsv, msgHash string, compressed bool) (pkData 
 	} else {
 		pkData = (*btcec.PublicKey)(pub).SerializeUncompressed()
 	}
-	err = b.verifyPublickeyData(pkData)
+	err = b.verifyPublickeyData(pairID, pkData)
 	if err != nil {
 		return nil, err
 	}

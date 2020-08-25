@@ -11,39 +11,29 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-func (b *Bridge) verifyErc20SwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifyErc20SwapinTx(txHash string, allowUnstable bool, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
 	if allowUnstable {
-		return b.verifyErc20SwapinTxUnstable(txHash)
+		return b.verifyErc20SwapinTxUnstable(txHash, pairID, token)
 	}
-	return b.verifyErc20SwapinTxStable(txHash)
+	return b.verifyErc20SwapinTxStable(txHash, pairID, token)
 }
 
-func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifyErc20SwapinTxStable(txHash, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.Hash = txHash // Hash
-	token := b.TokenConfig
+	swapInfo.PairID = pairID // PairID
+	swapInfo.Hash = txHash   // Hash
 
-	txStatus := b.GetTransactionStatus(txHash)
-	swapInfo.Height = txStatus.BlockHeight  // Height
-	swapInfo.Timestamp = txStatus.BlockTime // Timestamp
-	receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-	if !ok || receipt == nil {
+	receipt, err := b.getStableReceipt(swapInfo)
+	if err != nil {
 		return swapInfo, tokens.ErrTxNotStable
 	}
-	if *receipt.Status != 1 {
-		return swapInfo, tokens.ErrTxWithWrongReceipt
-	}
-	if txStatus.BlockHeight == 0 ||
-		txStatus.Confirmations < *token.Confirmations {
-		return swapInfo, tokens.ErrTxNotStable
-	}
-	swapInfo.From = strings.ToLower(receipt.From.String()) // From
 
-	contractAddress := token.ContractAddress
 	if receipt.Recipient == nil ||
-		!common.IsEqualIgnoreCase(receipt.Recipient.String(), contractAddress) {
+		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) {
 		return swapInfo, tokens.ErrTxWithWrongContract
 	}
+
+	swapInfo.From = strings.ToLower(receipt.From.String()) // From
 
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.DepositAddress)
 	if err != nil {
@@ -54,16 +44,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 	swapInfo.Value = value                // Value
 	swapInfo.Bind = strings.ToLower(from) // Bind
 
-	// check sender
-	if swapInfo.Bind == swapInfo.To {
-		return swapInfo, tokens.ErrTxWithWrongSender
-	}
-
-	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
-		return swapInfo, tokens.ErrTxWithWrongValue
-	}
-
-	err = b.checkSwapinBindAddress(swapInfo.Bind)
+	err = b.checkSwapInfo(swapInfo)
 	if err != nil {
 		return swapInfo, err
 	}
@@ -72,24 +53,24 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash string) (*tokens.TxSwapInfo, e
 	return swapInfo, nil
 }
 
-func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifyErc20SwapinTxUnstable(txHash, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.Hash = txHash // Hash
+	swapInfo.PairID = pairID // PairID
+	swapInfo.Hash = txHash   // Hash
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
 		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
+	if tx.Recipient == nil ||
+		!common.IsEqualIgnoreCase(tx.Recipient.String(), token.ContractAddress) {
+		return swapInfo, tokens.ErrTxWithWrongContract
+	}
+
 	if tx.BlockNumber != nil {
 		swapInfo.Height = tx.BlockNumber.ToInt().Uint64() // Height
 	}
 	swapInfo.From = strings.ToLower(tx.From.String()) // From
-
-	token := b.TokenConfig
-	contractAddress := token.ContractAddress
-	if tx.Recipient == nil || !common.IsEqualIgnoreCase(tx.Recipient.String(), contractAddress) {
-		return swapInfo, tokens.ErrTxWithWrongContract
-	}
 
 	input := (*[]byte)(tx.Payload)
 	from, to, value, err := ParseErc20SwapinTxInput(input, token.DepositAddress)
@@ -105,16 +86,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(txHash string) (*tokens.TxSwapInfo,
 		swapInfo.Bind = swapInfo.From // Bind
 	}
 
-	// check sender
-	if swapInfo.Bind == swapInfo.To {
-		return swapInfo, tokens.ErrTxWithWrongSender
-	}
-
-	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
-		return swapInfo, tokens.ErrTxWithWrongValue
-	}
-
-	err = b.checkSwapinBindAddress(swapInfo.Bind)
+	err = b.checkSwapInfo(swapInfo)
 	if err != nil {
 		return swapInfo, err
 	}

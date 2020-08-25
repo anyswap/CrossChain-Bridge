@@ -78,7 +78,8 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 
-	token := b.TokenConfig
+	pairID := args.PairID
+	token := b.GetTokenConfig(pairID)
 	if sender.String() != token.DcrmAddress {
 		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", token.DcrmAddress)
 		return nil, "", errors.New("wrong sender address")

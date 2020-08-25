@@ -103,13 +103,11 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 		return nil
 	}
 
-	token, _ := resBridge.GetTokenAndGateway()
-	confirmations := *token.Confirmations
-
 	if swap.SwapHeight != 0 {
-		if txStatus.Confirmations < confirmations {
+		if txStatus.Confirmations < *resBridge.GetChainConfig().Confirmations {
 			return nil
 		}
+		token := resBridge.GetTokenConfig(swap.PairID)
 		receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
 		txFailed := !ok || receipt == nil || *receipt.Status != 1
 		if !txFailed && token.ContractAddress != "" && len(receipt.Logs) == 0 {

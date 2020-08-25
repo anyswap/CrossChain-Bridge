@@ -4,8 +4,6 @@ import (
 	"errors"
 	"math"
 	"math/big"
-
-	"github.com/anyswap/CrossChain-Bridge/log"
 )
 
 // transaction memo prefix
@@ -52,6 +50,7 @@ var (
 	ErrTxFuncHashMismatch   = errors.New("tx func hash mismatch")
 	ErrDepositLogNotFound   = errors.New("deposit log not found or removed")
 	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
+	ErrUnkownPairID         = errors.New("unknown pair ID")
 
 	// errors should register
 	ErrTxWithWrongMemo          = errors.New("tx with wrong memo")
@@ -91,15 +90,19 @@ type NonceGetter interface {
 // CrossChainBridge interface
 type CrossChainBridge interface {
 	IsSrcEndpoint() bool
-	GetTokenAndGateway() (*TokenConfig, *GatewayConfig)
-	SetTokenAndGateway(chainCfg *ChainConfig, tokenCfg *TokenConfig, gatewayCfg *GatewayConfig, check bool)
+
+	SetChainAndGateway(*ChainConfig, *GatewayConfig)
+
+	GetChainConfig() *ChainConfig
+	GetGatewayConfig() *GatewayConfig
+	GetTokenConfig(pairID string) *TokenConfig
 
 	IsValidAddress(address string) bool
 
 	GetTransaction(txHash string) (interface{}, error)
 	GetTransactionStatus(txHash string) *TxStatus
 	VerifyTransaction(txHash string, allowUnstable bool) (*TxSwapInfo, error)
-	VerifyMsgHash(rawTx interface{}, msgHash []string, extra interface{}) error
+	VerifyMsgHash(pairID string, rawTx interface{}, msgHash []string, extra interface{}) error
 
 	BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error)
 	DcrmSignTransaction(rawTx interface{}, args *BuildTxArgs) (signedTx interface{}, txHash string, err error)
@@ -109,12 +112,11 @@ type CrossChainBridge interface {
 
 	StartPoolTransactionScanJob()
 	StartChainTransactionScanJob()
-	StartSwapHistoryScanJob()
 
-	AdjustNonce(value uint64) (nonce uint64)
-	IncreaseNonce(value uint64)
+	AdjustNonce(pairID string, value uint64) (nonce uint64)
+	IncreaseNonce(pairID string, value uint64)
 
-	VerifyConfig()
+	VerifyTokenConfig(*TokenConfig)
 
 	GetBalance(accountAddress string) (*big.Int, error)
 	GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error)
@@ -133,11 +135,10 @@ func SetLatestBlockHeight(latest uint64, isSrc bool) {
 // CrossChainBridgeBase base bridge
 type CrossChainBridgeBase struct {
 	ChainConfig   *ChainConfig
-	TokenConfig   *TokenConfig
 	GatewayConfig *GatewayConfig
 	IsSrc         bool
-	SwapinNonce   uint64
-	SwapoutNonce  uint64
+	SwapinNonce   map[string]uint64
+	SwapoutNonce  map[string]uint64
 }
 
 // NewCrossChainBridgeBase new base bridge
@@ -146,30 +147,30 @@ func NewCrossChainBridgeBase(isSrc bool) *CrossChainBridgeBase {
 }
 
 // AdjustNonce adjust account nonce (eth like chain)
-func (b *CrossChainBridgeBase) AdjustNonce(value uint64) (nonce uint64) {
+func (b *CrossChainBridgeBase) AdjustNonce(pairID string, value uint64) (nonce uint64) {
 	nonce = value
 	if b.IsSrcEndpoint() {
-		if b.SwapoutNonce > value {
-			nonce = b.SwapoutNonce
+		if b.SwapoutNonce[pairID] > value {
+			nonce = b.SwapoutNonce[pairID]
 		} else {
-			b.SwapoutNonce = value
+			b.SwapoutNonce[pairID] = value
 		}
 	} else {
-		if b.SwapinNonce > value {
-			nonce = b.SwapinNonce
+		if b.SwapinNonce[pairID] > value {
+			nonce = b.SwapinNonce[pairID]
 		} else {
-			b.SwapinNonce = value
+			b.SwapinNonce[pairID] = value
 		}
 	}
 	return nonce
 }
 
 // IncreaseNonce decrease account nonce (eth like chain)
-func (b *CrossChainBridgeBase) IncreaseNonce(value uint64) {
+func (b *CrossChainBridgeBase) IncreaseNonce(pairID string, value uint64) {
 	if b.IsSrcEndpoint() {
-		b.SwapoutNonce += value
+		b.SwapoutNonce[pairID] += value
 	} else {
-		b.SwapinNonce += value
+		b.SwapinNonce[pairID] += value
 	}
 }
 
@@ -178,23 +179,25 @@ func (b *CrossChainBridgeBase) IsSrcEndpoint() bool {
 	return b.IsSrc
 }
 
-// GetTokenAndGateway get token and gateway config
-func (b *CrossChainBridgeBase) GetTokenAndGateway() (*TokenConfig, *GatewayConfig) {
-	return b.TokenConfig, b.GatewayConfig
+// SetChainAndGateway set chain and gateway config
+func (b *CrossChainBridgeBase) SetChainAndGateway(chainCfg *ChainConfig, gatewayCfg *GatewayConfig) {
+	b.ChainConfig = chainCfg
+	b.GatewayConfig = gatewayCfg
 }
 
-// SetTokenAndGateway set token and gateway config
-func (b *CrossChainBridgeBase) SetTokenAndGateway(chainCfg *ChainConfig, tokenCfg *TokenConfig, gatewayCfg *GatewayConfig, check bool) {
-	b.ChainConfig = chainCfg
-	b.TokenConfig = tokenCfg
-	b.GatewayConfig = gatewayCfg
-	if !check {
-		return
-	}
-	err := tokenCfg.CheckConfig(b.IsSrc)
-	if err != nil {
-		log.Fatalf("set token and gateway error %v", err)
-	}
+// GetChainConfig get chain config
+func (b *CrossChainBridgeBase) GetChainConfig() *ChainConfig {
+	return b.ChainConfig
+}
+
+// GetGatewayConfig get gateway config
+func (b *CrossChainBridgeBase) GetGatewayConfig() *GatewayConfig {
+	return b.GatewayConfig
+}
+
+// GetTokenConfig get token config
+func (b *CrossChainBridgeBase) GetTokenConfig(pairID string) *TokenConfig {
+	return GetTokenConfig(pairID, b.IsSrcEndpoint())
 }
 
 // GetCrossChainBridge get bridge of specified endpoint
@@ -203,17 +206,6 @@ func GetCrossChainBridge(isSrc bool) CrossChainBridge {
 		return SrcBridge
 	}
 	return DstBridge
-}
-
-// GetTokenConfig get token config of specified endpoint
-func GetTokenConfig(isSrc bool) *TokenConfig {
-	var token *TokenConfig
-	if isSrc {
-		token, _ = SrcBridge.GetTokenAndGateway()
-	} else {
-		token, _ = DstBridge.GetTokenAndGateway()
-	}
-	return token
 }
 
 // FromBits convert from bits
@@ -239,27 +231,27 @@ func ToBits(value float64, decimals uint8) *big.Int {
 }
 
 // GetBigValueThreshold get big value threshold
-func GetBigValueThreshold(isSrc bool) *big.Int {
-	token := GetTokenConfig(isSrc)
+func GetBigValueThreshold(pairID string, isSrc bool) *big.Int {
+	token := GetTokenConfig(pairID, isSrc)
 	return token.bigValThreshhold
 }
 
 // CheckSwapValue check swap value is in right range
-func CheckSwapValue(value *big.Int, isSrc bool) bool {
-	token := GetTokenConfig(isSrc)
+func CheckSwapValue(pairID string, value *big.Int, isSrc bool) bool {
+	token := GetTokenConfig(pairID, isSrc)
 	if value.Cmp(token.minSwap) < 0 {
 		return false
 	}
 	if value.Cmp(token.maxSwap) > 0 {
 		return false
 	}
-	swappedValue := CalcSwappedValue(value, isSrc)
+	swappedValue := CalcSwappedValue(pairID, value, isSrc)
 	return swappedValue.Sign() > 0
 }
 
 // CalcSwappedValue calc swapped value (get rid of fee)
-func CalcSwappedValue(value *big.Int, isSrc bool) *big.Int {
-	token := GetTokenConfig(isSrc)
+func CalcSwappedValue(pairID string, value *big.Int, isSrc bool) *big.Int {
+	token := GetTokenConfig(pairID, isSrc)
 
 	if *token.SwapFeeRate == 0.0 {
 		return value

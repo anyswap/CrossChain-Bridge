@@ -19,6 +19,7 @@ var (
 	errNotBtcBridge    = newRPCError(-32096, "bridge is not btc")
 	errSwapNotExist    = newRPCError(-32095, "swap not exist")
 	errSwapCannotRetry = newRPCError(-32094, "swap can not retry")
+	errTokenPairExist  = newRPCError(-32093, "token pair not exist")
 )
 
 func newRPCError(ec rpcjson.ErrorCode, message string) error {
@@ -41,16 +42,25 @@ func GetServerInfo() (*ServerInfo, error) {
 	}
 	return &ServerInfo{
 		Identifier: config.Identifier,
-		SrcToken:   config.SrcToken,
-		DestToken:  config.DestToken,
+		SrcChain:   config.SrcChain,
+		DestChain:  config.DestChain,
 		Version:    params.VersionWithMeta,
 	}, nil
 }
 
+// GetTokenPairInfo api
+func GetTokenPairInfo(pairID string) (*tokens.TokenPairConfig, error) {
+	pairCfg := tokens.GetTokenPairConfig(pairID)
+	if pairCfg == nil {
+		return nil, errTokenPairExist
+	}
+	return pairCfg, nil
+}
+
 // GetSwapStatistics api
-func GetSwapStatistics() (*SwapStatistics, error) {
-	log.Debug("[api] receive GetSwapStatistics")
-	return mongodb.GetSwapStatistics()
+func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
+	log.Debug("[api] receive GetSwapStatistics", "pairID", pairID)
+	return mongodb.GetSwapStatistics(pairID)
 }
 
 // GetRawSwapin api
@@ -243,7 +253,7 @@ func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddres
 	if btc.BridgeInstance == nil {
 		return nil, errNotBtcBridge
 	}
-	p2shAddr, redeemScript, err := btc.BridgeInstance.GetP2shAddress(bindAddress)
+	p2shAddr, redeemScript, err := btc.BridgeInstance.GetP2shAddress("PAIRID", bindAddress)
 	if err != nil {
 		return nil, newRPCInternalError(err)
 	}
@@ -278,7 +288,7 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	if swap, _ := mongodb.FindSwapin(txidstr); swap != nil {
 		return nil, errSwapExist
 	}
-	_, err := btc.BridgeInstance.VerifyP2shTransaction(txidstr, *bindAddr, true)
+	_, err := btc.BridgeInstance.VerifyP2shTransaction("PAIRID", txidstr, *bindAddr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32099, "verify p2sh swapin failed! "+err.Error())
 	}

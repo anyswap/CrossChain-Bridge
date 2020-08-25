@@ -31,8 +31,8 @@ func (s *RPCAPI) GetServerInfo(r *http.Request, args *RPCNullArgs, result *swapa
 }
 
 // GetSwapStatistics api
-func (s *RPCAPI) GetSwapStatistics(r *http.Request, args *RPCNullArgs, result *swapapi.SwapStatistics) error {
-	res, err := swapapi.GetSwapStatistics()
+func (s *RPCAPI) GetSwapStatistics(r *http.Request, pairID *string, result *swapapi.SwapStatistics) error {
+	res, err := swapapi.GetSwapStatistics(*pairID)
 	if err == nil && res != nil {
 		*result = *res
 	}

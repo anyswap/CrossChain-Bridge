@@ -7,13 +7,13 @@ import (
 )
 
 // VerifyP2shTransaction verify p2sh tx
-func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) VerifyP2shTransaction(pairID, txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
 	if !b.IsSrc {
 		return swapInfo, tokens.ErrBridgeDestinationNotSupported
 	}
-	p2shAddress, _, err := b.GetP2shAddress(bindAddress)
+	p2shAddress, _, err := b.GetP2shAddress(pairID, bindAddress)
 	if err != nil {
 		return swapInfo, tokens.ErrWrongP2shBindAddress
 	}
@@ -47,7 +47,7 @@ func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 
-	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
+	if !tokens.CheckSwapValue(pairID, swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 

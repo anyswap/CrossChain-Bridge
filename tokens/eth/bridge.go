@@ -27,17 +27,11 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	return &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
 }
 
-// SetTokenAndGateway set token and gateway config
-func (b *Bridge) SetTokenAndGateway(chainCfg *tokens.ChainConfig, tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
-	b.CrossChainBridgeBase.SetTokenAndGateway(chainCfg, tokenCfg, gatewayCfg, check)
+// SetChainAndGateway set chain and gateway config
+func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *tokens.GatewayConfig) {
+	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
 	b.VerifyChainID()
-	b.VerifyConfig()
 	b.Init()
-}
-
-// VerifyConfig verify config
-func (b *Bridge) VerifyConfig() {
-	b.VerifyTokenCofig()
 }
 
 // Init init after verify
@@ -95,9 +89,8 @@ func (b *Bridge) VerifyChainID() {
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
 }
 
-// VerifyTokenCofig verify token config
-func (b *Bridge) VerifyTokenCofig() {
-	tokenCfg := b.TokenConfig
+// VerifyTokenConfig verify token config
+func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) {
 	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
 		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
 	}
@@ -105,13 +98,12 @@ func (b *Bridge) VerifyTokenCofig() {
 		log.Fatal("invalid deposit address", "address", tokenCfg.DepositAddress)
 	}
 
-	b.verifyDecimals()
+	b.verifyDecimals(tokenCfg)
 
-	b.verifyContractAddress()
+	b.verifyContractAddress(tokenCfg)
 }
 
-func (b *Bridge) verifyDecimals() {
-	tokenCfg := b.TokenConfig
+func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) {
 	configedDecimals := *tokenCfg.Decimals
 	switch strings.ToUpper(tokenCfg.Symbol) {
 	case "ETH", "FSN":
@@ -137,8 +129,7 @@ func (b *Bridge) verifyDecimals() {
 	}
 }
 
-func (b *Bridge) verifyContractAddress() {
-	tokenCfg := b.TokenConfig
+func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) {
 	if tokenCfg.ContractAddress != "" {
 		if !b.IsValidAddress(tokenCfg.ContractAddress) {
 			log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)

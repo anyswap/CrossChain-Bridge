@@ -32,7 +32,8 @@ const (
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var (
-		token         = b.TokenConfig
+		pairID        = args.PairID
+		token         = b.GetTokenConfig(pairID)
 		from          = args.From
 		to            = args.To
 		amount        = args.Value
@@ -45,8 +46,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	case tokens.SwapinType:
 		return nil, tokens.ErrSwapTypeNotSupported
 	case tokens.SwapoutType:
-		from = token.DcrmAddress                        // from
-		amount = tokens.CalcSwappedValue(amount, false) // amount
+		from = token.DcrmAddress                                // from
+		amount = tokens.CalcSwappedValue(pairID, amount, false) // amount
 		memo = tokens.UnlockMemoPrefix + args.SwapID
 	}
 
@@ -135,7 +136,7 @@ func (b *Bridge) getTxOutputs(to string, amount *big.Int, memo string) (txOuts [
 }
 
 func (b *Bridge) getPayToAddrScript(address string) ([]byte, error) {
-	chainConfig := b.GetChainConfig()
+	chainConfig := b.GetChainParams()
 	toAddr, err := btcutil.DecodeAddress(address, chainConfig)
 	if err != nil {
 		return nil, fmt.Errorf("decode btc address '%v' failed. %v", address, err)

@@ -23,8 +23,10 @@ var (
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var input []byte
 	if args.Input == nil {
+		pairID := args.PairID
+		tokenCfg := b.GetTokenConfig(pairID)
 		if args.SwapType != tokens.NoSwapType {
-			args.From = b.TokenConfig.DcrmAddress // from
+			args.From = tokenCfg.DcrmAddress // from
 		}
 		switch args.SwapType {
 		case tokens.SwapinType:
@@ -40,7 +42,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 			if !b.IsSrc {
 				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
 			}
-			if b.TokenConfig.IsErc20() {
+			if tokenCfg.IsErc20() {
 				err = b.buildErc20SwapoutTxInput(args)
 				if err != nil {
 					return nil, err
@@ -72,8 +74,10 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 	)
 
 	if args.SwapType == tokens.SwapoutType {
-		if !b.TokenConfig.IsErc20() {
-			value = tokens.CalcSwappedValue(value, false)
+		pairID := args.PairID
+		tokenCfg := b.GetTokenConfig(pairID)
+		if !tokenCfg.IsErc20() {
+			value = tokens.CalcSwappedValue(pairID, value, false)
 		}
 	}
 
@@ -116,7 +120,9 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 		if err != nil {
 			return nil, err
 		}
-		addPercent := b.TokenConfig.PlusGasPricePercentage
+		pairID := args.PairID
+		tokenCfg := b.GetTokenConfig(pairID)
+		addPercent := tokenCfg.PlusGasPricePercentage
 		if addPercent == 0 {
 			addPercent = defPlusGasPricePercentage
 		}
@@ -124,7 +130,7 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 		extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
 	}
 	if extra.Nonce == nil {
-		extra.Nonce, err = b.getAccountNonce(args.From, args.SwapType)
+		extra.Nonce, err = b.getAccountNonce(args.PairID, args.From, args.SwapType)
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +153,7 @@ func (b *Bridge) getGasPrice() (price *big.Int, err error) {
 	return nil, err
 }
 
-func (b *Bridge) getAccountNonce(from string, swapType tokens.SwapType) (nonceptr *uint64, err error) {
+func (b *Bridge) getAccountNonce(pairID, from string, swapType tokens.SwapType) (nonceptr *uint64, err error) {
 	var nonce uint64
 	for i := 0; i < retryRPCCount; i++ {
 		nonce, err = b.GetPoolNonce(from, "pending")
@@ -159,9 +165,10 @@ func (b *Bridge) getAccountNonce(from string, swapType tokens.SwapType) (noncept
 	if err != nil {
 		return nil, err
 	}
-	if from == b.TokenConfig.DcrmAddress {
+	tokenCfg := b.GetTokenConfig(pairID)
+	if tokenCfg != nil && from == tokenCfg.DcrmAddress {
 		if swapType != tokens.NoSwapType {
-			nonce = b.AdjustNonce(nonce)
+			nonce = b.AdjustNonce(pairID, nonce)
 		}
 	}
 	return &nonce, nil
@@ -169,6 +176,7 @@ func (b *Bridge) getAccountNonce(from string, swapType tokens.SwapType) (noncept
 
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
 func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
+	pairID := args.PairID
 	funcHash := getSwapinFuncHash()
 	txHash := common.HexToHash(args.SwapID)
 	address := common.HexToAddress(args.To)
@@ -176,30 +184,31 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 		log.Warn("swapin to wrong address", "address", args.To)
 		return errors.New("can not swapin to empty or invalid address")
 	}
-	amount := tokens.CalcSwappedValue(args.Value, true)
+	amount := tokens.CalcSwappedValue(pairID, args.Value, true)
 
 	input := PackDataWithFuncHash(funcHash, txHash, address, amount)
 	args.Input = &input // input
 
-	token := b.TokenConfig
+	token := b.GetTokenConfig(pairID)
 	args.To = token.ContractAddress // to
 	args.Value = big.NewInt(0)      // value
 	return nil
 }
 
 func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) {
+	pairID := args.PairID
 	funcHash := erc20CodeParts["transfer"]
 	address := common.HexToAddress(args.To)
 	if address == (common.Address{}) || !common.IsHexAddress(args.To) {
 		log.Warn("swapout to wrong address", "address", args.To)
 		return errors.New("can not swapout to empty or invalid address")
 	}
-	amount := tokens.CalcSwappedValue(args.Value, false)
+	amount := tokens.CalcSwappedValue(pairID, args.Value, false)
 
 	input := PackDataWithFuncHash(funcHash, address, amount)
 	args.Input = &input // input
 
-	token := b.TokenConfig
+	token := b.GetTokenConfig(pairID)
 	args.To = token.ContractAddress // to
 	args.Value = big.NewInt(0)      // value
 

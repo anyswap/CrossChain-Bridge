@@ -67,7 +67,7 @@ func (b *Bridge) getUtxosFromElectUtxos(target btcutil.Amount, addrs []string, u
 			if bindAddr == "" {
 				continue
 			}
-			p2shAddr, _, _ = b.GetP2shAddress(bindAddr)
+			p2shAddr, _, _ = b.GetP2shAddress("PAIRID", bindAddr)
 			if p2shAddr != address {
 				log.Warn("wrong registered p2sh address", "have", address, "bind", bindAddr, "want", p2shAddr)
 				continue

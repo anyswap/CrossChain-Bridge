@@ -31,10 +31,10 @@ func InitCrossChainBridge() {
 	dstBridge = bridge.NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
 
-	srcBridge.SetTokenAndGateway(srcChain, srcToken, srcGateway, false)
+	srcBridge.SetChainAndGateway(srcChain, srcGateway)
 	log.Info("Init bridge source", "token", srcToken.Symbol, "gateway", srcGateway)
 
-	dstBridge.SetTokenAndGateway(dstChain, dstToken, dstGateway, false)
+	dstBridge.SetChainAndGateway(dstChain, dstGateway)
 	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
 }
 

@@ -6,11 +6,13 @@ import (
 
 // StartScanJob scan job
 func StartScanJob(isServer bool) {
-	go tokens.SrcBridge.StartPoolTransactionScanJob()
-	go tokens.SrcBridge.StartChainTransactionScanJob()
-	go tokens.SrcBridge.StartSwapHistoryScanJob()
+	if tokens.SrcBridge.GetChainConfig().EnableScan {
+		go tokens.SrcBridge.StartPoolTransactionScanJob()
+		go tokens.SrcBridge.StartChainTransactionScanJob()
+	}
 
-	go tokens.DstBridge.StartPoolTransactionScanJob()
-	go tokens.DstBridge.StartChainTransactionScanJob()
-	go tokens.DstBridge.StartSwapHistoryScanJob()
+	if tokens.DstBridge.GetChainConfig().EnableScan {
+		go tokens.DstBridge.StartPoolTransactionScanJob()
+		go tokens.DstBridge.StartChainTransactionScanJob()
+	}
 }

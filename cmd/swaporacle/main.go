@@ -32,6 +32,7 @@ func initApp() {
 	app.Flags = []cli.Flag{
 		utils.DataDirFlag,
 		utils.ConfigFileFlag,
+		utils.TokenPairsDirFlag,
 		utils.LogFileFlag,
 		utils.LogRotationFlag,
 		utils.LogMaxAgeFlag,

@@ -118,12 +118,12 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		if btc.BridgeInstance == nil {
 			return tokens.ErrNoBtcBridge
 		}
-		swapInfo, err = btc.BridgeInstance.VerifyP2shTransaction(txid, swap.Bind, false)
+		swapInfo, err = btc.BridgeInstance.VerifyP2shTransaction(swap.PairID, txid, swap.Bind, false)
 	default:
 		return tokens.ErrWrongSwapinTxType
 	}
 	if swapInfo.Height != 0 &&
-		swapInfo.Height < tokens.GetTokenConfig(isSwapin).InitialHeight {
+		swapInfo.Height < *bridge.GetChainConfig().InitialHeight {
 		err = tokens.ErrTxBeforeInitialHeight
 		return mongodb.UpdateSwapinStatus(txid, mongodb.TxVerifyFailed, now(), err.Error())
 	}
@@ -146,7 +146,7 @@ func updateSwapStatus(txid string, swapInfo *tokens.TxSwapInfo, isSwapin bool, e
 		return err
 	case nil:
 		status := mongodb.TxNotSwapped
-		if swapInfo.Value.Cmp(tokens.GetBigValueThreshold(isSwapin)) > 0 {
+		if swapInfo.Value.Cmp(tokens.GetBigValueThreshold(swapInfo.PairID, isSwapin)) > 0 {
 			status = mongodb.TxWithBigValue
 			resultStatus = mongodb.TxWithBigValue
 		}

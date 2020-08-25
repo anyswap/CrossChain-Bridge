@@ -55,11 +55,6 @@ func initCollection(table string, collection **mgo.Collection, indexKey ...strin
 }
 
 func initDefaultValue() {
-	_ = collSwapStatistics.Insert(
-		&MgoSwapStatistics{
-			Key: keyOfSwapStatistics,
-		},
-	)
 	_ = collLatestScanInfo.Insert(
 		&MgoLatestScanInfo{
 			Key: keyOfSrcLatestScanInfo,

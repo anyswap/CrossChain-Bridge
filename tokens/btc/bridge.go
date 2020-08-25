@@ -31,17 +31,15 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	return BridgeInstance
 }
 
-// SetTokenAndGateway set token and gateway config
-func (b *Bridge) SetTokenAndGateway(chainCfg *tokens.ChainConfig, tokenCfg *tokens.TokenConfig, gatewayCfg *tokens.GatewayConfig, check bool) {
-	b.CrossChainBridgeBase.SetTokenAndGateway(chainCfg, tokenCfg, gatewayCfg, check)
-	b.VerifyConfig()
+// SetChainAndGateway set chain and gateway config
+func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *tokens.GatewayConfig) {
+	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
 	b.InitLatestBlockNumber()
 }
 
-// VerifyConfig verify config
-func (b *Bridge) VerifyConfig() {
+// VerifyTokenConfig verify token config
+func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) {
 	chainCfg := b.ChainConfig
-	tokenCfg := b.TokenConfig
 	networkID := strings.ToLower(chainCfg.NetID)
 	switch networkID {
 	case netMainnet, netTestnet3:

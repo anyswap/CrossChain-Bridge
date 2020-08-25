@@ -51,7 +51,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 }
 
 // VerifyMsgHash verify msg hash
-func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string, extra interface{}) (err error) {
+func (b *Bridge) VerifyMsgHash(pairID string, rawTx interface{}, msgHash []string, extra interface{}) (err error) {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
 		return tokens.ErrWrongRawTx
@@ -96,6 +96,8 @@ func hasLockTimeOrSequence(tx *electrs.ElectTx) bool {
 }
 
 func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+	pairID := "PAIRID"
+	tokenCfg := b.GetTokenConfig(pairID)
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
 	if !allowUnstable && !b.checkStable(txHash) {
@@ -113,7 +115,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	if txStatus.BlockTime != nil {
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
-	depositAddress := b.TokenConfig.DepositAddress
+	depositAddress := tokenCfg.DepositAddress
 	value, memoScript, rightReceiver := b.getReceivedValue(tx.Vout, depositAddress, anyType)
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
@@ -135,7 +137,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 
-	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
+	if !tokens.CheckSwapValue(pairID, swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
@@ -159,7 +161,8 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 
 func (b *Bridge) checkStable(txHash string) bool {
 	txStatus := b.GetTransactionStatus(txHash)
-	return txStatus.BlockHeight > 0 && txStatus.Confirmations >= *b.TokenConfig.Confirmations
+	confirmations := *b.GetChainConfig().Confirmations
+	return txStatus.BlockHeight > 0 && txStatus.Confirmations >= confirmations
 }
 
 func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyType string) (value uint64, memoScript string, rightReceiver bool) {
