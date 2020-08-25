@@ -25,9 +25,6 @@ func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable
 		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
-	if hasLockTimeOrSequence(tx) {
-		return swapInfo, tokens.ErrTxWithLockTimeOrSequence
-	}
 	txStatus := tx.Status
 	if txStatus.BlockHeight != nil {
 		swapInfo.Height = *txStatus.BlockHeight // Height
@@ -52,6 +49,10 @@ func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable
 
 	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
+	}
+
+	if hasLockTimeOrSequence(tx) {
+		return swapInfo, tokens.ErrTxWithLockTimeOrSequence
 	}
 
 	if !allowUnstable {

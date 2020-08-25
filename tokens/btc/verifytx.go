@@ -106,9 +106,6 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		log.Debug(b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
-	if hasLockTimeOrSequence(tx) {
-		return swapInfo, tokens.ErrTxWithLockTimeOrSequence
-	}
 	txStatus := tx.Status
 	if txStatus.BlockHeight != nil {
 		swapInfo.Height = *txStatus.BlockHeight // Height
@@ -148,6 +145,10 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	} else if !tokens.DstBridge.IsValidAddress(swapInfo.Bind) {
 		log.Debug("wrong bind address in memo", "bind", swapInfo.Bind)
 		return swapInfo, tokens.ErrTxWithWrongMemo
+	}
+
+	if hasLockTimeOrSequence(tx) {
+		return swapInfo, tokens.ErrTxWithLockTimeOrSequence
 	}
 
 	if !allowUnstable {
