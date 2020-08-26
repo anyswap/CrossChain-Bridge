@@ -1,6 +1,8 @@
 package btc
 
 import (
+	"fmt"
+
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
@@ -38,6 +40,9 @@ func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err erro
 		return "", tokens.ErrTxNotFound
 	}
 	tokenCfg := b.GetTokenConfig(PairID)
+	if tokenCfg == nil {
+		return "", fmt.Errorf("swap pair '%v' is not configed", PairID)
+	}
 	depositAddress := tokenCfg.DepositAddress
 	txFrom := getTxFrom(tx.Vin, depositAddress)
 	for _, output := range tx.Vout {

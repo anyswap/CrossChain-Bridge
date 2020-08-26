@@ -25,6 +25,9 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	if args.Input == nil {
 		pairID := args.PairID
 		tokenCfg := b.GetTokenConfig(pairID)
+		if tokenCfg == nil {
+			return nil, tokens.ErrUnknownPairID
+		}
 		if args.SwapType != tokens.NoSwapType {
 			args.From = tokenCfg.DcrmAddress // from
 		}
@@ -76,6 +79,9 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 	if args.SwapType == tokens.SwapoutType {
 		pairID := args.PairID
 		tokenCfg := b.GetTokenConfig(pairID)
+		if tokenCfg == nil {
+			return nil, tokens.ErrUnknownPairID
+		}
 		if !tokenCfg.IsErc20() {
 			value = tokens.CalcSwappedValue(pairID, value, false)
 		}
@@ -122,6 +128,9 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 		}
 		pairID := args.PairID
 		tokenCfg := b.GetTokenConfig(pairID)
+		if tokenCfg == nil {
+			return nil, tokens.ErrUnknownPairID
+		}
 		addPercent := tokenCfg.PlusGasPricePercentage
 		if addPercent == 0 {
 			addPercent = defPlusGasPricePercentage
@@ -190,6 +199,9 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 	args.Input = &input // input
 
 	token := b.GetTokenConfig(pairID)
+	if token == nil {
+		return tokens.ErrUnknownPairID
+	}
 	args.To = token.ContractAddress // to
 	args.Value = big.NewInt(0)      // value
 	return nil
@@ -209,6 +221,9 @@ func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) 
 	args.Input = &input // input
 
 	token := b.GetTokenConfig(pairID)
+	if token == nil {
+		return tokens.ErrUnknownPairID
+	}
 	args.To = token.ContractAddress // to
 	args.Value = big.NewInt(0)      // value
 

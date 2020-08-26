@@ -122,12 +122,12 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	if err != nil {
 		return err
 	}
-	tokenCfgb := tokens.GetTokenConfig(swap.PairID, isSwapin)
-	if tokenCfgb == nil {
+	tokenCfg := tokens.GetTokenConfig(swap.PairID, isSwapin)
+	if tokenCfg == nil {
 		logWorkerTrace("swap", "swap is not configed", "pairID", swap.PairID, "isSwapin", isSwapin)
 		return nil
 	}
-	if tokenCfgb.DisableSwap {
+	if tokenCfg.DisableSwap {
 		logWorkerTrace("swap", "swap is disabled", "pairID", swap.PairID, "isSwapin", isSwapin)
 		return nil
 	}

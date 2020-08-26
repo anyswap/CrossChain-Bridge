@@ -32,7 +32,7 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 	txRecipient := strings.ToLower(receipt.Recipient.String())
 	token, pairID := tokens.FindTokenConfig(txRecipient, false)
 	if token == nil || pairID == "" {
-		return swapInfo, tokens.ErrUnkownPairID
+		return swapInfo, tokens.ErrUnknownPairID
 	}
 	swapInfo.PairID = pairID // PairID
 
@@ -83,7 +83,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 	txRecipient := strings.ToLower(tx.Recipient.String())
 	token, pairID := tokens.FindTokenConfig(txRecipient, false)
 	if token == nil || pairID == "" {
-		return swapInfo, tokens.ErrUnkownPairID
+		return swapInfo, tokens.ErrUnknownPairID
 	}
 	swapInfo.PairID = pairID // PairID
 

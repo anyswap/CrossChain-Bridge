@@ -87,7 +87,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	txRecipient := strings.ToLower(tx.Recipient.String())
 	token, pairID := tokens.FindTokenConfig(txRecipient, true)
 	if token == nil || pairID == "" {
-		return swapInfo, tokens.ErrUnkownPairID
+		return swapInfo, tokens.ErrUnknownPairID
 	}
 	swapInfo.PairID = pairID // PairID
 

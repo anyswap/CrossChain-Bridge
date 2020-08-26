@@ -147,11 +147,19 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 	}
 
 	if isDeposit {
-		tokens.GetTokenConfig(pairID, true).DisableSwap = newDisableFlag
+		tokenCfg := tokens.GetTokenConfig(pairID, true)
+		if tokenCfg == nil {
+			return fmt.Errorf("pairID %v is not configed", pairID)
+		}
+		tokenCfg.DisableSwap = newDisableFlag
 	}
 
 	if isWithdraw {
-		tokens.GetTokenConfig(pairID, false).DisableSwap = newDisableFlag
+		tokenCfg := tokens.GetTokenConfig(pairID, false)
+		if tokenCfg == nil {
+			return fmt.Errorf("pairID %v is not configed", pairID)
+		}
+		tokenCfg.DisableSwap = newDisableFlag
 	}
 
 	*result = successReuslt

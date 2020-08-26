@@ -42,6 +42,10 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		changeAddress string
 	)
 
+	if token == nil {
+		return nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
+	}
+
 	switch args.SwapType {
 	case tokens.SwapinType:
 		return nil, tokens.ErrSwapTypeNotSupported

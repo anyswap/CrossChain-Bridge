@@ -38,6 +38,10 @@ func (b *Bridge) GetP2shAddress(pairID, bindAddr string) (p2shAddress string, re
 	memo := common.FromHex(bindAddr)
 	net := b.GetChainParams()
 	tokenCfg := b.GetTokenConfig(pairID)
+	if tokenCfg == nil {
+		return "", nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
+	}
+
 	dcrmAddress := tokenCfg.DcrmAddress
 	address, _ := btcutil.DecodeAddress(dcrmAddress, net)
 	pubKeyHash := address.ScriptAddress()

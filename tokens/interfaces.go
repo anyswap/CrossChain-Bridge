@@ -50,7 +50,7 @@ var (
 	ErrTxFuncHashMismatch   = errors.New("tx func hash mismatch")
 	ErrDepositLogNotFound   = errors.New("deposit log not found or removed")
 	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
-	ErrUnkownPairID         = errors.New("unknown pair ID")
+	ErrUnknownPairID        = errors.New("unknown pair ID")
 
 	// errors should register
 	ErrTxWithWrongMemo          = errors.New("tx with wrong memo")
