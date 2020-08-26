@@ -1,7 +1,6 @@
 package bridge
 
 import (
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -89,15 +88,6 @@ func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 	}
 
 	log.Info("Init Btc extra", "MinRelayFee", tokens.BtcMinRelayFee, "RelayFeePerKb", tokens.BtcRelayFeePerKb)
-
-	if btcExtra.FromPublicKey != "" {
-		tokens.BtcFromPublicKey = btcExtra.FromPublicKey
-		cpkData, err := btc.BridgeInstance.GetCompressedPublicKey("PAIRID", tokens.BtcFromPublicKey)
-		if err != nil {
-			log.Fatal("FromPublicKey config error", "err", err)
-		}
-		log.Info("Init Btc extra", "FromPublicKey", tokens.BtcFromPublicKey, "Compressed", hex.EncodeToString(cpkData))
-	}
 
 	if btcExtra.UtxoAggregateMinCount > 0 {
 		tokens.BtcUtxoAggregateMinCount = btcExtra.UtxoAggregateMinCount

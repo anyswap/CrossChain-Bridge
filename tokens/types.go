@@ -11,7 +11,6 @@ import (
 var (
 	BtcMinRelayFee   int64 = 400
 	BtcRelayFeePerKb int64 = 2000
-	BtcFromPublicKey string
 
 	BtcUtxoAggregateMinCount  = 20
 	BtcUtxoAggregateMinValue  = uint64(1000000)
@@ -193,7 +192,6 @@ type BtcOutPoint struct {
 type BtcExtraArgs struct {
 	RelayFeePerKb *int64  `json:"relayFeePerKb,omitempty"`
 	ChangeAddress *string `json:"changeAddress,omitempty"`
-	FromPublicKey *string `json:"fromPublickey,omitempty"`
 
 	PreviousOutPoints []*BtcOutPoint `json:"previousOutPoints,omitempty"`
 }
@@ -202,7 +200,6 @@ type BtcExtraArgs struct {
 type BtcExtraConfig struct {
 	MinRelayFee            int64
 	RelayFeePerKb          int64
-	FromPublicKey          string
 	UtxoAggregateMinCount  int
 	UtxoAggregateMinValue  uint64
 	UtxoAggregateToAddress string
