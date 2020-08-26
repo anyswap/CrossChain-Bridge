@@ -80,12 +80,12 @@ func findSwapoutsToVerify() ([]*mongodb.MgoSwap, error) {
 }
 
 func isInBlacklist(swapInfo *tokens.TxSwapInfo) (isBlacked bool, err error) {
-	isBlacked, err = mongodb.QueryBlacklist(swapInfo.From)
+	isBlacked, err = mongodb.QueryBlacklist(swapInfo.From, swapInfo.PairID)
 	if err != nil {
 		return isBlacked, err
 	}
 	if !isBlacked && swapInfo.Bind != swapInfo.From {
-		isBlacked, err = mongodb.QueryBlacklist(swapInfo.Bind)
+		isBlacked, err = mongodb.QueryBlacklist(swapInfo.Bind, swapInfo.PairID)
 		if err != nil {
 			return isBlacked, err
 		}

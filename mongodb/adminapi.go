@@ -13,36 +13,42 @@ import (
 
 // --------------- blacklist --------------------------------
 
+func getBlacklistKey(address, pairID string) string {
+	return strings.ToLower(address + ":" + pairID)
+}
+
 // AddToBlacklist add to blacklist
-func AddToBlacklist(address string) error {
+func AddToBlacklist(address, pairID string) error {
 	mb := &MgoBlackAccount{
-		Key:       strings.ToLower(address),
+		Key:       getBlacklistKey(address, pairID),
+		Address:   strings.ToLower(address),
+		PairID:    strings.ToLower(pairID),
 		Timestamp: time.Now().Unix(),
 	}
 	err := collBlacklist.Insert(mb)
 	if err == nil {
-		log.Info("mongodb add to black list success", "address", address)
+		log.Info("mongodb add to black list success", "address", address, "pairID", pairID)
 	} else {
-		log.Info("mongodb add to black list failed", "address", address, "err", err)
+		log.Info("mongodb add to black list failed", "address", address, "pairID", pairID, "err", err)
 	}
 	return mgoError(err)
 }
 
 // RemoveFromBlacklist remove from blacklist
-func RemoveFromBlacklist(address string) error {
-	err := collBlacklist.RemoveId(strings.ToLower(address))
+func RemoveFromBlacklist(address, pairID string) error {
+	err := collBlacklist.RemoveId(getBlacklistKey(address, pairID))
 	if err == nil {
-		log.Info("mongodb remove from black list success", "address", address)
+		log.Info("mongodb remove from black list success", "address", address, "pairID", pairID)
 	} else {
-		log.Info("mongodb remove from black list failed", "address", address, "err", err)
+		log.Info("mongodb remove from black list failed", "address", address, "pairID", pairID, "err", err)
 	}
 	return mgoError(err)
 }
 
 // QueryBlacklist query if is blacked
-func QueryBlacklist(address string) (isBlacked bool, err error) {
+func QueryBlacklist(address, pairID string) (isBlacked bool, err error) {
 	var result MgoBlackAccount
-	err = collBlacklist.FindId(strings.ToLower(address)).One(&result)
+	err = collBlacklist.FindId(getBlacklistKey(address, pairID)).One(&result)
 	if err == nil {
 		return true, nil
 	}
@@ -161,7 +167,10 @@ func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
 	if !ok {
 		return nil
 	}
-	tokenCfg := bridge.GetTokenConfig("PAIRID")
+	tokenCfg := bridge.GetTokenConfig(res.PairID)
+	if tokenCfg == nil {
+		return fmt.Errorf("no token config for pairID '%v'", res.PairID)
+	}
 	// eth enhanced, if we fail at nonce a, we should retry after nonce a
 	// to ensure tx with nonce a is on blockchain to prevent double swapping
 	var nonce uint64

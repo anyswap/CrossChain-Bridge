@@ -13,7 +13,7 @@ var (
 		Action:    blacklist,
 		Name:      "blacklist",
 		Usage:     "admin blacklist",
-		ArgsUsage: "<add|remove|query> <address>",
+		ArgsUsage: "<add|remove|query> <address> <pairID>",
 		Description: `
 admin blacklist
 `,
@@ -24,7 +24,7 @@ admin blacklist
 func blacklist(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
 	method := "blacklist"
-	if ctx.NArg() != 2 {
+	if ctx.NArg() != 3 {
 		_ = cli.ShowCommandHelp(ctx, method)
 		fmt.Println()
 		return fmt.Errorf("invalid arguments: %q", ctx.Args())
@@ -37,6 +37,7 @@ func blacklist(ctx *cli.Context) error {
 
 	operation := ctx.Args().Get(0)
 	address := ctx.Args().Get(1)
+	pairID := ctx.Args().Get(2)
 
 	switch operation {
 	case "add", "remove", "query":
@@ -44,9 +45,9 @@ func blacklist(ctx *cli.Context) error {
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
 
-	log.Printf("admin blacklist: %v %v", operation, address)
+	log.Printf("admin blacklist: %v %v %v", operation, address, pairID)
 
-	params := []string{operation, address}
+	params := []string{operation, address, pairID}
 	result, err := adminCall(method, params)
 
 	log.Printf("result is '%v'", result)

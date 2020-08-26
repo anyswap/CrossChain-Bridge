@@ -83,12 +83,12 @@ func findSwapoutsToSwap() ([]*mongodb.MgoSwap, error) {
 }
 
 func isSwapInBlacklist(swap *mongodb.MgoSwapResult) (isBlacked bool, err error) {
-	isBlacked, err = mongodb.QueryBlacklist(swap.From)
+	isBlacked, err = mongodb.QueryBlacklist(swap.From, swap.PairID)
 	if err != nil {
 		return isBlacked, err
 	}
 	if !isBlacked && swap.Bind != swap.From {
-		isBlacked, err = mongodb.QueryBlacklist(swap.Bind)
+		isBlacked, err = mongodb.QueryBlacklist(swap.Bind, swap.PairID)
 		if err != nil {
 			return isBlacked, err
 		}
@@ -224,7 +224,7 @@ func doSwap(resBridge tokens.CrossChainBridge, args *tokens.BuildTxArgs, isSwapi
 		return err
 	}
 
-	return sendSignedTransaction(resBridge, signedTx, txid, isSwapin)
+	return sendSignedTransaction(args.PairID, resBridge, signedTx, txid, isSwapin)
 }
 
 type swapInfo struct {

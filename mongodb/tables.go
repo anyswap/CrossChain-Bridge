@@ -97,7 +97,8 @@ type MgoLatestScanInfo struct {
 
 // MgoBlackAccount key is address
 type MgoBlackAccount struct {
-	Key       string `bson:"_id"`
+	Key       string `bson:"_id"` // address + pairid
+	Address   string `bson:"address"`
 	PairID    string `bson:"pairid"`
 	Timestamp int64  `bson:"timestamp"`
 }

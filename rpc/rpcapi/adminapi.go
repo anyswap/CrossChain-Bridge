@@ -64,16 +64,17 @@ func blacklist(args *admin.CallArgs, result *string) (err error) {
 	}
 	operation := args.Params[0]
 	address := args.Params[1]
+	pairID := args.Params[2]
 	isBlacked := false
 	isQuery := false
 	switch operation {
 	case "add":
-		err = mongodb.AddToBlacklist(address)
+		err = mongodb.AddToBlacklist(address, pairID)
 	case "remove":
-		err = mongodb.RemoveFromBlacklist(address)
+		err = mongodb.RemoveFromBlacklist(address, pairID)
 	case "query":
 		isQuery = true
-		isBlacked, err = mongodb.QueryBlacklist(address)
+		isBlacked, err = mongodb.QueryBlacklist(address, pairID)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
@@ -114,11 +115,12 @@ func bigvalue(args *admin.CallArgs, result *string) (err error) {
 }
 
 func maintain(args *admin.CallArgs, result *string) (err error) {
-	if len(args.Params) != 2 {
-		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+	if len(args.Params) != 3 {
+		return fmt.Errorf("wrong number of params, have %v want 3", len(args.Params))
 	}
 	operation := args.Params[0]
 	direction := args.Params[1]
+	pairID := args.Params[2]
 
 	var newDisableFlag bool
 	switch operation {
@@ -144,7 +146,6 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 		return fmt.Errorf("unknown direction '%v'", direction)
 	}
 
-	pairID := "PAIRID"
 	if isDeposit {
 		tokens.GetTokenConfig(pairID, true).DisableSwap = newDisableFlag
 	}

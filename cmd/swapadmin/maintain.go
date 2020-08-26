@@ -13,7 +13,7 @@ var (
 		Action:    maintain,
 		Name:      "maintain",
 		Usage:     "maintain deposit and withdraw switch",
-		ArgsUsage: "<open|close> <deposit|withdraw|both>",
+		ArgsUsage: "<open|close> <deposit|withdraw|both> <pairID>",
 		Description: `
 maintain service, open or close deposit and withdraw
 `,
@@ -24,7 +24,7 @@ maintain service, open or close deposit and withdraw
 func maintain(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
 	method := "maintain"
-	if ctx.NArg() != 2 {
+	if ctx.NArg() != 3 {
 		_ = cli.ShowCommandHelp(ctx, method)
 		fmt.Println()
 		return fmt.Errorf("invalid arguments: %q", ctx.Args())
@@ -37,6 +37,7 @@ func maintain(ctx *cli.Context) error {
 
 	operation := ctx.Args().Get(0)
 	direction := ctx.Args().Get(1)
+	pairID := ctx.Args().Get(2)
 
 	switch operation {
 	case "open", "close":
@@ -50,9 +51,9 @@ func maintain(ctx *cli.Context) error {
 		return fmt.Errorf("unknown direction '%v'", direction)
 	}
 
-	log.Printf("admin maintain: %v %v", operation, direction)
+	log.Printf("admin maintain: %v %v %v", operation, direction, pairID)
 
-	params := []string{operation, direction}
+	params := []string{operation, direction, pairID}
 	result, err := adminCall(method, params)
 
 	log.Printf("result is '%v'", result)
