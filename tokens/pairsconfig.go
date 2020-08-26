@@ -50,7 +50,7 @@ func GetTokenPairsConfig() map[string]*TokenPairConfig {
 
 // GetTokenPairConfig get token pair config
 func GetTokenPairConfig(pairID string) *TokenPairConfig {
-	pairCfg, exist := tokenPairsConfig[pairID]
+	pairCfg, exist := tokenPairsConfig[strings.ToLower(pairID)]
 	if !exist {
 		return nil
 	}
@@ -59,7 +59,7 @@ func GetTokenPairConfig(pairID string) *TokenPairConfig {
 
 // IsTokenPairExist is token pair exist
 func IsTokenPairExist(pairID string) bool {
-	_, exist := tokenPairsConfig[pairID]
+	_, exist := tokenPairsConfig[strings.ToLower(pairID)]
 	return exist
 }
 
@@ -85,7 +85,7 @@ func FindTokenConfig(address string, isSrc bool) (config *TokenConfig, pairID st
 
 // GetTokenConfig get token config
 func GetTokenConfig(pairID string, isSrc bool) *TokenConfig {
-	pairCfg, exist := tokenPairsConfig[pairID]
+	pairCfg, exist := tokenPairsConfig[strings.ToLower(pairID)]
 	if !exist {
 		return nil
 	}
@@ -185,7 +185,8 @@ func LoadTokenPairsConfigInDir(dir string, check bool) {
 		if err != nil {
 			log.Fatal("load token pair config error", "fileName", filePath, "err", err)
 		}
-		pairsConfig[pairConfig.PairID] = pairConfig
+		// use all small case to identify
+		pairsConfig[strings.ToLower(pairConfig.PairID)] = pairConfig
 	}
 	SetTokenPairsConfig(pairsConfig, check)
 }

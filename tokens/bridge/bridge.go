@@ -56,17 +56,27 @@ func InitCrossChainBridge(isServer bool) {
 
 	tokens.LoadTokenPairsConfig(true)
 
-	initBtcExtra(cfg.BtcExtra)
+	initBtcWithExtra(cfg.BtcExtra)
 
 	initDcrm(cfg.Dcrm, isServer)
 }
 
-func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
-	if btc.BridgeInstance == nil || btcExtra == nil {
+func initBtcWithExtra(btcExtra *tokens.BtcExtraConfig) {
+	if btc.BridgeInstance == nil {
 		return
 	}
+
 	if len(tokens.GetTokenPairsConfig()) != 1 {
 		log.Fatalf("Btc bridge does not support multiple tokens")
+	}
+	for _, pairCfg := range tokens.GetTokenPairsConfig() {
+		if !strings.EqualFold(pairCfg.PairID, btc.PairID) {
+			log.Fatalf("Btc bridge must have pairID %v, but %v provided", btc.PairID, pairCfg.PairID)
+		}
+	}
+
+	if btcExtra == nil {
+		return
 	}
 
 	if btcExtra.MinRelayFee > 0 {

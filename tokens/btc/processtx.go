@@ -27,7 +27,7 @@ func (b *Bridge) processSwapin(txid string) error {
 }
 
 func (b *Bridge) processP2shSwapin(txid, bindAddress string) error {
-	swapInfo, err := b.VerifyP2shTransaction("PAIRID", txid, bindAddress, true)
+	swapInfo, err := b.VerifyP2shTransaction(PairID, txid, bindAddress, true)
 	return tools.RegisterP2shSwapin(txid, swapInfo.Bind, err)
 }
 
@@ -37,8 +37,7 @@ func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err erro
 		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return "", tokens.ErrTxNotFound
 	}
-	pairID := "PAIRID"
-	tokenCfg := b.GetTokenConfig(pairID)
+	tokenCfg := b.GetTokenConfig(PairID)
 	depositAddress := tokenCfg.DepositAddress
 	txFrom := getTxFrom(tx.Vin, depositAddress)
 	for _, output := range tx.Vout {

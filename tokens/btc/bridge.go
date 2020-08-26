@@ -14,6 +14,9 @@ const (
 	netCustom   = "custom"
 )
 
+// PairID unique btc pair ID
+const PairID = "btc"
+
 // BridgeInstance btc bridge instance
 var BridgeInstance *Bridge
 
