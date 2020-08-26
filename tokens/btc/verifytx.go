@@ -98,7 +98,8 @@ func hasLockTimeOrSequence(tx *electrs.ElectTx) bool {
 func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	tokenCfg := b.GetTokenConfig(PairID)
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.Hash = txHash // Hash
+	swapInfo.PairID = PairID // PairID
+	swapInfo.Hash = txHash   // Hash
 	if !allowUnstable && !b.checkStable(txHash) {
 		return swapInfo, tokens.ErrTxNotStable
 	}

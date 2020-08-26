@@ -89,6 +89,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	if token == nil || pairID == "" {
 		return swapInfo, tokens.ErrUnkownPairID
 	}
+	swapInfo.PairID = pairID // PairID
 
 	if token.IsErc20() {
 		return b.verifyErc20SwapinTx(txHash, allowUnstable, pairID, token)
@@ -101,7 +102,6 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	if tx.BlockNumber != nil {
 		swapInfo.Height = tx.BlockNumber.ToInt().Uint64() // Height
 	}
-	swapInfo.PairID = pairID
 	swapInfo.To = txRecipient                         // To
 	swapInfo.From = strings.ToLower(tx.From.String()) // From
 	swapInfo.Bind = swapInfo.From                     // Bind

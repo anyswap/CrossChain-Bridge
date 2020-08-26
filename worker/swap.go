@@ -122,8 +122,13 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	if err != nil {
 		return err
 	}
-	if tokens.GetTokenConfig(swap.PairID, isSwapin).DisableSwap {
-		logWorkerTrace("swap", "swap is disabled", "isSwapin", isSwapin)
+	tokenCfgb := tokens.GetTokenConfig(swap.PairID, isSwapin)
+	if tokenCfgb == nil {
+		logWorkerTrace("swap", "swap is not configed", "pairID", swap.PairID, "isSwapin", isSwapin)
+		return nil
+	}
+	if tokenCfgb.DisableSwap {
+		logWorkerTrace("swap", "swap is disabled", "pairID", swap.PairID, "isSwapin", isSwapin)
 		return nil
 	}
 	isBlacked, err := isSwapInBlacklist(res)
@@ -168,6 +173,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
+			PairID:   swap.PairID,
 			SwapID:   txid,
 			SwapType: swapType,
 		},

@@ -34,6 +34,7 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (*tokens.TxSwapInfo, error
 	if token == nil || pairID == "" {
 		return swapInfo, tokens.ErrUnkownPairID
 	}
+	swapInfo.PairID = pairID // PairID
 
 	if !common.IsEqualIgnoreCase(txRecipient, token.ContractAddress) {
 		return swapInfo, tokens.ErrTxWithWrongContract
@@ -84,6 +85,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 	if token == nil || pairID == "" {
 		return swapInfo, tokens.ErrUnkownPairID
 	}
+	swapInfo.PairID = pairID // PairID
 
 	if !common.IsEqualIgnoreCase(txRecipient, token.ContractAddress) {
 		return swapInfo, tokens.ErrTxWithWrongContract
