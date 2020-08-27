@@ -58,5 +58,5 @@ func (b *Bridge) VerifyAggregateMsgHash(msgHash []string, args *tokens.BuildTxAr
 	if err != nil {
 		return err
 	}
-	return b.VerifyMsgHash(args.PairID, rawTx, msgHash, args.Extra)
+	return b.VerifyMsgHash(rawTx, msgHash)
 }

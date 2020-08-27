@@ -102,7 +102,7 @@ type CrossChainBridge interface {
 	GetTransaction(txHash string) (interface{}, error)
 	GetTransactionStatus(txHash string) *TxStatus
 	VerifyTransaction(txHash string, allowUnstable bool) (*TxSwapInfo, error)
-	VerifyMsgHash(pairID string, rawTx interface{}, msgHash []string, extra interface{}) error
+	VerifyMsgHash(rawTx interface{}, msgHash []string) error
 
 	BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error)
 	DcrmSignTransaction(rawTx interface{}, args *BuildTxArgs) (signedTx interface{}, txHash string, err error)

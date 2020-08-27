@@ -159,7 +159,7 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 	if err != nil {
 		return err
 	}
-	return dstBridge.VerifyMsgHash(args.PairID, rawTx, msgHash, args.Extra)
+	return dstBridge.VerifyMsgHash(rawTx, msgHash)
 }
 
 type acceptSignInfo struct {

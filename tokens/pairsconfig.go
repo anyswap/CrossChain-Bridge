@@ -95,37 +95,46 @@ func GetTokenConfig(pairID string, isSrc bool) *TokenConfig {
 	return pairCfg.DestToken
 }
 
-// GetAllDepositAddresses get all deposit addresses
-func GetAllDepositAddresses() []string {
-	var addrs []string
-	for _, cfg := range tokenPairsConfig {
-		addrs = append(addrs, cfg.SrcToken.DepositAddress)
-	}
-	return addrs
-}
-
 func checkTokenPairsConfig() (err error) {
 	pairsMap := make(map[string]struct{})
 	srcContractsMap := make(map[string]struct{})
 	dstContractsMap := make(map[string]struct{})
+	depositAddrsMap := make(map[string]struct{})
+	withdrawAddrsMap := make(map[string]struct{})
 	for _, tokenPair := range tokenPairsConfig {
+		// check pairsID
 		pairID := strings.ToLower(tokenPair.PairID)
 		if _, exist := pairsMap[pairID]; exist {
-			return fmt.Errorf("duplicate pairID '%v'", pairID)
+			return fmt.Errorf("duplicate pairID '%v'", tokenPair.PairID)
 		}
 		pairsMap[pairID] = struct{}{}
+		// check source contract address
 		srcContract := strings.ToLower(tokenPair.SrcToken.ContractAddress)
 		if srcContract != "" {
 			if _, exist := srcContractsMap[srcContract]; exist {
-				return fmt.Errorf("duplicate source contract '%v'", srcContract)
+				return fmt.Errorf("duplicate source contract '%v'", tokenPair.SrcToken.ContractAddress)
 			}
 			srcContractsMap[srcContract] = struct{}{}
 		}
+		// check destination contract address
 		dstContract := strings.ToLower(tokenPair.DestToken.ContractAddress)
 		if _, exist := dstContractsMap[dstContract]; exist {
-			return fmt.Errorf("duplicate destinatio contract '%v'", dstContract)
+			return fmt.Errorf("duplicate destination contract '%v'", tokenPair.DestToken.ContractAddress)
 		}
 		dstContractsMap[dstContract] = struct{}{}
+		// check deposit address
+		depositAddr := strings.ToLower(tokenPair.SrcToken.DepositAddress)
+		if _, exist := depositAddrsMap[depositAddr]; exist {
+			return fmt.Errorf("duplicate deposit address '%v'", tokenPair.SrcToken.DepositAddress)
+		}
+		depositAddrsMap[depositAddr] = struct{}{}
+		// check withdraw address
+		withdrawAddr := strings.ToLower(tokenPair.SrcToken.DcrmAddress)
+		if _, exist := withdrawAddrsMap[withdrawAddr]; exist {
+			return fmt.Errorf("duplicate withdraw address '%v'", tokenPair.SrcToken.DcrmAddress)
+		}
+		withdrawAddrsMap[withdrawAddr] = struct{}{}
+		// check config
 		err = tokenPair.CheckConfig()
 		if err != nil {
 			return err

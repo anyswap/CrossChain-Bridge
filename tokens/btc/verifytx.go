@@ -51,7 +51,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 }
 
 // VerifyMsgHash verify msg hash
-func (b *Bridge) VerifyMsgHash(pairID string, rawTx interface{}, msgHash []string, extra interface{}) (err error) {
+func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
 		return tokens.ErrWrongRawTx
@@ -96,12 +96,13 @@ func hasLockTimeOrSequence(tx *electrs.ElectTx) bool {
 }
 
 func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	tokenCfg := b.GetTokenConfig(PairID)
+	pairID := PairID
+	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
 		return nil, tokens.ErrUnknownPairID
 	}
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = PairID // PairID
+	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash
 	if !allowUnstable && !b.checkStable(txHash) {
 		return swapInfo, tokens.ErrTxNotStable
@@ -140,7 +141,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		return swapInfo, tokens.ErrTxWithWrongSender
 	}
 
-	if !tokens.CheckSwapValue(PairID, swapInfo.Value, b.IsSrc) {
+	if !tokens.CheckSwapValue(pairID, swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
 	}
 
@@ -157,7 +158,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	}
 
 	if !allowUnstable {
-		log.Debug("verify swapin pass", "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+		log.Debug("verify swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfo, nil
 }
