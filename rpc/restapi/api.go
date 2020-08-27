@@ -7,6 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/internal/swapapi"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/gorilla/mux"
 )
 
@@ -24,9 +25,23 @@ func writeResponse(w http.ResponseWriter, resp interface{}, err error) {
 	}
 }
 
-// SeverInfoHandler handler
-func SeverInfoHandler(w http.ResponseWriter, r *http.Request) {
+// VersionInfoHandler handler
+func VersionInfoHandler(w http.ResponseWriter, r *http.Request) {
+	version := params.VersionWithMeta
+	writeResponse(w, version, nil)
+}
+
+// ServerInfoHandler handler
+func ServerInfoHandler(w http.ResponseWriter, r *http.Request) {
 	res, err := swapapi.GetServerInfo()
+	writeResponse(w, res, err)
+}
+
+// TokenPairInfoHandler handler
+func TokenPairInfoHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	pairID := vars["pairid"]
+	res, err := swapapi.GetTokenPairInfo(pairID)
 	writeResponse(w, res, err)
 }
 

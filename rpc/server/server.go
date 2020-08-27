@@ -56,7 +56,9 @@ func initRouter() *mux.Router {
 	_ = rpcserver.RegisterService(new(rpcapi.RPCAPI), "swap")
 
 	r.Handle("/rpc", rpcserver)
-	r.HandleFunc("/serverinfo", restapi.SeverInfoHandler).Methods("GET")
+	r.HandleFunc("/serverinfo", restapi.ServerInfoHandler).Methods("GET")
+	r.HandleFunc("/versioninfo", restapi.VersionInfoHandler).Methods("GET")
+	r.HandleFunc("/pairinfo/{pairid}", restapi.TokenPairInfoHandler).Methods("GET")
 	r.HandleFunc("/statistics/{pairid}", restapi.StatisticsHandler).Methods("GET")
 	r.HandleFunc("/swapin/post/{txid}", restapi.PostSwapinHandler).Methods("POST")
 	r.HandleFunc("/swapin/retry/{txid}", restapi.RetrySwapinHandler).Methods("POST")
@@ -80,6 +82,8 @@ func initRouter() *mux.Router {
 	methodsExcluesGetAndPost := []string{"HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
 
 	r.HandleFunc("/serverinfo", warnHandler).Methods(methodsExcluesGet...)
+	r.HandleFunc("/versioninfo", warnHandler).Methods(methodsExcluesGet...)
+	r.HandleFunc("/pairinfo/{pairid}", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/statistics/{pairid}", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/swapin/post/{txid}", warnHandler).Methods(methodsExcluesPost...)
 	r.HandleFunc("/swapin/post/{txid}/{bind}", warnHandler).Methods(methodsExcluesPost...)

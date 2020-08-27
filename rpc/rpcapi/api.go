@@ -30,6 +30,15 @@ func (s *RPCAPI) GetServerInfo(r *http.Request, args *RPCNullArgs, result *swapa
 	return err
 }
 
+// GetTokenPairInfo api
+func (s *RPCAPI) GetTokenPairInfo(r *http.Request, pairID *string, result *tokens.TokenPairConfig) error {
+	res, err := swapapi.GetTokenPairInfo(*pairID)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
 // GetSwapStatistics api
 func (s *RPCAPI) GetSwapStatistics(r *http.Request, pairID *string, result *swapapi.SwapStatistics) error {
 	res, err := swapapi.GetSwapStatistics(*pairID)
