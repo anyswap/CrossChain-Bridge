@@ -105,13 +105,14 @@ func (s *RPCAPI) GetSwapout(r *http.Request, txid *string, result *swapapi.SwapI
 // RPCQueryHistoryArgs args
 type RPCQueryHistoryArgs struct {
 	Address string `json:"address"`
+	PairID  string `json:"pairid"`
 	Offset  int    `json:"offset"`
 	Limit   int    `json:"limit"`
 }
 
 // GetSwapinHistory api
 func (s *RPCAPI) GetSwapinHistory(r *http.Request, args *RPCQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
-	res, err := swapapi.GetSwapinHistory(args.Address, args.Offset, args.Limit)
+	res, err := swapapi.GetSwapinHistory(args.Address, args.PairID, args.Offset, args.Limit)
 	if err == nil && res != nil {
 		*result = res
 	}
@@ -120,7 +121,7 @@ func (s *RPCAPI) GetSwapinHistory(r *http.Request, args *RPCQueryHistoryArgs, re
 
 // GetSwapoutHistory api
 func (s *RPCAPI) GetSwapoutHistory(r *http.Request, args *RPCQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
-	res, err := swapapi.GetSwapoutHistory(args.Address, args.Offset, args.Limit)
+	res, err := swapapi.GetSwapoutHistory(args.Address, args.PairID, args.Offset, args.Limit)
 	if err == nil && res != nil {
 		*result = res
 	}

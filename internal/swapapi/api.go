@@ -124,10 +124,10 @@ func processHistoryLimit(limit int) int {
 }
 
 // GetSwapinHistory api
-func GetSwapinHistory(address string, offset, limit int) ([]*SwapInfo, error) {
-	log.Debug("[api] receive GetSwapinHistory", "address", address, "offset", offset, "limit", limit)
+func GetSwapinHistory(address, pairID string, offset, limit int) ([]*SwapInfo, error) {
+	log.Debug("[api] receive GetSwapinHistory", "address", address, "pairID", pairID, "offset", offset, "limit", limit)
 	limit = processHistoryLimit(limit)
-	result, err := mongodb.FindSwapinResults(address, offset, limit)
+	result, err := mongodb.FindSwapinResults(address, pairID, offset, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -135,10 +135,10 @@ func GetSwapinHistory(address string, offset, limit int) ([]*SwapInfo, error) {
 }
 
 // GetSwapoutHistory api
-func GetSwapoutHistory(address string, offset, limit int) ([]*SwapInfo, error) {
-	log.Debug("[api] receive GetSwapoutHistory", "address", address, "offset", offset, "limit", limit)
+func GetSwapoutHistory(address, pairID string, offset, limit int) ([]*SwapInfo, error) {
+	log.Debug("[api] receive GetSwapoutHistory", "address", address, "pairID", pairID, "offset", offset, "limit", limit)
 	limit = processHistoryLimit(limit)
-	result, err := mongodb.FindSwapoutResults(address, offset, limit)
+	result, err := mongodb.FindSwapoutResults(address, pairID, offset, limit)
 	if err != nil {
 		return nil, err
 	}

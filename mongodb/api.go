@@ -222,8 +222,8 @@ func FindSwapinResultsWithStatus(status SwapStatus, septime int64) ([]*MgoSwapRe
 }
 
 // FindSwapinResults find swapin history results
-func FindSwapinResults(address string, offset, limit int) ([]*MgoSwapResult, error) {
-	return findSwapResults(collSwapinResult, address, offset, limit)
+func FindSwapinResults(address, pairID string, offset, limit int) ([]*MgoSwapResult, error) {
+	return findSwapResults(collSwapinResult, address, pairID, offset, limit)
 }
 
 // GetCountOfSwapinResults get count of swapin results
@@ -264,8 +264,8 @@ func FindSwapoutResultsWithStatus(status SwapStatus, septime int64) ([]*MgoSwapR
 }
 
 // FindSwapoutResults find swapout history results
-func FindSwapoutResults(address string, offset, limit int) ([]*MgoSwapResult, error) {
-	return findSwapResults(collSwapoutResult, address, offset, limit)
+func FindSwapoutResults(address, pairID string, offset, limit int) ([]*MgoSwapResult, error) {
+	return findSwapResults(collSwapoutResult, address, pairID, offset, limit)
 }
 
 // GetCountOfSwapoutResults get count of swapout results
@@ -364,14 +364,27 @@ func findSwapResultsWithStatus(collection *mgo.Collection, status SwapStatus, se
 	return result, err
 }
 
-func findSwapResults(collection *mgo.Collection, address string, offset, limit int) ([]*MgoSwapResult, error) {
+func findSwapResults(collection *mgo.Collection, address, pairID string, offset, limit int) ([]*MgoSwapResult, error) {
 	result := make([]*MgoSwapResult, 0, 20)
-	var q *mgo.Query
-	if address == "all" {
-		q = collection.Find(nil).Skip(offset).Limit(limit)
-	} else {
-		q = collection.Find(bson.M{"from": address}).Skip(offset).Limit(limit)
+
+	var queries []bson.M
+	if pairID != "" {
+		queries = append(queries, bson.M{"pairid": strings.ToLower(pairID)})
 	}
+	if address != "all" {
+		queries = append(queries, bson.M{"from": address})
+	}
+
+	var q *mgo.Query
+	switch len(queries) {
+	case 0:
+		q = collection.Find(nil)
+	case 1:
+		q = collection.Find(queries[0])
+	default:
+		q = collection.Find(bson.M{"$and": queries})
+	}
+	q = q.Skip(offset).Limit(limit)
 	err := q.All(&result)
 	if err != nil {
 		return nil, mgoError(err)
