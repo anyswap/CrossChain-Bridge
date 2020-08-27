@@ -103,12 +103,7 @@ func processSwapoutVerify(swap *mongodb.MgoSwap) error {
 
 func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	txid := swap.TxID
-	var bridge tokens.CrossChainBridge
-	if isSwapin {
-		bridge = tokens.SrcBridge
-	} else {
-		bridge = tokens.DstBridge
-	}
+	bridge := tokens.GetCrossChainBridge(isSwapin)
 
 	var swapInfo *tokens.TxSwapInfo
 	switch tokens.SwapTxType(swap.TxType) {

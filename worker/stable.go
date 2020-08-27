@@ -88,15 +88,8 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	swapTxID := swap.SwapTx
 
-	var resBridge tokens.CrossChainBridge
-	var swapType tokens.SwapType
-	if isSwapin {
-		resBridge = tokens.DstBridge
-		swapType = tokens.SwapinType
-	} else {
-		resBridge = tokens.SrcBridge
-		swapType = tokens.SwapoutType
-	}
+	resBridge := tokens.GetCrossChainBridge(!isSwapin)
+	swapType := getSwapType(isSwapin)
 
 	txStatus := resBridge.GetTransactionStatus(swapTxID)
 	if txStatus == nil || txStatus.BlockHeight == 0 {

@@ -65,7 +65,6 @@ type SwapResultUpdateItems struct {
 // MgoP2shAddress key is the bind address
 type MgoP2shAddress struct {
 	Key         string `bson:"_id"`
-	PairID      string `bson:"pairid"`
 	P2shAddress string `bson:"p2shaddress"`
 }
 

@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"math/big"
+	"strings"
 	"sync"
 	"time"
 
@@ -74,6 +75,11 @@ func FindSwapinsWithStatus(status SwapStatus, septime int64) ([]*MgoSwap, error)
 	return findSwapsWithStatus(collSwapin, status, septime)
 }
 
+// FindSwapinsWithPairIDAndStatus find swapin with pairID and status in the past septime
+func FindSwapinsWithPairIDAndStatus(pairID string, status SwapStatus, septime int64) ([]*MgoSwap, error) {
+	return findSwapsWithPairIDAndStatus(pairID, collSwapin, status, septime)
+}
+
 // GetCountOfSwapinsWithStatus get count of swapins with status
 func GetCountOfSwapinsWithStatus(pairID string, status SwapStatus) (int, error) {
 	return getCountWithStatus(pairID, collSwapin, status)
@@ -99,6 +105,11 @@ func FindSwapout(txid string) (*MgoSwap, error) {
 // FindSwapoutsWithStatus find swapout with status
 func FindSwapoutsWithStatus(status SwapStatus, septime int64) ([]*MgoSwap, error) {
 	return findSwapsWithStatus(collSwapout, status, septime)
+}
+
+// FindSwapoutsWithPairIDAndStatus find swapout with pairID and status in the past septime
+func FindSwapoutsWithPairIDAndStatus(pairID string, status SwapStatus, septime int64) ([]*MgoSwap, error) {
+	return findSwapsWithPairIDAndStatus(pairID, collSwapout, status, septime)
 }
 
 // GetCountOfSwapoutsWithStatus get count of swapout with status
@@ -165,6 +176,20 @@ func findSwapsOrSwapResultsWithStatus(result interface{}, collection *mgo.Collec
 	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qtime, qstatus}
+	q := collection.Find(bson.M{"$and": queries}).Sort("timestamp").Limit(maxCountOfResults)
+	return mgoError(q.All(result))
+}
+
+func findSwapsWithPairIDAndStatus(pairID string, collection *mgo.Collection, status SwapStatus, septime int64) (result []*MgoSwap, err error) {
+	err = findSwapsOrSwapResultsWithPairIDAndStatus(&result, pairID, collection, status, septime)
+	return result, err
+}
+
+func findSwapsOrSwapResultsWithPairIDAndStatus(result interface{}, pairID string, collection *mgo.Collection, status SwapStatus, septime int64) error {
+	qpair := bson.M{"pairid": pairID}
+	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
+	qstatus := bson.M{"status": status}
+	queries := []bson.M{qpair, qtime, qstatus}
 	q := collection.Find(bson.M{"$and": queries}).Sort("timestamp").Limit(maxCountOfResults)
 	return mgoError(q.All(result))
 }
@@ -319,7 +344,7 @@ func updateSwapResultStatus(collection *mgo.Collection, txid string, status Swap
 	}
 	if status == MatchTxStable {
 		if swapResult, errq := findSwapResult(collection, txid); errq == nil {
-			_ = UpdateSwapStatistics(swapResult.PairID, swapResult.Value, swapResult.SwapValue, isSwapin)
+			_ = updateSwapStatistics(swapResult.PairID, swapResult.Value, swapResult.SwapValue, isSwapin)
 		}
 	}
 	return mgoError(err)
@@ -367,8 +392,7 @@ func getCountWithStatus(pairID string, collection *mgo.Collection, status SwapSt
 
 // ------------------ statistics ------------------------
 
-// UpdateSwapStatistics update swap statistics
-func UpdateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error {
+func updateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error {
 	curr, err := FindSwapStatistics(pairID)
 	if err != nil {
 		curr = &MgoSwapStatistics{
@@ -441,6 +465,7 @@ type SwapStatistics struct {
 
 // GetSwapStatistics get swap statistics
 func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
+	pairID = strings.ToLower(pairID)
 	stat := &SwapStatistics{PairID: pairID}
 
 	if curr, _ := FindSwapStatistics(pairID); curr != nil {
