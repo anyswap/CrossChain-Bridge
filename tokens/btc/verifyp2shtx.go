@@ -7,14 +7,19 @@ import (
 )
 
 // VerifyP2shTransaction verify p2sh tx
-func (b *Bridge) VerifyP2shTransaction(pairID, txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+	pairID := PairID
+	tokenCfg := b.GetTokenConfig(pairID)
+	if tokenCfg == nil {
+		return nil, tokens.ErrUnknownPairID
+	}
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash
 	if !b.IsSrc {
 		return swapInfo, tokens.ErrBridgeDestinationNotSupported
 	}
-	p2shAddress, _, err := b.GetP2shAddress(pairID, bindAddress)
+	p2shAddress, _, err := b.GetP2shAddress(bindAddress)
 	if err != nil {
 		return swapInfo, tokens.ErrWrongP2shBindAddress
 	}

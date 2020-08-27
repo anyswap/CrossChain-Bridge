@@ -22,7 +22,7 @@ all:
 	@echo ""
 	@echo "Copy config-example.toml and config-tokens-example.toml to \"$(GOBIN)\" directory"
 	@cp params/config-example.toml $(GOBIN)
-	@cp params/config-tokens-example.toml $(GOBIN)
+	@cp params/config-tokenpair-example.toml $(GOBIN)
 
 test: all
 	$(GOCMD) test ./...

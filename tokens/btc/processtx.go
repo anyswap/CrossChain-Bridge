@@ -29,7 +29,7 @@ func (b *Bridge) processSwapin(txid string) error {
 }
 
 func (b *Bridge) processP2shSwapin(txid, bindAddress string) error {
-	swapInfo, err := b.VerifyP2shTransaction(PairID, txid, bindAddress, true)
+	swapInfo, err := b.VerifyP2shTransaction(txid, bindAddress, true)
 	return tools.RegisterP2shSwapin(txid, swapInfo.Bind, err)
 }
 

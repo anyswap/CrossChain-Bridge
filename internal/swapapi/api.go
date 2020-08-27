@@ -254,7 +254,7 @@ func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddres
 	if btc.BridgeInstance == nil {
 		return nil, errNotBtcBridge
 	}
-	p2shAddr, redeemScript, err := btc.BridgeInstance.GetP2shAddress(btc.PairID, bindAddress)
+	p2shAddr, redeemScript, err := btc.BridgeInstance.GetP2shAddress(bindAddress)
 	if err != nil {
 		return nil, newRPCInternalError(err)
 	}
@@ -289,7 +289,7 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	if swap, _ := mongodb.FindSwapin(txidstr); swap != nil {
 		return nil, errSwapExist
 	}
-	_, err := btc.BridgeInstance.VerifyP2shTransaction(btc.PairID, txidstr, *bindAddr, true)
+	_, err := btc.BridgeInstance.VerifyP2shTransaction(txidstr, *bindAddr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32099, "verify p2sh swapin failed! "+err.Error())
 	}

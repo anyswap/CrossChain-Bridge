@@ -28,6 +28,7 @@ var (
 	// those errors will be ignored in accepting
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
 	errInitiatorMismatch  = errors.New("initiator mismatch")
+	errPairIDMismatch     = errors.New("pair ID mismatch")
 	errWrongMsgContext    = errors.New("wrong msg context")
 )
 
@@ -139,12 +140,17 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 		if btc.BridgeInstance == nil {
 			return tokens.ErrNoBtcBridge
 		}
-		swap, err = btc.BridgeInstance.VerifyP2shTransaction(args.PairID, args.SwapID, args.Bind, false)
+		swap, err = btc.BridgeInstance.VerifyP2shTransaction(args.SwapID, args.Bind, false)
 	default:
 		swap, err = srcBridge.VerifyTransaction(args.SwapID, false)
 	}
 	if err != nil {
 		logWorkerError("accept", "verifySignInfo failed", err, "txid", args.SwapID, "swaptype", args.SwapType)
+		return err
+	}
+	if swap.PairID != args.PairID {
+		err = errPairIDMismatch
+		logWorkerError("accept", "verifySignInfo failed", err, "txid", args.SwapID, "swaptype", args.SwapType, "swap.PairID", swap.PairID, "args.PairID", args.PairID)
 		return err
 	}
 

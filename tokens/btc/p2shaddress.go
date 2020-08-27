@@ -31,15 +31,16 @@ func GetP2shAddressWithMemo(memo, pubKeyHash []byte, net *chaincfg.Params) (p2sh
 }
 
 // GetP2shAddress get p2sh address from bind address
-func (b *Bridge) GetP2shAddress(pairID, bindAddr string) (p2shAddress string, redeemScript []byte, err error) {
+func (b *Bridge) GetP2shAddress(bindAddr string) (p2shAddress string, redeemScript []byte, err error) {
 	if !tokens.GetCrossChainBridge(!b.IsSrc).IsValidAddress(bindAddr) {
 		return "", nil, fmt.Errorf("invalid bind address %v", bindAddr)
 	}
 	memo := common.FromHex(bindAddr)
 	net := b.GetChainParams()
+	pairID := PairID
 	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
-		return "", nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
+		return "", nil, tokens.ErrUnknownPairID
 	}
 
 	dcrmAddress := tokenCfg.DcrmAddress
@@ -63,7 +64,7 @@ func (b *Bridge) getRedeemScriptByOutputScrpit(preScript []byte) ([]byte, error)
 		return nil, fmt.Errorf("ps2h address %v is registered", p2shAddr)
 	}
 	var address string
-	address, redeemScript, _ := b.GetP2shAddress(PairID, bindAddr)
+	address, redeemScript, _ := b.GetP2shAddress(bindAddr)
 	if address != p2shAddr {
 		return nil, fmt.Errorf("ps2h address mismatch for bind address %v, have %v want %v", bindAddr, p2shAddr, address)
 	}
