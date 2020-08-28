@@ -100,7 +100,7 @@ func checkTokenPairsConfig() (err error) {
 	srcContractsMap := make(map[string]struct{})
 	dstContractsMap := make(map[string]struct{})
 	depositAddrsMap := make(map[string]struct{})
-	withdrawAddrsMap := make(map[string]struct{})
+	nonContractSrcCount := 0
 	for _, tokenPair := range tokenPairsConfig {
 		// check pairsID
 		pairID := strings.ToLower(tokenPair.PairID)
@@ -115,6 +115,8 @@ func checkTokenPairsConfig() (err error) {
 				return fmt.Errorf("duplicate source contract '%v'", tokenPair.SrcToken.ContractAddress)
 			}
 			srcContractsMap[srcContract] = struct{}{}
+		} else {
+			nonContractSrcCount++
 		}
 		// check destination contract address
 		dstContract := strings.ToLower(tokenPair.DestToken.ContractAddress)
@@ -128,12 +130,6 @@ func checkTokenPairsConfig() (err error) {
 			return fmt.Errorf("duplicate deposit address '%v'", tokenPair.SrcToken.DepositAddress)
 		}
 		depositAddrsMap[depositAddr] = struct{}{}
-		// check withdraw address
-		withdrawAddr := strings.ToLower(tokenPair.SrcToken.DcrmAddress)
-		if _, exist := withdrawAddrsMap[withdrawAddr]; exist {
-			return fmt.Errorf("duplicate withdraw address '%v'", tokenPair.SrcToken.DcrmAddress)
-		}
-		withdrawAddrsMap[withdrawAddr] = struct{}{}
 		// check config
 		err = tokenPair.CheckConfig()
 		if err != nil {
@@ -141,6 +137,9 @@ func checkTokenPairsConfig() (err error) {
 		}
 		SrcBridge.VerifyTokenConfig(tokenPair.SrcToken)
 		DstBridge.VerifyTokenConfig(tokenPair.DestToken)
+	}
+	if nonContractSrcCount > 1 {
+		return fmt.Errorf("only support one non-contract token swapin")
 	}
 	return nil
 }

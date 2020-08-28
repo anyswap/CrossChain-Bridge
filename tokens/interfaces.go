@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"math/big"
+	"strings"
 )
 
 // transaction memo prefix
@@ -148,18 +149,20 @@ func NewCrossChainBridgeBase(isSrc bool) *CrossChainBridgeBase {
 
 // AdjustNonce adjust account nonce (eth like chain)
 func (b *CrossChainBridgeBase) AdjustNonce(pairID string, value uint64) (nonce uint64) {
+	tokenCfg := b.GetTokenConfig(pairID)
+	account := strings.ToLower(tokenCfg.DcrmAddress)
 	nonce = value
 	if b.IsSrcEndpoint() {
-		if b.SwapoutNonce[pairID] > value {
-			nonce = b.SwapoutNonce[pairID]
+		if b.SwapoutNonce[account] > value {
+			nonce = b.SwapoutNonce[account]
 		} else {
-			b.SwapoutNonce[pairID] = value
+			b.SwapoutNonce[account] = value
 		}
 	} else {
-		if b.SwapinNonce[pairID] > value {
-			nonce = b.SwapinNonce[pairID]
+		if b.SwapinNonce[account] > value {
+			nonce = b.SwapinNonce[account]
 		} else {
-			b.SwapinNonce[pairID] = value
+			b.SwapinNonce[account] = value
 		}
 	}
 	return nonce
@@ -167,10 +170,12 @@ func (b *CrossChainBridgeBase) AdjustNonce(pairID string, value uint64) (nonce u
 
 // IncreaseNonce decrease account nonce (eth like chain)
 func (b *CrossChainBridgeBase) IncreaseNonce(pairID string, value uint64) {
+	tokenCfg := b.GetTokenConfig(pairID)
+	account := strings.ToLower(tokenCfg.DcrmAddress)
 	if b.IsSrcEndpoint() {
-		b.SwapoutNonce[pairID] += value
+		b.SwapoutNonce[account] += value
 	} else {
-		b.SwapinNonce[pairID] += value
+		b.SwapinNonce[account] += value
 	}
 }
 

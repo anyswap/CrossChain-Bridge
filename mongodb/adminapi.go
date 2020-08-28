@@ -154,12 +154,7 @@ func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
 	if res.SwapTx == "" {
 		return errors.New("swap without swaptx")
 	}
-	var bridge tokens.CrossChainBridge
-	if isSwapin {
-		bridge = tokens.DstBridge
-	} else {
-		bridge = tokens.SrcBridge
-	}
+	bridge := tokens.GetCrossChainBridge(!isSwapin)
 	_, err := bridge.GetTransaction(res.SwapTx)
 	if err == nil {
 		return errors.New("swaptx exist in chain or pool")

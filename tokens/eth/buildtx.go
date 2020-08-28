@@ -28,7 +28,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		if tokenCfg == nil {
 			return nil, tokens.ErrUnknownPairID
 		}
-		if args.SwapType != tokens.NoSwapType {
+		if args.From == "" && args.SwapType != tokens.NoSwapType {
 			args.From = tokenCfg.DcrmAddress // from
 		}
 		switch args.SwapType {
