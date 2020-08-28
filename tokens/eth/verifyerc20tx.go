@@ -11,17 +11,21 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-func (b *Bridge) verifyErc20SwapinTx(txHash string, allowUnstable bool, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifyErc20SwapinTx(tx *types.RPCTransaction, allowUnstable bool, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
 	if allowUnstable {
-		return b.verifyErc20SwapinTxUnstable(txHash, pairID, token)
+		return b.verifyErc20SwapinTxUnstable(tx, pairID, token)
 	}
-	return b.verifyErc20SwapinTxStable(txHash, pairID, token)
+	return b.verifyErc20SwapinTxStable(tx, pairID, token)
 }
 
-func (b *Bridge) verifyErc20SwapinTxStable(txHash, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
+	txHash := tx.Hash.String()
+	txRecipient := strings.ToLower(tx.Recipient.String())
+
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID // PairID
-	swapInfo.Hash = txHash   // Hash
+	swapInfo.PairID = pairID    // PairID
+	swapInfo.Hash = txHash      // Hash
+	swapInfo.TxTo = txRecipient // TxTo
 
 	receipt, err := b.getStableReceipt(swapInfo)
 	if err != nil {
@@ -53,17 +57,17 @@ func (b *Bridge) verifyErc20SwapinTxStable(txHash, pairID string, token *tokens.
 	return swapInfo, nil
 }
 
-func (b *Bridge) verifyErc20SwapinTxUnstable(txHash, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifyErc20SwapinTxUnstable(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
+	txHash := tx.Hash.String()
+	txRecipient := strings.ToLower(tx.Recipient.String())
+
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID // PairID
-	swapInfo.Hash = txHash   // Hash
-	tx, err := b.GetTransactionByHash(txHash)
-	if err != nil {
-		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
-		return swapInfo, tokens.ErrTxNotFound
-	}
+	swapInfo.PairID = pairID    // PairID
+	swapInfo.Hash = txHash      // Hash
+	swapInfo.TxTo = txRecipient // TxTo
+
 	if tx.Recipient == nil ||
-		!common.IsEqualIgnoreCase(tx.Recipient.String(), token.ContractAddress) {
+		!common.IsEqualIgnoreCase(txRecipient, token.ContractAddress) {
 		return swapInfo, tokens.ErrTxWithWrongContract
 	}
 

@@ -20,6 +20,7 @@ type MgoSwap struct {
 	Key       string     `bson:"_id"`
 	PairID    string     `bson:"pairid"`
 	TxID      string     `bson:"txid"`
+	TxTo      string     `bson:"txto"`
 	TxType    uint32     `bson:"txtype"`
 	Bind      string     `bson:"bind"`
 	Status    SwapStatus `bson:"status"`
@@ -32,6 +33,7 @@ type MgoSwapResult struct {
 	Key        string     `bson:"_id"`
 	PairID     string     `bson:"pairid"`
 	TxID       string     `bson:"txid"`
+	TxTo       string     `bson:"txto"`
 	TxHeight   uint64     `bson:"txheight"`
 	TxTime     uint64     `bson:"txtime"`
 	From       string     `bson:"from"`

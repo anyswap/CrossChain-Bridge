@@ -41,6 +41,7 @@ var SuccessPostResult PostResult = "Success"
 type SwapInfo struct {
 	PairID        string     `json:"pairid"`
 	TxID          string     `json:"txid"`
+	TxTo          string     `json:"txto"`
 	TxHeight      uint64     `json:"txheight"`
 	TxTime        uint64     `json:"txtime"`
 	From          string     `json:"from"`

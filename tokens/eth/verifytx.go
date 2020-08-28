@@ -89,13 +89,14 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	if token == nil || pairID == "" {
 		return swapInfo, tokens.ErrUnknownPairID
 	}
-	swapInfo.PairID = pairID // PairID
+	swapInfo.PairID = pairID    // PairID
+	swapInfo.TxTo = txRecipient // TxTo
 
 	if token.IsErc20() {
-		return b.verifyErc20SwapinTx(txHash, allowUnstable, pairID, token)
+		return b.verifyErc20SwapinTx(tx, allowUnstable, pairID, token)
 	}
 
-	if !common.IsEqualIgnoreCase(swapInfo.To, token.DepositAddress) {
+	if !common.IsEqualIgnoreCase(txRecipient, token.DepositAddress) {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 

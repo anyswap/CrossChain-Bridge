@@ -118,6 +118,7 @@ type TxSwapInfo struct {
 	Height    uint64   `json:"height"`
 	Timestamp uint64   `json:"timestamp"`
 	From      string   `json:"from"`
+	TxTo      string   `json:"txto"`
 	To        string   `json:"to"`
 	Bind      string   `json:"bind"`
 	Value     *big.Int `json:"value"`

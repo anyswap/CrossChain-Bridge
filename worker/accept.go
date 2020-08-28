@@ -62,6 +62,7 @@ func acceptSign() {
 			switch err {
 			case errIdentifierMismatch,
 				errInitiatorMismatch,
+				errPairIDMismatch,
 				errWrongMsgContext,
 				tokens.ErrNoBtcBridge,
 				tokens.ErrTxNotStable,

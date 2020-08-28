@@ -29,6 +29,7 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 		Key:        txid,
 		PairID:     tx.PairID,
 		TxID:       txid,
+		TxTo:       tx.TxTo,
 		TxHeight:   tx.Height,
 		TxTime:     tx.Timestamp,
 		From:       tx.From,

@@ -212,6 +212,7 @@ func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.T
 		Key:       txid,
 		PairID:    swapInfo.PairID,
 		TxID:      txid,
+		TxTo:      swapInfo.TxTo,
 		TxType:    uint32(txType),
 		Bind:      swapInfo.Bind,
 		Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
@@ -289,7 +290,7 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	if swap, _ := mongodb.FindSwapin(txidstr); swap != nil {
 		return nil, errSwapExist
 	}
-	_, err := btc.BridgeInstance.VerifyP2shTransaction(txidstr, *bindAddr, true)
+	swapInfo, err := btc.BridgeInstance.VerifyP2shTransaction(txidstr, *bindAddr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32099, "verify p2sh swapin failed! "+err.Error())
 	}
@@ -299,8 +300,9 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	}
 	swap := &mongodb.MgoSwap{
 		Key:       txidstr,
-		PairID:    btc.PairID,
+		PairID:    swapInfo.PairID,
 		TxID:      txidstr,
+		TxTo:      swapInfo.TxTo,
 		TxType:    uint32(tokens.P2shSwapinTx),
 		Bind:      *bindAddr,
 		Status:    mongodb.GetStatusByTokenVerifyError(err),
