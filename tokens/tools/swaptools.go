@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
@@ -16,32 +17,30 @@ var (
 	retryRPCInterval = 1 * time.Second
 )
 
-// IsSwapinExist is swapin exist
-func IsSwapinExist(txid string) bool {
+// IsSwapExist is swapin exist
+func IsSwapExist(txid, pairID string, isSwapin bool) bool {
 	if dcrm.IsSwapServer() {
-		swap, _ := mongodb.FindSwapin(txid)
-		return swap != nil
-	}
-	var result interface{}
-	for i := 0; i < retryRPCCount; i++ {
-		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetSwapin", txid)
-		if err == nil {
-			return result != nil
+		var swap *mongodb.MgoSwap
+		if isSwapin {
+			swap, _ = mongodb.FindSwapin(txid, pairID)
+		} else {
+			swap, _ = mongodb.FindSwapout(txid, pairID)
 		}
-		time.Sleep(retryRPCInterval)
-	}
-	return false
-}
-
-// IsSwapoutExist is swapout exist
-func IsSwapoutExist(txid string) bool {
-	if dcrm.IsSwapServer() {
-		swap, _ := mongodb.FindSwapout(txid)
 		return swap != nil
 	}
 	var result interface{}
+	var method string
+	if isSwapin {
+		method = "swap.GetSwapin"
+	} else {
+		method = "swap.GetSwapout"
+	}
+	args := map[string]interface{}{
+		"txid":   txid,
+		"pairid": pairID,
+	}
 	for i := 0; i < retryRPCCount; i++ {
-		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetSwapout", txid)
+		err := client.RPCPost(&result, params.ServerAPIAddress, method, args)
 		if err == nil {
 			return result != nil
 		}
@@ -51,52 +50,85 @@ func IsSwapoutExist(txid string) bool {
 }
 
 // RegisterSwapin register swapin
-func RegisterSwapin(txid, bind string, verifyError error) error {
-	return registerSwap(true, txid, bind, verifyError)
+func RegisterSwapin(txid string, swapInfos []*tokens.TxSwapInfo, verifyErrors []error) {
+	registerSwap(true, txid, swapInfos, verifyErrors)
 }
 
 // RegisterSwapout register swapout
-func RegisterSwapout(txid, bind string, verifyError error) error {
-	return registerSwap(false, txid, bind, verifyError)
+func RegisterSwapout(txid string, swapInfos []*tokens.TxSwapInfo, verifyErrors []error) {
+	registerSwap(false, txid, swapInfos, verifyErrors)
 }
 
-func registerSwap(isSwapin bool, txid, bind string, verifyError error) error {
-	if !tokens.ShouldRegisterSwapForError(verifyError) {
-		return verifyError
+func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, verifyErrors []error) {
+	if len(swapInfos) != len(verifyErrors) {
+		log.Error("registerSwap with not equal number of swap infos and verify errors")
+		return
 	}
-	isServer := dcrm.IsSwapServer()
-	log.Info("[scan] register swap", "isSwapin", isSwapin, "isServer", isServer, "tx", txid, "bind", bind)
-	if isServer {
-		var memo string
-		if verifyError != nil {
-			memo = verifyError.Error()
+	for i, swapInfo := range swapInfos {
+		verifyError := verifyErrors[i]
+		if !tokens.ShouldRegisterSwapForError(verifyError) {
+			continue
 		}
-		swap := &mongodb.MgoSwap{
-			Key:       txid,
-			TxID:      txid,
-			Bind:      bind,
-			Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
-			Timestamp: time.Now().Unix(),
-			Memo:      memo,
+		pairID := swapInfo.PairID
+		if IsSwapExist(txid, pairID, isSwapin) {
+			return
 		}
-		if isSwapin {
-			swap.TxType = uint32(tokens.SwapinTx)
-			return mongodb.AddSwapin(swap)
+		isServer := dcrm.IsSwapServer()
+		log.Info("[scan] register swap", "pairID", pairID, "isSwapin", isSwapin, "isServer", isServer, "tx", txid)
+		if isServer {
+			var memo string
+			if verifyError != nil {
+				memo = verifyError.Error()
+			}
+			bind := swapInfo.Bind
+			swap := &mongodb.MgoSwap{
+				Key:       txid,
+				TxID:      txid,
+				PairID:    pairID,
+				TxTo:      swapInfo.TxTo,
+				Bind:      bind,
+				Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
+				Timestamp: time.Now().Unix(),
+				Memo:      memo,
+			}
+			if isSwapin {
+				swap.TxType = uint32(tokens.SwapinTx)
+				_ = mongodb.AddSwapin(swap)
+			} else {
+				swap.TxType = uint32(tokens.SwapoutTx)
+				_ = mongodb.AddSwapout(swap)
+			}
+		} else {
+			var result interface{}
+			var method string
+			if isSwapin {
+				method = "swap.Swapin"
+			} else {
+				method = "swap.Swapout"
+			}
+			args := map[string]interface{}{
+				"txid":   txid,
+				"pairid": pairID,
+			}
+			for i := 0; i < retryRPCCount; i++ {
+				err := client.RPCPost(&result, params.ServerAPIAddress, method, args)
+				if err == nil || strings.Contains(err.Error(), "swap already exist") {
+					break
+				}
+				time.Sleep(retryRPCInterval)
+			}
 		}
-		swap.TxType = uint32(tokens.SwapoutTx)
-		return mongodb.AddSwapout(swap)
 	}
-	var result interface{}
-	if isSwapin {
-		return client.RPCPost(&result, params.ServerAPIAddress, "swap.Swapin", txid)
-	}
-	return client.RPCPost(&result, params.ServerAPIAddress, "swap.Swapout", txid)
 }
 
 // RegisterP2shSwapin register p2sh swapin
-func RegisterP2shSwapin(txid, bind string, verifyError error) error {
+func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError error) {
+	if !tokens.ShouldRegisterSwapForError(verifyError) {
+		return
+	}
 	isServer := dcrm.IsSwapServer()
-	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid, "bind", bind)
+	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid)
+	bind := swapInfo.Bind
 	if isServer {
 		var memo string
 		if verifyError != nil {
@@ -105,20 +137,23 @@ func RegisterP2shSwapin(txid, bind string, verifyError error) error {
 		swap := &mongodb.MgoSwap{
 			Key:       txid,
 			TxID:      txid,
+			PairID:    swapInfo.PairID,
+			TxTo:      swapInfo.TxTo,
 			TxType:    uint32(tokens.P2shSwapinTx),
 			Bind:      bind,
 			Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
 			Timestamp: time.Now().Unix(),
 			Memo:      memo,
 		}
-		return mongodb.AddSwapin(swap)
+		_ = mongodb.AddSwapin(swap)
+	} else {
+		args := map[string]interface{}{
+			"txid": txid,
+			"bind": bind,
+		}
+		var result interface{}
+		_ = client.RPCPost(&result, params.ServerAPIAddress, "swap.P2shSwapin", args)
 	}
-	args := map[string]interface{}{
-		"txid": txid,
-		"bind": bind,
-	}
-	var result interface{}
-	return client.RPCPost(&result, params.ServerAPIAddress, "swap.P2shSwapin", args)
 }
 
 // GetP2shBindAddress get p2sh bind address

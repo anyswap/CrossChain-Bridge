@@ -64,23 +64,24 @@ func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
 }
 
 // GetRawSwapin api
-func GetRawSwapin(txid *string) (*Swap, error) {
-	return mongodb.FindSwapin(*txid)
+func GetRawSwapin(txid, pairID *string) (*Swap, error) {
+	return mongodb.FindSwapin(*txid, *pairID)
 }
 
 // GetRawSwapinResult api
-func GetRawSwapinResult(txid *string) (*SwapResult, error) {
-	return mongodb.FindSwapinResult(*txid)
+func GetRawSwapinResult(txid, pairID *string) (*SwapResult, error) {
+	return mongodb.FindSwapinResult(*txid, *pairID)
 }
 
 // GetSwapin api
-func GetSwapin(txid *string) (*SwapInfo, error) {
+func GetSwapin(txid, pairID *string) (*SwapInfo, error) {
 	txidstr := *txid
-	result, err := mongodb.FindSwapinResult(txidstr)
+	pairIDStr := *pairID
+	result, err := mongodb.FindSwapinResult(txidstr, pairIDStr)
 	if err == nil {
 		return ConvertMgoSwapResultToSwapInfo(result), nil
 	}
-	register, err := mongodb.FindSwapin(txidstr)
+	register, err := mongodb.FindSwapin(txidstr, pairIDStr)
 	if err == nil {
 		return ConvertMgoSwapToSwapInfo(register), nil
 	}
@@ -88,23 +89,24 @@ func GetSwapin(txid *string) (*SwapInfo, error) {
 }
 
 // GetRawSwapout api
-func GetRawSwapout(txid *string) (*Swap, error) {
-	return mongodb.FindSwapout(*txid)
+func GetRawSwapout(txid, pairID *string) (*Swap, error) {
+	return mongodb.FindSwapout(*txid, *pairID)
 }
 
 // GetRawSwapoutResult api
-func GetRawSwapoutResult(txid *string) (*SwapResult, error) {
-	return mongodb.FindSwapoutResult(*txid)
+func GetRawSwapoutResult(txid, pairID *string) (*SwapResult, error) {
+	return mongodb.FindSwapoutResult(*txid, *pairID)
 }
 
 // GetSwapout api
-func GetSwapout(txid *string) (*SwapInfo, error) {
+func GetSwapout(txid, pairID *string) (*SwapInfo, error) {
 	txidstr := *txid
-	result, err := mongodb.FindSwapoutResult(txidstr)
+	pairIDStr := *pairID
+	result, err := mongodb.FindSwapoutResult(txidstr, pairIDStr)
 	if err == nil {
 		return ConvertMgoSwapResultToSwapInfo(result), nil
 	}
-	register, err := mongodb.FindSwapout(txidstr)
+	register, err := mongodb.FindSwapout(txidstr, pairIDStr)
 	if err == nil {
 		return ConvertMgoSwapToSwapInfo(register), nil
 	}
@@ -146,16 +148,14 @@ func GetSwapoutHistory(address, pairID string, offset, limit int) ([]*SwapInfo, 
 }
 
 // Swapin api
-func Swapin(txid *string) (*PostResult, error) {
-	log.Debug("[api] receive Swapin", "txid", *txid)
+func Swapin(txid, pairID *string) (*PostResult, error) {
+	log.Debug("[api] receive Swapin", "txid", *txid, "pairID", *pairID)
 	txidstr := *txid
-	if swap, _ := mongodb.FindSwapin(txidstr); swap != nil {
+	pairIDStr := *pairID
+	if swap, _ := mongodb.FindSwapin(txidstr, pairIDStr); swap != nil {
 		return nil, errSwapExist
 	}
-	swapInfo, err := tokens.SrcBridge.VerifyTransaction(txidstr, true)
-	if !tokens.ShouldRegisterSwapForError(err) {
-		return nil, newRPCError(-32099, "verify swapin failed! "+err.Error())
-	}
+	swapInfo, err := tokens.SrcBridge.VerifyTransactionWithPairID(pairIDStr, txidstr)
 	err = addSwapToDatabase(txidstr, tokens.SwapinTx, swapInfo, err)
 	if err != nil {
 		return nil, err
@@ -164,21 +164,22 @@ func Swapin(txid *string) (*PostResult, error) {
 }
 
 // RetrySwapin api
-func RetrySwapin(txid *string) (*PostResult, error) {
+func RetrySwapin(txid, pairID *string) (*PostResult, error) {
 	log.Debug("[api] retry Swapin", "txid", *txid)
 	txidstr := *txid
-	swap, _ := mongodb.FindSwapin(txidstr)
+	pairIDStr := *pairID
+	swap, _ := mongodb.FindSwapin(txidstr, pairIDStr)
 	if swap == nil {
 		return nil, errSwapNotExist
 	}
 	if !swap.Status.CanRetry() {
 		return nil, errSwapCannotRetry
 	}
-	_, err := tokens.SrcBridge.VerifyTransaction(txidstr, true)
+	_, err := tokens.SrcBridge.VerifyTransactionWithPairID(pairIDStr, txidstr)
 	if err != nil {
 		return nil, newRPCError(-32099, "retry swapin failed! "+err.Error())
 	}
-	err = mongodb.UpdateSwapinStatus(txidstr, mongodb.TxNotStable, time.Now().Unix(), "")
+	err = mongodb.UpdateSwapinStatus(txidstr, pairIDStr, mongodb.TxNotStable, time.Now().Unix(), "")
 	if err != nil {
 		return nil, err
 	}
@@ -186,16 +187,14 @@ func RetrySwapin(txid *string) (*PostResult, error) {
 }
 
 // Swapout api
-func Swapout(txid *string) (*PostResult, error) {
+func Swapout(txid, pairID *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapout", "txid", *txid)
 	txidstr := *txid
-	if swap, _ := mongodb.FindSwapout(txidstr); swap != nil {
+	pairIDStr := *pairID
+	if swap, _ := mongodb.FindSwapout(txidstr, pairIDStr); swap != nil {
 		return nil, errSwapExist
 	}
-	swapInfo, err := tokens.DstBridge.VerifyTransaction(txidstr, true)
-	if !tokens.ShouldRegisterSwapForError(err) {
-		return nil, newRPCError(-32098, "verify swapout failed! "+err.Error())
-	}
+	swapInfo, err := tokens.DstBridge.VerifyTransactionWithPairID(pairIDStr, txidstr)
 	err = addSwapToDatabase(txidstr, tokens.SwapoutTx, swapInfo, err)
 	if err != nil {
 		return nil, err
@@ -203,7 +202,10 @@ func Swapout(txid *string) (*PostResult, error) {
 	return &SuccessPostResult, nil
 }
 
-func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.TxSwapInfo, verifyError error) error {
+func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.TxSwapInfo, verifyError error) (err error) {
+	if !tokens.ShouldRegisterSwapForError(verifyError) {
+		return newRPCError(-32099, "verify swap failed! "+err.Error())
+	}
 	var memo string
 	if verifyError != nil {
 		memo = verifyError.Error()
@@ -222,9 +224,11 @@ func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.T
 	isSwapin := txType == tokens.SwapinTx
 	log.Info("[api] add swap", "isSwapin", isSwapin, "swap", swap)
 	if isSwapin {
-		return mongodb.AddSwapin(swap)
+		err = mongodb.AddSwapin(swap)
+	} else {
+		err = mongodb.AddSwapout(swap)
 	}
-	return mongodb.AddSwapout(swap)
+	return err
 }
 
 // IsValidSwapinBindAddress api
@@ -287,10 +291,11 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 		return nil, errNotBtcBridge
 	}
 	txidstr := *txid
-	if swap, _ := mongodb.FindSwapin(txidstr); swap != nil {
+	pairID := btc.PairID
+	if swap, _ := mongodb.FindSwapin(txidstr, pairID); swap != nil {
 		return nil, errSwapExist
 	}
-	swapInfo, err := btc.BridgeInstance.VerifyP2shTransaction(txidstr, *bindAddr, true)
+	swapInfo, err := btc.BridgeInstance.VerifyP2shTransactionWithPairID(pairID, txidstr, *bindAddr)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32099, "verify p2sh swapin failed! "+err.Error())
 	}

@@ -8,7 +8,21 @@ import (
 
 // VerifyP2shTransaction verify p2sh tx
 func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	pairID := PairID
+	if !b.IsSrc {
+		return nil, tokens.ErrBridgeDestinationNotSupported
+	}
+	return b.verifyP2shSwapinTx(PairID, txHash, bindAddress, allowUnstable)
+}
+
+// VerifyP2shTransactionWithPairID verify p2sh tx (must be stable)
+func (b *Bridge) VerifyP2shTransactionWithPairID(pairID, txHash, bindAddress string) (*tokens.TxSwapInfo, error) {
+	if !b.IsSrc {
+		return nil, tokens.ErrBridgeDestinationNotSupported
+	}
+	return b.verifyP2shSwapinTx(pairID, txHash, bindAddress, false)
+}
+
+func (b *Bridge) verifyP2shSwapinTx(pairID, txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
 		return nil, tokens.ErrUnknownPairID
@@ -16,9 +30,6 @@ func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash
-	if !b.IsSrc {
-		return swapInfo, tokens.ErrBridgeDestinationNotSupported
-	}
 	p2shAddress, _, err := b.GetP2shAddress(bindAddress)
 	if err != nil {
 		return swapInfo, tokens.ErrWrongP2shBindAddress

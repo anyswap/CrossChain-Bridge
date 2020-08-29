@@ -64,23 +64,28 @@ func IsTokenPairExist(pairID string) bool {
 }
 
 // FindTokenConfig find by (tx to) address
-func FindTokenConfig(address string, isSrc bool) (config *TokenConfig, pairID string) {
-	var tokenCfg *TokenConfig
+func FindTokenConfig(address string, isSrc bool) (configs []*TokenConfig, pairIDs []string) {
 	for _, pairCfg := range tokenPairsConfig {
+		var tokenCfg *TokenConfig
 		if isSrc {
 			tokenCfg = pairCfg.SrcToken
 		} else {
 			tokenCfg = pairCfg.DestToken
 		}
+		match := false
 		if tokenCfg.ContractAddress != "" {
 			if strings.EqualFold(tokenCfg.ContractAddress, address) {
-				return tokenCfg, pairCfg.PairID
+				match = true
 			}
 		} else if strings.EqualFold(tokenCfg.DepositAddress, address) {
-			return tokenCfg, pairCfg.PairID
+			match = true
+		}
+		if match {
+			configs = append(configs, tokenCfg)
+			pairIDs = append(pairIDs, pairCfg.PairID)
 		}
 	}
-	return nil, ""
+	return configs, pairIDs
 }
 
 // GetTokenConfig get token config
@@ -99,7 +104,6 @@ func checkTokenPairsConfig() (err error) {
 	pairsMap := make(map[string]struct{})
 	srcContractsMap := make(map[string]struct{})
 	dstContractsMap := make(map[string]struct{})
-	depositAddrsMap := make(map[string]struct{})
 	nonContractSrcCount := 0
 	for _, tokenPair := range tokenPairsConfig {
 		// check pairsID
@@ -124,12 +128,6 @@ func checkTokenPairsConfig() (err error) {
 			return fmt.Errorf("duplicate destination contract '%v'", tokenPair.DestToken.ContractAddress)
 		}
 		dstContractsMap[dstContract] = struct{}{}
-		// check deposit address
-		depositAddr := strings.ToLower(tokenPair.SrcToken.DepositAddress)
-		if _, exist := depositAddrsMap[depositAddr]; exist {
-			return fmt.Errorf("duplicate deposit address '%v'", tokenPair.SrcToken.DepositAddress)
-		}
-		depositAddrsMap[depositAddr] = struct{}{}
 		// check config
 		err = tokenPair.CheckConfig()
 		if err != nil {

@@ -28,7 +28,6 @@ var (
 	// those errors will be ignored in accepting
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
 	errInitiatorMismatch  = errors.New("initiator mismatch")
-	errPairIDMismatch     = errors.New("pair ID mismatch")
 	errWrongMsgContext    = errors.New("wrong msg context")
 )
 
@@ -62,8 +61,8 @@ func acceptSign() {
 			switch err {
 			case errIdentifierMismatch,
 				errInitiatorMismatch,
-				errPairIDMismatch,
 				errWrongMsgContext,
+				tokens.ErrUnknownPairID,
 				tokens.ErrNoBtcBridge,
 				tokens.ErrTxNotStable,
 				tokens.ErrTxNotFound:
@@ -133,32 +132,27 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 		return fmt.Errorf("unknown swap type %v", args.SwapType)
 	}
 	var (
-		swap *tokens.TxSwapInfo
-		err  error
+		swapInfo *tokens.TxSwapInfo
+		err      error
 	)
 	switch args.TxType {
 	case tokens.P2shSwapinTx:
 		if btc.BridgeInstance == nil {
 			return tokens.ErrNoBtcBridge
 		}
-		swap, err = btc.BridgeInstance.VerifyP2shTransaction(args.SwapID, args.Bind, false)
+		swapInfo, err = btc.BridgeInstance.VerifyP2shTransactionWithPairID(args.PairID, args.SwapID, args.Bind)
 	default:
-		swap, err = srcBridge.VerifyTransaction(args.SwapID, false)
+		swapInfo, err = srcBridge.VerifyTransactionWithPairID(args.PairID, args.SwapID)
 	}
 	if err != nil {
 		logWorkerError("accept", "verifySignInfo failed", err, "txid", args.SwapID, "swaptype", args.SwapType)
 		return err
 	}
-	if swap.PairID != args.PairID {
-		err = errPairIDMismatch
-		logWorkerError("accept", "verifySignInfo failed", err, "txid", args.SwapID, "swaptype", args.SwapType, "swap.PairID", swap.PairID, "args.PairID", args.PairID)
-		return err
-	}
 
 	buildTxArgs := &tokens.BuildTxArgs{
 		SwapInfo: args.SwapInfo,
-		To:       swap.Bind,
-		Value:    swap.Value,
+		To:       swapInfo.Bind,
+		Value:    swapInfo.Value,
 		Memo:     memo,
 		Extra:    args.Extra,
 	}

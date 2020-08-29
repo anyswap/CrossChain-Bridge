@@ -12,7 +12,7 @@ var (
 		Action:    reverify,
 		Name:      "reverify",
 		Usage:     "admin reverify",
-		ArgsUsage: "<swapin|swapout> <txid>",
+		ArgsUsage: "<swapin|swapout> <txid> <pairID>",
 		Description: `
 admin reverify swap
 `,
@@ -23,7 +23,7 @@ admin reverify swap
 func reverify(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
 	method := "reverify"
-	if ctx.NArg() != 2 {
+	if ctx.NArg() != 3 {
 		_ = cli.ShowCommandHelp(ctx, method)
 		fmt.Println()
 		return fmt.Errorf("invalid arguments: %q", ctx.Args())

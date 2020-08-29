@@ -107,9 +107,9 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 			txFailed = true
 		}
 		if txFailed {
-			return markSwapResultFailed(swap.Key, isSwapin)
+			return markSwapResultFailed(swap.TxID, swap.PairID, isSwapin)
 		}
-		return markSwapResultStable(swap.Key, isSwapin)
+		return markSwapResultStable(swap.TxID, swap.PairID, isSwapin)
 	}
 
 	matchTx := &MatchTx{
@@ -117,5 +117,5 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 		SwapTime:   txStatus.BlockTime,
 		SwapType:   swapType,
 	}
-	return updateSwapResult(swap.Key, matchTx)
+	return updateSwapResult(swap.TxID, swap.PairID, matchTx)
 }

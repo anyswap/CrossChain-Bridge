@@ -57,7 +57,8 @@ func StatisticsHandler(w http.ResponseWriter, r *http.Request) {
 func GetRawSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
-	res, err := swapapi.GetRawSwapin(&txid)
+	pairID := vars["pairid"]
+	res, err := swapapi.GetRawSwapin(&txid, &pairID)
 	writeResponse(w, res, err)
 }
 
@@ -65,7 +66,8 @@ func GetRawSwapinHandler(w http.ResponseWriter, r *http.Request) {
 func GetRawSwapinResultHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
-	res, err := swapapi.GetRawSwapinResult(&txid)
+	pairID := vars["pairid"]
+	res, err := swapapi.GetRawSwapinResult(&txid, &pairID)
 	writeResponse(w, res, err)
 }
 
@@ -73,7 +75,8 @@ func GetRawSwapinResultHandler(w http.ResponseWriter, r *http.Request) {
 func GetSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
-	res, err := swapapi.GetSwapin(&txid)
+	pairID := vars["pairid"]
+	res, err := swapapi.GetSwapin(&txid, &pairID)
 	writeResponse(w, res, err)
 }
 
@@ -81,7 +84,8 @@ func GetSwapinHandler(w http.ResponseWriter, r *http.Request) {
 func GetRawSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
-	res, err := swapapi.GetRawSwapout(&txid)
+	pairID := vars["pairid"]
+	res, err := swapapi.GetRawSwapout(&txid, &pairID)
 	writeResponse(w, res, err)
 }
 
@@ -89,7 +93,8 @@ func GetRawSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 func GetRawSwapoutResultHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
-	res, err := swapapi.GetRawSwapoutResult(&txid)
+	pairID := vars["pairid"]
+	res, err := swapapi.GetRawSwapoutResult(&txid, &pairID)
 	writeResponse(w, res, err)
 }
 
@@ -97,7 +102,8 @@ func GetRawSwapoutResultHandler(w http.ResponseWriter, r *http.Request) {
 func GetSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
-	res, err := swapapi.GetSwapout(&txid)
+	pairID := vars["pairid"]
+	res, err := swapapi.GetSwapout(&txid, &pairID)
 	writeResponse(w, res, err)
 }
 
@@ -153,7 +159,8 @@ func SwapoutHistoryHandler(w http.ResponseWriter, r *http.Request) {
 func PostSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
-	res, err := swapapi.Swapin(&txid)
+	pairID := vars["pairid"]
+	res, err := swapapi.Swapin(&txid, &pairID)
 	writeResponse(w, res, err)
 }
 
@@ -161,7 +168,8 @@ func PostSwapinHandler(w http.ResponseWriter, r *http.Request) {
 func RetrySwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
-	res, err := swapapi.RetrySwapin(&txid)
+	pairID := vars["pairid"]
+	res, err := swapapi.RetrySwapin(&txid, &pairID)
 	writeResponse(w, res, err)
 }
 
@@ -178,7 +186,8 @@ func PostP2shSwapinHandler(w http.ResponseWriter, r *http.Request) {
 func PostSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
-	res, err := swapapi.Swapout(&txid)
+	pairID := vars["pairid"]
+	res, err := swapapi.Swapout(&txid, &pairID)
 	writeResponse(w, res, err)
 }
 

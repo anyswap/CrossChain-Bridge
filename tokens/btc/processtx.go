@@ -9,28 +9,25 @@ import (
 )
 
 func (b *Bridge) processTransaction(txid string) {
-	if tools.IsSwapinExist(txid) {
-		return
-	}
 	p2shBindAddr, err := b.checkSwapinTxType(txid)
 	if err != nil {
 		return
 	}
 	if p2shBindAddr != "" {
-		_ = b.processP2shSwapin(txid, p2shBindAddr)
+		b.processP2shSwapin(txid, p2shBindAddr)
 	} else {
-		_ = b.processSwapin(txid)
+		b.processSwapin(txid)
 	}
 }
 
-func (b *Bridge) processSwapin(txid string) error {
-	swapInfo, err := b.VerifyTransaction(txid, true)
-	return tools.RegisterSwapin(txid, swapInfo.Bind, err)
+func (b *Bridge) processSwapin(txid string) {
+	swapInfos, errs := b.VerifyTransaction(txid, true)
+	tools.RegisterSwapin(txid, swapInfos, errs)
 }
 
-func (b *Bridge) processP2shSwapin(txid, bindAddress string) error {
+func (b *Bridge) processP2shSwapin(txid, bindAddress string) {
 	swapInfo, err := b.VerifyP2shTransaction(txid, bindAddress, true)
-	return tools.RegisterP2shSwapin(txid, swapInfo.Bind, err)
+	tools.RegisterP2shSwapin(txid, swapInfo, err)
 }
 
 func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err error) {

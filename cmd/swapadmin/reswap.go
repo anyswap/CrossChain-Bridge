@@ -18,7 +18,7 @@ var (
 		Action:    reswap,
 		Name:      "reswap",
 		Usage:     "admin reswap",
-		ArgsUsage: "<swapin|swapout> <txid>",
+		ArgsUsage: "<swapin|swapout> <txid> <pairID>",
 		Description: `
 admin reswap swap
 `,
@@ -29,7 +29,7 @@ admin reswap swap
 func reswap(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
 	method := "reswap"
-	if ctx.NArg() != 2 {
+	if ctx.NArg() != 3 {
 		_ = cli.ShowCommandHelp(ctx, method)
 		fmt.Println()
 		return fmt.Errorf("invalid arguments: %q", ctx.Args())
@@ -45,6 +45,7 @@ func reverifyOrReswap(ctx *cli.Context, method string) error {
 
 	operation := ctx.Args().Get(0)
 	txid := ctx.Args().Get(1)
+	pairID := ctx.Args().Get(2)
 
 	switch operation {
 	case swapinOp, swapoutOp:
@@ -54,7 +55,7 @@ func reverifyOrReswap(ctx *cli.Context, method string) error {
 
 	log.Printf("admin %v: %v %v", method, operation, txid)
 
-	params := []string{operation, txid}
+	params := []string{operation, txid, pairID}
 	result, err := adminCall(method, params)
 
 	log.Printf("result is '%v'", result)

@@ -102,7 +102,8 @@ type CrossChainBridge interface {
 
 	GetTransaction(txHash string) (interface{}, error)
 	GetTransactionStatus(txHash string) *TxStatus
-	VerifyTransaction(txHash string, allowUnstable bool) (*TxSwapInfo, error)
+	VerifyTransaction(txHash string, allowUnstable bool) ([]*TxSwapInfo, []error)
+	VerifyTransactionWithPairID(pairID, txHash string) (*TxSwapInfo, error)
 	VerifyMsgHash(rawTx interface{}, msgHash []string) error
 
 	BuildRawTransaction(args *BuildTxArgs) (rawTx interface{}, err error)

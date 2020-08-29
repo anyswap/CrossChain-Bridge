@@ -6,24 +6,18 @@ import (
 
 func (b *Bridge) processTransaction(txid string) {
 	if b.IsSrc {
-		_ = b.processSwapin(txid)
+		b.processSwapin(txid)
 	} else {
-		_ = b.processSwapout(txid)
+		b.processSwapout(txid)
 	}
 }
 
-func (b *Bridge) processSwapin(txid string) error {
-	if tools.IsSwapinExist(txid) {
-		return nil
-	}
-	swapInfo, err := b.VerifyTransaction(txid, true)
-	return tools.RegisterSwapin(txid, swapInfo.Bind, err)
+func (b *Bridge) processSwapin(txid string) {
+	swapInfos, errs := b.VerifyTransaction(txid, true)
+	tools.RegisterSwapin(txid, swapInfos, errs)
 }
 
-func (b *Bridge) processSwapout(txid string) error {
-	if tools.IsSwapoutExist(txid) {
-		return nil
-	}
-	swapInfo, err := b.VerifyTransaction(txid, true)
-	return tools.RegisterSwapout(txid, swapInfo.Bind, err)
+func (b *Bridge) processSwapout(txid string) {
+	swapInfos, errs := b.VerifyTransaction(txid, true)
+	tools.RegisterSwapout(txid, swapInfos, errs)
 }

@@ -90,15 +90,20 @@ var (
 		Name:  "swapserver",
 		Usage: "swap server RPC address",
 	}
-	// DepositAddressFlag --deposit
-	DepositAddressFlag = &cli.StringFlag{
+	// DepositAddressSliceFlag --deposit
+	DepositAddressSliceFlag = &cli.StringSliceFlag{
 		Name:  "deposit",
-		Usage: "deposit address",
+		Usage: "deposit address slice",
 	}
-	// TokenAddressFlag --token
-	TokenAddressFlag = &cli.StringFlag{
+	// TokenAddressSliceFlag --token
+	TokenAddressSliceFlag = &cli.StringSliceFlag{
 		Name:  "token",
-		Usage: "token address",
+		Usage: "token address slice",
+	}
+	// PairIDSliceFlag --pairid
+	PairIDSliceFlag = &cli.StringSliceFlag{
+		Name:  "pairid",
+		Usage: "token pair id slice",
 	}
 	// KeystoreFileFlag --keystore
 	KeystoreFileFlag = &cli.StringFlag{

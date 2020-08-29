@@ -11,14 +11,14 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-func (b *Bridge) verifyErc20SwapinTx(tx *types.RPCTransaction, allowUnstable bool, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifyErc20SwapinTxWithPairID(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if allowUnstable {
-		return b.verifyErc20SwapinTxUnstable(tx, pairID, token)
+		return b.verifyErc20SwapinTxUnstableWithPairID(tx, pairID, token)
 	}
-	return b.verifyErc20SwapinTxStable(tx, pairID, token)
+	return b.verifyErc20SwapinTxStableWithPairID(tx, pairID, token)
 }
 
-func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifyErc20SwapinTxStableWithPairID(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
 	txHash := tx.Hash.String()
 	txRecipient := strings.ToLower(tx.Recipient.String())
 
@@ -57,7 +57,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID stri
 	return swapInfo, nil
 }
 
-func (b *Bridge) verifyErc20SwapinTxUnstable(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifyErc20SwapinTxUnstableWithPairID(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
 	txHash := tx.Hash.String()
 	txRecipient := strings.ToLower(tx.Recipient.String())
 

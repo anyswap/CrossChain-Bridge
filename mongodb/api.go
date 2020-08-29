@@ -22,35 +22,35 @@ var (
 // --------------- swapin and swapout uniform --------------------------------
 
 // UpdateSwapStatus update swap status
-func UpdateSwapStatus(isSwapin bool, txid string, status SwapStatus, timestamp int64, memo string) error {
+func UpdateSwapStatus(isSwapin bool, txid, pairID string, status SwapStatus, timestamp int64, memo string) error {
 	if isSwapin {
-		return updateSwapStatus(collSwapin, txid, status, timestamp, memo)
+		return updateSwapStatus(collSwapin, txid, pairID, status, timestamp, memo)
 	}
-	return updateSwapStatus(collSwapout, txid, status, timestamp, memo)
+	return updateSwapStatus(collSwapout, txid, pairID, status, timestamp, memo)
 }
 
 // UpdateSwapResultStatus update swap result status
-func UpdateSwapResultStatus(isSwapin bool, txid string, status SwapStatus, timestamp int64, memo string) error {
+func UpdateSwapResultStatus(isSwapin bool, txid, pairID string, status SwapStatus, timestamp int64, memo string) error {
 	if isSwapin {
-		return updateSwapResultStatus(collSwapinResult, txid, status, timestamp, memo)
+		return updateSwapResultStatus(collSwapinResult, txid, pairID, status, timestamp, memo)
 	}
-	return updateSwapResultStatus(collSwapoutResult, txid, status, timestamp, memo)
+	return updateSwapResultStatus(collSwapoutResult, txid, pairID, status, timestamp, memo)
 }
 
 // FindSwapResult find swap result
-func FindSwapResult(isSwapin bool, txid string) (*MgoSwapResult, error) {
+func FindSwapResult(isSwapin bool, txid, pairID string) (*MgoSwapResult, error) {
 	if isSwapin {
-		return findSwapResult(collSwapinResult, txid)
+		return findSwapResult(collSwapinResult, txid, pairID)
 	}
-	return findSwapResult(collSwapoutResult, txid)
+	return findSwapResult(collSwapoutResult, txid, pairID)
 }
 
 // FindSwap find swap
-func FindSwap(isSwapin bool, txid string) (*MgoSwap, error) {
+func FindSwap(isSwapin bool, txid, pairID string) (*MgoSwap, error) {
 	if isSwapin {
-		return findSwap(collSwapin, txid)
+		return findSwap(collSwapin, txid, pairID)
 	}
-	return findSwap(collSwapout, txid)
+	return findSwap(collSwapout, txid, pairID)
 }
 
 // --------------- swapin --------------------------------
@@ -61,13 +61,13 @@ func AddSwapin(ms *MgoSwap) error {
 }
 
 // UpdateSwapinStatus update swapin status
-func UpdateSwapinStatus(txid string, status SwapStatus, timestamp int64, memo string) error {
-	return updateSwapStatus(collSwapin, txid, status, timestamp, memo)
+func UpdateSwapinStatus(txid, pairID string, status SwapStatus, timestamp int64, memo string) error {
+	return updateSwapStatus(collSwapin, txid, pairID, status, timestamp, memo)
 }
 
 // FindSwapin find swapin
-func FindSwapin(txid string) (*MgoSwap, error) {
-	return findSwap(collSwapin, txid)
+func FindSwapin(txid, pairID string) (*MgoSwap, error) {
+	return findSwap(collSwapin, txid, pairID)
 }
 
 // FindSwapinsWithStatus find swapin with status in the past septime
@@ -82,7 +82,7 @@ func FindSwapinsWithPairIDAndStatus(pairID string, status SwapStatus, septime in
 
 // GetCountOfSwapinsWithStatus get count of swapins with status
 func GetCountOfSwapinsWithStatus(pairID string, status SwapStatus) (int, error) {
-	return getCountWithStatus(pairID, collSwapin, status)
+	return getCountWithStatus(collSwapin, pairID, status)
 }
 
 // --------------- swapout --------------------------------
@@ -93,13 +93,13 @@ func AddSwapout(ms *MgoSwap) error {
 }
 
 // UpdateSwapoutStatus update swapout status
-func UpdateSwapoutStatus(txid string, status SwapStatus, timestamp int64, memo string) error {
-	return updateSwapStatus(collSwapout, txid, status, timestamp, memo)
+func UpdateSwapoutStatus(txid, pairID string, status SwapStatus, timestamp int64, memo string) error {
+	return updateSwapStatus(collSwapout, txid, pairID, status, timestamp, memo)
 }
 
 // FindSwapout find swapout
-func FindSwapout(txid string) (*MgoSwap, error) {
-	return findSwap(collSwapout, txid)
+func FindSwapout(txid, pairID string) (*MgoSwap, error) {
+	return findSwap(collSwapout, txid, pairID)
 }
 
 // FindSwapoutsWithStatus find swapout with status
@@ -114,7 +114,7 @@ func FindSwapoutsWithPairIDAndStatus(pairID string, status SwapStatus, septime i
 
 // GetCountOfSwapoutsWithStatus get count of swapout with status
 func GetCountOfSwapoutsWithStatus(pairID string, status SwapStatus) (int, error) {
-	return getCountWithStatus(pairID, collSwapout, status)
+	return getCountWithStatus(collSwapout, pairID, status)
 }
 
 // ------------------ swapin / swapout common ------------------------
@@ -122,14 +122,14 @@ func GetCountOfSwapoutsWithStatus(pairID string, status SwapStatus) (int, error)
 func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
 	err := collection.Insert(ms)
 	if err == nil {
-		log.Info("mongodb add swap", "txid", ms.TxID, "isSwapin", isSwapin(collection))
+		log.Info("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "isSwapin", isSwapin(collection))
 	} else {
-		log.Debug("mongodb add swap", "txid", ms.TxID, "isSwapin", isSwapin(collection), "err", err)
+		log.Debug("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
 
-func updateSwapStatus(collection *mgo.Collection, txid string, status SwapStatus, timestamp int64, memo string) error {
+func updateSwapStatus(collection *mgo.Collection, txid, pairID string, status SwapStatus, timestamp int64, memo string) error {
 	updates := bson.M{"status": status, "timestamp": timestamp}
 	if memo != "" {
 		updates["memo"] = memo
@@ -139,28 +139,33 @@ func updateSwapStatus(collection *mgo.Collection, txid string, status SwapStatus
 	if status == TxNotStable {
 		retryLock.Lock()
 		defer retryLock.Unlock()
-		swap, _ := findSwap(collection, txid)
+		swap, _ := findSwap(collection, txid, pairID)
 		if !swap.Status.CanRetry() {
 			return nil
 		}
 	}
-	err := collection.UpdateId(txid, bson.M{"$set": updates})
+	err := collection.UpdateId(GetSwapKey(txid, pairID), bson.M{"$set": updates})
 	if err == nil {
 		printLog := log.Info
 		switch status {
 		case TxVerifyFailed, TxSwapFailed:
 			printLog = log.Warn
 		}
-		printLog("mongodb update swap status", "txid", txid, "status", status, "isSwapin", isSwapin(collection))
+		printLog("mongodb update swap status", "txid", txid, "pairID", pairID, "status", status, "isSwapin", isSwapin(collection))
 	} else {
-		log.Debug("mongodb update swap status", "txid", txid, "status", status, "isSwapin", isSwapin(collection), "err", err)
+		log.Debug("mongodb update swap status", "txid", txid, "pairID", pairID, "status", status, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
 
-func findSwap(collection *mgo.Collection, txid string) (*MgoSwap, error) {
+// GetSwapKey txid + pairID
+func GetSwapKey(txid, pairID string) string {
+	return strings.ToLower(txid + ":" + pairID)
+}
+
+func findSwap(collection *mgo.Collection, txid, pairID string) (*MgoSwap, error) {
 	var result MgoSwap
-	err := collection.FindId(txid).One(&result)
+	err := collection.FindId(GetSwapKey(txid, pairID)).One(&result)
 	if err != nil {
 		return nil, mgoError(err)
 	}
@@ -202,18 +207,18 @@ func AddSwapinResult(mr *MgoSwapResult) error {
 }
 
 // UpdateSwapinResult update swapin result
-func UpdateSwapinResult(txid string, items *SwapResultUpdateItems) error {
-	return updateSwapResult(collSwapinResult, txid, items)
+func UpdateSwapinResult(txid, pairID string, items *SwapResultUpdateItems) error {
+	return updateSwapResult(collSwapinResult, txid, pairID, items)
 }
 
 // UpdateSwapinResultStatus update swapin result status
-func UpdateSwapinResultStatus(txid string, status SwapStatus, timestamp int64, memo string) error {
-	return updateSwapResultStatus(collSwapinResult, txid, status, timestamp, memo)
+func UpdateSwapinResultStatus(txid, pairID string, status SwapStatus, timestamp int64, memo string) error {
+	return updateSwapResultStatus(collSwapinResult, txid, pairID, status, timestamp, memo)
 }
 
 // FindSwapinResult find swapin result
-func FindSwapinResult(txid string) (*MgoSwapResult, error) {
-	return findSwapResult(collSwapinResult, txid)
+func FindSwapinResult(txid, pairID string) (*MgoSwapResult, error) {
+	return findSwapResult(collSwapinResult, txid, pairID)
 }
 
 // FindSwapinResultsWithStatus find swapin result with status
@@ -228,12 +233,12 @@ func FindSwapinResults(address, pairID string, offset, limit int) ([]*MgoSwapRes
 
 // GetCountOfSwapinResults get count of swapin results
 func GetCountOfSwapinResults(pairID string) (int, error) {
-	return getCount(pairID, collSwapinResult)
+	return getCount(collSwapinResult, pairID)
 }
 
 // GetCountOfSwapinResultsWithStatus get count of swapin results with status
 func GetCountOfSwapinResultsWithStatus(pairID string, status SwapStatus) (int, error) {
-	return getCountWithStatus(pairID, collSwapinResult, status)
+	return getCountWithStatus(collSwapinResult, pairID, status)
 }
 
 // --------------- swapout result --------------------------------
@@ -244,18 +249,18 @@ func AddSwapoutResult(mr *MgoSwapResult) error {
 }
 
 // UpdateSwapoutResult update swapout result
-func UpdateSwapoutResult(txid string, items *SwapResultUpdateItems) error {
-	return updateSwapResult(collSwapoutResult, txid, items)
+func UpdateSwapoutResult(txid, pairID string, items *SwapResultUpdateItems) error {
+	return updateSwapResult(collSwapoutResult, txid, pairID, items)
 }
 
 // UpdateSwapoutResultStatus update swapout result status
-func UpdateSwapoutResultStatus(txid string, status SwapStatus, timestamp int64, memo string) error {
-	return updateSwapResultStatus(collSwapoutResult, txid, status, timestamp, memo)
+func UpdateSwapoutResultStatus(txid, pairID string, status SwapStatus, timestamp int64, memo string) error {
+	return updateSwapResultStatus(collSwapoutResult, txid, pairID, status, timestamp, memo)
 }
 
 // FindSwapoutResult find swapout result
-func FindSwapoutResult(txid string) (*MgoSwapResult, error) {
-	return findSwapResult(collSwapoutResult, txid)
+func FindSwapoutResult(txid, pairID string) (*MgoSwapResult, error) {
+	return findSwapResult(collSwapoutResult, txid, pairID)
 }
 
 // FindSwapoutResultsWithStatus find swapout result with status
@@ -270,12 +275,12 @@ func FindSwapoutResults(address, pairID string, offset, limit int) ([]*MgoSwapRe
 
 // GetCountOfSwapoutResults get count of swapout results
 func GetCountOfSwapoutResults(pairID string) (int, error) {
-	return getCount(pairID, collSwapoutResult)
+	return getCount(collSwapoutResult, pairID)
 }
 
 // GetCountOfSwapoutResultsWithStatus get count of swapout results with status
 func GetCountOfSwapoutResultsWithStatus(pairID string, status SwapStatus) (int, error) {
-	return getCountWithStatus(pairID, collSwapoutResult, status)
+	return getCountWithStatus(collSwapoutResult, pairID, status)
 }
 
 // ------------------ swapin / swapout result common ------------------------
@@ -283,14 +288,14 @@ func GetCountOfSwapoutResultsWithStatus(pairID string, status SwapStatus) (int, 
 func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
 	err := collection.Insert(ms)
 	if err == nil {
-		log.Info("mongodb add swap result", "txid", ms.TxID, "swaptype", ms.SwapType, "isSwapin", isSwapin(collection))
+		log.Info("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "swaptype", ms.SwapType, "isSwapin", isSwapin(collection))
 	} else {
-		log.Debug("mongodb add swap result", "txid", ms.TxID, "swaptype", ms.SwapType, "isSwapin", isSwapin(collection), "err", err)
+		log.Debug("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "swaptype", ms.SwapType, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
 
-func updateSwapResult(collection *mgo.Collection, txid string, items *SwapResultUpdateItems) error {
+func updateSwapResult(collection *mgo.Collection, txid, pairID string, items *SwapResultUpdateItems) error {
 	updates := bson.M{
 		"status":    items.Status,
 		"timestamp": items.Timestamp,
@@ -318,16 +323,16 @@ func updateSwapResult(collection *mgo.Collection, txid string, items *SwapResult
 	} else if items.Status == MatchTxNotStable {
 		updates["memo"] = ""
 	}
-	err := collection.UpdateId(txid, bson.M{"$set": updates})
+	err := collection.UpdateId(GetSwapKey(txid, pairID), bson.M{"$set": updates})
 	if err == nil {
-		log.Info("mongodb update swap result", "txid", txid, "updates", updates, "isSwapin", isSwapin(collection))
+		log.Info("mongodb update swap result", "txid", txid, "pairID", pairID, "updates", updates, "isSwapin", isSwapin(collection))
 	} else {
-		log.Debug("mongodb update swap result", "txid", txid, "updates", updates, "isSwapin", isSwapin(collection), "err", err)
+		log.Debug("mongodb update swap result", "txid", txid, "pairID", pairID, "updates", updates, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
 
-func updateSwapResultStatus(collection *mgo.Collection, txid string, status SwapStatus, timestamp int64, memo string) error {
+func updateSwapResultStatus(collection *mgo.Collection, txid, pairID string, status SwapStatus, timestamp int64, memo string) error {
 	updates := bson.M{"status": status, "timestamp": timestamp}
 	if memo != "" {
 		updates["memo"] = memo
@@ -335,24 +340,24 @@ func updateSwapResultStatus(collection *mgo.Collection, txid string, status Swap
 		updates["memo"] = ""
 		updates["swaptx"] = ""
 	}
-	err := collection.UpdateId(txid, bson.M{"$set": updates})
+	err := collection.UpdateId(GetSwapKey(txid, pairID), bson.M{"$set": updates})
 	isSwapin := isSwapin(collection)
 	if err == nil {
-		log.Info("mongodb update swap result status", "txid", txid, "status", status, "isSwapin", isSwapin)
+		log.Info("mongodb update swap result status", "txid", txid, "pairID", pairID, "status", status, "isSwapin", isSwapin)
 	} else {
-		log.Debug("mongodb update swap result status", "txid", txid, "status", status, "isSwapin", isSwapin, "err", err)
+		log.Debug("mongodb update swap result status", "txid", txid, "pairID", pairID, "status", status, "isSwapin", isSwapin, "err", err)
 	}
 	if status == MatchTxStable {
-		if swapResult, errq := findSwapResult(collection, txid); errq == nil {
-			_ = updateSwapStatistics(swapResult.PairID, swapResult.Value, swapResult.SwapValue, isSwapin)
+		if swapResult, errq := findSwapResult(collection, txid, pairID); errq == nil {
+			_ = updateSwapStatistics(pairID, swapResult.Value, swapResult.SwapValue, isSwapin)
 		}
 	}
 	return mgoError(err)
 }
 
-func findSwapResult(collection *mgo.Collection, txid string) (*MgoSwapResult, error) {
+func findSwapResult(collection *mgo.Collection, txid, pairID string) (*MgoSwapResult, error) {
 	var result MgoSwapResult
-	err := collection.FindId(txid).One(&result)
+	err := collection.FindId(GetSwapKey(txid, pairID)).One(&result)
 	if err != nil {
 		return nil, mgoError(err)
 	}
@@ -392,11 +397,11 @@ func findSwapResults(collection *mgo.Collection, address, pairID string, offset,
 	return result, nil
 }
 
-func getCount(pairID string, collection *mgo.Collection) (int, error) {
+func getCount(collection *mgo.Collection, pairID string) (int, error) {
 	return collection.Find(bson.M{"pairid": pairID}).Count()
 }
 
-func getCountWithStatus(pairID string, collection *mgo.Collection, status SwapStatus) (int, error) {
+func getCountWithStatus(collection *mgo.Collection, pairID string, status SwapStatus) (int, error) {
 	qpair := bson.M{"pairid": pairID}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qpair, qstatus}

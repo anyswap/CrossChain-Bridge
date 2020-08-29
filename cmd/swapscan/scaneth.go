@@ -31,8 +31,9 @@ distribute rewards by liquidity
 		Flags: []cli.Flag{
 			utils.GatewayFlag,
 			utils.SwapServerFlag,
-			utils.DepositAddressFlag,
-			utils.TokenAddressFlag,
+			utils.DepositAddressSliceFlag,
+			utils.TokenAddressSliceFlag,
+			utils.PairIDSliceFlag,
 			utils.StartHeightFlag,
 			utils.EndHeightFlag,
 			utils.StableHeightFlag,
@@ -42,14 +43,15 @@ distribute rewards by liquidity
 )
 
 type ethSwapScanner struct {
-	gateway        string
-	swapServer     string
-	depositAddress string
-	tokenAddress   string
-	startHeight    uint64
-	endHeight      uint64
-	stableHeight   uint64
-	jobCount       uint64
+	gateway          string
+	swapServer       string
+	depositAddresses []string
+	tokenAddresses   []string
+	pairIDs          []string
+	startHeight      uint64
+	endHeight        uint64
+	stableHeight     uint64
+	jobCount         uint64
 
 	client *ethclient.Client
 	ctx    context.Context
@@ -67,8 +69,9 @@ func scanEth(ctx *cli.Context) error {
 	}
 	scanner.gateway = ctx.String(utils.GatewayFlag.Name)
 	scanner.swapServer = ctx.String(utils.SwapServerFlag.Name)
-	scanner.depositAddress = ctx.String(utils.DepositAddressFlag.Name)
-	scanner.tokenAddress = ctx.String(utils.TokenAddressFlag.Name)
+	scanner.depositAddresses = ctx.StringSlice(utils.DepositAddressSliceFlag.Name)
+	scanner.tokenAddresses = ctx.StringSlice(utils.TokenAddressSliceFlag.Name)
+	scanner.pairIDs = ctx.StringSlice(utils.PairIDSliceFlag.Name)
 	scanner.startHeight = ctx.Uint64(utils.StartHeightFlag.Name)
 	scanner.endHeight = ctx.Uint64(utils.EndHeightFlag.Name)
 	scanner.stableHeight = ctx.Uint64(utils.StableHeightFlag.Name)
@@ -77,8 +80,9 @@ func scanEth(ctx *cli.Context) error {
 	log.Info("get argument success",
 		"gateway", scanner.gateway,
 		"swapServer", scanner.swapServer,
-		"depositAddress", scanner.depositAddress,
-		"tokenAddress", scanner.tokenAddress,
+		"depositAddress", scanner.depositAddresses,
+		"tokenAddress", scanner.tokenAddresses,
+		"pairID", scanner.pairIDs,
 		"start", scanner.startHeight,
 		"end", scanner.endHeight,
 		"stable", scanner.stableHeight,
@@ -91,11 +95,22 @@ func scanEth(ctx *cli.Context) error {
 }
 
 func (scanner *ethSwapScanner) verifyOptions() {
-	if !common.IsHexAddress(scanner.depositAddress) {
-		log.Fatalf("invalid deposit address '%v'", scanner.depositAddress)
+	if len(scanner.depositAddresses) != len(scanner.pairIDs) {
+		log.Fatalf("count of depositAddresses and pairIDs mismatch")
 	}
-	if !common.IsHexAddress(scanner.tokenAddress) {
-		log.Fatalf("invalid token address '%v'", scanner.tokenAddress)
+	if len(scanner.tokenAddresses) != len(scanner.pairIDs) {
+		log.Fatalf("count of tokenAddresses and pairIDs mismatch")
+	}
+	for i, pairID := range scanner.pairIDs {
+		if pairID == "" {
+			log.Fatal("must specify pairid")
+		}
+		if !common.IsHexAddress(scanner.depositAddresses[i]) {
+			log.Fatalf("invalid deposit address '%v'", scanner.depositAddresses[i])
+		}
+		if scanner.tokenAddresses[i] != "" && !common.IsHexAddress(scanner.tokenAddresses[i]) {
+			log.Fatalf("invalid token address '%v'", scanner.tokenAddresses[i])
+		}
 	}
 	if scanner.gateway == "" {
 		log.Fatal("must specify gateway address")
@@ -114,6 +129,10 @@ func (scanner *ethSwapScanner) verifyOptions() {
 		log.Fatal("zero jobs specified")
 	}
 
+	scanner.verifyRPC()
+}
+
+func (scanner *ethSwapScanner) verifyRPC() {
 	ethcli, err := ethclient.Dial(scanner.gateway)
 	if err != nil {
 		log.Fatal("ethclient.Dail failed", "gateway", scanner.gateway, "err", err)
@@ -244,37 +263,50 @@ func (scanner *ethSwapScanner) scanBlock(job, height uint64, cache bool) {
 }
 
 func (scanner *ethSwapScanner) scanTransaction(tx *types.Transaction) {
-	var err error
-	if scanner.tokenAddress != "" {
-		err = scanner.verifyErc20SwapinTx(tx)
-	} else {
-		err = scanner.verifySwapinTx(tx)
+	for i, pairID := range scanner.pairIDs {
+		var err error
+		tokenAddress := scanner.tokenAddresses[i]
+		depositAddress := scanner.depositAddresses[i]
+
+		if tokenAddress != "" {
+			err = scanner.verifyErc20SwapinTx(tx, tokenAddress, depositAddress)
+		} else {
+			err = scanner.verifySwapinTx(tx, depositAddress)
+		}
+		if !tokens.ShouldRegisterSwapForError(err) {
+			return
+		}
+		txid := tx.Hash().String()
+		scanner.postSwapin(txid, pairID)
 	}
-	if !tokens.ShouldRegisterSwapForError(err) {
-		return
-	}
-	txid := tx.Hash().String()
-	log.Info("post swapin register", "txid", txid)
+}
+
+func (scanner *ethSwapScanner) postSwapin(txid, pairID string) {
+	log.Info("post swapin register", "txid", txid, "pairID", pairID)
 	var result interface{}
+	args := map[string]interface{}{
+		"txid":   txid,
+		"pairid": pairID,
+	}
 	for i := 0; i < scanner.rpcRetryCount; i++ {
-		err = client.RPCPost(&result, scanner.swapServer, "swap.Swapin", txid)
+		err := client.RPCPost(&result, scanner.swapServer, "swap.Swapin", args)
 		if tokens.ShouldRegisterSwapForError(err) {
 			break
 		}
 		if strings.Contains(err.Error(), "swap already exist") {
 			break
 		}
-		log.Warn("post swapin register failed", "txid", txid, "err", err)
+		log.Warn("post swapin register failed", "txid", txid, "pairID", pairID, "err", err)
 	}
 }
 
-func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction) error {
-	if tx.To() == nil || !strings.EqualFold(tx.To().String(), scanner.tokenAddress) {
+func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction, tokenAddress, depositAddress string) error {
+	if tx.To() == nil || !strings.EqualFold(tx.To().String(), tokenAddress) {
 		return tokens.ErrTxWithWrongContract
 	}
 
 	input := tx.Data()
-	_, _, value, err := eth.ParseErc20SwapinTxInput(&input, scanner.depositAddress)
+	_, _, value, err := eth.ParseErc20SwapinTxInput(&input, depositAddress)
 	if err != nil {
 		return err
 	}
@@ -286,8 +318,8 @@ func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction) error 
 	return nil
 }
 
-func (scanner *ethSwapScanner) verifySwapinTx(tx *types.Transaction) error {
-	if tx.To() == nil || !strings.EqualFold(tx.To().String(), scanner.depositAddress) {
+func (scanner *ethSwapScanner) verifySwapinTx(tx *types.Transaction, depositAddress string) error {
+	if tx.To() == nil || !strings.EqualFold(tx.To().String(), depositAddress) {
 		return tokens.ErrTxWithWrongReceiver
 	}
 

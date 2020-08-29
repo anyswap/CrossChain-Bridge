@@ -120,7 +120,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	txid := swap.TxID
 	logWorker("swap", "start process swap", "pairID", pairID, "txid", txid, "status", swap.Status, "isSwapin", isSwapin)
 
-	res, err := mongodb.FindSwapResult(isSwapin, txid)
+	res, err := mongodb.FindSwapResult(isSwapin, txid, pairID)
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	if isBlacked {
 		logWorkerTrace("swap", "address is in blacklist", "txid", txid, "isSwapin", isSwapin)
 		err = tokens.ErrAddressIsInBlacklist
-		_ = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.SwapInBlacklist, now(), err.Error())
+		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, mongodb.SwapInBlacklist, now(), err.Error())
 		return nil
 	}
 	if res.SwapTx != "" {
@@ -188,7 +188,8 @@ func getSwapType(isSwapin bool) tokens.SwapType {
 
 func processNonEmptySwapResult(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	txid := res.TxID
-	_ = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxProcessed, now(), "")
+	pairID := res.PairID
+	_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, mongodb.TxProcessed, now(), "")
 	if res.Status != mongodb.MatchTxEmpty {
 		return fmt.Errorf("%v already swapped to %v with status %v", txid, res.SwapTx, res.Status)
 	}
@@ -213,7 +214,7 @@ func processHistory(pairID, txid string, isSwapin bool) error {
 			SwapType:  swapType,
 			SwapNonce: history.nonce,
 		}
-		_ = updateSwapResult(txid, matchTx)
+		_ = updateSwapResult(txid, pairID, matchTx)
 		logWorker("swap", "ignore swapped swap", "txid", txid, "matchTx", history.matchTx, "isSwapin", isSwapin)
 		return fmt.Errorf("found swapped in history, txid=%v, matchTx=%v", txid, history.matchTx)
 	}
@@ -280,19 +281,19 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		SwapType:  swapType,
 		SwapNonce: swapTxNonce,
 	}
-	err = updateSwapResult(txid, matchTx)
+	err = updateSwapResult(txid, pairID, matchTx)
 	if err != nil {
 		logWorkerError("doSwap", "update swap result failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 
-	err = mongodb.UpdateSwapStatus(isSwapin, txid, mongodb.TxProcessed, now(), "")
+	err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, mongodb.TxProcessed, now(), "")
 	if err != nil {
 		logWorkerError("doSwap", "update swap status failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 
-	return sendSignedTransaction(pairID, resBridge, signedTx, txid, isSwapin)
+	return sendSignedTransaction(resBridge, signedTx, txid, pairID, isSwapin)
 }
 
 type swapInfo struct {

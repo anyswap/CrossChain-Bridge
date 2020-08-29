@@ -13,7 +13,7 @@ var (
 		Action:    bigvalue,
 		Name:      "bigvalue",
 		Usage:     "admin bigvalue",
-		ArgsUsage: "<passswapin|passswapout> <txid>",
+		ArgsUsage: "<passswapin|passswapout> <txid> <pairID>",
 		Description: `
 admin bigvalue swap
 `,
@@ -24,7 +24,7 @@ admin bigvalue swap
 func bigvalue(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
 	method := "bigvalue"
-	if ctx.NArg() != 2 {
+	if ctx.NArg() != 3 {
 		_ = cli.ShowCommandHelp(ctx, method)
 		fmt.Println()
 		return fmt.Errorf("invalid arguments: %q", ctx.Args())
@@ -37,6 +37,7 @@ func bigvalue(ctx *cli.Context) error {
 
 	operation := ctx.Args().Get(0)
 	txid := ctx.Args().Get(1)
+	pairID := ctx.Args().Get(2)
 
 	switch operation {
 	case passSwapinOp, passSwapoutOp:
@@ -46,7 +47,7 @@ func bigvalue(ctx *cli.Context) error {
 
 	log.Printf("admin bigvalue: %v %v", operation, txid)
 
-	params := []string{operation, txid}
+	params := []string{operation, txid, pairID}
 	result, err := adminCall(method, params)
 
 	log.Printf("result is '%v'", result)

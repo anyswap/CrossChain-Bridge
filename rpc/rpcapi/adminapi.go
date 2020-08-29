@@ -95,15 +95,16 @@ func blacklist(args *admin.CallArgs, result *string) (err error) {
 
 func bigvalue(args *admin.CallArgs, result *string) (err error) {
 	if len(args.Params) != 2 {
-		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+		return fmt.Errorf("wrong number of params, have %v want 3", len(args.Params))
 	}
 	operation := args.Params[0]
 	txid := args.Params[1]
+	pairID := args.Params[2]
 	switch operation {
 	case "passswapin":
-		err = mongodb.PassSwapinBigValue(txid)
+		err = mongodb.PassSwapinBigValue(txid, pairID)
 	case "passswapout":
-		err = mongodb.PassSwapoutBigValue(txid)
+		err = mongodb.PassSwapoutBigValue(txid, pairID)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
@@ -166,17 +167,26 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 	return nil
 }
 
-func reverify(args *admin.CallArgs, result *string) (err error) {
-	if len(args.Params) != 2 {
-		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID string, err error) {
+	if len(args.Params) != 3 {
+		return "", "", "", fmt.Errorf("wrong number of params, have %v want 3", len(args.Params))
 	}
-	operation := args.Params[0]
-	txid := args.Params[1]
+	operation = args.Params[0]
+	txid = args.Params[1]
+	pairID = args.Params[2]
+	return operation, txid, pairID, nil
+}
+
+func reverify(args *admin.CallArgs, result *string) (err error) {
+	operation, txid, pairID, err := getOpTxAndPairID(args)
+	if err != nil {
+		return err
+	}
 	switch operation {
 	case swapinOp:
-		err = mongodb.ReverifySwapin(txid)
+		err = mongodb.ReverifySwapin(txid, pairID)
 	case swapoutOp:
-		err = mongodb.ReverifySwapout(txid)
+		err = mongodb.ReverifySwapout(txid, pairID)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
@@ -188,16 +198,15 @@ func reverify(args *admin.CallArgs, result *string) (err error) {
 }
 
 func reswap(args *admin.CallArgs, result *string) (err error) {
-	if len(args.Params) != 2 {
-		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+	operation, txid, pairID, err := getOpTxAndPairID(args)
+	if err != nil {
+		return err
 	}
-	operation := args.Params[0]
-	txid := args.Params[1]
 	switch operation {
 	case swapinOp:
-		err = mongodb.Reswapin(txid)
+		err = mongodb.Reswapin(txid, pairID)
 	case swapoutOp:
-		err = mongodb.Reswapout(txid)
+		err = mongodb.Reswapout(txid, pairID)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
@@ -209,15 +218,16 @@ func reswap(args *admin.CallArgs, result *string) (err error) {
 }
 
 func manual(args *admin.CallArgs, result *string) (err error) {
-	if !(len(args.Params) == 2 || len(args.Params) == 3) {
-		return fmt.Errorf("wrong number of params, have %v want 2 or 3", len(args.Params))
+	if !(len(args.Params) == 3 || len(args.Params) == 4) {
+		return fmt.Errorf("wrong number of params, have %v want 3 or 4", len(args.Params))
 	}
 	operation := args.Params[0]
 	txid := args.Params[1]
+	pairID := args.Params[2]
 
 	var memo string
-	if len(args.Params) > 2 {
-		memo = args.Params[2]
+	if len(args.Params) > 3 {
+		memo = args.Params[3]
 	}
 
 	var isSwapin, isPass bool
@@ -237,7 +247,7 @@ func manual(args *admin.CallArgs, result *string) (err error) {
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
-	err = mongodb.ManualManageSwap(txid, memo, isSwapin, isPass)
+	err = mongodb.ManualManageSwap(txid, pairID, memo, isSwapin, isPass)
 	if err != nil {
 		return err
 	}
