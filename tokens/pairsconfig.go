@@ -33,14 +33,13 @@ func SetTokenPairsDir(dir string) {
 
 // SetTokenPairsConfig set token pairs config
 func SetTokenPairsConfig(pairsConfig map[string]*TokenPairConfig, check bool) {
+	if check {
+		err := checkTokenPairsConfig(pairsConfig)
+		if err != nil {
+			log.Fatalf("check token pairs config error: %v", err)
+		}
+	}
 	tokenPairsConfig = pairsConfig
-	if !check {
-		return
-	}
-	err := checkTokenPairsConfig()
-	if err != nil {
-		log.Fatalf("check token pairs config error: %v", err)
-	}
 }
 
 // GetTokenPairsConfig get token pairs config
@@ -100,12 +99,12 @@ func GetTokenConfig(pairID string, isSrc bool) *TokenConfig {
 	return pairCfg.DestToken
 }
 
-func checkTokenPairsConfig() (err error) {
+func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) {
 	pairsMap := make(map[string]struct{})
 	srcContractsMap := make(map[string]struct{})
 	dstContractsMap := make(map[string]struct{})
 	nonContractSrcCount := 0
-	for _, tokenPair := range tokenPairsConfig {
+	for _, tokenPair := range pairsConfig {
 		// check pairsID
 		pairID := strings.ToLower(tokenPair.PairID)
 		if _, exist := pairsMap[pairID]; exist {
@@ -166,14 +165,18 @@ func (c *TokenPairConfig) CheckConfig() (err error) {
 
 // LoadTokenPairsConfig load token pairs config
 func LoadTokenPairsConfig(check bool) {
-	LoadTokenPairsConfigInDir(tokenPairsConfigDirectory, check)
+	pairsConfig, err := LoadTokenPairsConfigInDir(tokenPairsConfigDirectory, check)
+	if err != nil {
+		log.Fatal("load token pair config error", "err", err)
+	}
+	SetTokenPairsConfig(pairsConfig, false)
 }
 
 // LoadTokenPairsConfigInDir load token pairs config
-func LoadTokenPairsConfigInDir(dir string, check bool) {
+func LoadTokenPairsConfigInDir(dir string, check bool) (map[string]*TokenPairConfig, error) {
 	fileInfoList, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Fatal("read dir error", "directory", dir, "err", err)
+		return nil, err
 	}
 	pairsConfig := make(map[string]*TokenPairConfig)
 	for _, info := range fileInfoList {
@@ -189,12 +192,18 @@ func LoadTokenPairsConfigInDir(dir string, check bool) {
 		filePath := common.AbsolutePath(dir, fileName)
 		pairConfig, err = loadTokenPairConfig(filePath)
 		if err != nil {
-			log.Fatal("load token pair config error", "fileName", filePath, "err", err)
+			return nil, err
 		}
 		// use all small case to identify
 		pairsConfig[strings.ToLower(pairConfig.PairID)] = pairConfig
 	}
-	SetTokenPairsConfig(pairsConfig, check)
+	if check {
+		err = checkTokenPairsConfig(pairsConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return pairsConfig, nil
 }
 
 func loadTokenPairConfig(configFile string) (config *TokenPairConfig, err error) {
