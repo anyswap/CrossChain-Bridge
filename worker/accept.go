@@ -140,9 +140,9 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 		if btc.BridgeInstance == nil {
 			return tokens.ErrNoBtcBridge
 		}
-		swapInfo, err = btc.BridgeInstance.VerifyP2shTransactionWithPairID(args.PairID, args.SwapID, args.Bind)
+		swapInfo, err = btc.BridgeInstance.VerifyP2shTransaction(args.PairID, args.SwapID, args.Bind)
 	default:
-		swapInfo, err = srcBridge.VerifyTransactionWithPairID(args.PairID, args.SwapID)
+		swapInfo, err = srcBridge.VerifyTransaction(args.PairID, args.SwapID)
 	}
 	if err != nil {
 		logWorkerError("accept", "verifySignInfo failed", err, "txid", args.SwapID, "swaptype", args.SwapType)

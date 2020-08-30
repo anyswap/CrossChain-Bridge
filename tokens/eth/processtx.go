@@ -13,11 +13,11 @@ func (b *Bridge) processTransaction(txid string) {
 }
 
 func (b *Bridge) processSwapin(txid string) {
-	swapInfos, errs := b.VerifyTransaction(txid, true)
+	swapInfos, errs := b.verifySwapinTx(txid, true)
 	tools.RegisterSwapin(txid, swapInfos, errs)
 }
 
 func (b *Bridge) processSwapout(txid string) {
-	swapInfos, errs := b.VerifyTransaction(txid, true)
+	swapInfos, errs := b.verifySwapoutTx(txid, true)
 	tools.RegisterSwapout(txid, swapInfos, errs)
 }

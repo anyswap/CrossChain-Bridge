@@ -75,21 +75,12 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 	return nil
 }
 
-// VerifyTransaction impl
-func (b *Bridge) VerifyTransaction(txHash string, allowUnstable bool) ([]*tokens.TxSwapInfo, []error) {
-	if !b.IsSrc {
-		return []*tokens.TxSwapInfo{nil}, []error{tokens.ErrBridgeDestinationNotSupported}
-	}
-	swapInfo, err := b.verifySwapinTx(PairID, txHash, allowUnstable)
-	return []*tokens.TxSwapInfo{swapInfo}, []error{err}
-}
-
-// VerifyTransactionWithPairID impl
-func (b *Bridge) VerifyTransactionWithPairID(pairID, txHash string) (*tokens.TxSwapInfo, error) {
+// VerifyTransaction impl (must be stable)
+func (b *Bridge) VerifyTransaction(pairID, txHash string) (*tokens.TxSwapInfo, error) {
 	if !b.IsSrc {
 		return nil, tokens.ErrBridgeDestinationNotSupported
 	}
-	return b.verifySwapinTxWithPairID(pairID, txHash)
+	return b.verifySwapinTx(pairID, txHash, false)
 }
 
 func hasLockTimeOrSequence(tx *electrs.ElectTx) bool {
@@ -102,10 +93,6 @@ func hasLockTimeOrSequence(tx *electrs.ElectTx) bool {
 		}
 	}
 	return false
-}
-
-func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string) (*tokens.TxSwapInfo, error) {
-	return b.verifySwapinTx(pairID, txHash, false)
 }
 
 func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {

@@ -21,12 +21,12 @@ func (b *Bridge) processTransaction(txid string) {
 }
 
 func (b *Bridge) processSwapin(txid string) {
-	swapInfos, errs := b.VerifyTransaction(txid, true)
-	tools.RegisterSwapin(txid, swapInfos, errs)
+	swapInfo, err := b.verifySwapinTx(PairID, txid, true)
+	tools.RegisterSwapin(txid, []*tokens.TxSwapInfo{swapInfo}, []error{err})
 }
 
 func (b *Bridge) processP2shSwapin(txid, bindAddress string) {
-	swapInfo, err := b.VerifyP2shTransaction(txid, bindAddress, true)
+	swapInfo, err := b.verifyP2shSwapinTx(PairID, txid, bindAddress, true)
 	tools.RegisterP2shSwapin(txid, swapInfo, err)
 }
 
