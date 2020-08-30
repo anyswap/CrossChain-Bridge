@@ -29,6 +29,8 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 *以下为了简洁对每个 API 说明只列出`参数`和`返回值`两项*
 
 [swap.GetServerInfo](#swapgetserverinfo)  
+[swap.GetVersionInfo](#swapgetversioninfo)  
+[swap.GetTokenPairInfo](#swapgettokenpairinfo)  
 [swap.Swapin](#swapswapin)  
 [swap.P2shSwapin](#swapp2shswapin)  
 [swap.RetrySwapin](#swapretryswapin)  
@@ -55,13 +57,39 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 成功返回服务信息，失败返回错误。
 ```
 
+### swap.GetVersionInfo
+
+查询版本信息
+
+##### 参数：
+```text
+[] (空)
+```
+##### 返回值：
+```text
+成功返回版本信息，失败返回错误。
+```
+
+### swap.GetTokenPairInfo
+
+查询交易对信息
+
+##### 参数：
+```text
+["交易对"]
+```
+##### 返回值：
+```text
+成功返回交易对信息，失败返回错误。
+```
+
 ### swap.Swapin
 
 申请换进置换
 
 ##### 参数：
 ```json
-["充值交易哈希"]
+[{"txid":"充值交易哈希", "pairid":"交易对"}]
 ```
 ##### 返回值：
 ```text
@@ -91,7 +119,7 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 ##### 参数：
 ```json
-["充值交易哈希"]
+[{"txid":"充值交易哈希", "pairid":"交易对"}]
 ```
 ##### 返回值：
 ```text
@@ -104,7 +132,7 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 ##### 参数：
 ```json
-["销毁交易哈希"]
+[{"txid":"销毁交易哈希", "pairid":"交易对"}]
 ```
 ##### 返回值：
 ```text
@@ -117,7 +145,7 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 ##### 参数：
 ```json
-["充值交易哈希"]
+[{"txid":"充值交易哈希", "pairid":"交易对"}]
 ```
 ##### 返回值：
 ```text
@@ -130,7 +158,7 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 ##### 参数：
 ```json
-["销毁交易哈希"]
+[{"txid":"销毁交易哈希", "pairid":"交易对"}]
 ```
 ##### 返回值：
 ```text
@@ -143,7 +171,7 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 ##### 参数：
 ```shell
-[{"address":"账户地址", "offset":offset, "limit":limit}]
+[{"address":"账户地址", "pairid":"交易对", "offset":offset, "limit":limit}]
 ```
 
 address 为 all 表示所有历史
@@ -161,7 +189,7 @@ limit 最大值为 100
 
 ##### 参数：
 ```shell
-[{"address":"账户地址", "offset":offset, "limit":limit}]
+[{"address":"账户地址", "pairid":"交易对", "offset":offset, "limit":limit}]
 ```
 
 address 为 all 表示所有历史
@@ -231,31 +259,41 @@ limit 最大值为 100
 
 查询服务信息
 
-### GET /swapin/{txid}
+### GEt /versioninfo
+
+查询版本信息
+
+### GEt /pairinfo/{pairid}
+
+查询交易对信息
+
+### GET /swapin/{pairid}/{txid}
 
 查询换进置换，txid 为充值交易哈希
 
-### GET /swapout/{txid}
+### GET /swapout/{pairid}/{txid}
 
 查询换出置换，txid 为销毁交易哈希
 
-### GET /swapin/history/{address}?offset=0&limit=20
+### GET /swapin/history/{pairid}/{address}?offset=0&limit=20
 
 查询换进置换历史，支持分页，addess 为账户地址
 
-address 为 all 表示所有历史
+pairid 为 all 表示所有交易对  
+address 为 all 表示所有账户
 
 limit 最大值为 100
 
-### GET /swapout/history/{address}?offset=0&limit=20
+### GET /swapout/history/{pairid}/{address}?offset=0&limit=20
 
 查询换出置换历史，支持分页，addess 为账户地址
 
-address 为 all 表示所有历史
+pairid 为 all 表示所有交易对  
+address 为 all 表示所有账户
 
 limit 最大值为 100
 
-### POST /swapin/post/{txid}
+### POST /swapin/post/{pairid}/{txid}
 
 申请换进置换，txid 为充值交易哈希
 
@@ -263,13 +301,13 @@ limit 最大值为 100
 
 申请 P2sh 换进置换，txid 为充值交易哈希， bind 为对应的绑定地址。（BTC 专用）
 
-### POST /swapin/retry/{txid}
+### POST /swapin/retry/{pairid}/{txid}
 
 重新申请换进置换
 
 只有账户由于没有注册而申请置换失败的情形下才可以重新申请置换。
 
-### POST /swapout/post/{txid}
+### POST /swapout/post/{pairid}/{txid}
 
 申请换出置换，txid 为销毁交易哈希
 

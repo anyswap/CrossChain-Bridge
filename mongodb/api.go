@@ -373,7 +373,7 @@ func findSwapResults(collection *mgo.Collection, address, pairID string, offset,
 	result := make([]*MgoSwapResult, 0, 20)
 
 	var queries []bson.M
-	if pairID != "" {
+	if pairID != "" || pairID != "all" {
 		queries = append(queries, bson.M{"pairid": strings.ToLower(pairID)})
 	}
 	if address != "all" {
