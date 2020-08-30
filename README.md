@@ -15,6 +15,7 @@ after building, the following files will be generated in `./build/bin` directory
 swapserver	# server provide api service, and trigger swap processing
 swaporacle      # oracle take part in dcrm signing (can disagree illegal transaction)
 config-example.toml
+config-tokenpair-example.toml
 ```
 
 ## Modify config file
@@ -46,17 +47,17 @@ Oracle is needed by the swap oracle to post swap register RPC requests to swap s
 
 BtcExtra is used to customize fees when build transaction on Bitcoin blockchain
 
-#### SrcToken
+#### SrcChain
 
-SrcToken is used to config the source endpoint of the cross chain bridge.
+SrcChain is used to config the chain of source endpoint of the cross chain bridge.
 
 #### SrcGateway
 
 SrcGateway is used to do RPC request to verify transactions on source blockchain, and to broadcast signed transaction.
 
-#### DestToken
+#### DestChain
 
-DestToken is used to config the dest endpoint of the cross chain bridge.
+DestChain is used to config the chain of dest endpoint of the cross chain bridge.
 
 #### DestGateway
 
@@ -76,16 +77,36 @@ Please specify `different log file name` to clarify the outputs.
 And please specify `different config files` for each server,
 and assgin `KeystoreFile`, `PasswordFile` and `RPCAddress` etc. separatly.
 
+
+## Modify token pair config files
+
+copy the example config file `config-tokenpair-example.toml` in `./build/bin` directory, and modify it accordingly.
+
+see more, please refer [token pair config file example](https://github.com/anyswap/CrossChain-Bridge/blob/master/params/config-tokenpair-example.toml)
+
+#### PairID
+
+pair ID of this token pair, must be unique.
+
+#### SrcToken
+
+SrcToken is used to config the token of source endpoint of the cross chain bridge.
+
+#### DestToken
+
+DestToken is used to config the token of dest endpoint of the cross chain bridge.
+
+
 ## Run swap server
 
 ```shell
-setsid ./build/bin/swapserver --verbosity 6 --config build/bin/config.toml --log build/bin/logs/server.log
+setsid ./build/bin/swapserver --verbosity 6 --config build/bin/config.toml --pairsdir build/bin/tokenpairs --log build/bin/logs/server.log
 ```
 
 ## Run swap oracle
 
 ```shell
-setsid ./build/bin/swaporacle --verbosity 6 --config build/bin/config.toml --log build/bin/logs/oracle.log
+setsid ./build/bin/swaporacle --verbosity 6 --config build/bin/config.toml --pairsdir build/bin/tokenpairs --log build/bin/logs/oracle.log
 ```
 
 ## Others
@@ -167,39 +188,27 @@ For the config file, please refer [config file example](https://github.com/anysw
 
     We should config `Port` (defaults to `11556`), and `AllowedOrigins` (CORS defaults to empty array. `["*"]` for allow any)
 
-6. config `[SrcToken]`,`[SrcGateway]`
+6. config `[SrcChain]`,`[SrcGateway]`
 
     We should config `APIAddress` in `[SrcGateway]` section,
     to post RPC request to the running full node to get transaction, broadcat transaction etc.
 
-    Config `[SrcToken]`, ref. to the following example:
+    Config `[SrcChain]`, ref. to the following example:
 
     ```toml
     BlockChain = "Bitcoin" # required
     NetID = "TestNet3"  # required
-    ID = ""
-    Name = "Bitcoin Coin"
-    Symbol = "BTC"
-    Decimals = 8  # required
-    Description = "Bitcoin Coin"
-    ContractAddress = ""
-    DcrmAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL" # required
     Confirmations = 0 # suggest >= 6 for Mainnet # required
-    MaximumSwap = 1000.0 # required
-    MinimumSwap = 0.00001 # required
-    SwapFeeRate = 0.001 # required
+    InitialHeight = 0
+    EnableScan = false
     ```
 
-    For ERC20 token, we should config `ID = "ERC20"` and `ContractAddress` to the token's contract address.
-
-7. config `[DestToken]`, `[DestGateway]`
+7. config `[DestChain]`, `[DestGateway]`
 
     We should config `APIAddress` in `[DestGateway]` section,
     to post RPC request to the running full node to get transaction, broadcat transaction etc.
 
-    Config `[DestToken]` like `[SrcToken]`.
-
-    Don't forget to config  `ContractAddress` in `[DestToken]` section  (see step 4)
+    Config `[DestChain]` like `[SrcChain]`.
 
 8. config `Identifier` to identify your crosschain bridge
 
@@ -221,3 +230,41 @@ For the config file, please refer [config file example](https://github.com/anysw
     ```
 
     If not configed, the default vlaue will be used (in fact, the above values are the defaults)
+
+10. config `[SrcToken]`
+
+    Config `[SrcToken]`, ref. to the following example:
+
+    ```toml
+    ID = ""
+    Name = "Bitcoin Coin"
+    Symbol = "BTC"
+    Decimals = 8  # required
+    Description = "Bitcoin Coin"
+    ContractAddress = ""
+    DepositAddress = "mq6XaNvFWiSJtfGYiGakkRdXNrqH6V4Jpu" # required
+    DcrmAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL" # required
+    MaximumSwap = 1000.0 # required
+    MinimumSwap = 0.00001 # required
+    SwapFeeRate = 0.001 # required
+    MaximumSwapFee = 0.01
+    MinimumSwapFee = 0.00001
+    PlusGasPricePercentage = 15
+    BigValueThreshold = 5.0
+    DisableSwap = false
+    ```
+
+    For ERC20 token, we should config `ID = "ERC20"` and `ContractAddress` to the token's contract address.
+
+11. config `[DestToken]`
+
+    Config `[DestToken]` like `[SrcToken]`.
+
+    Don't forget to config  `ContractAddress` in `[DestToken]` section  (see step 4)
+
+12. config `PairID` to identify token pair
+
+```text
+repeat step 10, 11, 12 to prepare multiple token pairs config,
+put them in a directory (will be referenced by --pairsdir command line option)
+```
