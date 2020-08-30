@@ -112,7 +112,6 @@ type CrossChainBridge interface {
 
 	GetLatestBlockNumber() (uint64, error)
 
-	StartPoolTransactionScanJob()
 	StartChainTransactionScanJob()
 
 	AdjustNonce(pairID string, value uint64) (nonce uint64)

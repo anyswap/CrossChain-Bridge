@@ -46,6 +46,8 @@ func (b *Bridge) getStartAndLatestHeight() (start, latest uint64) {
 
 // StartChainTransactionScanJob scan job
 func (b *Bridge) StartChainTransactionScanJob() {
+	go b.StartPoolTransactionScanJob()
+
 	chainName := b.ChainConfig.BlockChain
 	log.Infof("[scanchain] start %v scan chain job", chainName)
 
