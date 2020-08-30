@@ -297,7 +297,11 @@ limit 最大值为 100
 
 申请换进置换，txid 为充值交易哈希
 
-### POST /swapin/post/{txid}/{bind}
+### POST /swapout/post/{pairid}/{txid}
+
+申请换出置换，txid 为销毁交易哈希
+
+### POST /swapin/p2sh/{txid}/{bind}
 
 申请 P2sh 换进置换，txid 为充值交易哈希， bind 为对应的绑定地址。（BTC 专用）
 
@@ -306,10 +310,6 @@ limit 最大值为 100
 重新申请换进置换
 
 只有账户由于没有注册而申请置换失败的情形下才可以重新申请置换。
-
-### POST /swapout/post/{pairid}/{txid}
-
-申请换出置换，txid 为销毁交易哈希
 
 ### GET /p2sh/{address}
 
