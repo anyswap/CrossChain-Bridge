@@ -211,7 +211,6 @@ func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.T
 		memo = verifyError.Error()
 	}
 	swap := &mongodb.MgoSwap{
-		Key:       txid,
 		PairID:    swapInfo.PairID,
 		TxID:      txid,
 		TxTo:      swapInfo.TxTo,
@@ -304,7 +303,6 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 		memo = err.Error()
 	}
 	swap := &mongodb.MgoSwap{
-		Key:       txidstr,
 		PairID:    swapInfo.PairID,
 		TxID:      txidstr,
 		TxTo:      swapInfo.TxTo,

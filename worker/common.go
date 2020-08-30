@@ -26,7 +26,6 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 		swapType = tokens.SwapoutType
 	}
 	swapResult := &mongodb.MgoSwapResult{
-		Key:        txid,
 		PairID:     tx.PairID,
 		TxID:       txid,
 		TxTo:       tx.TxTo,

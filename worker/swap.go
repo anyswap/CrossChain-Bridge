@@ -18,8 +18,8 @@ var (
 	swapRingMaxSize = 1000
 
 	swapChanSize       = 10
-	swapinTaskChanMap  map[string]chan *tokens.BuildTxArgs
-	swapoutTaskChanMap map[string]chan *tokens.BuildTxArgs
+	swapinTaskChanMap  = make(map[string]chan *tokens.BuildTxArgs)
+	swapoutTaskChanMap = make(map[string]chan *tokens.BuildTxArgs)
 )
 
 // StartSwapJob swap job

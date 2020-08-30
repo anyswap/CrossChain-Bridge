@@ -122,6 +122,11 @@ func GetCountOfSwapoutsWithStatus(pairID string, status SwapStatus) (int, error)
 // ------------------ swapin / swapout common ------------------------
 
 func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
+	if ms.TxID == "" || ms.PairID == "" {
+		log.Error("mongodb add swap with wrong key", "txid", ms.TxID, "pairID", ms.PairID, "swaptype")
+		return ErrWrongKey
+	}
+	ms.Key = GetSwapKey(ms.TxID, ms.PairID)
 	err := collection.Insert(ms)
 	if err == nil {
 		log.Info("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "isSwapin", isSwapin(collection))
@@ -288,6 +293,11 @@ func GetCountOfSwapoutResultsWithStatus(pairID string, status SwapStatus) (int, 
 // ------------------ swapin / swapout result common ------------------------
 
 func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
+	if ms.TxID == "" || ms.PairID == "" {
+		log.Error("mongodb add swap result with wrong key", "txid", ms.TxID, "pairID", ms.PairID, "swaptype", ms.SwapType, "isSwapin", isSwapin(collection))
+		return ErrWrongKey
+	}
+	ms.Key = GetSwapKey(ms.TxID, ms.PairID)
 	err := collection.Insert(ms)
 	if err == nil {
 		log.Info("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "swaptype", ms.SwapType, "isSwapin", isSwapin(collection))

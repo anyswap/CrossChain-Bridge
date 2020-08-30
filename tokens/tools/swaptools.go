@@ -82,7 +82,6 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 			}
 			bind := swapInfo.Bind
 			swap := &mongodb.MgoSwap{
-				Key:       txid,
 				TxID:      txid,
 				PairID:    pairID,
 				TxTo:      swapInfo.TxTo,
@@ -135,7 +134,6 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 			memo = verifyError.Error()
 		}
 		swap := &mongodb.MgoSwap{
-			Key:       txid,
 			TxID:      txid,
 			PairID:    swapInfo.PairID,
 			TxTo:      swapInfo.TxTo,
