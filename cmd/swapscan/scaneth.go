@@ -94,7 +94,7 @@ func (scanner *ethSwapScanner) verifyOptions() {
 	if !common.IsHexAddress(scanner.depositAddress) {
 		log.Fatalf("invalid deposit address '%v'", scanner.depositAddress)
 	}
-	if !common.IsHexAddress(scanner.tokenAddress) {
+	if scanner.tokenAddress != "" && !common.IsHexAddress(scanner.tokenAddress) {
 		log.Fatalf("invalid token address '%v'", scanner.tokenAddress)
 	}
 	if scanner.gateway == "" {
