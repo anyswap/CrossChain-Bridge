@@ -79,7 +79,9 @@ func (b *Bridge) verifyErc20SwapinTxWithReceipt(receipt *types.RPCTxReceipt, pai
 
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.DepositAddress)
 	if err != nil {
-		log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", txHash, "err", err)
+		if err != tokens.ErrTxWithWrongReceiver {
+			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", txHash, "err", err)
+		}
 		return swapInfo, err
 	}
 
@@ -117,7 +119,9 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(tx *types.RPCTransaction, pairID st
 	input := (*[]byte)(tx.Payload)
 	from, to, value, err := ParseErc20SwapinTxInput(input, token.DepositAddress)
 	if err != nil {
-		log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", txHash, "err", err)
+		if err != tokens.ErrTxWithWrongReceiver {
+			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", txHash, "err", err)
+		}
 		return swapInfo, err
 	}
 	swapInfo.To = strings.ToLower(to) // To
