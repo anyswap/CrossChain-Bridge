@@ -2,6 +2,7 @@ package eth
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -17,6 +18,8 @@ var (
 	retryRPCInterval = 1 * time.Second
 
 	defPlusGasPricePercentage uint64 = 15 // 15%
+
+	defReserveGasFee = big.NewInt(1e16) // 0.01 ETH
 )
 
 // BuildRawTransaction build raw tx
@@ -90,11 +93,12 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 			}
 			time.Sleep(retryRPCInterval)
 		}
-		if err == nil && balance.Cmp(value) < 0 {
-			return nil, errors.New("not enough coin balance")
-		}
 		if err != nil {
-			return nil, err
+			log.Warn("get balance error", "from", args.From, "err", err)
+			return nil, fmt.Errorf("get balance error: %v", err)
+		}
+		if balance.Cmp(new(big.Int).Add(value, defReserveGasFee)) < 0 {
+			return nil, errors.New("not enough coin balance")
 		}
 	}
 

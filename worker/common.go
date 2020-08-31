@@ -136,9 +136,12 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 	)
 	for i := 0; i < retrySendTxCount; i++ {
 		txHash, err = bridge.SendTransaction(signedTx)
-		if tx, _ := bridge.GetTransaction(txHash); tx != nil {
-			err = nil
-			break
+		if txHash != "" {
+			if tx, _ := bridge.GetTransaction(txHash); tx != nil {
+				logWorker("sendtx", "send tx success", "txHash", txHash)
+				err = nil
+				break
+			}
 		}
 		time.Sleep(retrySendTxInterval)
 	}
