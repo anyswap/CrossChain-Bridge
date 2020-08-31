@@ -120,7 +120,7 @@ func (b *Bridge) quickSync(ctx context.Context, cancel context.CancelFunc, start
 		wstt := start + i*step
 		wend := start + (i+1)*step
 		if i+1 == workers {
-			wend = end + 1
+			wend = end
 		}
 		go b.quickSyncRange(ctx, i+1, wstt, wend, wg)
 	}
