@@ -19,12 +19,13 @@ import (
 
 // NewCrossChainBridge new bridge according to chain name
 func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
-	switch strings.ToUpper(id) {
-	case "BITCOIN":
+	blockChainIden := strings.ToUpper(id)
+	switch {
+	case strings.HasPrefix(blockChainIden, "BITCOIN"):
 		return btc.NewCrossChainBridge(isSrc)
-	case "ETHEREUM":
+	case strings.HasPrefix(blockChainIden, "ETHEREUM"):
 		return eth.NewCrossChainBridge(isSrc)
-	case "FUSION":
+	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)

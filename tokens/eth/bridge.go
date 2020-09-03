@@ -56,7 +56,6 @@ func (b *Bridge) VerifyChainID() {
 	switch networkID {
 	case netMainnet, netRinkeby:
 	case netCustom:
-		return
 	default:
 		log.Fatalf("unsupported ethereum network: %v", tokenCfg.NetID)
 	}
@@ -90,6 +89,7 @@ func (b *Bridge) VerifyChainID() {
 		if chainID.Uint64() != 4 {
 			panicMismatchChainID()
 		}
+	case netCustom:
 	default:
 		log.Fatalf("unsupported ethereum network %v", networkID)
 	}
