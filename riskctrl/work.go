@@ -22,9 +22,14 @@ var (
 	srcDecimals uint8
 	dstDecimals uint8
 
-	initialDiffValue   decimal.Decimal
-	maxAuditDiffValue  decimal.Decimal
-	minWithdrawReserve decimal.Decimal
+	initialDiffValue         decimal.Decimal
+	maxAuditBalanceDiffValue decimal.Decimal
+	maxAuditSupplyDiffValue  decimal.Decimal
+	minWithdrawReserve       decimal.Decimal
+
+	oldTotalBalance decimal.Decimal
+	oldTotalSupply  decimal.Decimal
+	isFirstTime     bool = true
 
 	retryInterval = time.Second
 )
@@ -56,7 +61,8 @@ func audit() {
 	dstDecimals = *config.DestToken.Decimals
 
 	initialDiffValue = decimal.NewFromFloat(riskConfig.InitialDiffValue)
-	maxAuditDiffValue = decimal.NewFromFloat(riskConfig.MaxAuditDiffValue)
+	maxAuditBalanceDiffValue = decimal.NewFromFloat(riskConfig.MaxAuditBalanceDiffValue)
+	maxAuditSupplyDiffValue = decimal.NewFromFloat(riskConfig.MaxAuditSupplyDiffValue)
 	minWithdrawReserve = decimal.NewFromFloat(riskConfig.MinWithdrawReserve)
 
 	log.Info(fmt.Sprintf(`------ start audit work ------
@@ -65,9 +71,10 @@ dstTokenAddress    = %v
 depositAddress     = %v
 withdrawAddress    = %v
 initialDiffValue   = %v
-maxAuditDiffValue  = %v
+maxBalanceDiffVal  = %v
+maxSupplyDiffVal   = %v
 minWithdrawReserve = %v
-`, srcTokenAddress, dstTokenAddress, depositAddress, withdrawAddress, initialDiffValue, maxAuditDiffValue, minWithdrawReserve))
+`, srcTokenAddress, dstTokenAddress, depositAddress, withdrawAddress, initialDiffValue, maxAuditBalanceDiffValue, maxAuditSupplyDiffValue, minWithdrawReserve))
 
 	for {
 		auditOnce()
@@ -95,19 +102,37 @@ func auditBalanceDeviation() {
 	fTotalBalance := fDepositBalance.Add(fWithdrawBalance)
 	fTotalSupply := decimal.NewFromFloat(tokens.FromBits(totalSupply, dstDecimals))
 
+	hasDeposit := false
+	hasWithdraw := false
+	if !isFirstTime {
+		if fTotalBalance.Cmp(oldTotalBalance) > 0 {
+			log.Info("balance value increase", "old", oldTotalBalance, "new", fTotalBalance, "diff", fTotalBalance.Sub(oldTotalBalance))
+			hasDeposit = true
+		}
+		if fTotalSupply.Cmp(oldTotalSupply) < 0 {
+			log.Info("total supply decrease", "old", oldTotalSupply, "new", fTotalSupply, "diff", oldTotalSupply.Sub(fTotalSupply))
+			hasWithdraw = true
+		}
+	}
+	isFirstTime = false
+	oldTotalBalance = fTotalBalance
+	oldTotalSupply = fTotalSupply
+
 	diffValue := fTotalBalance.Sub(fTotalSupply).Sub(initialDiffValue)
 	absDiffValue := diffValue.Abs()
 
 	isNormal := true
-	subject := "[risk] normal balance and total supply."
-	if absDiffValue.Cmp(maxAuditDiffValue) > 0 {
+	var subject string
+	if hasDeposit && absDiffValue.Cmp(maxAuditBalanceDiffValue) > 0 {
 		isNormal = false
-		if diffValue.Sign() > 0 {
-			subject = "[risk] balance larger than total supply."
-		} else {
-			subject = "[risk] balance smaller than total supply."
-		}
-	} else {
+		subject += "[risk] large deposit.\n"
+	}
+	if hasWithdraw && absDiffValue.Cmp(maxAuditSupplyDiffValue) > 0 {
+		isNormal = false
+		subject += "[risk] large withdraw.\n"
+	}
+	if isNormal {
+		subject = "[risk] normal balance and total supply.\n"
 		prevSendAuditTimestamp = 0 // reset frequency check
 	}
 
@@ -117,15 +142,23 @@ func auditBalanceDeviation() {
 	}
 
 	content := fmt.Sprintf(`%v
-
 fDepositBalance   = %v
 fWithdrawBalance  = %v
 fTotalBalance     = %v
 fTotalSupply      = %v
 initialDiffValue  = %v
 diffValue         = %v
-maxAuditDiffValue = %v
-`, subject, fDepositBalance, fWithdrawBalance, fTotalBalance, fTotalSupply, initialDiffValue, diffValue, maxAuditDiffValue)
+maxBalanceDiffVal = %v
+maxSupplyDiffVal  = %v
+`, subject, fDepositBalance, fWithdrawBalance, fTotalBalance, fTotalSupply, initialDiffValue, diffValue, maxAuditBalanceDiffValue, maxAuditSupplyDiffValue)
+
+	if hasDeposit {
+		content += fmt.Sprintf("hasDeposit        = %v\n", hasDeposit)
+	}
+
+	if hasWithdraw {
+		content += fmt.Sprintf("hasWithdraw       = %v\n", hasWithdraw)
+	}
 
 	logFn(content)
 

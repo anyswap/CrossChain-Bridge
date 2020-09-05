@@ -1,6 +1,7 @@
 # risk control config
-InitialDiffValue = 81000.0
-MaxAuditDiffValue = 100.0
+InitialDiffValue = 50.0
+MaxAuditBalanceDiffValue = 100.0
+MaxAuditSupplyDiffValue = 100.0
 MinWithdrawReserve = 10000.0
 
 [Email]
