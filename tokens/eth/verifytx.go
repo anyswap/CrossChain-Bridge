@@ -34,10 +34,12 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	} else {
 		log.Debug("GetBlockByHash fail", "hash", txStatus.BlockHash, "err", err)
 	}
-	if *txr.Status == 1 {
+	if txStatus.BlockHeight != 0 {
 		latest, err := b.GetLatestBlockNumber()
 		if err == nil {
-			txStatus.Confirmations = latest - txStatus.BlockHeight
+			if latest > txStatus.BlockHeight {
+				txStatus.Confirmations = latest - txStatus.BlockHeight
+			}
 		} else {
 			log.Debug("GetLatestBlockNumber fail", "err", err)
 		}

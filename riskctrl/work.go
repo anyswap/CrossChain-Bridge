@@ -29,7 +29,7 @@ var (
 
 	oldTotalBalance decimal.Decimal
 	oldTotalSupply  decimal.Decimal
-	isFirstTime     bool = true
+	isFirstTime     = true
 
 	retryInterval = time.Second
 )
