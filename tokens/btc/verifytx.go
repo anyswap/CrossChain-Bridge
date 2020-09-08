@@ -169,7 +169,7 @@ func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyTy
 			memoScript = *output.ScriptpubkeyAsm
 			continue
 		case pubkeyType, anyType:
-			if *output.ScriptpubkeyAddress != receiver {
+			if output.ScriptpubkeyAddress == nil || *output.ScriptpubkeyAddress != receiver {
 				continue
 			}
 			rightReceiver = true

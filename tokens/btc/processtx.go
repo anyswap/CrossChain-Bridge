@@ -40,6 +40,9 @@ func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err erro
 	depositAddress := b.TokenConfig.DepositAddress
 	txFrom := getTxFrom(tx.Vin, depositAddress)
 	for _, output := range tx.Vout {
+		if output.ScriptpubkeyAddress == nil {
+			continue
+		}
 		switch *output.ScriptpubkeyType {
 		case p2shType:
 			if p2shBindAddr == "" { // use the first registered p2sh address
