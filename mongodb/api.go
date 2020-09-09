@@ -129,7 +129,7 @@ func updateSwapStatus(collection *mgo.Collection, txid string, status SwapStatus
 		retryLock.Lock()
 		defer retryLock.Unlock()
 		swap, _ := findSwap(collection, txid)
-		if !swap.Status.CanRetry() {
+		if !(swap.Status.CanRetry() || swap.Status.CanReverify()) {
 			return nil
 		}
 	}

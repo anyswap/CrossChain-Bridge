@@ -9,7 +9,8 @@ import (
 // VerifyP2shTransaction verify p2sh tx
 func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.Hash = txHash // Hash
+	swapInfo.Hash = txHash      // Hash
+	swapInfo.Bind = bindAddress // Bind
 	if !b.IsSrc {
 		return swapInfo, tokens.ErrBridgeDestinationNotSupported
 	}
@@ -40,7 +41,6 @@ func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 	swapInfo.To = p2shAddress                    // To
-	swapInfo.Bind = bindAddress                  // Bind
 	swapInfo.Value = common.BigFromUint64(value) // Value
 
 	swapInfo.From = getTxFrom(tx.Vin, p2shAddress) // From
