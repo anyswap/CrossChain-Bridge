@@ -95,6 +95,9 @@ func registerSwap(isSwapin bool, txid, bind string, verifyError error) error {
 
 // RegisterP2shSwapin register p2sh swapin
 func RegisterP2shSwapin(txid, bind string, verifyError error) error {
+	if !tokens.ShouldRegisterSwapForError(verifyError) {
+		return verifyError
+	}
 	isServer := dcrm.IsSwapServer()
 	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid, "bind", bind)
 	if isServer {
