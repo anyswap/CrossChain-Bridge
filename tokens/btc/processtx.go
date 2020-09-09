@@ -43,6 +43,10 @@ func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err erro
 		if output.ScriptpubkeyAddress == nil {
 			continue
 		}
+		scriptPubkeyAsm := *output.ScriptpubkeyAsm
+		if regexCLTVCSV.FindString(scriptPubkeyAsm) != "" {
+			continue
+		}
 		switch *output.ScriptpubkeyType {
 		case p2shType:
 			if p2shBindAddr == "" { // use the first registered p2sh address

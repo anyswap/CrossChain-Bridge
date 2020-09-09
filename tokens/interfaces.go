@@ -54,15 +54,14 @@ var (
 	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
 
 	// errors should register
-	ErrTxWithWrongMemo          = errors.New("tx with wrong memo")
-	ErrTxWithWrongValue         = errors.New("tx with wrong value")
-	ErrTxWithWrongReceipt       = errors.New("tx with wrong receipt")
-	ErrTxWithWrongSender        = errors.New("tx with wrong sender")
-	ErrTxSenderNotRegistered    = errors.New("tx sender not registered")
-	ErrTxIncompatible           = errors.New("tx incompatible")
-	ErrBindAddrIsContract       = errors.New("bind address is contract")
-	ErrRPCQueryError            = errors.New("rpc query error")
-	ErrTxWithLockTimeOrSequence = errors.New("tx with lock time or sequenece")
+	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
+	ErrTxWithWrongValue      = errors.New("tx with wrong value")
+	ErrTxWithWrongReceipt    = errors.New("tx with wrong receipt")
+	ErrTxWithWrongSender     = errors.New("tx with wrong sender")
+	ErrTxSenderNotRegistered = errors.New("tx sender not registered")
+	ErrTxIncompatible        = errors.New("tx incompatible")
+	ErrBindAddrIsContract    = errors.New("bind address is contract")
+	ErrRPCQueryError         = errors.New("rpc query error")
 )
 
 // ShouldRegisterSwapForError return true if this error should record in database
@@ -76,8 +75,7 @@ func ShouldRegisterSwapForError(err error) bool {
 		ErrTxSenderNotRegistered,
 		ErrTxIncompatible,
 		ErrBindAddrIsContract,
-		ErrRPCQueryError,
-		ErrTxWithLockTimeOrSequence:
+		ErrRPCQueryError:
 		return true
 	}
 	return false

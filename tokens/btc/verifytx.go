@@ -10,8 +10,12 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
+)
+
+var (
+	regexMemo    = regexp.MustCompile("^OP_RETURN OP_PUSHBYTES_[0-9]* ")
+	regexCLTVCSV = regexp.MustCompile("(OP_CLTV|OP_CSV|OP_CHECKLOCKTIMEVERIFY|OP_CHECKSEQUENCEVERIFY) ")
 )
 
 // GetTransaction impl
@@ -83,18 +87,6 @@ func (b *Bridge) VerifyTransaction(txHash string, allowUnstable bool) (*tokens.T
 	return nil, tokens.ErrBridgeDestinationNotSupported
 }
 
-func hasLockTimeOrSequence(tx *electrs.ElectTx) bool {
-	if *tx.Locktime != 0 {
-		return true
-	}
-	for _, input := range tx.Vin {
-		if *input.Sequence != wire.MaxTxInSequenceNum {
-			return true
-		}
-	}
-	return false
-}
-
 func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.Hash = txHash // Hash
@@ -109,6 +101,9 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 	txStatus := tx.Status
 	if txStatus.BlockHeight != nil {
 		swapInfo.Height = *txStatus.BlockHeight // Height
+	} else if *tx.Locktime != 0 {
+		// tx with locktime should be on chain, prvent DDOS attack
+		return swapInfo, tokens.ErrTxNotStable
 	}
 	if txStatus.BlockTime != nil {
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
@@ -147,10 +142,6 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		return swapInfo, tokens.ErrTxWithWrongMemo
 	}
 
-	if hasLockTimeOrSequence(tx) {
-		return swapInfo, tokens.ErrTxWithLockTimeOrSequence
-	}
-
 	if !allowUnstable {
 		log.Debug("verify swapin pass", "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
@@ -170,6 +161,10 @@ func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyTy
 			continue
 		case pubkeyType, anyType:
 			if output.ScriptpubkeyAddress == nil || *output.ScriptpubkeyAddress != receiver {
+				continue
+			}
+			scriptPubkeyAsm := *output.ScriptpubkeyAsm
+			if regexCLTVCSV.FindString(scriptPubkeyAsm) != "" {
 				continue
 			}
 			rightReceiver = true
@@ -199,8 +194,7 @@ func getTxFrom(vin []*electrs.ElectTxin, priorityAddress string) string {
 }
 
 func getBindAddressFromMemoScipt(memoScript string) (memoStr, bind string, ok bool) {
-	re := regexp.MustCompile("^OP_RETURN OP_PUSHBYTES_[0-9]* ")
-	parts := re.Split(memoScript, -1)
+	parts := regexMemo.Split(memoScript, -1)
 	if len(parts) != 2 {
 		return "", "", false
 	}

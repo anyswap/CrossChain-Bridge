@@ -28,6 +28,9 @@ func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable
 	txStatus := tx.Status
 	if txStatus.BlockHeight != nil {
 		swapInfo.Height = *txStatus.BlockHeight // Height
+	} else if *tx.Locktime != 0 {
+		// tx with locktime should be on chain, prvent DDOS attack
+		return swapInfo, tokens.ErrTxNotStable
 	}
 	if txStatus.BlockTime != nil {
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
@@ -49,10 +52,6 @@ func (b *Bridge) VerifyP2shTransaction(txHash, bindAddress string, allowUnstable
 
 	if !tokens.CheckSwapValue(swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
-	}
-
-	if hasLockTimeOrSequence(tx) {
-		return swapInfo, tokens.ErrTxWithLockTimeOrSequence
 	}
 
 	if !allowUnstable {
