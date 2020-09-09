@@ -110,13 +110,15 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 		if txStatus.Confirmations < confirmations {
 			return nil
 		}
-		receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-		txFailed := !ok || receipt == nil || *receipt.Status != 1
-		if !txFailed && token.ContractAddress != "" && len(receipt.Logs) == 0 {
-			txFailed = true
-		}
-		if txFailed {
-			return markSwapResultFailed(swap.Key, isSwapin)
+		if txStatus.Receipt != nil {
+			receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
+			txFailed := !ok || receipt == nil || *receipt.Status != 1
+			if !txFailed && token.ContractAddress != "" && len(receipt.Logs) == 0 {
+				txFailed = true
+			}
+			if txFailed {
+				return markSwapResultFailed(swap.Key, isSwapin)
+			}
 		}
 		return markSwapResultStable(swap.Key, isSwapin)
 	}
