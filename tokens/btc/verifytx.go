@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	regexMemo    = regexp.MustCompile("^OP_RETURN OP_PUSHBYTES_[0-9]* ")
-	regexCLTVCSV = regexp.MustCompile("(OP_CLTV|OP_CSV|OP_CHECKLOCKTIMEVERIFY|OP_CHECKSEQUENCEVERIFY) ")
+	regexMemo    = regexp.MustCompile(`^OP_RETURN OP_PUSHBYTES_\d* `)
+	regexCLTVCSV = regexp.MustCompile(`(OP_CLTV|OP_CSV|OP_CHECKLOCKTIMEVERIFY|OP_CHECKSEQUENCEVERIFY) `)
 )
 
 // GetTransaction impl
