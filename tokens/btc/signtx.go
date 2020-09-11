@@ -179,6 +179,9 @@ func getSigDataFromRSV(rsv string) ([]byte, bool) {
 
 func (b *Bridge) verifyPublickeyData(pkData []byte) error {
 	dcrmAddress := b.TokenConfig.DcrmAddress
+	if dcrmAddress == "" {
+		return nil
+	}
 	address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkData), b.GetChainConfig())
 	if address.EncodeAddress() != b.TokenConfig.DcrmAddress {
 		return fmt.Errorf("public key address %v is not the configed dcrm address %v", address, dcrmAddress)
