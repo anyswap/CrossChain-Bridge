@@ -22,7 +22,6 @@ import (
 const (
 	p2pkhType    = "p2pkh"
 	p2shType     = "p2sh"
-	anyType      = "anyType"
 	opReturnType = "op_return"
 
 	retryCount    = 3

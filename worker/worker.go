@@ -19,13 +19,13 @@ func StartWork(isServer bool) {
 	go StartScanJob(isServer)
 	time.Sleep(interval)
 
+	go StartUpdateLatestBlockHeightJob()
+	time.Sleep(interval)
+
 	if !isServer {
 		go StartAcceptSignJob()
 		return
 	}
-
-	go StartUpdateLatestBlockHeightJob()
-	time.Sleep(interval)
 
 	go StartVerifyJob()
 	time.Sleep(interval)

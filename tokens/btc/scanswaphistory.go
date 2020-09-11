@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	maxScanHeight          = uint64(100)
-	maxFirstScanHeight     = uint64(1000)
+	maxScanHeight          = uint64(3)
+	maxFirstScanHeight     = uint64(100)
 	retryIntervalInScanJob = 3 * time.Second
 	restIntervalInScanJob  = 3 * time.Second
 )

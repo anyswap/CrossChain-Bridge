@@ -14,8 +14,7 @@ import (
 )
 
 var (
-	regexMemo    = regexp.MustCompile(`^OP_RETURN OP_PUSHBYTES_\d* `)
-	regexCLTVCSV = regexp.MustCompile(`(OP_CLTV|OP_CSV|OP_CHECKLOCKTIMEVERIFY|OP_CHECKSEQUENCEVERIFY) `)
+	regexMemo = regexp.MustCompile(`^OP_RETURN OP_PUSHBYTES_\d* `)
 )
 
 // GetTransaction impl
@@ -109,7 +108,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
 	depositAddress := b.TokenConfig.DepositAddress
-	value, memoScript, rightReceiver := b.getReceivedValue(tx.Vout, depositAddress, anyType)
+	value, memoScript, rightReceiver := b.getReceivedValue(tx.Vout, depositAddress, p2pkhType)
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
@@ -159,12 +158,8 @@ func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyTy
 		case opReturnType:
 			memoScript = *output.ScriptpubkeyAsm
 			continue
-		case pubkeyType, anyType:
+		case pubkeyType:
 			if output.ScriptpubkeyAddress == nil || *output.ScriptpubkeyAddress != receiver {
-				continue
-			}
-			scriptPubkeyAsm := *output.ScriptpubkeyAsm
-			if regexCLTVCSV.FindString(scriptPubkeyAsm) != "" {
 				continue
 			}
 			rightReceiver = true

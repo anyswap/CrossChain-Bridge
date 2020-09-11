@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -8,16 +9,19 @@ import (
 )
 
 var (
-	scannedTxs = tools.NewCachedScannedTxs(100)
+	scannedTxs = tools.NewCachedScannedTxs(3000)
 )
 
 // StartPoolTransactionScanJob scan job
 func (b *Bridge) StartPoolTransactionScanJob() {
-	log.Info("[scanpool] start scan pool tx job", "isSrc", b.IsSrc)
+	chainName := b.TokenConfig.BlockChain
+	log.Infof("[scanpool] start scan %v tx pool job", chainName)
+	errorSubject := fmt.Sprintf("[scanpool] get %v pool txs error", chainName)
+	scanSubject := fmt.Sprintf("[scanpool] scanned %v tx", chainName)
 	for {
 		txids, err := b.GetPoolTxidList()
 		if err != nil {
-			log.Error("[scanpool] get pool tx list error", "isSrc", b.IsSrc, "err", err)
+			log.Error(errorSubject, "err", err)
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
@@ -25,7 +29,7 @@ func (b *Bridge) StartPoolTransactionScanJob() {
 			if scannedTxs.IsTxScanned(txid) {
 				continue
 			}
-			log.Info("[scanpool] scanned tx", "isSrc", b.IsSrc, "txid", txid)
+			log.Info(scanSubject, "txid", txid)
 			b.processTransaction(txid)
 			scannedTxs.CacheScannedTx(txid)
 		}
