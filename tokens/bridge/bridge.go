@@ -56,12 +56,12 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge.SetTokenAndGateway(dstToken, dstGateway, true)
 	log.Info("Init bridge destation", "token", dstToken.Symbol, "gateway", dstGateway)
 
-	initBtcExtra(cfg.BtcExtra)
+	initBtcExtra(cfg.BtcExtra, *cfg.Dcrm.Pubkey)
 
 	initDcrm(cfg.Dcrm, isServer)
 }
 
-func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
+func initBtcExtra(btcExtra *tokens.BtcExtraConfig, dcrmPubkey string) {
 	if btc.BridgeInstance == nil || btcExtra == nil {
 		return
 	}
@@ -88,7 +88,11 @@ func initBtcExtra(btcExtra *tokens.BtcExtraConfig) {
 
 	if btcExtra.FromPublicKey != "" {
 		tokens.BtcFromPublicKey = btcExtra.FromPublicKey
-		cpkData, err := btc.BridgeInstance.GetCompressedPublicKey(tokens.BtcFromPublicKey)
+	} else if dcrmPubkey != "" {
+		tokens.BtcFromPublicKey = dcrmPubkey
+	}
+	if tokens.BtcFromPublicKey != "" {
+		cpkData, err := btc.BridgeInstance.GetCompressedPublicKey(tokens.BtcFromPublicKey, true)
 		if err != nil {
 			log.Fatal("FromPublicKey config error", "err", err)
 		}
@@ -115,10 +119,8 @@ func initDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	dcrm.SetDcrmRPCAddress(*dcrmConfig.RPCAddress)
 	log.Info("Init dcrm rpc address", "rpcaddress", *dcrmConfig.RPCAddress)
 
-	if isServer {
-		dcrm.SetSignPubkey(*dcrmConfig.Pubkey)
-		log.Info("Init dcrm pubkey", "pubkey", *dcrmConfig.Pubkey)
-	}
+	dcrm.SetSignPubkey(*dcrmConfig.Pubkey)
+	log.Info("Init dcrm pubkey", "pubkey", *dcrmConfig.Pubkey)
 
 	group := *dcrmConfig.GroupID
 	neededOracles := *dcrmConfig.NeededOracles
