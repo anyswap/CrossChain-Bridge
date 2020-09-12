@@ -295,7 +295,7 @@ func (b *Bridge) adjustRsvOrders(rsvs, msgHashes []string, fromPublicKey string)
 	if len(rsvs) <= 1 {
 		return rsvs, nil
 	}
-	fromPubkeyData := common.FromHex(fromPublicKey)
+	fromPubkeyData, err := b.GetCompressedPublicKey(fromPublicKey, false)
 	matchedRsvMap := make(map[string]struct{})
 	var cPkData []byte
 	for _, msgHash := range msgHashes {
