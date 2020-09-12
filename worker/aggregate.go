@@ -58,6 +58,9 @@ func findUtxosAndAggregate(addr string) {
 		if utxo.Value == nil || *utxo.Value == 0 {
 			continue
 		}
+		if isUtxoExist(utxo) {
+			continue
+		}
 		logWorker("aggregate", "find utxo", "address", addr, "utxo", utxo.String())
 
 		aggSumVal += *utxo.Value
@@ -68,6 +71,15 @@ func findUtxosAndAggregate(addr string) {
 			aggregate()
 		}
 	}
+}
+
+func isUtxoExist(utxo *electrs.ElectUtxo) bool {
+	for _, item := range aggUtxos {
+		if *item.Txid == *utxo.Txid && *item.Vout == *utxo.Vout {
+			return true
+		}
+	}
+	return false
 }
 
 func shouldAggregate() bool {
