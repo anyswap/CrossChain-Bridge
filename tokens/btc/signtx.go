@@ -260,9 +260,10 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	log.Info(b.TokenConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
 	time.Sleep(retryGetSignStatusInterval)
 
+	var signStatus *dcrm.SignStatus
 	i := 0
 	for ; i < retryGetSignStatusCount; i++ {
-		signStatus, err := dcrm.GetSignStatus(keyID)
+		signStatus, err = dcrm.GetSignStatus(keyID)
 		if err == nil {
 			if len(signStatus.Rsv) != len(msgHash) {
 				return nil, fmt.Errorf("get sign status require %v rsv but have %v (keyID = %v)", len(msgHash), len(signStatus.Rsv), keyID)
@@ -281,8 +282,41 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 		return nil, errors.New("get sign status failed")
 	}
 
+	rsv, err = b.adjustRsvOrders(rsv, msgHash, tokens.BtcFromPublicKey)
+	if err != nil {
+		return nil, err
+	}
+
 	log.Trace(b.TokenConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
 	return rsv, nil
+}
+
+func (b *Bridge) adjustRsvOrders(rsvs, msgHashes []string, fromPublicKey string) (newRsvs []string, err error) {
+	if len(rsvs) <= 1 {
+		return rsvs, nil
+	}
+	fromPubkeyData := common.FromHex(fromPublicKey)
+	matchedRsvMap := make(map[string]struct{})
+	var cPkData []byte
+	for _, msgHash := range msgHashes {
+		matched := false
+		for _, rsv := range rsvs {
+			if _, exist := matchedRsvMap[rsv]; exist {
+				continue
+			}
+			cPkData, err = b.getPkDataFromSig(rsv, msgHash, true)
+			if err == nil && bytes.Equal(cPkData, fromPubkeyData) {
+				matchedRsvMap[rsv] = struct{}{}
+				newRsvs = append(newRsvs, rsv)
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return nil, fmt.Errorf("msgHash %v hash no matched rsv", msgHash)
+		}
+	}
+	return newRsvs, err
 }
 
 // SignTransaction sign tx with wif
