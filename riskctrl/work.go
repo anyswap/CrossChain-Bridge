@@ -27,9 +27,9 @@ var (
 	maxAuditSupplyDiffValue  decimal.Decimal
 	minWithdrawReserve       decimal.Decimal
 
-	oldTotalBalance decimal.Decimal
-	oldTotalSupply  decimal.Decimal
-	isFirstTime     = true
+	oldDepositBalance decimal.Decimal
+	oldTotalSupply    decimal.Decimal
+	isFirstTime       = true
 
 	retryInterval = time.Second
 )
@@ -88,6 +88,7 @@ func auditOnce() {
 	log.Info("audit finish one turn")
 }
 
+//nolint:funlen // keep all together
 func auditBalanceDeviation() {
 	srcLatest, _ := srcBridge.GetLatestBlockNumber()
 	dstLatest, _ := dstBridge.GetLatestBlockNumber()
@@ -105,8 +106,8 @@ func auditBalanceDeviation() {
 	hasDeposit := false
 	hasWithdraw := false
 	if !isFirstTime {
-		if fTotalBalance.Cmp(oldTotalBalance) > 0 {
-			log.Info("balance value increase", "old", oldTotalBalance, "new", fTotalBalance, "diff", fTotalBalance.Sub(oldTotalBalance))
+		if fDepositBalance.Cmp(oldDepositBalance) > 0 {
+			log.Info("deposit balance increase", "old", oldDepositBalance, "new", fDepositBalance, "diff", fDepositBalance.Sub(oldDepositBalance))
 			hasDeposit = true
 		}
 		if fTotalSupply.Cmp(oldTotalSupply) < 0 {
@@ -115,26 +116,31 @@ func auditBalanceDeviation() {
 		}
 	}
 	isFirstTime = false
-	oldTotalBalance = fTotalBalance
-	oldTotalSupply = fTotalSupply
 
 	diffValue := fTotalBalance.Sub(fTotalSupply).Sub(initialDiffValue)
 	absDiffValue := diffValue.Abs()
 
 	isNormal := true
 	var subject string
-	if hasDeposit && absDiffValue.Cmp(maxAuditBalanceDiffValue) > 0 {
+	if hasDeposit && fDepositBalance.Sub(oldDepositBalance).Cmp(maxAuditBalanceDiffValue) > 0 {
 		isNormal = false
 		subject += "[risk] large deposit.\n"
 	}
-	if hasWithdraw && absDiffValue.Cmp(maxAuditSupplyDiffValue) > 0 {
+	if hasWithdraw && oldTotalSupply.Sub(fTotalSupply).Cmp(maxAuditSupplyDiffValue) > 0 {
 		isNormal = false
 		subject += "[risk] large withdraw.\n"
+	}
+	if absDiffValue.Cmp(maxAuditBalanceDiffValue) > 0 {
+		isNormal = false
+		subject += "[risk] balance too large than total supply.\n"
 	}
 	if isNormal {
 		subject = "[risk] normal balance and total supply.\n"
 		prevSendAuditTimestamp = 0 // reset frequency check
 	}
+
+	oldDepositBalance = fDepositBalance
+	oldTotalSupply = fTotalSupply
 
 	logFn := log.Info
 	if !isNormal {
