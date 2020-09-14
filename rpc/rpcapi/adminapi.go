@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/anyswap/CrossChain-Bridge/admin"
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -54,6 +55,8 @@ func doCall(args *admin.CallArgs, result *string) error {
 		return reswap(args, result)
 	case "manual":
 		return manual(args, result)
+	case "setnonce":
+		return setnonce(args, result)
 	default:
 		return fmt.Errorf("unknown admin method '%v'", args.Method)
 	}
@@ -100,9 +103,9 @@ func bigvalue(args *admin.CallArgs, result *string) (err error) {
 	operation := args.Params[0]
 	txid := args.Params[1]
 	switch operation {
-	case "passswapin":
+	case passSwapinOp:
 		err = mongodb.PassSwapinBigValue(txid)
-	case "passswapout":
+	case passSwapoutOp:
 		err = mongodb.PassSwapoutBigValue(txid)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
@@ -240,6 +243,27 @@ func manual(args *admin.CallArgs, result *string) (err error) {
 	err = mongodb.ManualManageSwap(txid, memo, isSwapin, isPass)
 	if err != nil {
 		return err
+	}
+	*result = successReuslt
+	return nil
+}
+
+func setnonce(args *admin.CallArgs, result *string) (err error) {
+	if len(args.Params) != 2 {
+		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+	}
+	operation := args.Params[0]
+	nonce, err := common.GetUint64FromStr(args.Params[1])
+	if err != nil {
+		return fmt.Errorf("wrong nonce value, %v", err)
+	}
+	switch operation {
+	case swapinOp:
+		tokens.DstBridge.SetNonce(nonce)
+	case swapoutOp:
+		tokens.SrcBridge.SetNonce(nonce)
+	default:
+		return fmt.Errorf("unknown operation '%v'", operation)
 	}
 	*result = successReuslt
 	return nil

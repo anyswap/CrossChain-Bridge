@@ -109,6 +109,7 @@ type CrossChainBridge interface {
 	StartChainTransactionScanJob()
 	StartSwapHistoryScanJob()
 
+	SetNonce(value uint64)
 	AdjustNonce(value uint64) (nonce uint64)
 	IncreaseNonce(value uint64)
 
@@ -140,6 +141,15 @@ type CrossChainBridgeBase struct {
 // NewCrossChainBridgeBase new base bridge
 func NewCrossChainBridgeBase(isSrc bool) *CrossChainBridgeBase {
 	return &CrossChainBridgeBase{IsSrc: isSrc}
+}
+
+// SetNonce set nonce directly
+func (b *CrossChainBridgeBase) SetNonce(value uint64) {
+	if b.IsSrcEndpoint() {
+		b.SwapoutNonce = value
+	} else {
+		b.SwapinNonce = value
+	}
 }
 
 // AdjustNonce adjust account nonce (eth like chain)

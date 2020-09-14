@@ -29,6 +29,7 @@ func initApp() {
 		reverifyCommand,
 		reswapCommand,
 		manualCommand,
+		setnonceCommand,
 		utils.LicenseCommand,
 		utils.VersionCommand,
 	}
