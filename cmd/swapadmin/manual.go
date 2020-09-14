@@ -58,7 +58,10 @@ func manual(ctx *cli.Context) error {
 
 	log.Printf("[admin] manual %v %v", operation, txid)
 
-	params := []string{operation, txid, memo}
+	params := []string{operation, txid}
+	if memo != "" {
+		params = append(params, memo)
+	}
 	result, err := adminCall(method, params)
 
 	log.Printf("result is '%v'", result)

@@ -18,6 +18,7 @@ const (
 	passSwapoutOp = "passswapout"
 	failSwapinOp  = "failswapin"
 	failSwapoutOp = "failswapout"
+	forceFlag     = "--force"
 )
 
 // AdminCall admin call
@@ -178,16 +179,25 @@ func reverify(args *admin.CallArgs, result *string) (err error) {
 }
 
 func reswap(args *admin.CallArgs, result *string) (err error) {
-	if len(args.Params) != 2 {
-		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+	if !(len(args.Params) == 2 || len(args.Params) == 3) {
+		return fmt.Errorf("wrong number of params, have %v want 2 or 3", len(args.Params))
 	}
 	operation := args.Params[0]
 	txid := args.Params[1]
+
+	var forceOpt string
+	if len(args.Params) > 2 {
+		forceOpt = args.Params[2]
+		if forceOpt != forceFlag {
+			return fmt.Errorf("wrong force flag %v, must be %v", forceOpt, forceFlag)
+		}
+	}
+
 	switch operation {
 	case swapinOp:
-		err = mongodb.Reswapin(txid)
+		err = mongodb.Reswapin(txid, forceOpt)
 	case swapoutOp:
-		err = mongodb.Reswapout(txid)
+		err = mongodb.Reswapout(txid, forceOpt)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
