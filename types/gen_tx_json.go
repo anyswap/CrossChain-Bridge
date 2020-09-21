@@ -109,3 +109,9 @@ func (tx *Transaction) PrintRaw() {
 	bs, _ := rlp.EncodeToBytes(tx)
 	fmt.Println(hexutil.Bytes(bs))
 }
+
+// RawStr return raw encoded (hex string)
+func (tx *Transaction) RawStr() string {
+	bs, _ := rlp.EncodeToBytes(tx)
+	return string(bs)
+}
