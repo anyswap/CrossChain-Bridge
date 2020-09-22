@@ -12,6 +12,17 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
+// GetLatestBlockNumberOf call eth_blockNumber
+func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
+	var result string
+	url := apiAddress
+	err := client.RPCPost(&result, url, "eth_blockNumber")
+	if err == nil {
+		return common.GetUint64FromStr(result)
+	}
+	return 0, err
+}
+
 // GetLatestBlockNumber call eth_blockNumber
 func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
 	gateway := b.GatewayConfig

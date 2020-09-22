@@ -104,6 +104,7 @@ type CrossChainBridge interface {
 	SendTransaction(signedTx interface{}) (txHash string, err error)
 
 	GetLatestBlockNumber() (uint64, error)
+	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
 
 	StartPoolTransactionScanJob()
 	StartChainTransactionScanJob()

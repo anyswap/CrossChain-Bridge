@@ -8,6 +8,17 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
+// GetLatestBlockNumberOf call /blocks/tip/height
+func GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
+	var result uint64
+	url := apiAddress + "/blocks/tip/height"
+	err := client.RPCGet(&result, url)
+	if err == nil {
+		return result, nil
+	}
+	return 0, err
+}
+
 // GetLatestBlockNumber call /blocks/tip/height
 func GetLatestBlockNumber(b tokens.CrossChainBridge) (result uint64, err error) {
 	_, gateway := b.GetTokenAndGateway()

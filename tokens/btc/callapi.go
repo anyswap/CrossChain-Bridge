@@ -7,6 +7,11 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
+// GetLatestBlockNumberOf impl
+func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
+	return electrs.GetLatestBlockNumberOf(apiAddress)
+}
+
 // GetLatestBlockNumber impl
 func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
 	return electrs.GetLatestBlockNumber(b)
