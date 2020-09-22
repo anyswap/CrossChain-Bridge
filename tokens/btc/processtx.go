@@ -7,14 +7,40 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
+// ProcessTransaction process tx
+func (b *Bridge) ProcessTransaction(tx *electrs.ElectTx) {
+	txid := *tx.Txid
+	if tools.IsSwapinExist(txid) {
+		return
+	}
+	b.processTransactionImpl(tx)
+}
+
 func (b *Bridge) processTransaction(txid string) {
 	if tools.IsSwapinExist(txid) {
 		return
 	}
-	p2shBindAddr, err := b.checkSwapinTxType(txid)
+	var tx *electrs.ElectTx
+	var err error
+	for i := 0; i < 2; i++ {
+		tx, err = b.GetTransactionByHash(txid)
+		if err == nil {
+			break
+		}
+	}
+	if err != nil {
+		log.Debug("[processTransaction] "+b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txid, "err", err)
+		return
+	}
+	b.processTransactionImpl(tx)
+}
+
+func (b *Bridge) processTransactionImpl(tx *electrs.ElectTx) {
+	p2shBindAddr, err := b.checkSwapinTxType(tx)
 	if err != nil {
 		return
 	}
+	txid := *tx.Txid
 	if p2shBindAddr != "" {
 		_ = b.processP2shSwapin(txid, p2shBindAddr)
 	} else {
@@ -32,18 +58,7 @@ func (b *Bridge) processP2shSwapin(txid, bindAddress string) error {
 	return tools.RegisterP2shSwapin(txid, swapInfo.Bind, err)
 }
 
-func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err error) {
-	var tx *electrs.ElectTx
-	for i := 0; i < 2; i++ {
-		tx, err = b.GetTransactionByHash(txHash)
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		log.Debug("[processBtcSwapin] "+b.TokenConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
-		return "", tokens.ErrTxNotFound
-	}
+func (b *Bridge) checkSwapinTxType(tx *electrs.ElectTx) (p2shBindAddr string, err error) {
 	depositAddress := b.TokenConfig.DepositAddress
 	var txFrom string
 	for _, output := range tx.Vout {

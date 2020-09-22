@@ -62,6 +62,16 @@ func (b *Bridge) GetBlockTxids(blockHash string) ([]string, error) {
 	return electrs.GetBlockTxids(b, blockHash)
 }
 
+// GetBlock impl
+func (b *Bridge) GetBlock(blockHash string) (*electrs.ElectBlock, error) {
+	return electrs.GetBlock(b, blockHash)
+}
+
+// GetBlockTransactions impl
+func (b *Bridge) GetBlockTransactions(blockHash string, startIndex uint32) ([]*electrs.ElectTx, error) {
+	return electrs.GetBlockTransactions(b, blockHash, startIndex)
+}
+
 // GetBalance impl
 func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 	utxos, err := b.FindUtxos(account)

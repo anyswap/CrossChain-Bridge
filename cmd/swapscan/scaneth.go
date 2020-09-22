@@ -26,7 +26,7 @@ var (
 		Usage:     "scan swap on eth",
 		ArgsUsage: " ",
 		Description: `
-distribute rewards by liquidity
+scan swap on eth
 `,
 		Flags: []cli.Flag{
 			utils.GatewayFlag,
@@ -152,6 +152,7 @@ func (scanner *ethSwapScanner) run() {
 	}
 }
 
+// nolint:dupl // in diff sub command
 func (scanner *ethSwapScanner) doScanRangeJob(start, end uint64) {
 	if start >= end {
 		return

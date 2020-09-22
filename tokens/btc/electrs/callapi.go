@@ -160,3 +160,31 @@ func GetBlockTxids(b tokens.CrossChainBridge, blockHash string) (result []string
 	}
 	return nil, err
 }
+
+// GetBlock call /block/{blockHash}
+func GetBlock(b tokens.CrossChainBridge, blockHash string) (*ElectBlock, error) {
+	_, gateway := b.GetTokenAndGateway()
+	var result ElectBlock
+	var err error
+	for _, apiAddress := range gateway.APIAddress {
+		url := apiAddress + "/block/" + blockHash
+		err = client.RPCGet(&result, url)
+		if err == nil {
+			return &result, nil
+		}
+	}
+	return nil, err
+}
+
+// GetBlockTransactions call /block/{blockHash}/txs[/:start_index] (should start_index%25 == 0)
+func GetBlockTransactions(b tokens.CrossChainBridge, blockHash string, startIndex uint32) (result []*ElectTx, err error) {
+	_, gateway := b.GetTokenAndGateway()
+	for _, apiAddress := range gateway.APIAddress {
+		url := apiAddress + "/block/" + blockHash + "/txs/" + fmt.Sprintf("%d", startIndex)
+		err = client.RPCGet(&result, url)
+		if err == nil {
+			return result, nil
+		}
+	}
+	return nil, err
+}

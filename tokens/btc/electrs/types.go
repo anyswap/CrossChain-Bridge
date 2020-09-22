@@ -4,6 +4,22 @@ import (
 	"fmt"
 )
 
+// ElectBlock struct
+type ElectBlock struct {
+	Hash         *string `json:"id"`
+	Height       *uint32 `json:"height"`
+	Version      *uint32 `json:"version"`
+	Timestamp    *uint32 `json:"timestamp"`
+	TxCount      *uint32 `json:"tx_count"`
+	Size         *uint32 `json:"size"`
+	Weight       *uint32 `json:"weight"`
+	MerkleRoot   *string `json:"merkle_root"`
+	PreviousHash *string `json:"previousblockhash"`
+	Nonce        *uint32 `json:"nonce"`
+	Bits         *uint32 `json:"bits"`
+	Difficulty   *uint64 `json:"difficulty"`
+}
+
 // ElectTx struct
 type ElectTx struct {
 	Txid     *string        `json:"txid"`
