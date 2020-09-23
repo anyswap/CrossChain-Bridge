@@ -84,22 +84,25 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		args.Identifier = params.GetIdentifier()
 	}
 
+	var balance *big.Int
+	for i := 0; i < retryRPCCount; i++ {
+		balance, err = b.GetBalance(args.From)
+		if err == nil {
+			break
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	if err != nil {
+		log.Warn("get balance error", "from", args.From, "err", err)
+		return nil, fmt.Errorf("get balance error: %v", err)
+	}
+	needValue := big.NewInt(0)
 	if value != nil && value.Sign() > 0 {
-		var balance *big.Int
-		for i := 0; i < retryRPCCount; i++ {
-			balance, err = b.GetBalance(args.From)
-			if err == nil {
-				break
-			}
-			time.Sleep(retryRPCInterval)
-		}
-		if err != nil {
-			log.Warn("get balance error", "from", args.From, "err", err)
-			return nil, fmt.Errorf("get balance error: %v", err)
-		}
-		if balance.Cmp(new(big.Int).Add(value, defReserveGasFee)) < 0 {
-			return nil, errors.New("not enough coin balance")
-		}
+		needValue = value
+	}
+	needValue = new(big.Int).Add(needValue, defReserveGasFee)
+	if balance.Cmp(needValue) < 0 {
+		return nil, errors.New("not enough coin balance")
 	}
 
 	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
