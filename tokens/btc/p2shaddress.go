@@ -38,7 +38,10 @@ func (b *Bridge) GetP2shAddress(bindAddr string) (p2shAddress string, redeemScri
 	memo := common.FromHex(bindAddr)
 	net := b.GetChainConfig()
 	dcrmAddress := b.TokenConfig.DcrmAddress
-	address, _ := btcutil.DecodeAddress(dcrmAddress, net)
+	address, err := btcutil.DecodeAddress(dcrmAddress, net)
+	if err != nil {
+		return "", nil, fmt.Errorf("invalid dcrm address %v, %v", dcrmAddress, err)
+	}
 	pubKeyHash := address.ScriptAddress()
 	return GetP2shAddressWithMemo(memo, pubKeyHash, net)
 }

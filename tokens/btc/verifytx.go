@@ -108,7 +108,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (*tokens.TxSw
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
 	depositAddress := b.TokenConfig.DepositAddress
-	value, memoScript, rightReceiver := b.getReceivedValue(tx.Vout, depositAddress, p2pkhType)
+	value, memoScript, rightReceiver := b.GetReceivedValue(tx.Vout, depositAddress, p2pkhType)
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
@@ -152,7 +152,8 @@ func (b *Bridge) checkStable(txHash string) bool {
 	return txStatus.BlockHeight > 0 && txStatus.Confirmations >= *b.TokenConfig.Confirmations
 }
 
-func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyType string) (value uint64, memoScript string, rightReceiver bool) {
+// GetReceivedValue get received value
+func (b *Bridge) GetReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyType string) (value uint64, memoScript string, rightReceiver bool) {
 	for _, output := range vout {
 		switch *output.ScriptpubkeyType {
 		case opReturnType:

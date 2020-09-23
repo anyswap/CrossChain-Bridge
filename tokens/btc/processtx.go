@@ -7,15 +7,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
-// ProcessTransaction process tx
-func (b *Bridge) ProcessTransaction(tx *electrs.ElectTx) {
-	txid := *tx.Txid
-	if tools.IsSwapinExist(txid) {
-		return
-	}
-	b.processTransactionImpl(tx)
-}
-
 func (b *Bridge) processTransaction(txid string) {
 	if tools.IsSwapinExist(txid) {
 		return
@@ -36,7 +27,7 @@ func (b *Bridge) processTransaction(txid string) {
 }
 
 func (b *Bridge) processTransactionImpl(tx *electrs.ElectTx) {
-	p2shBindAddr, err := b.checkSwapinTxType(tx)
+	p2shBindAddr, err := b.CheckSwapinTxType(tx)
 	if err != nil {
 		return
 	}
@@ -58,7 +49,8 @@ func (b *Bridge) processP2shSwapin(txid, bindAddress string) error {
 	return tools.RegisterP2shSwapin(txid, swapInfo.Bind, err)
 }
 
-func (b *Bridge) checkSwapinTxType(tx *electrs.ElectTx) (p2shBindAddr string, err error) {
+// CheckSwapinTxType check swapin type
+func (b *Bridge) CheckSwapinTxType(tx *electrs.ElectTx) (p2shBindAddr string, err error) {
 	depositAddress := b.TokenConfig.DepositAddress
 	var txFrom string
 	for _, output := range tx.Vout {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
+	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
@@ -290,7 +292,7 @@ func (scanner *btcSwapScanner) scanBlock(job, height uint64, cache bool) {
 		}
 		for i, tx := range txs {
 			log.Trace(fmt.Sprintf("[%v] scan block %v process tx", job, height), "txid", *tx.Txid, "index", startIndex+uint32(i))
-			scanner.bridge.ProcessTransaction(tx)
+			scanner.processTx(tx)
 		}
 		log.Trace(fmt.Sprintf("[%v] scan block %v process txs", job, height), "startIndex", startIndex, "total", txCount)
 		startIndex += 25 // 25 is elctrs API defined
@@ -300,6 +302,52 @@ func (scanner *btcSwapScanner) scanBlock(job, height uint64, cache bool) {
 		btcCachedBlocks.addBlock(blockHash)
 	}
 	log.Info(fmt.Sprintf("[%v] scan block %v finish", job, height))
+}
+
+func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
+	txid := *tx.Txid
+	if tools.IsSwapinExist(txid) {
+		return
+	}
+	p2shBindAddr, err := scanner.bridge.CheckSwapinTxType(tx)
+	if err != nil {
+		return
+	}
+	if p2shBindAddr != "" {
+		log.Info("post p2sh swapin register", "txid", txid, "bind", p2shBindAddr)
+		args := map[string]interface{}{
+			"txid": txid,
+			"bind": p2shBindAddr,
+		}
+		var result interface{}
+		for i := 0; i < scanner.rpcRetryCount; i++ {
+			err = client.RPCPost(&result, scanner.swapServer, "swap.P2shSwapin", args)
+			if tokens.ShouldRegisterSwapForError(err) {
+				break
+			}
+			if strings.Contains(err.Error(), "swap already exist") {
+				break
+			}
+			log.Warn("post p2sh swapin register failed", "txid", txid, "bind", p2shBindAddr, "err", err)
+		}
+	} else {
+		_, _, rightReceiver := scanner.bridge.GetReceivedValue(tx.Vout, scanner.depositAddress, "p2pkh")
+		if !rightReceiver {
+			return
+		}
+		log.Info("post swapin register", "txid", txid)
+		var result interface{}
+		for i := 0; i < scanner.rpcRetryCount; i++ {
+			err = client.RPCPost(&result, scanner.swapServer, "swap.Swapin", txid)
+			if tokens.ShouldRegisterSwapForError(err) {
+				break
+			}
+			if strings.Contains(err.Error(), "swap already exist") {
+				break
+			}
+			log.Warn("post swapin register failed", "txid", txid, "err", err)
+		}
+	}
 }
 
 var btcCachedBlocks = &cachedSacnnedBlocks{
