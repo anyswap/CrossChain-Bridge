@@ -10,8 +10,11 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
+)
+
+var (
+	regexMemo = regexp.MustCompile(`^OP_RETURN OP_PUSHBYTES_\d* `)
 )
 
 // GetTransaction impl
@@ -83,18 +86,6 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string) (*tokens.TxSwapInfo, e
 	return b.verifySwapinTx(pairID, txHash, false)
 }
 
-func hasLockTimeOrSequence(tx *electrs.ElectTx) bool {
-	if *tx.Locktime != 0 {
-		return true
-	}
-	for _, input := range tx.Vin {
-		if *input.Sequence != wire.MaxTxInSequenceNum {
-			return true
-		}
-	}
-	return false
-}
-
 func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
@@ -108,18 +99,21 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	txStatus := tx.Status
 	if txStatus.BlockHeight != nil {
 		swapInfo.Height = *txStatus.BlockHeight // Height
+	} else if *tx.Locktime != 0 {
+		// tx with locktime should be on chain, prvent DDOS attack
+		return swapInfo, tokens.ErrTxNotStable
 	}
 	if txStatus.BlockTime != nil {
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
 	depositAddress := tokenCfg.DepositAddress
-	value, memoScript, rightReceiver := b.getReceivedValue(tx.Vout, depositAddress, anyType)
+	value, memoScript, rightReceiver := b.GetReceivedValue(tx.Vout, depositAddress, p2pkhType)
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
@@ -152,10 +146,6 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 		return swapInfo, tokens.ErrTxWithWrongMemo
 	}
 
-	if hasLockTimeOrSequence(tx) {
-		return swapInfo, tokens.ErrTxWithLockTimeOrSequence
-	}
-
 	if !allowUnstable {
 		log.Debug("verify swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
@@ -168,14 +158,15 @@ func (b *Bridge) checkStable(txHash string) bool {
 	return txStatus.BlockHeight > 0 && txStatus.Confirmations >= confirmations
 }
 
-func (b *Bridge) getReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyType string) (value uint64, memoScript string, rightReceiver bool) {
+// GetReceivedValue get received value
+func (b *Bridge) GetReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyType string) (value uint64, memoScript string, rightReceiver bool) {
 	for _, output := range vout {
 		switch *output.ScriptpubkeyType {
 		case opReturnType:
 			memoScript = *output.ScriptpubkeyAsm
 			continue
-		case pubkeyType, anyType:
-			if *output.ScriptpubkeyAddress != receiver {
+		case pubkeyType:
+			if output.ScriptpubkeyAddress == nil || *output.ScriptpubkeyAddress != receiver {
 				continue
 			}
 			rightReceiver = true
@@ -205,8 +196,7 @@ func getTxFrom(vin []*electrs.ElectTxin, priorityAddress string) string {
 }
 
 func getBindAddressFromMemoScipt(memoScript string) (memoStr, bind string, ok bool) {
-	re := regexp.MustCompile("^OP_RETURN OP_PUSHBYTES_[0-9]* ")
-	parts := re.Split(memoScript, -1)
+	parts := regexMemo.Split(memoScript, -1)
 	if len(parts) != 2 {
 		return "", "", false
 	}

@@ -100,14 +100,16 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 		if txStatus.Confirmations < *resBridge.GetChainConfig().Confirmations {
 			return nil
 		}
-		token := resBridge.GetTokenConfig(swap.PairID)
-		receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-		txFailed := !ok || receipt == nil || *receipt.Status != 1
-		if !txFailed && token != nil && token.ContractAddress != "" && len(receipt.Logs) == 0 {
-			txFailed = true
-		}
-		if txFailed {
-			return markSwapResultFailed(swap.TxID, swap.PairID, isSwapin)
+		if txStatus.Receipt != nil {
+			receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
+			txFailed := !ok || receipt == nil || *receipt.Status != 1
+			token := resBridge.GetTokenConfig(swap.PairID)
+			if !txFailed && token != nil && token.ContractAddress != "" && len(receipt.Logs) == 0 {
+				txFailed = true
+			}
+			if txFailed {
+				return markSwapResultFailed(swap.TxID, swap.PairID, isSwapin)
+			}
 		}
 		return markSwapResultStable(swap.TxID, swap.PairID, isSwapin)
 	}

@@ -26,9 +26,10 @@ type RiskConfig struct {
 
 	Email *EmailConfig
 
-	InitialDiffValue   float64
-	MaxAuditDiffValue  float64
-	MinWithdrawReserve float64
+	InitialDiffValue         float64
+	MaxAuditBalanceDiffValue float64
+	MaxAuditSupplyDiffValue  float64
+	MinWithdrawReserve       float64
 }
 
 // EmailConfig email config
@@ -59,8 +60,11 @@ func CheckConfig() (err error) {
 		return err
 	}
 	config := GetConfig()
-	if config.MaxAuditDiffValue <= 0 {
-		return errors.New("server must config positive 'MaxAuditDiffValue'")
+	if config.MaxAuditBalanceDiffValue <= 0 {
+		return errors.New("server must config positive 'MaxAuditBalanceDiffValue'")
+	}
+	if config.MaxAuditSupplyDiffValue <= 0 {
+		return errors.New("server must config positive 'MaxAuditSupplyDiffValue'")
 	}
 	return nil
 }

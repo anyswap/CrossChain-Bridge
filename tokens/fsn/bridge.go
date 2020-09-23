@@ -41,7 +41,6 @@ func (b *Bridge) VerifyChainID() {
 	switch networkID {
 	case netMainnet, netTestnet, netDevnet:
 	case netCustom:
-		return
 	default:
 		log.Fatalf("unsupported fusion network: %v", b.ChainConfig.NetID)
 	}
@@ -79,6 +78,7 @@ func (b *Bridge) VerifyChainID() {
 		if chainID.Uint64() != 55555 {
 			panicMismatchChainID()
 		}
+	case netCustom:
 	default:
 		log.Fatalf("unsupported fusion network %v", networkID)
 	}

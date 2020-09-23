@@ -90,10 +90,20 @@ var (
 		Name:  "swapserver",
 		Usage: "swap server RPC address",
 	}
+	// DcrmAddressFlag --dcrmAddress
+	DcrmAddressFlag = &cli.StringFlag{
+		Name:  "dcrmAddress",
+		Usage: "dcrm address",
+	}
 	// DepositAddressSliceFlag --deposit
 	DepositAddressSliceFlag = &cli.StringSliceFlag{
 		Name:  "deposit",
 		Usage: "deposit address slice",
+	}
+	// DepositAddressFlag --deposit
+	DepositAddressFlag = &cli.StringFlag{
+		Name:  "deposit",
+		Usage: "deposit address",
 	}
 	// TokenAddressSliceFlag --token
 	TokenAddressSliceFlag = &cli.StringSliceFlag{

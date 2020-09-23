@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/anyswap/CrossChain-Bridge/admin"
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -18,6 +19,7 @@ const (
 	passSwapoutOp = "passswapout"
 	failSwapinOp  = "failswapin"
 	failSwapoutOp = "failswapout"
+	forceFlag     = "--force"
 )
 
 // AdminCall admin call
@@ -53,6 +55,8 @@ func doCall(args *admin.CallArgs, result *string) error {
 		return reswap(args, result)
 	case "manual":
 		return manual(args, result)
+	case "setnonce":
+		return setnonce(args, result)
 	default:
 		return fmt.Errorf("unknown admin method '%v'", args.Method)
 	}
@@ -101,9 +105,9 @@ func bigvalue(args *admin.CallArgs, result *string) (err error) {
 	txid := args.Params[1]
 	pairID := args.Params[2]
 	switch operation {
-	case "passswapin":
+	case passSwapinOp:
 		err = mongodb.PassSwapinBigValue(txid, pairID)
-	case "passswapout":
+	case passSwapoutOp:
 		err = mongodb.PassSwapoutBigValue(txid, pairID)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
@@ -167,18 +171,27 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 	return nil
 }
 
-func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID string, err error) {
-	if len(args.Params) != 3 {
-		return "", "", "", fmt.Errorf("wrong number of params, have %v want 3", len(args.Params))
+func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID, forceOpt string, err error) {
+	if !(len(args.Params) == 3 || len(args.Params) == 4) {
+		err = fmt.Errorf("wrong number of params, have %v want 3 or 4", len(args.Params))
+		return
 	}
 	operation = args.Params[0]
 	txid = args.Params[1]
 	pairID = args.Params[2]
-	return operation, txid, pairID, nil
+
+	if len(args.Params) > 3 {
+		forceOpt = args.Params[3]
+		if forceOpt != forceFlag {
+			err = fmt.Errorf("wrong force flag %v, must be %v", forceOpt, forceFlag)
+			return
+		}
+	}
+	return operation, txid, pairID, forceOpt, nil
 }
 
 func reverify(args *admin.CallArgs, result *string) (err error) {
-	operation, txid, pairID, err := getOpTxAndPairID(args)
+	operation, txid, pairID, _, err := getOpTxAndPairID(args)
 	if err != nil {
 		return err
 	}
@@ -198,15 +211,15 @@ func reverify(args *admin.CallArgs, result *string) (err error) {
 }
 
 func reswap(args *admin.CallArgs, result *string) (err error) {
-	operation, txid, pairID, err := getOpTxAndPairID(args)
+	operation, txid, pairID, forceOpt, err := getOpTxAndPairID(args)
 	if err != nil {
 		return err
 	}
 	switch operation {
 	case swapinOp:
-		err = mongodb.Reswapin(txid, pairID)
+		err = mongodb.Reswapin(txid, pairID, forceOpt)
 	case swapoutOp:
-		err = mongodb.Reswapout(txid, pairID)
+		err = mongodb.Reswapout(txid, pairID, forceOpt)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
@@ -250,6 +263,28 @@ func manual(args *admin.CallArgs, result *string) (err error) {
 	err = mongodb.ManualManageSwap(txid, pairID, memo, isSwapin, isPass)
 	if err != nil {
 		return err
+	}
+	*result = successReuslt
+	return nil
+}
+
+func setnonce(args *admin.CallArgs, result *string) (err error) {
+	if len(args.Params) != 3 {
+		return fmt.Errorf("wrong number of params, have %v want 3", len(args.Params))
+	}
+	operation := args.Params[0]
+	nonce, err := common.GetUint64FromStr(args.Params[1])
+	if err != nil {
+		return fmt.Errorf("wrong nonce value, %v", err)
+	}
+	pairID := args.Params[2]
+	switch operation {
+	case swapinOp:
+		tokens.DstBridge.SetNonce(pairID, nonce)
+	case swapoutOp:
+		tokens.SrcBridge.SetNonce(pairID, nonce)
+	default:
+		return fmt.Errorf("unknown operation '%v'", operation)
 	}
 	*result = successReuslt
 	return nil

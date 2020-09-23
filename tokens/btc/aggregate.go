@@ -2,7 +2,9 @@ package btc
 
 import (
 	"errors"
+	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
@@ -38,7 +40,17 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 		}
 	}
 
-	signedTx, txHash, err := b.DcrmSignTransaction(authoredTx, args)
+	var signedTx interface{}
+	var txHash string
+	maxRetryDcrmSignCount := 5
+	for i := 0; i < maxRetryDcrmSignCount; i++ {
+		signedTx, txHash, err = b.DcrmSignTransaction(authoredTx, args)
+		if err == nil {
+			break
+		}
+		log.Warn("retry dcrm sign for aggregate", "count", i+1, "err", err)
+		time.Sleep(time.Second)
+	}
 	if err != nil {
 		return "", err
 	}

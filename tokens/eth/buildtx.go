@@ -2,6 +2,7 @@ package eth
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -17,6 +18,8 @@ var (
 	retryRPCInterval = 1 * time.Second
 
 	defPlusGasPricePercentage uint64 = 15 // 15%
+
+	defReserveGasFee = big.NewInt(1e16) // 0.01 ETH
 )
 
 // BuildRawTransaction build raw tx
@@ -91,21 +94,25 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		args.Identifier = params.GetIdentifier()
 	}
 
+	var balance *big.Int
+	for i := 0; i < retryRPCCount; i++ {
+		balance, err = b.GetBalance(args.From)
+		if err == nil {
+			break
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	if err != nil {
+		log.Warn("get balance error", "from", args.From, "err", err)
+		return nil, fmt.Errorf("get balance error: %v", err)
+	}
+	needValue := big.NewInt(0)
 	if value != nil && value.Sign() > 0 {
-		var balance *big.Int
-		for i := 0; i < retryRPCCount; i++ {
-			balance, err = b.GetBalance(args.From)
-			if err == nil {
-				break
-			}
-			time.Sleep(retryRPCInterval)
-		}
-		if err == nil && balance.Cmp(value) < 0 {
-			return nil, errors.New("not enough coin balance")
-		}
-		if err != nil {
-			return nil, err
-		}
+		needValue = value
+	}
+	needValue = new(big.Int).Add(needValue, defReserveGasFee)
+	if balance.Cmp(needValue) < 0 {
+		return nil, errors.New("not enough coin balance")
 	}
 
 	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil

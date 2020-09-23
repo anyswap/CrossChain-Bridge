@@ -5,14 +5,35 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
 func (b *Bridge) processTransaction(txid string) {
-	p2shBindAddr, err := b.checkSwapinTxType(txid)
+	if tools.IsSwapExist(txid, PairID, true) {
+		return
+	}
+	var tx *electrs.ElectTx
+	var err error
+	for i := 0; i < 2; i++ {
+		tx, err = b.GetTransactionByHash(txid)
+		if err == nil {
+			break
+		}
+	}
+	if err != nil {
+		log.Debug("[processTransaction] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txid, "err", err)
+		return
+	}
+	b.processTransactionImpl(tx)
+}
+
+func (b *Bridge) processTransactionImpl(tx *electrs.ElectTx) {
+	p2shBindAddr, err := b.CheckSwapinTxType(tx)
 	if err != nil {
 		return
 	}
+	txid := *tx.Txid
 	if p2shBindAddr != "" {
 		b.processP2shSwapin(txid, p2shBindAddr)
 	} else {
@@ -30,36 +51,37 @@ func (b *Bridge) processP2shSwapin(txid, bindAddress string) {
 	tools.RegisterP2shSwapin(txid, swapInfo, err)
 }
 
-func (b *Bridge) checkSwapinTxType(txHash string) (p2shBindAddr string, err error) {
-	tx, err := b.GetTransactionByHash(txHash)
-	if err != nil {
-		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
-		return "", tokens.ErrTxNotFound
-	}
+// CheckSwapinTxType check swapin type
+func (b *Bridge) CheckSwapinTxType(tx *electrs.ElectTx) (p2shBindAddr string, err error) {
 	tokenCfg := b.GetTokenConfig(PairID)
 	if tokenCfg == nil {
 		return "", fmt.Errorf("swap pair '%v' is not configed", PairID)
 	}
 	depositAddress := tokenCfg.DepositAddress
-	txFrom := getTxFrom(tx.Vin, depositAddress)
+	var txFrom string
 	for _, output := range tx.Vout {
+		if output.ScriptpubkeyAddress == nil {
+			continue
+		}
 		switch *output.ScriptpubkeyType {
 		case p2shType:
-			if p2shBindAddr == "" { // use the first registered p2sh address
-				p2shAddress := *output.ScriptpubkeyAddress
-				p2shBindAddr = tools.GetP2shBindAddress(p2shAddress)
+			// use the first registered p2sh address
+			p2shAddress := *output.ScriptpubkeyAddress
+			p2shBindAddr = tools.GetP2shBindAddress(p2shAddress)
+			if p2shBindAddr != "" {
+				return p2shBindAddr, nil
 			}
-		default:
-			if txFrom == depositAddress {
-				continue // ignore is sender is configed deposit address
-			}
+		case p2pkhType:
 			if *output.ScriptpubkeyAddress == depositAddress {
-				return "", nil // p2pkh first if exist
+				if txFrom == "" {
+					txFrom = getTxFrom(tx.Vin, depositAddress)
+				}
+				if txFrom == depositAddress {
+					continue // ignore if sender is deposit address
+				}
+				return "", nil // use p2pkh if exist
 			}
 		}
-	}
-	if p2shBindAddr != "" {
-		return p2shBindAddr, nil
 	}
 	return "", tokens.ErrTxWithWrongReceiver
 }

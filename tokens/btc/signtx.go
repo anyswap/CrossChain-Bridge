@@ -95,15 +95,25 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash,
 	log.Info(b.ChainConfig.BlockChain+" Bridge MakeSignedTransaction", "pairID", pairID, "msghash", msgHash, "count", len(msgHash))
 
 	var sigScript, cPkData []byte
+
+	if pairID != "" && tokens.BtcFromPublicKey != "" {
+		cPkData, err = b.GetCompressedPublicKey(tokens.BtcFromPublicKey, false)
+		if err != nil {
+			return nil, "", err
+		}
+	}
+
 	for i, txin := range authoredTx.Tx.TxIn {
 		signData, ok := getSigDataFromRSV(rsv[i])
 		if !ok {
 			return nil, "", errors.New("wrong RSV data")
 		}
 
-		cPkData, err = b.getPkDataFromSig(pairID, rsv[i], msgHash[i], true)
-		if err != nil {
-			return nil, "", err
+		if len(cPkData) == 0 {
+			cPkData, err = b.getPkDataFromSig(rsv[i], msgHash[i], true)
+			if err != nil {
+				return nil, "", err
+			}
 		}
 
 		prevScript := authoredTx.PrevScripts[i]
@@ -170,20 +180,46 @@ func getSigDataFromRSV(rsv string) ([]byte, bool) {
 	return signData, true
 }
 
-func (b *Bridge) verifyPublickeyData(pairID string, pkData []byte) error {
-	tokenCfg := b.GetTokenConfig(pairID)
+func (b *Bridge) verifyPublickeyData(pkData []byte) error {
+	tokenCfg := b.GetTokenConfig(PairID)
 	if tokenCfg == nil {
 		return nil
 	}
 	dcrmAddress := tokenCfg.DcrmAddress
-	address, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkData), b.GetChainParams())
+	if dcrmAddress == "" {
+		return nil
+	}
+	address, err := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkData), b.GetChainParams())
+	if err != nil {
+		return err
+	}
 	if address.EncodeAddress() != dcrmAddress {
 		return fmt.Errorf("public key address %v is not the configed dcrm address %v", address, dcrmAddress)
 	}
 	return nil
 }
 
-func (b *Bridge) getPkDataFromSig(pairID, rsv, msgHash string, compressed bool) (pkData []byte, err error) {
+// GetCompressedPublicKey get compressed public key
+func (b *Bridge) GetCompressedPublicKey(fromPublicKey string, needVerify bool) (cPkData []byte, err error) {
+	if fromPublicKey == "" {
+		return nil, nil
+	}
+	pkData := common.FromHex(fromPublicKey)
+	pubKey, err := btcec.ParsePubKey(pkData, btcec.S256())
+	if err != nil {
+		return nil, err
+	}
+	cPkData = pubKey.SerializeCompressed()
+	if needVerify {
+		err = b.verifyPublickeyData(cPkData)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return cPkData, nil
+}
+
+func (b *Bridge) getPkDataFromSig(rsv, msgHash string, compressed bool) (pkData []byte, err error) {
 	rsvData := common.FromHex(rsv)
 	hashData := common.FromHex(msgHash)
 	pub, err := crypto.SigToPub(hashData, rsvData)
@@ -194,10 +230,6 @@ func (b *Bridge) getPkDataFromSig(pairID, rsv, msgHash string, compressed bool) 
 		pkData = (*btcec.PublicKey)(pub).SerializeCompressed()
 	} else {
 		pkData = (*btcec.PublicKey)(pub).SerializeUncompressed()
-	}
-	err = b.verifyPublickeyData(pairID, pkData)
-	if err != nil {
-		return nil, err
 	}
 	return pkData, nil
 }
@@ -217,9 +249,10 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
 	time.Sleep(retryGetSignStatusInterval)
 
+	var signStatus *dcrm.SignStatus
 	i := 0
 	for ; i < retryGetSignStatusCount; i++ {
-		signStatus, err := dcrm.GetSignStatus(keyID)
+		signStatus, err = dcrm.GetSignStatus(keyID)
 		if err == nil {
 			if len(signStatus.Rsv) != len(msgHash) {
 				return nil, fmt.Errorf("get sign status require %v rsv but have %v (keyID = %v)", len(msgHash), len(signStatus.Rsv), keyID)
@@ -238,8 +271,41 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 		return nil, errors.New("get sign status failed")
 	}
 
+	rsv, err = b.adjustRsvOrders(rsv, msgHash, tokens.BtcFromPublicKey)
+	if err != nil {
+		return nil, err
+	}
+
 	log.Trace(b.ChainConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
 	return rsv, nil
+}
+
+func (b *Bridge) adjustRsvOrders(rsvs, msgHashes []string, fromPublicKey string) (newRsvs []string, err error) {
+	if len(rsvs) <= 1 {
+		return rsvs, nil
+	}
+	fromPubkeyData, err := b.GetCompressedPublicKey(fromPublicKey, false)
+	matchedRsvMap := make(map[string]struct{})
+	var cPkData []byte
+	for _, msgHash := range msgHashes {
+		matched := false
+		for _, rsv := range rsvs {
+			if _, exist := matchedRsvMap[rsv]; exist {
+				continue
+			}
+			cPkData, err = b.getPkDataFromSig(rsv, msgHash, true)
+			if err == nil && bytes.Equal(cPkData, fromPubkeyData) {
+				matchedRsvMap[rsv] = struct{}{}
+				newRsvs = append(newRsvs, rsv)
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return nil, fmt.Errorf("msgHash %v hash no matched rsv", msgHash)
+		}
+	}
+	return newRsvs, err
 }
 
 // SignTransaction sign tx with wif

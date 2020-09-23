@@ -1,4 +1,4 @@
-package btc
+package eth
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	scannedTxs = tools.NewCachedScannedTxs(3000)
+	scannedTxs = tools.NewCachedScannedTxs(300)
 )
 
 // StartPoolTransactionScanJob scan job
@@ -19,13 +19,14 @@ func (b *Bridge) StartPoolTransactionScanJob() {
 	errorSubject := fmt.Sprintf("[scanpool] get %v pool txs error", chainName)
 	scanSubject := fmt.Sprintf("[scanpool] scanned %v tx", chainName)
 	for {
-		txids, err := b.GetPoolTxidList()
+		txs, err := b.GetPendingTransactions()
 		if err != nil {
 			log.Error(errorSubject, "err", err)
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
-		for _, txid := range txids {
+		for _, tx := range txs {
+			txid := tx.Hash.String()
 			if scannedTxs.IsTxScanned(txid) {
 				continue
 			}

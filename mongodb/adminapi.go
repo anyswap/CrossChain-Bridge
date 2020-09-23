@@ -101,16 +101,16 @@ func reverifySwap(txid, pairID string, isSwapin bool) error {
 }
 
 // Reswapin reswapin
-func Reswapin(txid, pairID string) error {
-	return reswap(txid, pairID, true)
+func Reswapin(txid, pairID, forceOpt string) error {
+	return reswap(txid, pairID, forceOpt, true)
 }
 
 // Reswapout reswapout
-func Reswapout(txid, pairID string) error {
-	return reswap(txid, pairID, false)
+func Reswapout(txid, pairID, forceOpt string) error {
+	return reswap(txid, pairID, forceOpt, false)
 }
 
-func reswap(txid, pairID string, isSwapin bool) error {
+func reswap(txid, pairID, forceOpt string, isSwapin bool) error {
 	swap, err := FindSwap(isSwapin, txid, pairID)
 	if err != nil {
 		return err
@@ -122,7 +122,7 @@ func reswap(txid, pairID string, isSwapin bool) error {
 	if err != nil {
 		return err
 	}
-	err = checkCanReswap(swapResult, isSwapin)
+	err = checkCanReswap(swapResult, forceOpt, isSwapin)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func reswap(txid, pairID string, isSwapin bool) error {
 	return UpdateSwapStatus(isSwapin, txid, pairID, TxNotSwapped, time.Now().Unix(), "")
 }
 
-func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
+func checkCanReswap(res *MgoSwapResult, forceOpt string, isSwapin bool) error {
 	swapType := tokens.SwapType(res.SwapType)
 	switch swapType {
 	case tokens.SwapinType:
@@ -158,6 +158,14 @@ func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
 	_, err := bridge.GetTransaction(res.SwapTx)
 	if err == nil {
 		return errors.New("swaptx exist in chain or pool")
+	}
+	return checkReswapNonce(bridge, res, forceOpt)
+}
+
+func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, forceOpt string) (err error) {
+	const forceFlag = "--force"
+	if forceOpt == forceFlag {
+		return nil
 	}
 	nonceGetter, ok := bridge.(tokens.NonceGetter)
 	if !ok {

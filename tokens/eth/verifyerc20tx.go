@@ -41,7 +41,9 @@ func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID stri
 
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.DepositAddress)
 	if err != nil {
-		log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", txHash, "err", err)
+		if err != tokens.ErrTxWithWrongReceiver {
+			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", txHash, "err", err)
+		}
 		return swapInfo, err
 	}
 	swapInfo.To = strings.ToLower(to)     // To

@@ -11,6 +11,7 @@ import (
 var (
 	BtcMinRelayFee   int64 = 400
 	BtcRelayFeePerKb int64 = 2000
+	BtcFromPublicKey string
 
 	BtcUtxoAggregateMinCount  = 20
 	BtcUtxoAggregateMinValue  = uint64(1000000)

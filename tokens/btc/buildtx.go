@@ -22,7 +22,6 @@ import (
 const (
 	p2pkhType    = "p2pkh"
 	p2shType     = "p2sh"
-	anyType      = "anyType"
 	opReturnType = "op_return"
 
 	retryCount    = 3
@@ -216,7 +215,7 @@ func (b *Bridge) selectUtxos(from string, target btcutil.Amount) (total btcutil.
 		if *output.ScriptpubkeyType != p2pkhType {
 			continue
 		}
-		if *output.ScriptpubkeyAddress != from {
+		if output.ScriptpubkeyAddress == nil || *output.ScriptpubkeyAddress != from {
 			continue
 		}
 		txHash, err2 := chainhash.NewHashFromStr(*utxo.Txid)
@@ -284,7 +283,7 @@ func (b *Bridge) getUtxos(from string, target btcutil.Amount, prevOutPoints []*t
 			err = fmt.Errorf("out point (%v, %v) script pubkey type %v is not p2pkh", point.Hash, point.Index, *output.ScriptpubkeyType)
 			return 0, nil, nil, nil, err
 		}
-		if *output.ScriptpubkeyAddress != from {
+		if output.ScriptpubkeyAddress == nil || *output.ScriptpubkeyAddress != from {
 			err = fmt.Errorf("out point (%v, %v) script pubkey address %v is not %v", point.Hash, point.Index, *output.ScriptpubkeyAddress, from)
 			return 0, nil, nil, nil, err
 		}

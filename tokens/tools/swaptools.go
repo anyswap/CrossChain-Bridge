@@ -19,7 +19,7 @@ var (
 
 // IsSwapExist is swapin exist
 func IsSwapExist(txid, pairID string, isSwapin bool) bool {
-	if dcrm.IsSwapServer() {
+	if mongodb.HasSession() {
 		var swap *mongodb.MgoSwap
 		if isSwapin {
 			swap, _ = mongodb.FindSwapin(txid, pairID)
@@ -156,7 +156,7 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 
 // GetP2shBindAddress get p2sh bind address
 func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
-	if dcrm.IsSwapServer() {
+	if mongodb.HasSession() {
 		bindAddress, _ = mongodb.FindP2shBindAddress(p2shAddress)
 		return bindAddress
 	}
@@ -173,7 +173,7 @@ func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
 
 // GetLatestScanHeight get latest scanned block height
 func GetLatestScanHeight(isSrc bool) uint64 {
-	if dcrm.IsSwapServer() {
+	if mongodb.HasSession() {
 		for {
 			latestInfo, err := mongodb.FindLatestScanInfo(isSrc)
 			if err == nil {
@@ -219,7 +219,7 @@ func UpdateLatestScanInfo(isSrc bool, height uint64) error {
 
 // IsAddressRegistered is address registered
 func IsAddressRegistered(address string) bool {
-	if dcrm.IsSwapServer() {
+	if mongodb.HasSession() {
 		result, _ := mongodb.FindRegisteredAddress(address)
 		return result != nil
 	}

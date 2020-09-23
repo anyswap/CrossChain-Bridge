@@ -139,7 +139,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (swapInfos []*tokens.TxS
 	commonInfo.Hash = txHash // Hash
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug("[verifySwapout] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		addSwapInfoConsiderError(nil, tokens.ErrTxNotFound, &swapInfos, &errs)
 		return swapInfos, errs
 	}

@@ -54,15 +54,14 @@ var (
 	ErrUnknownPairID        = errors.New("unknown pair ID")
 
 	// errors should register
-	ErrTxWithWrongMemo          = errors.New("tx with wrong memo")
-	ErrTxWithWrongValue         = errors.New("tx with wrong value")
-	ErrTxWithWrongReceipt       = errors.New("tx with wrong receipt")
-	ErrTxWithWrongSender        = errors.New("tx with wrong sender")
-	ErrTxSenderNotRegistered    = errors.New("tx sender not registered")
-	ErrTxIncompatible           = errors.New("tx incompatible")
-	ErrBindAddrIsContract       = errors.New("bind address is contract")
-	ErrRPCQueryError            = errors.New("rpc query error")
-	ErrTxWithLockTimeOrSequence = errors.New("tx with lock time or sequenece")
+	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
+	ErrTxWithWrongValue      = errors.New("tx with wrong value")
+	ErrTxWithWrongReceipt    = errors.New("tx with wrong receipt")
+	ErrTxWithWrongSender     = errors.New("tx with wrong sender")
+	ErrTxSenderNotRegistered = errors.New("tx sender not registered")
+	ErrTxIncompatible        = errors.New("tx incompatible")
+	ErrBindAddrIsContract    = errors.New("bind address is contract")
+	ErrRPCQueryError         = errors.New("rpc query error")
 )
 
 // ShouldRegisterSwapForError return true if this error should record in database
@@ -76,8 +75,7 @@ func ShouldRegisterSwapForError(err error) bool {
 		ErrTxSenderNotRegistered,
 		ErrTxIncompatible,
 		ErrBindAddrIsContract,
-		ErrRPCQueryError,
-		ErrTxWithLockTimeOrSequence:
+		ErrRPCQueryError:
 		return true
 	}
 	return false
@@ -110,9 +108,11 @@ type CrossChainBridge interface {
 	SendTransaction(signedTx interface{}) (txHash string, err error)
 
 	GetLatestBlockNumber() (uint64, error)
+	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
 
 	StartChainTransactionScanJob()
 
+	SetNonce(pairID string, value uint64)
 	AdjustNonce(pairID string, value uint64) (nonce uint64)
 	IncreaseNonce(pairID string, value uint64)
 
@@ -144,6 +144,17 @@ type CrossChainBridgeBase struct {
 // NewCrossChainBridgeBase new base bridge
 func NewCrossChainBridgeBase(isSrc bool) *CrossChainBridgeBase {
 	return &CrossChainBridgeBase{IsSrc: isSrc}
+}
+
+// SetNonce set nonce directly
+func (b *CrossChainBridgeBase) SetNonce(pairID string, value uint64) {
+	tokenCfg := b.GetTokenConfig(pairID)
+	account := strings.ToLower(tokenCfg.DcrmAddress)
+	if b.IsSrcEndpoint() {
+		b.SwapoutNonce[account] = value
+	} else {
+		b.SwapinNonce[account] = value
+	}
 }
 
 // AdjustNonce adjust account nonce (eth like chain)

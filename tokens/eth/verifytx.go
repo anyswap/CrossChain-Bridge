@@ -34,10 +34,12 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	} else {
 		log.Debug("GetBlockByHash fail", "hash", txStatus.BlockHash, "err", err)
 	}
-	if *txr.Status == 1 {
+	if txStatus.BlockHeight != 0 {
 		latest, err := b.GetLatestBlockNumber()
 		if err == nil {
-			txStatus.Confirmations = latest - txStatus.BlockHeight
+			if latest > txStatus.BlockHeight {
+				txStatus.Confirmations = latest - txStatus.BlockHeight
+			}
 		} else {
 			log.Debug("GetLatestBlockNumber fail", "err", err)
 		}
@@ -151,7 +153,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string) (*tokens.TxSwap
 
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	if tx.Recipient == nil { // ignore contract creation tx

@@ -20,7 +20,6 @@ import (
 //                |- ManualMakeFail    -> manual
 //                |- BindAddrIsContract-> manual
 //                |- RPCQueryError     -> manual
-//                |- TxWithLockTimeOrSequence -> manual
 //                |- TxWithBigValue        ---> TxNotSwapped
 //                |- TxSenderNotRegistered ---> TxNotStable
 //                |- TxNotSwapped -> |- TxSwapFailed -> manual
@@ -40,26 +39,25 @@ type SwapStatus uint16
 
 // swap status values
 const (
-	TxNotStable              SwapStatus = iota // 0
-	TxVerifyFailed                             // 1
-	TxWithWrongSender                          // 2
-	TxWithWrongValue                           // 3
-	TxIncompatible                             // 4
-	TxNotSwapped                               // 5
-	TxSwapFailed                               // 6
-	TxProcessed                                // 7
-	MatchTxEmpty                               // 8
-	MatchTxNotStable                           // 9
-	MatchTxStable                              // 10
-	TxWithWrongMemo                            // 11
-	TxWithBigValue                             // 12
-	TxSenderNotRegistered                      // 13
-	MatchTxFailed                              // 14
-	SwapInBlacklist                            // 15
-	ManualMakeFail                             // 16
-	BindAddrIsContract                         // 17
-	RPCQueryError                              // 18
-	TxWithLockTimeOrSequence                   // 19
+	TxNotStable           SwapStatus = iota // 0
+	TxVerifyFailed                          // 1
+	TxWithWrongSender                       // 2
+	TxWithWrongValue                        // 3
+	TxIncompatible                          // 4
+	TxNotSwapped                            // 5
+	TxSwapFailed                            // 6
+	TxProcessed                             // 7
+	MatchTxEmpty                            // 8
+	MatchTxNotStable                        // 9
+	MatchTxStable                           // 10
+	TxWithWrongMemo                         // 11
+	TxWithBigValue                          // 12
+	TxSenderNotRegistered                   // 13
+	MatchTxFailed                           // 14
+	SwapInBlacklist                         // 15
+	ManualMakeFail                          // 16
+	BindAddrIsContract                      // 17
+	RPCQueryError                           // 18
 )
 
 // CanManualMakePass can manual make pass
@@ -104,8 +102,7 @@ func (status SwapStatus) CanReverify() bool {
 		ManualMakeFail,
 		TxIncompatible,
 		BindAddrIsContract,
-		RPCQueryError,
-		TxWithLockTimeOrSequence:
+		RPCQueryError:
 		return true
 	default:
 		return false
@@ -163,8 +160,6 @@ func (status SwapStatus) String() string {
 		return "BindAddrIsContract"
 	case RPCQueryError:
 		return "RPCQueryError"
-	case TxWithLockTimeOrSequence:
-		return "TxWithLockTimeOrSequence"
 	default:
 		return fmt.Sprintf("unknown swap status %d", status)
 	}

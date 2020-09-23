@@ -141,6 +141,9 @@ func (b *Bridge) getUtxosFromOutPoints(prevOutPoints []*tokens.BtcOutPoint) (add
 			err = fmt.Errorf("out point (%v, %v) with zero value", point.Hash, point.Index)
 			return nil, nil, err
 		}
+		if output.ScriptpubkeyAddress == nil {
+			continue
+		}
 
 		addrs = append(addrs, *output.ScriptpubkeyAddress)
 		utxos = append(utxos, &electrs.ElectUtxo{

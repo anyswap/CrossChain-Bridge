@@ -20,8 +20,9 @@ func (b *Bridge) verifyP2shSwapinTx(pairID, txHash, bindAddress string, allowUns
 		return nil, tokens.ErrUnknownPairID
 	}
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID // PairID
-	swapInfo.Hash = txHash   // Hash
+	swapInfo.PairID = pairID    // PairID
+	swapInfo.Hash = txHash      // Hash
+	swapInfo.Bind = bindAddress // Bind
 	p2shAddress, _, err := b.GetP2shAddress(bindAddress)
 	if err != nil {
 		return swapInfo, tokens.ErrWrongP2shBindAddress
@@ -31,22 +32,24 @@ func (b *Bridge) verifyP2shSwapinTx(pairID, txHash, bindAddress string, allowUns
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug("[verifyP2sh] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	txStatus := tx.Status
 	if txStatus.BlockHeight != nil {
 		swapInfo.Height = *txStatus.BlockHeight // Height
+	} else if *tx.Locktime != 0 {
+		// tx with locktime should be on chain, prvent DDOS attack
+		return swapInfo, tokens.ErrTxNotStable
 	}
 	if txStatus.BlockTime != nil {
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
-	value, _, rightReceiver := b.getReceivedValue(tx.Vout, p2shAddress, p2shType)
+	value, _, rightReceiver := b.GetReceivedValue(tx.Vout, p2shAddress, p2shType)
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 	swapInfo.To = p2shAddress                    // To
-	swapInfo.Bind = bindAddress                  // Bind
 	swapInfo.Value = common.BigFromUint64(value) // Value
 
 	swapInfo.From = getTxFrom(tx.Vin, p2shAddress) // From
@@ -58,10 +61,6 @@ func (b *Bridge) verifyP2shSwapinTx(pairID, txHash, bindAddress string, allowUns
 
 	if !tokens.CheckSwapValue(pairID, swapInfo.Value, b.IsSrc) {
 		return swapInfo, tokens.ErrTxWithWrongValue
-	}
-
-	if hasLockTimeOrSequence(tx) {
-		return swapInfo, tokens.ErrTxWithLockTimeOrSequence
 	}
 
 	if !allowUnstable {

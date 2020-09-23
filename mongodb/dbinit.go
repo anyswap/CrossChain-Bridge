@@ -15,6 +15,11 @@ var (
 	dialInfo *mgo.DialInfo
 )
 
+// HasSession has session connected
+func HasSession() bool {
+	return session != nil
+}
+
 // MongoServerInit int mongodb server session
 func MongoServerInit(addrs []string, dbname, user, pass string) {
 	initDialInfo(addrs, dbname, user, pass)
