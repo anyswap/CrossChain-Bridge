@@ -95,9 +95,9 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 	}
 
 	input := (*[]byte)(tx.Payload)
-	bindAddress, value, err := parseSwapoutTxInput(input)
+	bindAddress, value, err := ParseSwapoutTxInput(input)
 	if err != nil {
-		log.Debug(b.TokenConfig.BlockChain+" parseSwapoutTxInput fail", "tx", txHash, "err", err)
+		log.Debug(b.TokenConfig.BlockChain+" ParseSwapoutTxInput fail", "tx", txHash, "err", err)
 		return swapInfo, err
 	}
 	if bindAddress != "" {
@@ -119,7 +119,8 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (*tokens.TxSwapInfo, err
 	return swapInfo, nil
 }
 
-func parseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
+// ParseSwapoutTxInput parse swapout tx input
+func ParseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 	if input == nil || len(*input) < 4 {
 		return "", nil, tokens.ErrTxWithWrongInput
 	}

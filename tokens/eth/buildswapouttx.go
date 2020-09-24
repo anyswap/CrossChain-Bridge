@@ -68,12 +68,12 @@ func BuildSwapoutTxInput(swapoutVal *big.Int, bindAddr string) ([]byte, error) {
 	}
 
 	// verify input
-	bindAddress, swapoutvalue, err := parseSwapoutTxInput(&input)
+	bindAddress, swapoutvalue, err := ParseSwapoutTxInput(&input)
 	if err != nil {
-		log.Error("parseSwapoutTxInput error", "err", err)
+		log.Error("ParseSwapoutTxInput error", "err", err)
 		return nil, err
 	}
-	log.Info("parseSwapoutTxInput", "bindAddress", bindAddress, "swapoutvalue", swapoutvalue)
+	log.Info("ParseSwapoutTxInput", "bindAddress", bindAddress, "swapoutvalue", swapoutvalue)
 
 	return input, nil
 }

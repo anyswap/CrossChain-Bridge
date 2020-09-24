@@ -42,7 +42,7 @@ func (b *Bridge) VerifyConfig() {
 
 // Init init after verify
 func (b *Bridge) Init() {
-	b.InitExtCodeParts()
+	InitExtCodeParts()
 	b.InitLatestBlockNumber()
 }
 
