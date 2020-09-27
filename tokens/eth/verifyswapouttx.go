@@ -160,7 +160,6 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (swapInfos []*tokens.TxS
 
 	for i, pairID := range pairIDs {
 		token := tokenCfgs[i]
-
 		if !common.IsEqualIgnoreCase(txRecipient, token.ContractAddress) {
 			continue
 		}
@@ -171,7 +170,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (swapInfos []*tokens.TxS
 		swapInfo.PairID = pairID // PairID
 
 		input := (*[]byte)(tx.Payload)
-		bindAddress, value, err := parseSwapoutTxInput(input)
+		bindAddress, value, err := ParseSwapoutTxInput(input)
 		if err != nil {
 			log.Debug(b.ChainConfig.BlockChain+" parseSwapoutTxInput fail", "tx", txHash, "err", err)
 			addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)
@@ -199,7 +198,8 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (swapInfos []*tokens.TxS
 	return swapInfos, errs
 }
 
-func parseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
+// ParseSwapoutTxInput parse swapout tx input
+func ParseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 	if input == nil || len(*input) < 4 {
 		return "", nil, tokens.ErrTxWithWrongInput
 	}

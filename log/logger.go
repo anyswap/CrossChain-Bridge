@@ -31,7 +31,7 @@ func SetLogger(logLevel uint32, jsonFormat, colorFormat bool) {
 			ForceQuote:      true,
 			FullTimestamp:   true,
 			TimestampFormat: timestampFormat,
-			DisableSorting:  true,
+			DisableSorting:  false,
 		})
 	}
 }

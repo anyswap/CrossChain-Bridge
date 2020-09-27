@@ -70,6 +70,11 @@ func (b *Bridge) VerifyContractCode(contract string, codePartsSlice ...map[strin
 		log.Warn("get contract code failed", "contract", contract, "err", err)
 		time.Sleep(1 * time.Second)
 	}
+	return VerifyContractCodeParts(code, codePartsSlice...)
+}
+
+// VerifyContractCodeParts verify contract code parts
+func VerifyContractCodeParts(code []byte, codePartsSlice ...map[string][]byte) (err error) {
 	for _, codeParts := range codePartsSlice {
 		for key, part := range codeParts {
 			if !bytes.Contains(code, part) {
@@ -78,6 +83,16 @@ func (b *Bridge) VerifyContractCode(contract string, codePartsSlice ...map[strin
 		}
 	}
 	return nil
+}
+
+// VerifyErc20ContractCode verify erc20 contract code
+func VerifyErc20ContractCode(code []byte) (err error) {
+	return VerifyContractCodeParts(code, erc20CodeParts)
+}
+
+// VerifySwapContractCode verify swap contract code
+func VerifySwapContractCode(code []byte) (err error) {
+	return VerifyContractCodeParts(code, ExtCodeParts, erc20CodeParts)
 }
 
 // VerifyErc20ContractAddress verify erc20 contract
@@ -91,7 +106,7 @@ func (b *Bridge) VerifyMbtcContractAddress(contract string) (err error) {
 }
 
 // InitExtCodeParts int extended code parts
-func (b *Bridge) InitExtCodeParts() {
+func InitExtCodeParts() {
 	switch {
 	case isMbtcSwapout():
 		ExtCodeParts = mBTCExtCodeParts

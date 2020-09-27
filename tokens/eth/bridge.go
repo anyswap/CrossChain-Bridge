@@ -36,7 +36,7 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 
 // Init init after verify
 func (b *Bridge) Init() {
-	b.InitExtCodeParts()
+	InitExtCodeParts()
 	b.InitLatestBlockNumber()
 }
 

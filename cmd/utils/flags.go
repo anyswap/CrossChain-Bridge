@@ -10,7 +10,6 @@ var (
 	DataDirFlag = &cli.StringFlag{
 		Name:  "datadir",
 		Usage: "Data directory (default in the execute directory)",
-		Value: "",
 	}
 	// ConfigFileFlag -c|--config
 	ConfigFileFlag = &cli.StringFlag{
@@ -123,7 +122,13 @@ var (
 	// PasswordFileFlag --password
 	PasswordFileFlag = &cli.StringFlag{
 		Name:  "password",
-		Usage: "Password file",
+		Usage: "password file",
+	}
+	// SwapTypeFlag --swaptype
+	SwapTypeFlag = &cli.StringFlag{
+		Name:  "swaptype",
+		Usage: "value can be swapin or swapout",
+		Value: "swapin",
 	}
 )
 
