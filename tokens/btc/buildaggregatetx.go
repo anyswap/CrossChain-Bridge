@@ -35,7 +35,7 @@ func (b *Bridge) BuildAggregateTransaction(addrs []string, utxos []*electrs.Elec
 
 	relayFeePerKb := btcutil.Amount(tokens.BtcRelayFeePerKb + 2000)
 
-	return NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource)
+	return NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource, true)
 }
 
 func (b *Bridge) rebuildAggregateTransaction(prevOutPoints []*tokens.BtcOutPoint) (rawTx *txauthor.AuthoredTx, err error) {

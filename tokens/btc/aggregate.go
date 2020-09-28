@@ -14,6 +14,8 @@ const (
 	AggregateIdentifier = "aggregate"
 
 	aggregateMemo = "aggregate"
+
+	redeemAggregateP2SHInputSize = 198
 )
 
 // AggregateUtxos aggregate uxtos

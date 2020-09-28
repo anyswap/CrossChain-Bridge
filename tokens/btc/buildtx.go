@@ -89,7 +89,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return b.getPayToAddrScript(changeAddress)
 	}
 
-	authoredTx, err := NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource)
+	authoredTx, err := NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource, false)
 	if err != nil {
 		return nil, err
 	}
@@ -314,9 +314,10 @@ func (insufficientFundsError) Error() string {
 // NewUnsignedTransaction ref btcwallet
 // ref. https://github.com/btcsuite/btcwallet/blob/b07494fc2d662fdda2b8a9db2a3eacde3e1ef347/wallet/txauthor/author.go
 // we only modify it to support P2PKH change script (the origin only support P2WPKH change script)
-func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount, fetchInputs txauthor.InputSource, fetchChange txauthor.ChangeSource) (*txauthor.AuthoredTx, error) {
+// and update estimate size because we are not use P2WKH
+func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount, fetchInputs txauthor.InputSource, fetchChange txauthor.ChangeSource, isAggregate bool) (*txauthor.AuthoredTx, error) {
 	targetAmount := txauthor.SumOutputValues(outputs)
-	estimatedSize := txsizes.EstimateVirtualSize(0, 1, 0, outputs, true)
+	estimatedSize := txsizes.EstimateSerializeSize(1, outputs, true)
 	targetFee := txrules.FeeForSerializeSize(relayFeePerKb, estimatedSize)
 
 	for {
@@ -328,29 +329,16 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount,
 			return nil, insufficientFundsError{}
 		}
 
-		// We count the types of inputs, which we'll use to estimate
-		// the vsize of the transaction.
-		var nested, p2wpkh, p2pkh int
-		for _, pkScript := range scripts {
-			switch {
-			// If this is a p2sh output, we assume this is a
-			// nested P2WKH.
-			case txscript.IsPayToScriptHash(pkScript):
-				nested++
-			case txscript.IsPayToWitnessPubKeyHash(pkScript):
-				p2wpkh++
-			default:
-				p2pkh++
-			}
-		}
-
-		maxSignedSize := txsizes.EstimateVirtualSize(p2pkh, p2wpkh, nested, outputs, true)
+		maxSignedSize := estimateSize(scripts, outputs, true, isAggregate)
 		maxRequiredFee := txrules.FeeForSerializeSize(relayFeePerKb, maxSignedSize)
 		if maxRequiredFee < btcutil.Amount(tokens.BtcMinRelayFee) {
 			maxRequiredFee = btcutil.Amount(tokens.BtcMinRelayFee)
 		}
 		remainingAmount := inputAmount - targetAmount
 		if remainingAmount < maxRequiredFee {
+			if isAggregate {
+				return nil, insufficientFundsError{}
+			}
 			targetFee = maxRequiredFee
 			continue
 		}
@@ -393,4 +381,27 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount,
 			ChangeIndex:     changeIndex,
 		}, nil
 	}
+}
+
+func estimateSize(scripts [][]byte, txOuts []*wire.TxOut, addChangeOutput, isAggregate bool) int {
+	if !isAggregate {
+		return txsizes.EstimateSerializeSize(len(scripts), txOuts, addChangeOutput)
+	}
+
+	var p2sh, p2pkh int
+	for _, pkScript := range scripts {
+		switch {
+		case txscript.IsPayToScriptHash(pkScript):
+			p2sh++
+		default:
+			p2pkh++
+		}
+	}
+
+	size := txsizes.EstimateSerializeSize(p2pkh, txOuts, addChangeOutput)
+	if p2sh > 0 {
+		size += p2sh * redeemAggregateP2SHInputSize
+	}
+
+	return size
 }
