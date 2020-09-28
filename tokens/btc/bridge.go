@@ -37,11 +37,12 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 // SetChainAndGateway set chain and gateway config
 func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
+	b.VerifyChainConfig()
 	b.InitLatestBlockNumber()
 }
 
-// VerifyTokenConfig verify token config
-func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) {
+// VerifyChainConfig verify chain config
+func (b *Bridge) VerifyChainConfig() {
 	chainCfg := b.ChainConfig
 	networkID := strings.ToLower(chainCfg.NetID)
 	switch networkID {
@@ -51,7 +52,10 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) {
 	default:
 		log.Fatal("unsupported bitcoin network", "netID", chainCfg.NetID)
 	}
+}
 
+// VerifyTokenConfig verify token config
+func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) {
 	if !b.IsP2pkhAddress(tokenCfg.DcrmAddress) {
 		log.Fatal("invalid dcrm address (not p2pkh)", "address", tokenCfg.DcrmAddress)
 	}

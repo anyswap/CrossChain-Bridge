@@ -41,6 +41,24 @@ func StartSwapJob() {
 	}
 }
 
+// AddSwapJob add swap job
+func AddSwapJob(pairCfg *tokens.TokenPairConfig) {
+	pairID := pairCfg.PairID
+	swapinDcrmAddr := strings.ToLower(pairCfg.SrcToken.DcrmAddress)
+	if _, exist := swapinTaskChanMap[swapinDcrmAddr]; !exist {
+		swapinTaskChanMap[swapinDcrmAddr] = make(chan *tokens.BuildTxArgs, swapChanSize)
+		go processSwapTask(swapinTaskChanMap[swapinDcrmAddr])
+	}
+	swapoutDcrmAddr := strings.ToLower(pairCfg.DestToken.DcrmAddress)
+	if _, exist := swapoutTaskChanMap[swapoutDcrmAddr]; !exist {
+		swapoutTaskChanMap[swapoutDcrmAddr] = make(chan *tokens.BuildTxArgs, swapChanSize)
+		go processSwapTask(swapoutTaskChanMap[swapoutDcrmAddr])
+	}
+
+	go startSwapinSwapJob(pairID)
+	go startSwapoutSwapJob(pairID)
+}
+
 func startSwapinSwapJob(pairID string) {
 	logWorker("swap", "start swapin swap job")
 	for {

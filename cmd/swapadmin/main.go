@@ -30,6 +30,7 @@ func initApp() {
 		reswapCommand,
 		manualCommand,
 		setnonceCommand,
+		addpairCommand,
 		utils.LicenseCommand,
 		utils.VersionCommand,
 	}

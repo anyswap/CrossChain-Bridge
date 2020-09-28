@@ -225,3 +225,51 @@ func loadTokenPairConfig(configFile string) (config *TokenPairConfig, err error)
 	log.Println("finish load token pair config file", configFile)
 	return config, nil
 }
+
+// AddPairConfig add pair config dynamically
+func AddPairConfig(configFile string) (pairConfig *TokenPairConfig, err error) {
+	pairConfig, err = loadTokenPairConfig(configFile)
+	if err != nil {
+		return nil, err
+	}
+	err = checkAddTokenPairsConfig(pairConfig)
+	if err != nil {
+		return nil, err
+	}
+	// use all small case to identify
+	tokenPairsConfig[strings.ToLower(pairConfig.PairID)] = pairConfig
+	log.Info("add pair config success", "pairID", pairConfig.PairID, "configFile", configFile)
+	return pairConfig, nil
+}
+
+func checkAddTokenPairsConfig(pairConfig *TokenPairConfig) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("recover from error: %v", r)
+		}
+	}()
+	err = pairConfig.CheckConfig()
+	if err != nil {
+		return err
+	}
+	SrcBridge.VerifyTokenConfig(pairConfig.SrcToken)
+	DstBridge.VerifyTokenConfig(pairConfig.DestToken)
+	pairID := strings.ToLower(pairConfig.PairID)
+	if _, exist := tokenPairsConfig[pairID]; exist {
+		return fmt.Errorf("pairID '%v' already exist", pairID)
+	}
+	srcContract := strings.ToLower(pairConfig.SrcToken.ContractAddress)
+	if srcContract == "" {
+		return fmt.Errorf("source contract address is empty")
+	}
+	dstContract := strings.ToLower(pairConfig.DestToken.ContractAddress)
+	for _, tokenPair := range tokenPairsConfig {
+		if strings.EqualFold(srcContract, tokenPair.SrcToken.ContractAddress) {
+			return fmt.Errorf("source contract '%v' already exist", srcContract)
+		}
+		if strings.EqualFold(dstContract, tokenPair.DestToken.ContractAddress) {
+			return fmt.Errorf("destination contract '%v' already exist", dstContract)
+		}
+	}
+	return nil
+}

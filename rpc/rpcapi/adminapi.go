@@ -9,6 +9,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/worker"
 )
 
 const (
@@ -57,6 +58,8 @@ func doCall(args *admin.CallArgs, result *string) error {
 		return manual(args, result)
 	case "setnonce":
 		return setnonce(args, result)
+	case "addpair":
+		return addpair(args, result)
 	default:
 		return fmt.Errorf("unknown admin method '%v'", args.Method)
 	}
@@ -286,6 +289,20 @@ func setnonce(args *admin.CallArgs, result *string) (err error) {
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
+	*result = successReuslt
+	return nil
+}
+
+func addpair(args *admin.CallArgs, result *string) (err error) {
+	if len(args.Params) != 1 {
+		return fmt.Errorf("wrong number of params, have %v want 1", len(args.Params))
+	}
+	configFile := args.Params[0]
+	pairConfig, err := tokens.AddPairConfig(configFile)
+	if err != nil {
+		return err
+	}
+	worker.AddSwapJob(pairConfig)
 	*result = successReuslt
 	return nil
 }
