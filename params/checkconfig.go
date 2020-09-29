@@ -86,8 +86,8 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	if c.TotalOracles == nil {
 		return errors.New("dcrm must config 'TotalOracles'")
 	}
-	if c.Mode != 0 {
-		return errors.New("dcrm must config 'Mode' to 0 (managed)")
+	if !(c.Mode == 0 || c.Mode == 1) {
+		return errors.New("dcrm must config 'Mode' to 0 (managed) or 1 (private)")
 	}
 	if c.ServerAccount == "" {
 		return errors.New("dcrm must config 'ServerAccount'")
