@@ -30,7 +30,7 @@ func CheckConfig(isServer bool) (err error) {
 			return err
 		}
 	}
-	err = checkTokenConfig()
+	err = checkChainAndGatewayConfig()
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func CheckConfig(isServer bool) (err error) {
 	return nil
 }
 
-func checkTokenConfig() (err error) {
+func checkChainAndGatewayConfig() (err error) {
 	config := GetConfig()
 	if config.SrcChain == nil {
 		return errors.New("server must config 'SrcChain'")
@@ -92,13 +92,8 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	if c.ServerAccount == "" {
 		return errors.New("dcrm must config 'ServerAccount'")
 	}
-	if isServer {
-		if c.Pubkey == nil {
-			return errors.New("swap server dcrm must config 'Pubkey'")
-		}
-		if len(c.SignGroups) == 0 {
-			return errors.New("swap server dcrm must config 'SignGroups'")
-		}
+	if isServer && len(c.SignGroups) == 0 {
+		return errors.New("swap server dcrm must config 'SignGroups'")
 	}
 	if c.KeystoreFile == nil {
 		return errors.New("dcrm must config 'KeystoreFile'")

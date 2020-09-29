@@ -25,10 +25,9 @@ var (
 	dcrmUser       common.Address
 	dcrmRPCAddress string
 
-	signPubkey string
-	groupID    string
-	threshold  string
-	mode       string
+	groupID   string
+	threshold string
+	mode      string
 
 	// ServerDcrmUser dcrm initiator for sign
 	ServerDcrmUser common.Address
@@ -37,11 +36,6 @@ var (
 // SetDcrmRPCAddress set dcrm node rpc address
 func SetDcrmRPCAddress(url string) {
 	dcrmRPCAddress = url
-}
-
-// SetSignPubkey set dcrm account public key
-func SetSignPubkey(pubkey string) {
-	signPubkey = pubkey
 }
 
 // SetDcrmGroup set dcrm group

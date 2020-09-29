@@ -14,6 +14,8 @@ ContractAddress = ""
 DepositAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 # withdraw from this address
 DcrmAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
+# dcrm address public key
+DcrmPubkey = "045c8648793e4867af465691685000ae841dccab0b011283139d2eae454b569d5789f01632e13a75a5aad8480140e895dd671cae3639f935750bea7ae4b5a2512e"
 # maximum deposit value
 MaximumSwap = 1000.0
 # minimum deposit value
@@ -43,6 +45,8 @@ Description = "cross chain bridge BTC with mBTC"
 ContractAddress = "0x61b8c4d6d28d5f7edadbea5456db3b4f7f836b64"
 # mapping erc20 token creator
 DcrmAddress = "0xbF0A46d3700E23a98F38079cE217742c92Bb66bC"
+# dcrm address public key
+DcrmPubkey = "045c8648793e4867af465691685000ae841dccab0b011283139d2eae454b569d5789f01632e13a75a5aad8480140e895dd671cae3639f935750bea7ae4b5a2512e"
 # maximum withdraw value
 MaximumSwap = 100.0
 # minimum withdraw value

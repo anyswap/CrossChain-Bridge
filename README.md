@@ -69,7 +69,7 @@ Dcrm is used to config DCRM node info and group info.
 
 `ServerAccount` is used to specify the server dcrm user (initiator of dcrm sign)
 
-for the swap server, `Pubkey` and `SignGroups` is needed for dcrm signing.
+for the swap server, `SignGroups` is needed for dcrm signing.
 
 Notice:
 If in test enviroment you may run more than one program of swap servers on one machine,
@@ -147,7 +147,7 @@ For the config file, please refer [config file example](https://github.com/anysw
 
     We can get the corresponding `DCRM addresses` on supported blockchains. Then we should config `DcrmAddress` in `[SrcToken]` and `[DestToken]` section according to the blockchain of them.
 
-    We should config the `[Dcrm]` section accordingly（ eg. `ServerAccount`, `GroupID`, `Pubkey`，`NeededOracles`， `TotalOracles`，`Mode`）
+    We should config the `[Dcrm]` section accordingly（ eg. `ServerAccount`, `GroupID`, `TotalOracles`，`Mode`）
 
     And we should config the following `[Dcrm]` section items sparately for each user in the DCRM group:
 
@@ -244,6 +244,7 @@ For the config file, please refer [config file example](https://github.com/anysw
     ContractAddress = ""
     DepositAddress = "mq6XaNvFWiSJtfGYiGakkRdXNrqH6V4Jpu" # required
     DcrmAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL" # required
+    DcrmPubkey = "045c8648793e4867af465691685000ae841dccab0b011283139d2eae454b569d5789f01632e13a75a5aad8480140e895dd671cae3639f935750bea7ae4b5a25122"
     MaximumSwap = 1000.0 # required
     MinimumSwap = 0.00001 # required
     SwapFeeRate = 0.001 # required

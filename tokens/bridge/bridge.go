@@ -1,7 +1,6 @@
 package bridge
 
 import (
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -58,12 +57,12 @@ func InitCrossChainBridge(isServer bool) {
 
 	tokens.LoadTokenPairsConfig(true)
 
-	initBtcWithExtra(cfg.BtcExtra, *cfg.Dcrm.Pubkey)
+	initBtcWithExtra(cfg.BtcExtra)
 
 	initDcrm(cfg.Dcrm, isServer)
 }
 
-func initBtcWithExtra(btcExtra *tokens.BtcExtraConfig, dcrmPubkey string) {
+func initBtcWithExtra(btcExtra *tokens.BtcExtraConfig) {
 	if btc.BridgeInstance == nil {
 		return
 	}
@@ -71,10 +70,16 @@ func initBtcWithExtra(btcExtra *tokens.BtcExtraConfig, dcrmPubkey string) {
 	if len(tokens.GetTokenPairsConfig()) != 1 {
 		log.Fatalf("Btc bridge does not support multiple tokens")
 	}
-	for _, pairCfg := range tokens.GetTokenPairsConfig() {
-		if !strings.EqualFold(pairCfg.PairID, btc.PairID) {
-			log.Fatalf("Btc bridge must have pairID %v, but %v provided", btc.PairID, pairCfg.PairID)
-		}
+
+	pairCfg, exist := tokens.GetTokenPairsConfig()[btc.PairID]
+	if !exist {
+		log.Fatalf("Btc bridge must have pairID %v", btc.PairID)
+	}
+
+	tokens.BtcFromPublicKey = pairCfg.SrcToken.DcrmPubkey
+	_, err := btc.BridgeInstance.GetCompressedPublicKey(tokens.BtcFromPublicKey, true)
+	if err != nil {
+		log.Fatal("wrong btc dcrm public key", "err", err)
 	}
 
 	if btcExtra == nil {
@@ -101,17 +106,6 @@ func initBtcWithExtra(btcExtra *tokens.BtcExtraConfig, dcrmPubkey string) {
 
 	log.Info("Init Btc extra", "MinRelayFee", tokens.BtcMinRelayFee, "RelayFeePerKb", tokens.BtcRelayFeePerKb)
 
-	if dcrmPubkey != "" {
-		tokens.BtcFromPublicKey = dcrmPubkey
-		cpkData, err := btc.BridgeInstance.GetCompressedPublicKey(dcrmPubkey, true)
-		if err != nil {
-			log.Fatal("Dcrm.Pubkey config error", "err", err)
-		}
-		log.Info("Init Btc extra", "FromPublicKey", dcrmPubkey, "Compressed", hex.EncodeToString(cpkData))
-	} else {
-		log.Fatal("must config Dcrm.Pubkey")
-	}
-
 	if btcExtra.UtxoAggregateMinCount > 0 {
 		tokens.BtcUtxoAggregateMinCount = btcExtra.UtxoAggregateMinCount
 	}
@@ -134,9 +128,6 @@ func initDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
 	}
 	dcrm.SetDcrmRPCAddress(*dcrmConfig.RPCAddress)
 	log.Info("Init dcrm rpc address", "rpcaddress", *dcrmConfig.RPCAddress)
-
-	dcrm.SetSignPubkey(*dcrmConfig.Pubkey)
-	log.Info("Init dcrm pubkey", "pubkey", *dcrmConfig.Pubkey)
 
 	group := *dcrmConfig.GroupID
 	neededOracles := *dcrmConfig.NeededOracles

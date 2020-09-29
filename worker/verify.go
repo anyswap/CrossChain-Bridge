@@ -118,7 +118,8 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	default:
 		return tokens.ErrWrongSwapinTxType
 	}
-	if swapInfo != nil {
+	if swapInfo == nil {
+		logWorkerWarn("verify", "empty swapinfo after verify job")
 		return err
 	}
 	if swapInfo.Height != 0 &&

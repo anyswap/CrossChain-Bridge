@@ -216,6 +216,15 @@ func (b *CrossChainBridgeBase) GetTokenConfig(pairID string) *TokenConfig {
 	return GetTokenConfig(pairID, b.IsSrcEndpoint())
 }
 
+// GetDcrmPublicKey get dcrm address's public key
+func (b *CrossChainBridgeBase) GetDcrmPublicKey(pairID string) string {
+	tokenCfg := GetTokenConfig(pairID, b.IsSrcEndpoint())
+	if tokenCfg != nil {
+		return tokenCfg.DcrmPubkey
+	}
+	return ""
+}
+
 // GetCrossChainBridge get bridge of specified endpoint
 func GetCrossChainBridge(isSrc bool) CrossChainBridge {
 	if isSrc {

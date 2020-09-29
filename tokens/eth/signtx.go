@@ -30,7 +30,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	msgHash := signer.Hash(tx)
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
-	keyID, err := dcrm.DoSignOne(msgHash.String(), msgContext)
+	keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), msgHash.String(), msgContext)
 	if err != nil {
 		return nil, "", err
 	}

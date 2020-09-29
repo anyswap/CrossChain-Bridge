@@ -3,6 +3,7 @@ package dcrm
 import (
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -13,13 +14,16 @@ import (
 )
 
 // DoSignOne dcrm sign single msgHash with context msgContext
-func DoSignOne(msgHash, msgContext string) (string, error) {
-	return DoSign([]string{msgHash}, []string{msgContext})
+func DoSignOne(signPubkey, msgHash, msgContext string) (string, error) {
+	return DoSign(signPubkey, []string{msgHash}, []string{msgContext})
 }
 
 // DoSign dcrm sign msgHash with context msgContext
-func DoSign(msgHash, msgContext []string) (string, error) {
+func DoSign(signPubkey string, msgHash, msgContext []string) (string, error) {
 	log.Debug("dcrm DoSign", "msgHash", msgHash, "msgContext", msgContext)
+	if signPubkey == "" {
+		return "", fmt.Errorf("dcrm sign with empty public key")
+	}
 	nonce, err := GetSignNonce()
 	if err != nil {
 		return "", err

@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/tools"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
@@ -47,6 +48,7 @@ type TokenConfig struct {
 	Description            string `json:",omitempty"`
 	DepositAddress         string `json:",omitempty"`
 	DcrmAddress            string
+	DcrmPubkey             string   `json:"-"`
 	ContractAddress        string   `json:",omitempty"`
 	MaximumSwap            *float64 // whole unit (eg. BTC, ETH, FSN), not Satoshi
 	MinimumSwap            *float64 // whole unit
@@ -295,7 +297,11 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	}
 	// calc value and store
 	c.CalcAndStoreValue()
-	return c.LoadDcrmAddressPrivateKey()
+	err := c.LoadDcrmAddressPrivateKey()
+	if err != nil {
+		return err
+	}
+	return c.VerifyDcrmPublicKey()
 }
 
 // CalcAndStoreValue calc and store value (minus duplicate calculation)
@@ -332,6 +338,30 @@ func (c *TokenConfig) LoadDcrmAddressPrivateKey() error {
 		if !strings.EqualFold(keyAddr.String(), c.DcrmAddress) {
 			return fmt.Errorf("dcrm address %v and its keystore address %v is not match", c.DcrmAddress, keyAddr.String())
 		}
+	} else if c.DcrmPubkey == "" {
+		return fmt.Errorf("token must config 'DcrmPubkey'")
+	}
+	return nil
+}
+
+// VerifyDcrmPublicKey verify public key
+func (c *TokenConfig) VerifyDcrmPublicKey() error {
+	if !common.IsHexAddress(c.DcrmAddress) {
+		return nil
+	}
+	// ETH like address
+	pkBytes := common.FromHex(c.DcrmPubkey)
+	if len(pkBytes) != 65 || pkBytes[0] != 4 {
+		return fmt.Errorf("wrong dcrm public key, shoule be uncompressed")
+	}
+	pubKey := ecdsa.PublicKey{
+		Curve: crypto.S256(),
+		X:     new(big.Int).SetBytes(pkBytes[1:33]),
+		Y:     new(big.Int).SetBytes(pkBytes[33:65]),
+	}
+	pubAddr := crypto.PubkeyToAddress(pubKey)
+	if !strings.EqualFold(pubAddr.String(), c.DcrmAddress) {
+		return fmt.Errorf("dcrm address %v and public key address %v is not match", c.DcrmAddress, pubAddr.String())
 	}
 	return nil
 }
