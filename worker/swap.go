@@ -263,10 +263,12 @@ func dispatchSwapTask(args *tokens.BuildTxArgs) error {
 }
 
 func processSwapTask(swapChan <-chan *tokens.BuildTxArgs) {
-	args := <-swapChan
-	err := doSwap(args)
-	if err != nil {
-		logWorkerError("doSwap", "process failed", err, "pairID", args.PairID, "txid", args.SwapID, "swapType", args.SwapType.String())
+	for {
+		args := <-swapChan
+		err := doSwap(args)
+		if err != nil {
+			logWorkerError("doSwap", "process failed", err, "pairID", args.PairID, "txid", args.SwapID, "swapType", args.SwapType.String())
+		}
 	}
 }
 

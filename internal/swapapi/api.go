@@ -204,7 +204,7 @@ func Swapout(txid, pairID *string) (*PostResult, error) {
 
 func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.TxSwapInfo, verifyError error) (err error) {
 	if !tokens.ShouldRegisterSwapForError(verifyError) {
-		return newRPCError(-32099, "verify swap failed! "+err.Error())
+		return newRPCError(-32099, "verify swap failed! "+verifyError.Error())
 	}
 	var memo string
 	if verifyError != nil {
