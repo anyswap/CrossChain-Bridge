@@ -44,14 +44,19 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 
 	var signedTx interface{}
 	var txHash string
-	maxRetryDcrmSignCount := 5
-	for i := 0; i < maxRetryDcrmSignCount; i++ {
-		signedTx, txHash, err = b.DcrmSignTransaction(authoredTx, args)
-		if err == nil {
-			break
+	tokenCfg := tokens.GetTokenConfig(PairID, true)
+	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
+		signedTx, txHash, err = b.SignTransaction(authoredTx, PairID)
+	} else {
+		maxRetryDcrmSignCount := 5
+		for i := 0; i < maxRetryDcrmSignCount; i++ {
+			signedTx, txHash, err = b.DcrmSignTransaction(authoredTx, args)
+			if err == nil {
+				break
+			}
+			log.Warn("retry dcrm sign for aggregate", "count", i+1, "err", err)
+			time.Sleep(time.Second)
 		}
-		log.Warn("retry dcrm sign for aggregate", "count", i+1, "err", err)
-		time.Sleep(time.Second)
 	}
 	if err != nil {
 		return "", err

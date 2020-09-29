@@ -45,6 +45,7 @@ type ServerConfig struct {
 
 // DcrmConfig dcrm related config
 type DcrmConfig struct {
+	Disable       bool
 	ServerAccount string
 	RPCAddress    *string
 	GroupID       *string

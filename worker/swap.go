@@ -279,13 +279,20 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 
 	rawTx, err := resBridge.BuildRawTransaction(args)
 	if err != nil {
-		logWorkerError("doSwap", "BuildRawTransaction failed", err, "txid", txid, "isSwapin", isSwapin)
+		logWorkerError("doSwap", "build tx failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 
-	signedTx, txHash, err := dcrmSignTransaction(resBridge, rawTx, args.GetExtraArgs())
+	var signedTx interface{}
+	var txHash string
+	tokenCfg := tokens.GetTokenConfig(pairID, isSwapin)
+	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
+		signedTx, txHash, err = resBridge.SignTransaction(rawTx, pairID)
+	} else {
+		signedTx, txHash, err = dcrmSignTransaction(resBridge, rawTx, args.GetExtraArgs())
+	}
 	if err != nil {
-		logWorkerError("doSwap", "DcrmSignTransaction failed", err, "txid", txid, "isSwapin", isSwapin)
+		logWorkerError("doSwap", "sign tx failed", err, "txid", txid, "isSwapin", isSwapin)
 		return err
 	}
 

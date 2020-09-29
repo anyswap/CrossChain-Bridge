@@ -71,6 +71,9 @@ func checkTokenConfig() (err error) {
 
 // CheckConfig check dcrm config
 func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
+	if c.Disable {
+		return nil
+	}
 	if c.RPCAddress == nil {
 		return errors.New("dcrm must config 'RPCAddress'")
 	}

@@ -69,6 +69,9 @@ APIAddress = ["http://5.189.139.168:8018"]
 
 # DCRM config
 [Dcrm]
+# enable flag
+Disable = false
+
 # server dcrm user (initiator of dcrm sign)
 ServerAccount = "0x00c37841378920E2BA5151a5d1E074Cf367586c4"
 

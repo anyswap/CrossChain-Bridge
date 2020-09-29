@@ -129,6 +129,9 @@ func initBtcWithExtra(btcExtra *tokens.BtcExtraConfig, dcrmPubkey string) {
 }
 
 func initDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
+	if dcrmConfig.Disable {
+		return
+	}
 	dcrm.SetDcrmRPCAddress(*dcrmConfig.RPCAddress)
 	log.Info("Init dcrm rpc address", "rpcaddress", *dcrmConfig.RPCAddress)
 
