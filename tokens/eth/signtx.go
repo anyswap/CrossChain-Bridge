@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -86,5 +87,28 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	}
 	txHash = signedTx.Hash().String()
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", signedTx.Nonce())
+	return signedTx, txHash, err
+}
+
+// SignTransaction sign tx with pairID
+func (b *Bridge) SignTransaction(rawTx interface{}, pairID string) (signTx interface{}, txHash string, err error) {
+	privKey := b.GetTokenConfig(pairID).GetDcrmAddressPrivateKey()
+	return b.SignTransactionWithPrivateKey(rawTx, privKey)
+}
+
+// SignTransactionWithPrivateKey sign tx with ECDSA private key
+func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa.PrivateKey) (signTx interface{}, txHash string, err error) {
+	tx, ok := rawTx.(*types.Transaction)
+	if !ok {
+		return nil, "", errors.New("wrong raw tx param")
+	}
+
+	signedTx, err := types.SignTx(tx, b.Signer, privKey)
+	if err != nil {
+		return nil, "", fmt.Errorf("sign tx failed, %v", err)
+	}
+
+	txHash = signedTx.Hash().String()
+	log.Info(b.ChainConfig.BlockChain+" SignTransaction success", "txhash", txHash, "nonce", signedTx.Nonce())
 	return signedTx, txHash, err
 }

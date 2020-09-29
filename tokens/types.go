@@ -1,10 +1,14 @@
 package tokens
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"math/big"
 	"strings"
+
+	"github.com/anyswap/CrossChain-Bridge/tools"
+	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
 
 // btc extra default values
@@ -53,6 +57,12 @@ type TokenConfig struct {
 	PlusGasPricePercentage uint64 `json:",omitempty"`
 	DisableSwap            bool
 
+	// use private key address instead
+	DcrmAddressKeyStore string `json:"-"`
+	DcrmAddressPassword string `json:"-"`
+	DcrmAddressKeyFile  string `json:"-"`
+	dcrmAddressPriKey   *ecdsa.PrivateKey
+
 	// calced value
 	maxSwap          *big.Int
 	minSwap          *big.Int
@@ -61,7 +71,7 @@ type TokenConfig struct {
 	bigValThreshhold *big.Int
 }
 
-// IsErc20 return is token is erc20
+// IsErc20 return if token is erc20
 func (c *TokenConfig) IsErc20() bool {
 	return strings.EqualFold(c.ID, "ERC20")
 }
@@ -285,7 +295,7 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	}
 	// calc value and store
 	c.CalcAndStoreValue()
-	return nil
+	return c.LoadDcrmAddressPrivateKey()
 }
 
 // CalcAndStoreValue calc and store value (minus duplicate calculation)
@@ -295,4 +305,33 @@ func (c *TokenConfig) CalcAndStoreValue() {
 	c.maxSwapFee = ToBits(*c.MaximumSwapFee, *c.Decimals)
 	c.minSwapFee = ToBits(*c.MinimumSwapFee, *c.Decimals)
 	c.bigValThreshhold = ToBits(*c.BigValueThreshold, *c.Decimals)
+}
+
+// GetDcrmAddressPrivateKey get private key
+func (c *TokenConfig) GetDcrmAddressPrivateKey() *ecdsa.PrivateKey {
+	return c.dcrmAddressPriKey
+}
+
+// LoadDcrmAddressPrivateKey load private key
+func (c *TokenConfig) LoadDcrmAddressPrivateKey() error {
+	if c.DcrmAddressKeyFile != "" {
+		priKey, err := crypto.LoadECDSA(c.DcrmAddressKeyFile)
+		if err != nil {
+			return fmt.Errorf("wrong private key, %v", err)
+		}
+		c.dcrmAddressPriKey = priKey
+	} else if c.DcrmAddressKeyStore != "" {
+		key, err := tools.LoadKeyStore(c.DcrmAddressKeyStore, c.DcrmAddressPassword)
+		if err != nil {
+			return err
+		}
+		c.dcrmAddressPriKey = key.PrivateKey
+	}
+	if c.dcrmAddressPriKey != nil {
+		keyAddr := crypto.PubkeyToAddress(c.dcrmAddressPriKey.PublicKey)
+		if !strings.EqualFold(keyAddr.String(), c.DcrmAddress) {
+			return fmt.Errorf("dcrm address %v and its keystore address %v is not match", c.DcrmAddress, keyAddr.String())
+		}
+	}
+	return nil
 }

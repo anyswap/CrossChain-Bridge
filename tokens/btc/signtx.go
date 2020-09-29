@@ -308,17 +308,27 @@ func (b *Bridge) adjustRsvOrders(rsvs, msgHashes []string, fromPublicKey string)
 	return newRsvs, err
 }
 
-// SignTransaction sign tx with wif
-func (b *Bridge) SignTransaction(rawTx interface{}, wif string) (signedTx interface{}, txHash string, err error) {
-	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
-	if !ok {
-		return nil, "", tokens.ErrWrongRawTx
-	}
+// SignTransaction sign tx with pairID
+func (b *Bridge) SignTransaction(rawTx interface{}, pairID string) (signedTx interface{}, txHash string, err error) {
+	privKey := b.GetTokenConfig(pairID).GetDcrmAddressPrivateKey()
+	return b.SignTransactionWithPrivateKey(rawTx, (*btcec.PrivateKey)(privKey))
+}
+
+// SignTransactionWithWIF sign tx with WIF
+func (b *Bridge) SignTransactionWithWIF(rawTx interface{}, wif string) (signedTx interface{}, txHash string, err error) {
 	pkwif, err := btcutil.DecodeWIF(wif)
 	if err != nil {
 		return nil, "", err
 	}
-	privateKey := pkwif.PrivKey
+	return b.SignTransactionWithPrivateKey(rawTx, pkwif.PrivKey)
+}
+
+// SignTransactionWithPrivateKey sign tx with ECDSA private key
+func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *btcec.PrivateKey) (signTx interface{}, txHash string, err error) {
+	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
+	if !ok {
+		return nil, "", tokens.ErrWrongRawTx
+	}
 
 	var (
 		msgHashes    []string
@@ -350,7 +360,7 @@ func (b *Bridge) SignTransaction(rawTx interface{}, wif string) (signedTx interf
 	}
 
 	for _, msgHash := range msgHashes {
-		signature, err := privateKey.Sign(common.FromHex(msgHash))
+		signature, err := privKey.Sign(common.FromHex(msgHash))
 		if err != nil {
 			return nil, "", err
 		}
