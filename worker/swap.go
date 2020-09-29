@@ -258,6 +258,7 @@ func dispatchSwapTask(args *tokens.BuildTxArgs) error {
 	default:
 		return fmt.Errorf("wrong swap type '%v'", args.SwapType.String())
 	}
+	logWorker("doSwap", "dispatch swap task", "pairID", args.PairID, "txid", args.SwapID, "swapType", args.SwapType.String())
 	return nil
 }
 
@@ -277,6 +278,8 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 
 	isSwapin := swapType == tokens.SwapinType
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)
+
+	logWorker("doSwap", "start to process", "pairID", pairID, "txid", txid, "isSwapin", isSwapin, "value", originValue)
 
 	rawTx, err := resBridge.BuildRawTransaction(args)
 	if err != nil {

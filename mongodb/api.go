@@ -126,6 +126,7 @@ func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
 		log.Error("mongodb add swap with wrong key", "txid", ms.TxID, "pairID", ms.PairID, "swaptype")
 		return ErrWrongKey
 	}
+	ms.PairID = strings.ToLower(ms.PairID)
 	ms.Key = GetSwapKey(ms.TxID, ms.PairID)
 	err := collection.Insert(ms)
 	if err == nil {
@@ -137,6 +138,7 @@ func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
 }
 
 func updateSwapStatus(collection *mgo.Collection, txid, pairID string, status SwapStatus, timestamp int64, memo string) error {
+	pairID = strings.ToLower(pairID)
 	updates := bson.M{"status": status, "timestamp": timestamp}
 	if memo != "" {
 		updates["memo"] = memo
@@ -198,6 +200,7 @@ func findSwapsWithPairIDAndStatus(pairID string, collection *mgo.Collection, sta
 }
 
 func findSwapsOrSwapResultsWithPairIDAndStatus(result interface{}, pairID string, collection *mgo.Collection, status SwapStatus, septime int64) error {
+	pairID = strings.ToLower(pairID)
 	qpair := bson.M{"pairid": pairID}
 	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
@@ -297,6 +300,7 @@ func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
 		log.Error("mongodb add swap result with wrong key", "txid", ms.TxID, "pairID", ms.PairID, "swaptype", ms.SwapType, "isSwapin", isSwapin(collection))
 		return ErrWrongKey
 	}
+	ms.PairID = strings.ToLower(ms.PairID)
 	ms.Key = GetSwapKey(ms.TxID, ms.PairID)
 	err := collection.Insert(ms)
 	if err == nil {
@@ -308,6 +312,7 @@ func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
 }
 
 func updateSwapResult(collection *mgo.Collection, txid, pairID string, items *SwapResultUpdateItems) error {
+	pairID = strings.ToLower(pairID)
 	updates := bson.M{
 		"status":    items.Status,
 		"timestamp": items.Timestamp,
@@ -345,6 +350,7 @@ func updateSwapResult(collection *mgo.Collection, txid, pairID string, items *Sw
 }
 
 func updateSwapResultStatus(collection *mgo.Collection, txid, pairID string, status SwapStatus, timestamp int64, memo string) error {
+	pairID = strings.ToLower(pairID)
 	updates := bson.M{"status": status, "timestamp": timestamp}
 	if memo != "" {
 		updates["memo"] = memo
@@ -382,12 +388,13 @@ func findSwapResultsWithStatus(collection *mgo.Collection, status SwapStatus, se
 }
 
 func findSwapResults(collection *mgo.Collection, address, pairID string, offset, limit int) ([]*MgoSwapResult, error) {
+	pairID = strings.ToLower(pairID)
 	result := make([]*MgoSwapResult, 0, 20)
 
 	var queries []bson.M
 
 	if pairID != "" && pairID != allPairs {
-		queries = append(queries, bson.M{"pairid": strings.ToLower(pairID)})
+		queries = append(queries, bson.M{"pairid": pairID})
 	}
 
 	if address != "" && address != allAddresses {
@@ -412,10 +419,12 @@ func findSwapResults(collection *mgo.Collection, address, pairID string, offset,
 }
 
 func getCount(collection *mgo.Collection, pairID string) (int, error) {
+	pairID = strings.ToLower(pairID)
 	return collection.Find(bson.M{"pairid": pairID}).Count()
 }
 
 func getCountWithStatus(collection *mgo.Collection, pairID string, status SwapStatus) (int, error) {
+	pairID = strings.ToLower(pairID)
 	qpair := bson.M{"pairid": pairID}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qpair, qstatus}
@@ -425,6 +434,7 @@ func getCountWithStatus(collection *mgo.Collection, pairID string, status SwapSt
 // ------------------ statistics ------------------------
 
 func updateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error {
+	pairID = strings.ToLower(pairID)
 	curr, err := FindSwapStatistics(pairID)
 	if err != nil {
 		curr = &MgoSwapStatistics{
@@ -475,6 +485,7 @@ func updateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error 
 
 // FindSwapStatistics find swap statistics
 func FindSwapStatistics(pairID string) (*MgoSwapStatistics, error) {
+	pairID = strings.ToLower(pairID)
 	var result MgoSwapStatistics
 	err := collSwapStatistics.FindId(pairID).One(&result)
 	return &result, mgoError(err)

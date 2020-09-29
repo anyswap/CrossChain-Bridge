@@ -144,7 +144,11 @@ type CrossChainBridgeBase struct {
 
 // NewCrossChainBridgeBase new base bridge
 func NewCrossChainBridgeBase(isSrc bool) *CrossChainBridgeBase {
-	return &CrossChainBridgeBase{IsSrc: isSrc}
+	return &CrossChainBridgeBase{
+		IsSrc:        isSrc,
+		SwapinNonce:  make(map[string]uint64),
+		SwapoutNonce: make(map[string]uint64),
+	}
 }
 
 // SetNonce set nonce directly
