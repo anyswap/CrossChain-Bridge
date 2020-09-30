@@ -76,7 +76,7 @@ func FindTokenConfig(address string, isSrc bool) (configs []*TokenConfig, pairID
 			if strings.EqualFold(tokenCfg.ContractAddress, address) {
 				match = true
 			}
-		} else if strings.EqualFold(tokenCfg.DepositAddress, address) {
+		} else if isSrc && strings.EqualFold(tokenCfg.DepositAddress, address) {
 			match = true
 		}
 		if match {

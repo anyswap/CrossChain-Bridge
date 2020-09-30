@@ -76,6 +76,8 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (swapInfos []*tokens.TxSwa
 			continue
 		}
 
+		addSwapInfoConsiderError(swapInfo, nil, &swapInfos, &errs)
+
 		log.Debug("verify swapout stable pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfos, errs
@@ -193,6 +195,8 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (swapInfos []*tokens.TxS
 			addSwapInfoConsiderError(swapInfo, tokens.ErrTxWithWrongMemo, &swapInfos, &errs)
 			continue
 		}
+
+		addSwapInfoConsiderError(swapInfo, nil, &swapInfos, &errs)
 	}
 
 	return swapInfos, errs
