@@ -349,6 +349,9 @@ func (c *TokenConfig) VerifyDcrmPublicKey() error {
 	if !common.IsHexAddress(c.DcrmAddress) {
 		return nil
 	}
+	if c.dcrmAddressPriKey != nil && c.DcrmPubkey == "" {
+		return nil
+	}
 	// ETH like address
 	pkBytes := common.FromHex(c.DcrmPubkey)
 	if len(pkBytes) != 65 || pkBytes[0] != 4 {

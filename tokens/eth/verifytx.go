@@ -209,7 +209,7 @@ func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxRece
 
 func (b *Bridge) checkSwapInfo(swapInfo *tokens.TxSwapInfo) error {
 	// check sender
-	if swapInfo.From == swapInfo.To {
+	if swapInfo.Bind == swapInfo.To {
 		return tokens.ErrTxWithWrongSender
 	}
 

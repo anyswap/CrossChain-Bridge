@@ -22,6 +22,6 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 		return txHash, err
 	}
 	log.Info("SendTransaction success", "hash", txHash)
-	log.Trace("SendTransaction success", "raw", tx.RawStr())
+	//#log.Trace("SendTransaction success", "raw", tx.RawStr())
 	return txHash, nil
 }
