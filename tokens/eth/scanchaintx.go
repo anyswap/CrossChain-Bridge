@@ -55,6 +55,8 @@ func (b *Bridge) StartChainTransactionScanJob() {
 
 	if latest > start {
 		go b.quickSync(context.Background(), nil, start, latest+1)
+	} else {
+		quickSyncFinish = true
 	}
 
 	stable := latest
