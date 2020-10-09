@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -55,17 +56,17 @@ func (b *Bridge) VerifyChainConfig() {
 }
 
 // VerifyTokenConfig verify token config
-func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) {
+func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsP2pkhAddress(tokenCfg.DcrmAddress) {
-		log.Fatal("invalid dcrm address (not p2pkh)", "address", tokenCfg.DcrmAddress)
+		return fmt.Errorf("invalid dcrm address (not p2pkh): %v", tokenCfg.DcrmAddress)
 	}
 	if !b.IsValidAddress(tokenCfg.DepositAddress) {
-		log.Fatal("invalid deposit address", "address", tokenCfg.DepositAddress)
+		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
-
 	if strings.EqualFold(tokenCfg.Symbol, "BTC") && *tokenCfg.Decimals != 8 {
-		log.Fatal("invalid decimals for BTC", "configed", *tokenCfg.Decimals, "want", 8)
+		return fmt.Errorf("invalid decimals for BTC: want 8 but have %v", *tokenCfg.Decimals)
 	}
+	return nil
 }
 
 // InitLatestBlockNumber init latest block number

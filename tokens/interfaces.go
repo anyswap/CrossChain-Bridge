@@ -118,7 +118,7 @@ type CrossChainBridge interface {
 	AdjustNonce(pairID string, value uint64) (nonce uint64)
 	IncreaseNonce(pairID string, value uint64)
 
-	VerifyTokenConfig(*TokenConfig)
+	VerifyTokenConfig(*TokenConfig) error
 
 	GetBalance(accountAddress string) (*big.Int, error)
 	GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error)

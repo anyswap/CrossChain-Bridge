@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -90,25 +91,33 @@ func (b *Bridge) VerifyChainID() {
 }
 
 // VerifyTokenConfig verify token config
-func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) {
+func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
 	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
-		log.Fatal("invalid dcrm address", "address", tokenCfg.DcrmAddress)
+		return fmt.Errorf("invalid dcrm address: %v", tokenCfg.DcrmAddress)
 	}
 	if b.IsSrc && !b.IsValidAddress(tokenCfg.DepositAddress) {
-		log.Fatal("invalid deposit address", "address", tokenCfg.DepositAddress)
+		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
 
-	b.verifyDecimals(tokenCfg)
+	err = b.verifyDecimals(tokenCfg)
+	if err != nil {
+		return err
+	}
 
-	b.verifyContractAddress(tokenCfg)
+	err = b.verifyContractAddress(tokenCfg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) {
+func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) error {
 	configedDecimals := *tokenCfg.Decimals
 	switch strings.ToUpper(tokenCfg.Symbol) {
 	case "ETH", "FSN":
 		if configedDecimals != 18 {
-			log.Fatal("invalid decimals", "configed", configedDecimals, "want", 18)
+			return fmt.Errorf("invalid decimals: want 18 but have %v", configedDecimals)
 		}
 		log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals)
 	}
@@ -118,7 +127,7 @@ func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) {
 			decimals, err := b.GetErc20Decimals(tokenCfg.ContractAddress)
 			if err == nil {
 				if decimals != configedDecimals {
-					log.Fatal("invalid decimals for "+tokenCfg.Symbol, "configed", configedDecimals, "want", decimals)
+					return fmt.Errorf("invalid decimals for %v, want %v but configed %v", tokenCfg.Symbol, decimals, configedDecimals)
 				}
 				log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals)
 				break
@@ -127,27 +136,29 @@ func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) {
 			time.Sleep(3 * time.Second)
 		}
 	}
+	return nil
 }
 
-func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) {
+func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
 	if tokenCfg.ContractAddress != "" {
 		if !b.IsValidAddress(tokenCfg.ContractAddress) {
-			log.Fatal("invalid contract address", "address", tokenCfg.ContractAddress)
+			return fmt.Errorf("invalid contract address: %v", tokenCfg.ContractAddress)
 		}
 		switch {
 		case !b.IsSrc:
 			if err := b.VerifyMbtcContractAddress(tokenCfg.ContractAddress); err != nil {
-				log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
+				return fmt.Errorf("wrong contract address: %v, %v", tokenCfg.ContractAddress, err)
 			}
 		case tokenCfg.IsErc20():
 			if err := b.VerifyErc20ContractAddress(tokenCfg.ContractAddress); err != nil {
-				log.Fatal("wrong contract address", "address", tokenCfg.ContractAddress, "err", err)
+				return fmt.Errorf("wrong contract address: %v, %v", tokenCfg.ContractAddress, err)
 			}
 		default:
-			log.Fatal("unsupported type of contract address in source chain, please assign SrcToken.ID (eg. ERC20) in config file", "address", tokenCfg.ContractAddress)
+			return fmt.Errorf("unsupported type of contract address '%v' in source chain, please assign SrcToken.ID (eg. ERC20) in config file", tokenCfg.ContractAddress)
 		}
 		log.Info("verify contract address pass", "address", tokenCfg.ContractAddress)
 	}
+	return nil
 }
 
 // InitLatestBlockNumber init latest block number

@@ -132,8 +132,14 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 		if err != nil {
 			return err
 		}
-		SrcBridge.VerifyTokenConfig(tokenPair.SrcToken)
-		DstBridge.VerifyTokenConfig(tokenPair.DestToken)
+		err = SrcBridge.VerifyTokenConfig(tokenPair.SrcToken)
+		if err != nil {
+			return err
+		}
+		err = DstBridge.VerifyTokenConfig(tokenPair.DestToken)
+		if err != nil {
+			return err
+		}
 	}
 	if nonContractSrcCount > 1 {
 		return fmt.Errorf("only support one non-contract token swapin")
@@ -243,17 +249,18 @@ func AddPairConfig(configFile string) (pairConfig *TokenPairConfig, err error) {
 }
 
 func checkAddTokenPairsConfig(pairConfig *TokenPairConfig) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("recover from error: %v", r)
-		}
-	}()
 	err = pairConfig.CheckConfig()
 	if err != nil {
 		return err
 	}
-	SrcBridge.VerifyTokenConfig(pairConfig.SrcToken)
-	DstBridge.VerifyTokenConfig(pairConfig.DestToken)
+	err = SrcBridge.VerifyTokenConfig(pairConfig.SrcToken)
+	if err != nil {
+		return err
+	}
+	err = DstBridge.VerifyTokenConfig(pairConfig.DestToken)
+	if err != nil {
+		return err
+	}
 	pairID := strings.ToLower(pairConfig.PairID)
 	if _, exist := tokenPairsConfig[pairID]; exist {
 		return fmt.Errorf("pairID '%v' already exist", pairID)
