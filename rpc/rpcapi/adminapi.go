@@ -257,14 +257,20 @@ func setnonce(args *admin.CallArgs, result *string) (err error) {
 	if err != nil {
 		return fmt.Errorf("wrong nonce value, %v", err)
 	}
+	var bridge tokens.CrossChainBridge
 	switch operation {
 	case swapinOp:
-		tokens.DstBridge.SetNonce(nonce)
+		bridge = tokens.DstBridge
 	case swapoutOp:
-		tokens.SrcBridge.SetNonce(nonce)
+		bridge = tokens.SrcBridge
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
+	nonceSetter, ok := bridge.(tokens.NonceSetter)
+	if !ok {
+		return fmt.Errorf("nonce setter not supported")
+	}
+	nonceSetter.SetNonce(nonce)
 	*result = successReuslt
 	return nil
 }

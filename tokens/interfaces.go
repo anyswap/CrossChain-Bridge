@@ -63,17 +63,13 @@ func ShouldRegisterSwapForError(err error) bool {
 	return false
 }
 
-// NonceGetter interface
-type NonceGetter interface {
-	GetPoolNonce(address, height string) (uint64, error)
-}
-
-// CrossChainBridge interface
+// CrossChainBridge interface (common interface)
 type CrossChainBridge interface {
 	IsSrcEndpoint() bool
 	GetTokenAndGateway() (*TokenConfig, *GatewayConfig)
 	SetTokenAndGateway(tokenCfg *TokenConfig, gatewayCfg *GatewayConfig, check bool)
 
+	VerifyConfig()
 	IsValidAddress(address string) bool
 
 	GetTransaction(txHash string) (interface{}, error)
@@ -92,13 +88,15 @@ type CrossChainBridge interface {
 	StartChainTransactionScanJob()
 	StartSwapHistoryScanJob()
 
-	SetNonce(value uint64)
-	AdjustNonce(value uint64) (nonce uint64)
-	IncreaseNonce(value uint64)
-
-	VerifyConfig()
-
 	GetBalance(accountAddress string) (*big.Int, error)
 	GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error)
 	GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error)
+}
+
+// NonceSetter interface (for eth-like)
+type NonceSetter interface {
+	GetPoolNonce(address, height string) (uint64, error)
+	SetNonce(value uint64)
+	AdjustNonce(value uint64) (nonce uint64)
+	IncreaseNonce(value uint64)
 }

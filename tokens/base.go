@@ -27,50 +27,11 @@ type CrossChainBridgeBase struct {
 	TokenConfig   *TokenConfig
 	GatewayConfig *GatewayConfig
 	IsSrc         bool
-	SwapinNonce   uint64
-	SwapoutNonce  uint64
 }
 
 // NewCrossChainBridgeBase new base bridge
 func NewCrossChainBridgeBase(isSrc bool) *CrossChainBridgeBase {
 	return &CrossChainBridgeBase{IsSrc: isSrc}
-}
-
-// SetNonce set nonce directly
-func (b *CrossChainBridgeBase) SetNonce(value uint64) {
-	if b.IsSrcEndpoint() {
-		b.SwapoutNonce = value
-	} else {
-		b.SwapinNonce = value
-	}
-}
-
-// AdjustNonce adjust account nonce (eth like chain)
-func (b *CrossChainBridgeBase) AdjustNonce(value uint64) (nonce uint64) {
-	nonce = value
-	if b.IsSrcEndpoint() {
-		if b.SwapoutNonce > value {
-			nonce = b.SwapoutNonce
-		} else {
-			b.SwapoutNonce = value
-		}
-	} else {
-		if b.SwapinNonce > value {
-			nonce = b.SwapinNonce
-		} else {
-			b.SwapinNonce = value
-		}
-	}
-	return nonce
-}
-
-// IncreaseNonce decrease account nonce (eth like chain)
-func (b *CrossChainBridgeBase) IncreaseNonce(value uint64) {
-	if b.IsSrcEndpoint() {
-		b.SwapoutNonce += value
-	} else {
-		b.SwapinNonce += value
-	}
 }
 
 // IsSrcEndpoint returns if bridge is at the source endpoint

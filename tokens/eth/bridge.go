@@ -19,12 +19,16 @@ const (
 // Bridge eth bridge
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
+	*NonceSetterBase
 	Signer types.Signer
 }
 
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	return &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
+	return &Bridge{
+		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
+		NonceSetterBase:      NewNonceSetterBase(),
+	}
 }
 
 // SetTokenAndGateway set token and gateway config

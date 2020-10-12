@@ -161,7 +161,7 @@ func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, forceO
 	if forceOpt == forceFlag {
 		return nil
 	}
-	nonceGetter, ok := bridge.(tokens.NonceGetter)
+	nonceSetter, ok := bridge.(tokens.NonceSetter)
 	if !ok {
 		return nil
 	}
@@ -171,7 +171,7 @@ func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, forceO
 	var nonce uint64
 	retryGetNonceCount := 3
 	for i := 0; i < retryGetNonceCount; i++ {
-		nonce, err = nonceGetter.GetPoolNonce(tokenCfg.DcrmAddress, "latest")
+		nonce, err = nonceSetter.GetPoolNonce(tokenCfg.DcrmAddress, "latest")
 		if err == nil {
 			break
 		}
