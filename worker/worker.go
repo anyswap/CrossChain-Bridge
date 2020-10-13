@@ -24,6 +24,8 @@ func StartWork(isServer bool) {
 
 	if !isServer {
 		go StartAcceptSignJob()
+		time.Sleep(interval)
+		go AddTokenPairDynamically()
 		return
 	}
 

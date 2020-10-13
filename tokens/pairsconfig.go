@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -28,7 +29,19 @@ type TokenPairConfig struct {
 // SetTokenPairsDir set token pairs directory
 func SetTokenPairsDir(dir string) {
 	log.Printf("set token pairs config directory to '%v'\n", dir)
+	fileStat, err := os.Stat(dir)
+	if err != nil {
+		log.Fatal("wrong token pairs dir", "dir", dir, "err", err)
+	}
+	if !fileStat.IsDir() {
+		log.Fatal("token pairs dir is not directory", "dir", dir)
+	}
 	tokenPairsConfigDirectory = dir
+}
+
+// GetTokenPairsDir get token pairs directory
+func GetTokenPairsDir() string {
+	return tokenPairsConfigDirectory
 }
 
 // SetTokenPairsConfig set token pairs config
@@ -51,6 +64,7 @@ func GetTokenPairsConfig() map[string]*TokenPairConfig {
 func GetTokenPairConfig(pairID string) *TokenPairConfig {
 	pairCfg, exist := tokenPairsConfig[strings.ToLower(pairID)]
 	if !exist {
+		log.Warn("GetTokenPairConfig: pairID not exist", "pairID", pairID)
 		return nil
 	}
 	return pairCfg
@@ -91,6 +105,7 @@ func FindTokenConfig(address string, isSrc bool) (configs []*TokenConfig, pairID
 func GetTokenConfig(pairID string, isSrc bool) *TokenConfig {
 	pairCfg, exist := tokenPairsConfig[strings.ToLower(pairID)]
 	if !exist {
+		log.Warn("GetTokenConfig: pairID not exist", "pairID", pairID)
 		return nil
 	}
 	if isSrc {
@@ -182,6 +197,7 @@ func LoadTokenPairsConfig(check bool) {
 func LoadTokenPairsConfigInDir(dir string, check bool) (map[string]*TokenPairConfig, error) {
 	fileInfoList, err := ioutil.ReadDir(dir)
 	if err != nil {
+		log.Error("read directory failed", "dir", dir, "err", err)
 		return nil, err
 	}
 	pairsConfig := make(map[string]*TokenPairConfig)

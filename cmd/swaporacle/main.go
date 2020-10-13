@@ -8,6 +8,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/worker"
 	"github.com/urfave/cli/v2"
 )
@@ -61,6 +62,7 @@ func swaporacle(ctx *cli.Context) error {
 	params.LoadConfig(configFile, false)
 
 	params.SetDataDir(ctx.String(utils.DataDirFlag.Name))
+	tokens.SetTokenPairsDir(utils.GetTokenPairsDir(ctx))
 
 	worker.StartWork(false)
 

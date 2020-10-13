@@ -149,7 +149,7 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 		swapInfo, err = srcBridge.VerifyTransaction(args.PairID, args.SwapID)
 	}
 	if err != nil {
-		logWorkerError("accept", "verifySignInfo failed", err, "txid", args.SwapID, "swaptype", args.SwapType)
+		logWorkerError("accept", "verifySignInfo failed", err, "pairID", args.PairID, "txid", args.SwapID, "swaptype", args.SwapType)
 		return err
 	}
 
