@@ -155,7 +155,7 @@ func Swapin(txid, pairID *string) (*PostResult, error) {
 	if swap, _ := mongodb.FindSwapin(txidstr, pairIDStr); swap != nil {
 		return nil, errSwapExist
 	}
-	swapInfo, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr)
+	swapInfo, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr, true)
 	err = addSwapToDatabase(txidstr, tokens.SwapinTx, swapInfo, err)
 	if err != nil {
 		return nil, err
@@ -175,7 +175,7 @@ func RetrySwapin(txid, pairID *string) (*PostResult, error) {
 	if !swap.Status.CanRetry() {
 		return nil, errSwapCannotRetry
 	}
-	_, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr)
+	_, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr, true)
 	if err != nil {
 		return nil, newRPCError(-32099, "retry swapin failed! "+err.Error())
 	}
@@ -194,7 +194,7 @@ func Swapout(txid, pairID *string) (*PostResult, error) {
 	if swap, _ := mongodb.FindSwapout(txidstr, pairIDStr); swap != nil {
 		return nil, errSwapExist
 	}
-	swapInfo, err := tokens.DstBridge.VerifyTransaction(pairIDStr, txidstr)
+	swapInfo, err := tokens.DstBridge.VerifyTransaction(pairIDStr, txidstr, true)
 	err = addSwapToDatabase(txidstr, tokens.SwapoutTx, swapInfo, err)
 	if err != nil {
 		return nil, err
@@ -294,7 +294,7 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	if swap, _ := mongodb.FindSwapin(txidstr, pairID); swap != nil {
 		return nil, errSwapExist
 	}
-	swapInfo, err := btc.BridgeInstance.VerifyP2shTransaction(pairID, txidstr, *bindAddr)
+	swapInfo, err := btc.BridgeInstance.VerifyP2shTransaction(pairID, txidstr, *bindAddr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32099, "verify p2sh swapin failed! "+err.Error())
 	}

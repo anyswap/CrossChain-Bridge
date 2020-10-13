@@ -7,11 +7,11 @@ import (
 )
 
 // VerifyP2shTransaction verify p2sh tx (must be stable)
-func (b *Bridge) VerifyP2shTransaction(pairID, txHash, bindAddress string) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) VerifyP2shTransaction(pairID, txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if !b.IsSrc {
 		return nil, tokens.ErrBridgeDestinationNotSupported
 	}
-	return b.verifyP2shSwapinTx(pairID, txHash, bindAddress, false)
+	return b.verifyP2shSwapinTx(pairID, txHash, bindAddress, allowUnstable)
 }
 
 func (b *Bridge) verifyP2shSwapinTx(pairID, txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {

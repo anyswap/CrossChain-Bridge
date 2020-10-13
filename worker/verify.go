@@ -109,12 +109,12 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	var swapInfo *tokens.TxSwapInfo
 	switch tokens.SwapTxType(swap.TxType) {
 	case tokens.SwapinTx, tokens.SwapoutTx:
-		swapInfo, err = bridge.VerifyTransaction(pairID, txid)
+		swapInfo, err = bridge.VerifyTransaction(pairID, txid, false)
 	case tokens.P2shSwapinTx:
 		if btc.BridgeInstance == nil {
 			return tokens.ErrNoBtcBridge
 		}
-		swapInfo, err = btc.BridgeInstance.VerifyP2shTransaction(pairID, txid, swap.Bind)
+		swapInfo, err = btc.BridgeInstance.VerifyP2shTransaction(pairID, txid, swap.Bind, false)
 	default:
 		return tokens.ErrWrongSwapinTxType
 	}

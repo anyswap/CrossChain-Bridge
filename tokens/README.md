@@ -70,7 +70,7 @@ GetTransactionStatus(txHash string) *TxStatus
 ------
 
 ```golang
-VerifyTransaction(pairID, txHash string) (*TxSwapInfo, error)
+VerifyTransaction(pairID, txHash string, allowUnstable bool) (*TxSwapInfo, error)
 ```
 `VerifyTransaction` verify transaction by hash.
 

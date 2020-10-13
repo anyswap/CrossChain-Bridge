@@ -79,11 +79,11 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 }
 
 // VerifyTransaction impl (must be stable)
-func (b *Bridge) VerifyTransaction(pairID, txHash string) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if !b.IsSrc {
 		return nil, tokens.ErrBridgeDestinationNotSupported
 	}
-	return b.verifySwapinTx(pairID, txHash, false)
+	return b.verifySwapinTx(pairID, txHash, allowUnstable)
 }
 
 func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
