@@ -66,8 +66,8 @@ func doCall(args *admin.CallArgs, result *string) error {
 }
 
 func blacklist(args *admin.CallArgs, result *string) (err error) {
-	if len(args.Params) != 2 {
-		return fmt.Errorf("wrong number of params, have %v want 2", len(args.Params))
+	if len(args.Params) != 3 {
+		return fmt.Errorf("wrong number of params, have %v want 3", len(args.Params))
 	}
 	operation := args.Params[0]
 	address := args.Params[1]
@@ -101,7 +101,7 @@ func blacklist(args *admin.CallArgs, result *string) (err error) {
 }
 
 func bigvalue(args *admin.CallArgs, result *string) (err error) {
-	if len(args.Params) != 2 {
+	if len(args.Params) != 3 {
 		return fmt.Errorf("wrong number of params, have %v want 3", len(args.Params))
 	}
 	operation := args.Params[0]

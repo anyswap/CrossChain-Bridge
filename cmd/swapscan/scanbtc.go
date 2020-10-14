@@ -345,8 +345,12 @@ func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 		}
 		log.Info("post swapin register", "txid", txid)
 		var result interface{}
+		args := map[string]interface{}{
+			"txid":   txid,
+			"pairid": btc.PairID,
+		}
 		for i := 0; i < scanner.rpcRetryCount; i++ {
-			err = client.RPCPost(&result, scanner.swapServer, "swap.Swapin", txid)
+			err = client.RPCPost(&result, scanner.swapServer, "swap.Swapin", args)
 			if tokens.ShouldRegisterSwapForError(err) {
 				break
 			}

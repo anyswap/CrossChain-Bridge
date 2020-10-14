@@ -45,7 +45,7 @@ func bigvalue(ctx *cli.Context) error {
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
 
-	log.Printf("admin bigvalue: %v %v", operation, txid)
+	log.Printf("admin bigvalue: %v %v %v", operation, txid, pairID)
 
 	params := []string{operation, txid, pairID}
 	result, err := adminCall(method, params)

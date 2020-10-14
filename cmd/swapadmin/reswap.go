@@ -65,9 +65,9 @@ func reverifyOrReswap(ctx *cli.Context, method string) error {
 	params := []string{operation, txid, pairID}
 	if forceOpt != "" {
 		params = append(params, forceOpt)
-		log.Printf("admin %v: %v %v %v", method, operation, txid, forceOpt)
+		log.Printf("admin %v: %v %v %v %v", method, operation, txid, pairID, forceOpt)
 	} else {
-		log.Printf("admin %v: %v %v", method, operation, txid)
+		log.Printf("admin %v: %v %v %v", method, operation, txid, pairID)
 	}
 
 	result, err := adminCall(method, params)
