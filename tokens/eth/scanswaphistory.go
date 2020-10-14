@@ -71,7 +71,7 @@ func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
 		for _, swaplog := range logs {
 			txid := swaplog.TxHash.String()
 			if !isProcessed(txid) {
-				log.Debugf("[scanFirstLoop] process %v tx. txid=%v height=%v", chainName, txid, height)
+				log.Tracef("[scanFirstLoop] process %v tx. txid=%v height=%v", chainName, txid, height)
 				b.processTransaction(txid)
 			}
 		}
@@ -119,7 +119,7 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 				scannedHistoryTxs.CacheScannedTx(txid)
 			}
 			if h != stable {
-				log.Info(scanSubject, "height", h)
+				log.Trace(scanSubject, "height", h)
 			}
 			h++
 		}

@@ -29,7 +29,7 @@ func (b *Bridge) StartPoolTransactionScanJob() {
 			if scannedTxs.IsTxScanned(txid) {
 				continue
 			}
-			log.Info(scanSubject, "txid", txid)
+			log.Trace(scanSubject, "txid", txid)
 			b.processTransaction(txid)
 			scannedTxs.CacheScannedTx(txid)
 		}

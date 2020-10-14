@@ -155,7 +155,7 @@ func (b *Bridge) quickSyncRange(ctx context.Context, idx, start, end uint64, wg 
 		for _, tx := range block.Transactions {
 			b.processTransaction(tx.String())
 		}
-		log.Debugf("[scanchain] id=%v scanned %v block, height=%v hash=%v txs=%v", idx, chainName, h, block.Hash.String(), len(block.Transactions))
+		log.Tracef("[scanchain] id=%v scanned %v block, height=%v hash=%v txs=%v", idx, chainName, h, block.Hash.String(), len(block.Transactions))
 		h++
 	}
 

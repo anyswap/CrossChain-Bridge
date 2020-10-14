@@ -63,7 +63,7 @@ FIRST_LOOP:
 			}
 			txid := *tx.Txid
 			if !isProcessed(txid) {
-				log.Debugf("[scanFirstLoop] process %v tx. txid=%v height=%v", chainName, txid, height)
+				log.Tracef("[scanFirstLoop] process %v tx. txid=%v height=%v", chainName, txid, height)
 				_ = b.processSwapin(txid)
 			}
 		}
@@ -116,7 +116,7 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 				rescan = true
 				break // rescan if already processed
 			}
-			log.Info(scanSubject, "txid", txid, "height", height)
+			log.Trace(scanSubject, "txid", txid, "height", height)
 			_ = b.processSwapin(txid)
 		}
 		if rescan {
