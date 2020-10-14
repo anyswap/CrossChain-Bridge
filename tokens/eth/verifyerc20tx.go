@@ -30,7 +30,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID stri
 
 	receipt, err := b.getStableReceipt(swapInfo)
 	if err != nil {
-		return swapInfo, tokens.ErrTxNotStable
+		return swapInfo, err
 	}
 
 	if receipt.Recipient == nil ||

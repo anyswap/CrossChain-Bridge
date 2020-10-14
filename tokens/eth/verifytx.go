@@ -20,11 +20,8 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	var txStatus tokens.TxStatus
 	txr, err := b.GetTransactionReceipt(txHash)
 	if err != nil {
-		log.Debug("GetTransactionReceipt fail", "hash", txHash, "err", err)
+		log.Trace("GetTransactionReceipt fail", "hash", txHash, "err", err)
 		return &txStatus
-	}
-	if *txr.Status != 1 {
-		log.Debug("transaction with wrong receipt status", "hash", txHash, "status", txr.Status)
 	}
 	txStatus.BlockHeight = txr.BlockNumber.ToInt().Uint64()
 	txStatus.BlockHash = txr.BlockHash.String()
@@ -104,7 +101,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	if !allowUnstable {
 		_, err = b.getStableReceipt(swapInfo)
 		if err != nil {
-			return swapInfo, tokens.ErrTxNotStable
+			return swapInfo, err
 		}
 	}
 

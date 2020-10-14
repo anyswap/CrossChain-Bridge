@@ -27,7 +27,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	txStatus := &tokens.TxStatus{}
 	electStatus, err := b.GetElectTransactionStatus(txHash)
 	if err != nil {
-		log.Debug(b.ChainConfig.BlockChain+" Bridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
+		log.Trace(b.ChainConfig.BlockChain+" Bridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
 		return txStatus
 	}
 	if !*electStatus.Confirmed {

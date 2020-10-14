@@ -31,7 +31,7 @@ func (b *Bridge) verifySwapoutTxWithPairIDStable(pairID, txHash string) (*tokens
 
 	receipt, err := b.getStableReceipt(swapInfo)
 	if err != nil {
-		return swapInfo, tokens.ErrTxNotStable
+		return swapInfo, err
 	}
 	if receipt.Recipient == nil {
 		return swapInfo, tokens.ErrTxWithWrongContract
@@ -138,7 +138,7 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (swapInfos []*tokens.TxSwa
 	commonInfo.Hash = txHash // Hash
 	receipt, err := b.getStableReceipt(commonInfo)
 	if err != nil {
-		addSwapInfoConsiderError(nil, tokens.ErrTxNotStable, &swapInfos, &errs)
+		addSwapInfoConsiderError(nil, err, &swapInfos, &errs)
 		return swapInfos, errs
 	}
 	if receipt.Recipient == nil {
