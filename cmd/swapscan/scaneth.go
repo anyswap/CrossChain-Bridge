@@ -111,7 +111,7 @@ func scanEth(ctx *cli.Context) error {
 }
 
 func (scanner *ethSwapScanner) verifyOptions() {
-	if len(scanner.depositAddresses) != len(scanner.pairIDs) {
+	if scanner.isSwapin && len(scanner.depositAddresses) != len(scanner.pairIDs) {
 		log.Fatalf("count of depositAddresses and pairIDs mismatch")
 	}
 	if len(scanner.tokenAddresses) != len(scanner.pairIDs) {
@@ -173,6 +173,9 @@ func (scanner *ethSwapScanner) init() {
 	eth.InitExtCodeParts()
 
 	for _, tokenAddr := range scanner.tokenAddresses {
+		if scanner.isSwapin && tokenAddr == "" {
+			continue
+		}
 		var code []byte
 		code, err = ethcli.CodeAt(scanner.ctx, common.HexToAddress(tokenAddr), nil)
 		if err != nil {
@@ -292,7 +295,7 @@ func (scanner *ethSwapScanner) scanBlock(job, height uint64, cache bool) {
 	if cache && cachedBlocks.isScanned(blockHash) {
 		return
 	}
-	log.Info(fmt.Sprintf("[%v] scan block %v", job, height), "hash", blockHash)
+	log.Info(fmt.Sprintf("[%v] scan block %v", job, height), "hash", blockHash, "txs", len(block.Transactions()))
 	for _, tx := range block.Transactions() {
 		scanner.scanTransaction(tx)
 	}
@@ -302,12 +305,11 @@ func (scanner *ethSwapScanner) scanBlock(job, height uint64, cache bool) {
 }
 
 func (scanner *ethSwapScanner) scanTransaction(tx *types.Transaction) {
+	var err error
 	for i, pairID := range scanner.pairIDs {
 		tokenAddress := scanner.tokenAddresses[i]
-		depositAddress := scanner.depositAddresses[i]
-
-		var err error
 		if scanner.isSwapin {
+			depositAddress := scanner.depositAddresses[i]
 			if tokenAddress != "" {
 				err = scanner.verifyErc20SwapinTx(tx, tokenAddress, depositAddress)
 			} else {
@@ -317,15 +319,15 @@ func (scanner *ethSwapScanner) scanTransaction(tx *types.Transaction) {
 			err = scanner.verifySwapoutTx(tx, tokenAddress)
 		}
 		if !tokens.ShouldRegisterSwapForError(err) {
-			return
+			continue
 		}
 		txid := tx.Hash().String()
-		scanner.postSwapin(txid, pairID)
+		scanner.postSwap(txid, pairID)
+		break
 	}
 }
 
-func (scanner *ethSwapScanner) postSwapin(txid, pairID string) {
-	log.Info("post swapin register", "txid", txid, "pairID", pairID)
+func (scanner *ethSwapScanner) postSwap(txid, pairID string) {
 	var subject, rpcMethod string
 	if scanner.isSwapin {
 		subject = "post swapin register"
