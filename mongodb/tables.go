@@ -17,7 +17,7 @@ const (
 
 // MgoSwap registered swap
 type MgoSwap struct {
-	Key       string     `bson:"_id"`
+	Key       string     `bson:"_id"` // txid + pairid + bind
 	PairID    string     `bson:"pairid"`
 	TxID      string     `bson:"txid"`
 	TxTo      string     `bson:"txto"`
@@ -30,7 +30,7 @@ type MgoSwap struct {
 
 // MgoSwapResult swap result (verified swap)
 type MgoSwapResult struct {
-	Key        string     `bson:"_id"`
+	Key        string     `bson:"_id"` // txid + pairid + bind
 	PairID     string     `bson:"pairid"`
 	TxID       string     `bson:"txid"`
 	TxTo       string     `bson:"txto"`

@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
@@ -18,14 +17,9 @@ var (
 )
 
 // IsSwapExist is swapin exist
-func IsSwapExist(txid, pairID string, isSwapin bool) bool {
+func IsSwapExist(txid, pairID, bind string, isSwapin bool) bool {
 	if mongodb.HasSession() {
-		var swap *mongodb.MgoSwap
-		if isSwapin {
-			swap, _ = mongodb.FindSwapin(txid, pairID)
-		} else {
-			swap, _ = mongodb.FindSwapout(txid, pairID)
-		}
+		swap, _ := mongodb.FindSwap(isSwapin, txid, pairID, bind)
 		return swap != nil
 	}
 	var result interface{}
@@ -38,6 +32,7 @@ func IsSwapExist(txid, pairID string, isSwapin bool) bool {
 	args := map[string]interface{}{
 		"txid":   txid,
 		"pairid": pairID,
+		"bind":   bind,
 	}
 	for i := 0; i < retryRPCCount; i++ {
 		err := client.RPCPost(&result, params.ServerAPIAddress, method, args)
@@ -70,17 +65,17 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 			continue
 		}
 		pairID := swapInfo.PairID
-		if IsSwapExist(txid, pairID, isSwapin) {
+		bind := swapInfo.Bind
+		if IsSwapExist(txid, pairID, bind, isSwapin) {
 			return
 		}
 		isServer := dcrm.IsSwapServer()
-		log.Info("[scan] register swap", "pairID", pairID, "isSwapin", isSwapin, "isServer", isServer, "tx", txid)
+		log.Info("[scan] register swap", "pairID", pairID, "isSwapin", isSwapin, "isServer", isServer, "tx", txid, "bind", bind)
 		if isServer {
 			var memo string
 			if verifyError != nil {
 				memo = verifyError.Error()
 			}
-			bind := swapInfo.Bind
 			swap := &mongodb.MgoSwap{
 				TxID:      txid,
 				PairID:    pairID,
@@ -98,7 +93,6 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 				_ = mongodb.AddSwapout(swap)
 			}
 		} else {
-			var result interface{}
 			var method string
 			if isSwapin {
 				method = "swap.Swapin"
@@ -109,15 +103,22 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 				"txid":   txid,
 				"pairid": pairID,
 			}
+			var result interface{}
 			for i := 0; i < retryRPCCount; i++ {
 				err := client.RPCPost(&result, params.ServerAPIAddress, method, args)
-				if err == nil || strings.Contains(err.Error(), "swap already exist") {
+				if tokens.ShouldRegisterSwapForError(err) ||
+					IsSwapAlreadyExistRegisterError(err) {
 					break
 				}
 				time.Sleep(retryRPCInterval)
 			}
 		}
 	}
+}
+
+// IsSwapAlreadyExistRegisterError is err of swap already exist
+func IsSwapAlreadyExistRegisterError(err error) bool {
+	return err == mongodb.ErrItemIsDup
 }
 
 // RegisterP2shSwapin register p2sh swapin
@@ -150,7 +151,14 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 			"bind": bind,
 		}
 		var result interface{}
-		_ = client.RPCPost(&result, params.ServerAPIAddress, "swap.P2shSwapin", args)
+		for i := 0; i < retryRPCCount; i++ {
+			err := client.RPCPost(&result, params.ServerAPIAddress, "swap.P2shSwapin", args)
+			if tokens.ShouldRegisterSwapForError(err) ||
+				IsSwapAlreadyExistRegisterError(err) {
+				break
+			}
+			time.Sleep(retryRPCInterval)
+		}
 	}
 }
 

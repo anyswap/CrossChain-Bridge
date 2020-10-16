@@ -35,6 +35,7 @@ var (
 	ErrDepositLogNotFound   = errors.New("deposit log not found or removed")
 	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
 	ErrUnknownPairID        = errors.New("unknown pair ID")
+	ErrBindAddressMismatch  = errors.New("bind address mismatch")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")

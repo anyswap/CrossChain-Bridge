@@ -117,25 +117,73 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	return authoredTx, nil
 }
 
-func (b *Bridge) getTxOutputs(to string, amount *big.Int, memo string) (txOuts []*wire.TxOut, err error) {
-	if amount != nil && amount.Sign() > 0 {
-		var pkscript []byte
-		pkscript, err = b.getPayToAddrScript(to)
-		if err != nil {
-			return nil, err
-		}
-		txOuts = append(txOuts, wire.NewTxOut(amount.Int64(), pkscript))
+// BuildTransaction build tx
+func (b *Bridge) BuildTransaction(from string, receivers []string, amounts []int64, memo string, relayFeePerKb int64) (rawTx interface{}, err error) {
+	if len(receivers) != len(amounts) {
+		return nil, fmt.Errorf("count of receivers and amounts are not equal")
 	}
 
-	if memo != "" {
-		var nullScript []byte
-		nullScript, err = txscript.NullDataScript([]byte(memo))
+	var txOuts []*wire.TxOut
+
+	for i, receiver := range receivers {
+		err = b.addPayToAddrOutput(&txOuts, receiver, amounts[i])
 		if err != nil {
 			return nil, err
 		}
-		txOuts = append(txOuts, wire.NewTxOut(0, nullScript))
 	}
+
+	err = addMemoOutput(&txOuts, memo)
+	if err != nil {
+		return nil, err
+	}
+
+	inputSource := func(target btcutil.Amount) (total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
+		return b.selectUtxos(from, target)
+	}
+
+	changeSource := func() ([]byte, error) {
+		return b.getPayToAddrScript(from)
+	}
+
+	return NewUnsignedTransaction(txOuts, btcutil.Amount(relayFeePerKb), inputSource, changeSource, false)
+}
+
+func (b *Bridge) getTxOutputs(to string, amount *big.Int, memo string) (txOuts []*wire.TxOut, err error) {
+	err = b.addPayToAddrOutput(&txOuts, to, amount.Int64())
+	if err != nil {
+		return nil, err
+	}
+
+	err = addMemoOutput(&txOuts, memo)
+	if err != nil {
+		return nil, err
+	}
+
 	return txOuts, err
+}
+
+func (b *Bridge) addPayToAddrOutput(txOuts *[]*wire.TxOut, to string, amount int64) error {
+	if amount <= 0 {
+		return nil
+	}
+	pkscript, err := b.getPayToAddrScript(to)
+	if err != nil {
+		return err
+	}
+	*txOuts = append(*txOuts, wire.NewTxOut(amount, pkscript))
+	return nil
+}
+
+func addMemoOutput(txOuts *[]*wire.TxOut, memo string) error {
+	if memo == "" {
+		return nil
+	}
+	nullScript, err := txscript.NullDataScript([]byte(memo))
+	if err != nil {
+		return err
+	}
+	*txOuts = append(*txOuts, wire.NewTxOut(0, nullScript))
+	return nil
 }
 
 func (b *Bridge) getPayToAddrScript(address string) ([]byte, error) {

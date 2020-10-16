@@ -53,28 +53,29 @@ func (s *RPCAPI) GetSwapStatistics(r *http.Request, pairID *string, result *swap
 type RPCTxAndPairIDArgs struct {
 	TxID   *string `json:"txid"`
 	PairID *string `json:"pairid"`
+	Bind   *string `json:"bind"`
 }
 
-// GetTxAndPairID get txid and pairID
-func (args *RPCTxAndPairIDArgs) GetTxAndPairID() (txid, pairID *string, err error) {
+func (args *RPCTxAndPairIDArgs) getTxAndPairID() (txid, pairID, bind *string, err error) {
 	txid = args.TxID
 	pairID = args.PairID
+	bind = args.Bind
 	if txid == nil || *txid == "" {
-		return nil, nil, errors.New("empty tx id")
+		return nil, nil, nil, errors.New("empty tx id")
 	}
 	if pairID == nil || *pairID == "" {
-		return nil, nil, errors.New("empty pair id")
+		return nil, nil, nil, errors.New("empty pair id")
 	}
-	return txid, pairID, nil
+	return txid, pairID, bind, nil
 }
 
 // GetRawSwapin api
 func (s *RPCAPI) GetRawSwapin(r *http.Request, args *RPCTxAndPairIDArgs, result *swapapi.Swap) error {
-	txid, pairID, err := args.GetTxAndPairID()
+	txid, pairID, bind, err := args.getTxAndPairID()
 	if err != nil {
 		return err
 	}
-	res, err := swapapi.GetRawSwapin(txid, pairID)
+	res, err := swapapi.GetRawSwapin(txid, pairID, bind)
 	if err == nil && res != nil {
 		*result = *res
 	}
@@ -83,11 +84,11 @@ func (s *RPCAPI) GetRawSwapin(r *http.Request, args *RPCTxAndPairIDArgs, result 
 
 // GetRawSwapinResult api
 func (s *RPCAPI) GetRawSwapinResult(r *http.Request, args *RPCTxAndPairIDArgs, result *swapapi.SwapResult) error {
-	txid, pairID, err := args.GetTxAndPairID()
+	txid, pairID, bind, err := args.getTxAndPairID()
 	if err != nil {
 		return err
 	}
-	res, err := swapapi.GetRawSwapinResult(txid, pairID)
+	res, err := swapapi.GetRawSwapinResult(txid, pairID, bind)
 	if err == nil && res != nil {
 		*result = *res
 	}
@@ -96,11 +97,11 @@ func (s *RPCAPI) GetRawSwapinResult(r *http.Request, args *RPCTxAndPairIDArgs, r
 
 // GetSwapin api
 func (s *RPCAPI) GetSwapin(r *http.Request, args *RPCTxAndPairIDArgs, result *swapapi.SwapInfo) error {
-	txid, pairID, err := args.GetTxAndPairID()
+	txid, pairID, bind, err := args.getTxAndPairID()
 	if err != nil {
 		return err
 	}
-	res, err := swapapi.GetSwapin(txid, pairID)
+	res, err := swapapi.GetSwapin(txid, pairID, bind)
 	if err == nil && res != nil {
 		*result = *res
 	}
@@ -109,11 +110,11 @@ func (s *RPCAPI) GetSwapin(r *http.Request, args *RPCTxAndPairIDArgs, result *sw
 
 // GetRawSwapout api
 func (s *RPCAPI) GetRawSwapout(r *http.Request, args *RPCTxAndPairIDArgs, result *swapapi.Swap) error {
-	txid, pairID, err := args.GetTxAndPairID()
+	txid, pairID, bind, err := args.getTxAndPairID()
 	if err != nil {
 		return err
 	}
-	res, err := swapapi.GetRawSwapout(txid, pairID)
+	res, err := swapapi.GetRawSwapout(txid, pairID, bind)
 	if err == nil && res != nil {
 		*result = *res
 	}
@@ -122,11 +123,11 @@ func (s *RPCAPI) GetRawSwapout(r *http.Request, args *RPCTxAndPairIDArgs, result
 
 // GetRawSwapoutResult api
 func (s *RPCAPI) GetRawSwapoutResult(r *http.Request, args *RPCTxAndPairIDArgs, result *swapapi.SwapResult) error {
-	txid, pairID, err := args.GetTxAndPairID()
+	txid, pairID, bind, err := args.getTxAndPairID()
 	if err != nil {
 		return err
 	}
-	res, err := swapapi.GetRawSwapoutResult(txid, pairID)
+	res, err := swapapi.GetRawSwapoutResult(txid, pairID, bind)
 	if err == nil && res != nil {
 		*result = *res
 	}
@@ -135,11 +136,11 @@ func (s *RPCAPI) GetRawSwapoutResult(r *http.Request, args *RPCTxAndPairIDArgs, 
 
 // GetSwapout api
 func (s *RPCAPI) GetSwapout(r *http.Request, args *RPCTxAndPairIDArgs, result *swapapi.SwapInfo) error {
-	txid, pairID, err := args.GetTxAndPairID()
+	txid, pairID, bind, err := args.getTxAndPairID()
 	if err != nil {
 		return err
 	}
-	res, err := swapapi.GetSwapout(txid, pairID)
+	res, err := swapapi.GetSwapout(txid, pairID, bind)
 	if err == nil && res != nil {
 		*result = *res
 	}
@@ -174,7 +175,7 @@ func (s *RPCAPI) GetSwapoutHistory(r *http.Request, args *RPCQueryHistoryArgs, r
 
 // Swapin api
 func (s *RPCAPI) Swapin(r *http.Request, args *RPCTxAndPairIDArgs, result *swapapi.PostResult) error {
-	txid, pairID, err := args.GetTxAndPairID()
+	txid, pairID, _, err := args.getTxAndPairID()
 	if err != nil {
 		return err
 	}
@@ -187,7 +188,7 @@ func (s *RPCAPI) Swapin(r *http.Request, args *RPCTxAndPairIDArgs, result *swapa
 
 // RetrySwapin api
 func (s *RPCAPI) RetrySwapin(r *http.Request, args *RPCTxAndPairIDArgs, result *swapapi.PostResult) error {
-	txid, pairID, err := args.GetTxAndPairID()
+	txid, pairID, _, err := args.getTxAndPairID()
 	if err != nil {
 		return err
 	}
@@ -215,7 +216,7 @@ func (s *RPCAPI) P2shSwapin(r *http.Request, args *RPCP2shSwapinArgs, result *sw
 
 // Swapout api
 func (s *RPCAPI) Swapout(r *http.Request, args *RPCTxAndPairIDArgs, result *swapapi.PostResult) error {
-	txid, pairID, err := args.GetTxAndPairID()
+	txid, pairID, _, err := args.getTxAndPairID()
 	if err != nil {
 		return err
 	}

@@ -1,10 +1,13 @@
 package worker
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 // MatchTx struct
@@ -58,7 +61,7 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 	return err
 }
 
-func updateSwapResult(txid, pairID string, mtx *MatchTx) (err error) {
+func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 	updates := &mongodb.SwapResultUpdateItems{
 		Status:    mongodb.MatchTxNotStable,
 		Timestamp: now(),
@@ -75,21 +78,21 @@ func updateSwapResult(txid, pairID string, mtx *MatchTx) (err error) {
 	}
 	switch mtx.SwapType {
 	case tokens.SwapinType:
-		err = mongodb.UpdateSwapinResult(txid, pairID, updates)
+		err = mongodb.UpdateSwapinResult(txid, pairID, bind, updates)
 	case tokens.SwapoutType:
-		err = mongodb.UpdateSwapoutResult(txid, pairID, updates)
+		err = mongodb.UpdateSwapoutResult(txid, pairID, bind, updates)
 	default:
 		err = tokens.ErrUnknownSwapType
 	}
 	if err != nil {
 		logWorkerError("update", "updateSwapResult", err,
-			"txid", txid, "pairID", pairID,
+			"txid", txid, "pairID", pairID, "bind", bind,
 			"swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight,
 			"swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue,
 			"swaptype", mtx.SwapType, "swapnonce", mtx.SwapNonce)
 	} else {
 		logWorker("update", "updateSwapResult",
-			"txid", txid, "pairID", pairID,
+			"txid", txid, "pairID", pairID, "bind", bind,
 			"swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight,
 			"swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue,
 			"swaptype", mtx.SwapType, "swapnonce", mtx.SwapNonce)
@@ -97,30 +100,49 @@ func updateSwapResult(txid, pairID string, mtx *MatchTx) (err error) {
 	return err
 }
 
-func markSwapResultStable(txid, pairID string, isSwapin bool) (err error) {
+func markSwapResultStable(txid, pairID, bind string, isSwapin bool) (err error) {
 	status := mongodb.MatchTxStable
 	timestamp := now()
 	memo := "" // unchange
-	err = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, status, timestamp, memo)
+	err = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, status, timestamp, memo)
 	if err != nil {
-		logWorkerError("stable", "markSwapResultStable", err, "txid", txid, "pairID", pairID, "isSwapin", isSwapin)
+		logWorkerError("stable", "markSwapResultStable", err, "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin)
 	} else {
-		logWorker("stable", "markSwapResultStable", "txid", txid, "pairID", pairID, "isSwapin", isSwapin)
+		logWorker("stable", "markSwapResultStable", "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin)
 	}
 	return err
 }
 
-func markSwapResultFailed(txid, pairID string, isSwapin bool) (err error) {
+func markSwapResultFailed(txid, pairID, bind string, isSwapin bool) (err error) {
 	status := mongodb.MatchTxFailed
 	timestamp := now()
 	memo := "" // unchange
-	err = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, status, timestamp, memo)
+	err = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, status, timestamp, memo)
 	if err != nil {
-		logWorkerError("stable", "markSwapResultFailed", err, "txid", txid, "pairID", pairID, "isSwapin", isSwapin)
+		logWorkerError("stable", "markSwapResultFailed", err, "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin)
 	} else {
-		logWorker("stable", "markSwapResultFailed", "txid", txid, "pairID", pairID, "isSwapin", isSwapin)
+		logWorker("stable", "markSwapResultFailed", "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin)
 	}
 	return err
+}
+
+func verifySwapTransaction(bridge tokens.CrossChainBridge, pairID, txid, bind string, swapTxType tokens.SwapTxType) (swapInfo *tokens.TxSwapInfo, err error) {
+	switch swapTxType {
+	case tokens.P2shSwapinTx:
+		if btc.BridgeInstance == nil {
+			return nil, tokens.ErrNoBtcBridge
+		}
+		swapInfo, err = btc.BridgeInstance.VerifyP2shTransaction(pairID, txid, bind, false)
+	default:
+		swapInfo, err = bridge.VerifyTransaction(pairID, txid, false)
+	}
+	if swapInfo == nil {
+		return nil, fmt.Errorf("empty swapinfo after verify tx")
+	}
+	if swapInfo.Bind != "" && !strings.EqualFold(swapInfo.Bind, bind) {
+		return nil, tokens.ErrBindAddressMismatch
+	}
+	return swapInfo, err
 }
 
 func dcrmSignTransaction(bridge tokens.CrossChainBridge, rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
@@ -137,7 +159,7 @@ func dcrmSignTransaction(bridge tokens.CrossChainBridge, rawTx interface{}, args
 	return signedTx, txHash, nil
 }
 
-func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID string, isSwapin bool) (err error) {
+func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin bool) (err error) {
 	var (
 		txHash              string
 		retrySendTxCount    = 3
@@ -155,9 +177,9 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		time.Sleep(retrySendTxInterval)
 	}
 	if err != nil {
-		logWorkerError("sendtx", "update swap status to TxSwapFailed", err, "txid", txid, "isSwapin", isSwapin)
-		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, mongodb.TxSwapFailed, now(), err.Error())
-		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, mongodb.TxSwapFailed, now(), err.Error())
+		logWorkerError("sendtx", "update swap status to TxSwapFailed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
+		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
 		return err
 	}
 	if nonceSetter, ok := bridge.(tokens.NonceSetter); ok {

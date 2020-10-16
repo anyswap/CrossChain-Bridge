@@ -76,12 +76,12 @@ func findSwapoutResultsToStable() ([]*mongodb.MgoSwapResult, error) {
 }
 
 func processSwapinStable(swap *mongodb.MgoSwapResult) error {
-	logWorker("stable", "start processSwapinStable", "swaptxid", swap.SwapTx, "status", swap.Status)
+	logWorker("stable", "start processSwapinStable", "swaptxid", swap.SwapTx, "bind", swap.Bind, "status", swap.Status)
 	return processSwapStable(swap, true)
 }
 
 func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
-	logWorker("stable", "start processSwapoutStable", "swaptxid", swap.SwapTx, "status", swap.Status)
+	logWorker("stable", "start processSwapoutStable", "swaptxid", swap.SwapTx, "bind", swap.Bind, "status", swap.Status)
 	return processSwapStable(swap, false)
 }
 
@@ -108,10 +108,10 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 				txFailed = true
 			}
 			if txFailed {
-				return markSwapResultFailed(swap.TxID, swap.PairID, isSwapin)
+				return markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 			}
 		}
-		return markSwapResultStable(swap.TxID, swap.PairID, isSwapin)
+		return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 	}
 
 	matchTx := &MatchTx{
@@ -119,5 +119,5 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 		SwapTime:   txStatus.BlockTime,
 		SwapType:   swapType,
 	}
-	return updateSwapResult(swap.TxID, swap.PairID, matchTx)
+	return updateSwapResult(swap.TxID, swap.PairID, swap.Bind, matchTx)
 }

@@ -113,7 +113,7 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 ### swap.RetrySwapin
 
-重新申请换进置换
+重新申请换进置换 (ETH like 专用接口)
 
 只有账户由于没有注册而申请置换失败的情形下才可以重新申请置换。
 
@@ -145,7 +145,7 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 ##### 参数：
 ```json
-[{"txid":"充值交易哈希", "pairid":"交易对"}]
+[{"txid":"充值交易哈希", "pairid":"交易对", "bind":"绑定地址"}]
 ```
 ##### 返回值：
 ```text
@@ -158,7 +158,7 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 ##### 参数：
 ```json
-[{"txid":"销毁交易哈希", "pairid":"交易对"}]
+[{"txid":"销毁交易哈希", "pairid":"交易对", "bind":"绑定地址"}]
 ```
 ##### 返回值：
 ```text
@@ -229,7 +229,7 @@ limit 最大值为 100
 
 ### swap.RegisterAddress
 
-注册账户地址
+注册账户地址 (ETH like 专用接口)
 
 ##### 参数：
 ```json
@@ -267,11 +267,11 @@ limit 最大值为 100
 
 查询交易对信息
 
-### GET /swapin/{pairid}/{txid}
+### GET /swapin/{pairid}/{txid}?bind=绑定地址
 
 查询换进置换，txid 为充值交易哈希
 
-### GET /swapout/{pairid}/{txid}
+### GET /swapout/{pairid}/{txid}?bind=绑定地址
 
 查询换出置换，txid 为销毁交易哈希
 
@@ -307,7 +307,7 @@ limit 最大值为 100
 
 ### POST /swapin/retry/{pairid}/{txid}
 
-重新申请换进置换
+重新申请换进置换 (ETH like 专用接口)
 
 只有账户由于没有注册而申请置换失败的情形下才可以重新申请置换。
 
@@ -325,4 +325,4 @@ limit 最大值为 100
 
 ### POST /register/{address}
 
-注册账户地址
+注册账户地址 (ETH like 专用接口)

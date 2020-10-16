@@ -10,22 +10,21 @@ import (
 
 var (
 	maxFirstScanHeight = uint64(1000)
+
+	firstScannedTxs   = tools.NewCachedScannedTxs(500)
+	historyScannedTxs = tools.NewCachedScannedTxs(500)
 )
 
 // StartSwapHistoryScanJob scan job
 func (b *Bridge) StartSwapHistoryScanJob() {
 	log.Infof("[swaphistory] start scan %v swap history job", b.ChainConfig.BlockChain)
 
-	isProcessed := func(txid string) bool {
-		return tools.IsSwapExist(txid, PairID, b.IsSrc)
-	}
+	go b.scanFirstLoop()
 
-	go b.scanFirstLoop(isProcessed)
-
-	b.scanTransactionHistory(isProcessed)
+	b.scanTransactionHistory()
 }
 
-func (b *Bridge) scanFirstLoop(isProcessed func(string) bool) {
+func (b *Bridge) scanFirstLoop() {
 	// first loop process all tx history no matter whether processed before
 	latest := tools.LoopGetLatestBlockNumber(b)
 	minHeight := *b.ChainConfig.InitialHeight
@@ -57,9 +56,10 @@ FIRST_LOOP:
 				break FIRST_LOOP
 			}
 			txid := *tx.Txid
-			if !isProcessed(txid) {
+			if !firstScannedTxs.IsTxScanned(txid) {
 				log.Tracef("[scanFirstLoop] process %v tx. txid=%v height=%v", chainName, txid, height)
 				b.processSwapin(txid)
+				firstScannedTxs.CacheScannedTx(txid)
 			}
 		}
 		lastSeenTxid = *txHistory[len(txHistory)-1].Txid
@@ -68,7 +68,7 @@ FIRST_LOOP:
 	log.Infof("[scanFirstLoop] finish %v first scan loop to min height %v", chainName, minHeight)
 }
 
-func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
+func (b *Bridge) scanTransactionHistory() {
 	var (
 		lastSeenTxid = ""
 		rescan       = true
@@ -109,12 +109,13 @@ func (b *Bridge) scanTransactionHistory(isProcessed func(string) bool) {
 				break
 			}
 			txid := *tx.Txid
-			if isProcessed(txid) {
+			if !historyScannedTxs.IsTxScanned(txid) {
 				rescan = true
 				break // rescan if already processed
 			}
 			log.Trace(scanSubject, "txid", txid, "height", height)
 			b.processSwapin(txid)
+			historyScannedTxs.CacheScannedTx(txid)
 		}
 		if rescan {
 			lastSeenTxid = ""

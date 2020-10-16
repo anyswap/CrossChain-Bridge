@@ -53,12 +53,22 @@ func StatisticsHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+func getBindParam(r *http.Request) string {
+	vals := r.URL.Query()
+	bindVals, exist := vals["bind"]
+	if exist {
+		return bindVals[0]
+	}
+	return ""
+}
+
 // GetRawSwapinHandler handler
 func GetRawSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
 	pairID := vars["pairid"]
-	res, err := swapapi.GetRawSwapin(&txid, &pairID)
+	bind := getBindParam(r)
+	res, err := swapapi.GetRawSwapin(&txid, &pairID, &bind)
 	writeResponse(w, res, err)
 }
 
@@ -67,7 +77,8 @@ func GetRawSwapinResultHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
 	pairID := vars["pairid"]
-	res, err := swapapi.GetRawSwapinResult(&txid, &pairID)
+	bind := getBindParam(r)
+	res, err := swapapi.GetRawSwapinResult(&txid, &pairID, &bind)
 	writeResponse(w, res, err)
 }
 
@@ -76,7 +87,8 @@ func GetSwapinHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
 	pairID := vars["pairid"]
-	res, err := swapapi.GetSwapin(&txid, &pairID)
+	bind := getBindParam(r)
+	res, err := swapapi.GetSwapin(&txid, &pairID, &bind)
 	writeResponse(w, res, err)
 }
 
@@ -85,7 +97,8 @@ func GetRawSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
 	pairID := vars["pairid"]
-	res, err := swapapi.GetRawSwapout(&txid, &pairID)
+	bind := getBindParam(r)
+	res, err := swapapi.GetRawSwapout(&txid, &pairID, &bind)
 	writeResponse(w, res, err)
 }
 
@@ -94,7 +107,8 @@ func GetRawSwapoutResultHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
 	pairID := vars["pairid"]
-	res, err := swapapi.GetRawSwapoutResult(&txid, &pairID)
+	bind := getBindParam(r)
+	res, err := swapapi.GetRawSwapoutResult(&txid, &pairID, &bind)
 	writeResponse(w, res, err)
 }
 
@@ -103,7 +117,8 @@ func GetSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	txid := vars["txid"]
 	pairID := vars["pairid"]
-	res, err := swapapi.GetSwapout(&txid, &pairID)
+	bind := getBindParam(r)
+	res, err := swapapi.GetSwapout(&txid, &pairID, &bind)
 	writeResponse(w, res, err)
 }
 

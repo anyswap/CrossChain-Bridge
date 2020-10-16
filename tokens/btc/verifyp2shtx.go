@@ -6,7 +6,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
-// VerifyP2shTransaction verify p2sh tx (must be stable)
+// VerifyP2shTransaction verify p2sh tx
 func (b *Bridge) VerifyP2shTransaction(pairID, txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if !b.IsSrc {
 		return nil, tokens.ErrBridgeDestinationNotSupported

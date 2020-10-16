@@ -59,66 +59,66 @@ func QueryBlacklist(address, pairID string) (isBlacked bool, err error) {
 }
 
 // PassSwapinBigValue pass swapin big value
-func PassSwapinBigValue(txid, pairID string) error {
-	return passBigValue(txid, pairID, true)
+func PassSwapinBigValue(txid, pairID, bind string) error {
+	return passBigValue(txid, pairID, bind, true)
 }
 
 // PassSwapoutBigValue pass swapout big value
-func PassSwapoutBigValue(txid, pairID string) error {
-	return passBigValue(txid, pairID, false)
+func PassSwapoutBigValue(txid, pairID, bind string) error {
+	return passBigValue(txid, pairID, bind, false)
 }
 
-func passBigValue(txid, pairID string, isSwapin bool) error {
-	swap, err := FindSwap(isSwapin, txid, pairID)
+func passBigValue(txid, pairID, bind string, isSwapin bool) error {
+	swap, err := FindSwap(isSwapin, txid, pairID, bind)
 	if err != nil {
 		return err
 	}
 	if swap.Status != TxWithBigValue {
 		return fmt.Errorf("swap status is %v, not big value status %v", swap.Status.String(), TxWithBigValue.String())
 	}
-	return UpdateSwapStatus(isSwapin, txid, pairID, TxNotSwapped, time.Now().Unix(), "")
+	return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotSwapped, time.Now().Unix(), "")
 }
 
 // ReverifySwapin reverify swapin
-func ReverifySwapin(txid, pairID string) error {
-	return reverifySwap(txid, pairID, true)
+func ReverifySwapin(txid, pairID, bind string) error {
+	return reverifySwap(txid, pairID, bind, true)
 }
 
 // ReverifySwapout reverify swapout
-func ReverifySwapout(txid, pairID string) error {
-	return reverifySwap(txid, pairID, false)
+func ReverifySwapout(txid, pairID, bind string) error {
+	return reverifySwap(txid, pairID, bind, false)
 }
 
-func reverifySwap(txid, pairID string, isSwapin bool) error {
-	swap, err := FindSwap(isSwapin, txid, pairID)
+func reverifySwap(txid, pairID, bind string, isSwapin bool) error {
+	swap, err := FindSwap(isSwapin, txid, pairID, bind)
 	if err != nil {
 		return err
 	}
 	if !swap.Status.CanReverify() {
 		return fmt.Errorf("swap status is %v, no need to reverify", swap.Status.String())
 	}
-	return UpdateSwapStatus(isSwapin, txid, pairID, TxNotStable, time.Now().Unix(), "")
+	return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotStable, time.Now().Unix(), "")
 }
 
 // Reswapin reswapin
-func Reswapin(txid, pairID, forceOpt string) error {
-	return reswap(txid, pairID, forceOpt, true)
+func Reswapin(txid, pairID, bind, forceOpt string) error {
+	return reswap(txid, pairID, bind, forceOpt, true)
 }
 
 // Reswapout reswapout
-func Reswapout(txid, pairID, forceOpt string) error {
-	return reswap(txid, pairID, forceOpt, false)
+func Reswapout(txid, pairID, bind, forceOpt string) error {
+	return reswap(txid, pairID, bind, forceOpt, false)
 }
 
-func reswap(txid, pairID, forceOpt string, isSwapin bool) error {
-	swap, err := FindSwap(isSwapin, txid, pairID)
+func reswap(txid, pairID, bind, forceOpt string, isSwapin bool) error {
+	swap, err := FindSwap(isSwapin, txid, pairID, bind)
 	if err != nil {
 		return err
 	}
 	if !swap.Status.CanReswap() {
 		return fmt.Errorf("swap status is %v, can not reswap", swap.Status.String())
 	}
-	swapResult, err := FindSwapResult(isSwapin, txid, pairID)
+	swapResult, err := FindSwapResult(isSwapin, txid, pairID, bind)
 	if err != nil {
 		return err
 	}
@@ -127,13 +127,13 @@ func reswap(txid, pairID, forceOpt string, isSwapin bool) error {
 		return err
 	}
 
-	log.Info("[reswap] update status to TxNotSwapped to retry", "txid", txid, "pairID", pairID, "swaptx", swapResult.SwapTx)
-	err = UpdateSwapResultStatus(isSwapin, txid, pairID, MatchTxEmpty, time.Now().Unix(), "")
+	log.Info("[reswap] update status to TxNotSwapped to retry", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swapResult.SwapTx)
+	err = UpdateSwapResultStatus(isSwapin, txid, pairID, bind, MatchTxEmpty, time.Now().Unix(), "")
 	if err != nil {
 		return err
 	}
 
-	return UpdateSwapStatus(isSwapin, txid, pairID, TxNotSwapped, time.Now().Unix(), "")
+	return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotSwapped, time.Now().Unix(), "")
 }
 
 func checkCanReswap(res *MgoSwapResult, forceOpt string, isSwapin bool) error {
@@ -194,20 +194,20 @@ func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, forceO
 }
 
 // ManualManageSwap manual manage swap
-func ManualManageSwap(txid, pairID, memo string, isSwapin, isPass bool) error {
-	swap, err := FindSwap(isSwapin, txid, pairID)
+func ManualManageSwap(txid, pairID, bind, memo string, isSwapin, isPass bool) error {
+	swap, err := FindSwap(isSwapin, txid, pairID, bind)
 	if err != nil {
 		return err
 	}
 	if isPass {
 		if swap.Status.CanManualMakePass() {
-			return UpdateSwapStatus(isSwapin, txid, pairID, TxNotSwapped, time.Now().Unix(), memo)
+			return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotSwapped, time.Now().Unix(), memo)
 		}
 		if swap.Status.CanReverify() {
-			return UpdateSwapStatus(isSwapin, txid, pairID, TxNotStable, time.Now().Unix(), memo)
+			return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotStable, time.Now().Unix(), memo)
 		}
 	} else if swap.Status.CanManualMakeFail() {
-		return UpdateSwapStatus(isSwapin, txid, pairID, ManualMakeFail, time.Now().Unix(), memo)
+		return UpdateSwapStatus(isSwapin, txid, pairID, bind, ManualMakeFail, time.Now().Unix(), memo)
 	}
-	return fmt.Errorf("swap status is %v, can not operate. txid=%v pairID=%v isSwapin=%v isPass=%v", swap.Status.String(), txid, pairID, isSwapin, isPass)
+	return fmt.Errorf("swap status is %v, can not operate. txid=%v pairID=%v bind=%v isSwapin=%v isPass=%v", swap.Status.String(), txid, pairID, bind, isSwapin, isPass)
 }

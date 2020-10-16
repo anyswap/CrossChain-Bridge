@@ -13,6 +13,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
+	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 	"github.com/fsn-dev/fsn-go-sdk/efsn/common"
 	"github.com/fsn-dev/fsn-go-sdk/efsn/core/types"
 	"github.com/fsn-dev/fsn-go-sdk/efsn/ethclient"
@@ -348,7 +349,7 @@ func (scanner *ethSwapScanner) postSwap(txid, pairID string) {
 		if tokens.ShouldRegisterSwapForError(err) {
 			break
 		}
-		if strings.Contains(err.Error(), "swap already exist") {
+		if tools.IsSwapAlreadyExistRegisterError(err) {
 			break
 		}
 		log.Warn(subject+" failed", "txid", txid, "pairID", pairID, "err", err)

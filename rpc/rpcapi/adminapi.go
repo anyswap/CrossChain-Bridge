@@ -101,17 +101,18 @@ func blacklist(args *admin.CallArgs, result *string) (err error) {
 }
 
 func bigvalue(args *admin.CallArgs, result *string) (err error) {
-	if len(args.Params) != 3 {
-		return fmt.Errorf("wrong number of params, have %v want 3", len(args.Params))
+	if len(args.Params) != 4 {
+		return fmt.Errorf("wrong number of params, have %v want 4", len(args.Params))
 	}
 	operation := args.Params[0]
 	txid := args.Params[1]
 	pairID := args.Params[2]
+	bind := args.Params[3]
 	switch operation {
 	case passSwapinOp:
-		err = mongodb.PassSwapinBigValue(txid, pairID)
+		err = mongodb.PassSwapinBigValue(txid, pairID, bind)
 	case passSwapoutOp:
-		err = mongodb.PassSwapoutBigValue(txid, pairID)
+		err = mongodb.PassSwapoutBigValue(txid, pairID, bind)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
@@ -174,35 +175,36 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 	return nil
 }
 
-func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID, forceOpt string, err error) {
-	if !(len(args.Params) == 3 || len(args.Params) == 4) {
-		err = fmt.Errorf("wrong number of params, have %v want 3 or 4", len(args.Params))
+func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID, bind, forceOpt string, err error) {
+	if !(len(args.Params) == 4 || len(args.Params) == 5) {
+		err = fmt.Errorf("wrong number of params, have %v want 4 or 5", len(args.Params))
 		return
 	}
 	operation = args.Params[0]
 	txid = args.Params[1]
 	pairID = args.Params[2]
+	bind = args.Params[3]
 
-	if len(args.Params) > 3 {
-		forceOpt = args.Params[3]
+	if len(args.Params) > 4 {
+		forceOpt = args.Params[4]
 		if forceOpt != forceFlag {
 			err = fmt.Errorf("wrong force flag %v, must be %v", forceOpt, forceFlag)
 			return
 		}
 	}
-	return operation, txid, pairID, forceOpt, nil
+	return operation, txid, pairID, bind, forceOpt, nil
 }
 
 func reverify(args *admin.CallArgs, result *string) (err error) {
-	operation, txid, pairID, _, err := getOpTxAndPairID(args)
+	operation, txid, pairID, bind, _, err := getOpTxAndPairID(args)
 	if err != nil {
 		return err
 	}
 	switch operation {
 	case swapinOp:
-		err = mongodb.ReverifySwapin(txid, pairID)
+		err = mongodb.ReverifySwapin(txid, pairID, bind)
 	case swapoutOp:
-		err = mongodb.ReverifySwapout(txid, pairID)
+		err = mongodb.ReverifySwapout(txid, pairID, bind)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
@@ -214,15 +216,15 @@ func reverify(args *admin.CallArgs, result *string) (err error) {
 }
 
 func reswap(args *admin.CallArgs, result *string) (err error) {
-	operation, txid, pairID, forceOpt, err := getOpTxAndPairID(args)
+	operation, txid, pairID, bind, forceOpt, err := getOpTxAndPairID(args)
 	if err != nil {
 		return err
 	}
 	switch operation {
 	case swapinOp:
-		err = mongodb.Reswapin(txid, pairID, forceOpt)
+		err = mongodb.Reswapin(txid, pairID, bind, forceOpt)
 	case swapoutOp:
-		err = mongodb.Reswapout(txid, pairID, forceOpt)
+		err = mongodb.Reswapout(txid, pairID, bind, forceOpt)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
@@ -234,16 +236,17 @@ func reswap(args *admin.CallArgs, result *string) (err error) {
 }
 
 func manual(args *admin.CallArgs, result *string) (err error) {
-	if !(len(args.Params) == 3 || len(args.Params) == 4) {
-		return fmt.Errorf("wrong number of params, have %v want 3 or 4", len(args.Params))
+	if !(len(args.Params) == 4 || len(args.Params) == 5) {
+		return fmt.Errorf("wrong number of params, have %v want 4 or 5", len(args.Params))
 	}
 	operation := args.Params[0]
 	txid := args.Params[1]
 	pairID := args.Params[2]
+	bind := args.Params[3]
 
 	var memo string
-	if len(args.Params) > 3 {
-		memo = args.Params[3]
+	if len(args.Params) > 4 {
+		memo = args.Params[4]
 	}
 
 	var isSwapin, isPass bool
@@ -263,7 +266,7 @@ func manual(args *admin.CallArgs, result *string) (err error) {
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
-	err = mongodb.ManualManageSwap(txid, pairID, memo, isSwapin, isPass)
+	err = mongodb.ManualManageSwap(txid, pairID, bind, memo, isSwapin, isPass)
 	if err != nil {
 		return err
 	}

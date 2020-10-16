@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -314,50 +313,53 @@ func (scanner *btcSwapScanner) scanBlock(job, height uint64, cache bool) {
 
 func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 	txid := *tx.Txid
-	if tools.IsSwapExist(txid, btc.PairID, true) {
-		return
-	}
-	p2shBindAddr, err := scanner.bridge.CheckSwapinTxType(tx)
+	p2shBindAddrs, err := scanner.bridge.CheckSwapinTxType(tx)
 	if err != nil {
 		return
 	}
-	if p2shBindAddr != "" {
-		log.Info("post p2sh swapin register", "txid", txid, "bind", p2shBindAddr)
-		args := map[string]interface{}{
-			"txid": txid,
-			"bind": p2shBindAddr,
-		}
-		var result interface{}
-		for i := 0; i < scanner.rpcRetryCount; i++ {
-			err = client.RPCPost(&result, scanner.swapServer, "swap.P2shSwapin", args)
-			if tokens.ShouldRegisterSwapForError(err) {
-				break
+	if len(p2shBindAddrs) > 0 {
+		for _, p2shBindAddr := range p2shBindAddrs {
+			log.Info("post p2sh swapin register", "txid", txid, "bind", p2shBindAddr)
+			args := map[string]interface{}{
+				"txid": txid,
+				"bind": p2shBindAddr,
 			}
-			if strings.Contains(err.Error(), "swap already exist") {
-				break
+			var result interface{}
+			for i := 0; i < scanner.rpcRetryCount; i++ {
+				err = client.RPCPost(&result, scanner.swapServer, "swap.P2shSwapin", args)
+				if tokens.ShouldRegisterSwapForError(err) {
+					break
+				}
+				if tools.IsSwapAlreadyExistRegisterError(err) {
+					break
+				}
+				log.Warn("post p2sh swapin register failed", "txid", txid, "bind", p2shBindAddr, "err", err)
 			}
-			log.Warn("post p2sh swapin register failed", "txid", txid, "bind", p2shBindAddr, "err", err)
 		}
 	} else {
-		_, _, rightReceiver := scanner.bridge.GetReceivedValue(tx.Vout, scanner.depositAddress, "p2pkh")
-		if !rightReceiver {
+		value, memoScript, rightReceiver := scanner.bridge.GetReceivedValue(tx.Vout, scanner.depositAddress, "p2pkh")
+		if !rightReceiver || value == 0 {
 			return
 		}
-		log.Info("post swapin register", "txid", txid)
-		var result interface{}
+		bindAddress, bindOk := btc.GetBindAddressFromMemoScipt(memoScript)
+		if !bindOk {
+			return
+		}
+		log.Info("post swapin register", "txid", txid, "pairid", btc.PairID, "bind", bindAddress)
 		args := map[string]interface{}{
 			"txid":   txid,
 			"pairid": btc.PairID,
 		}
+		var result interface{}
 		for i := 0; i < scanner.rpcRetryCount; i++ {
 			err = client.RPCPost(&result, scanner.swapServer, "swap.Swapin", args)
 			if tokens.ShouldRegisterSwapForError(err) {
 				break
 			}
-			if strings.Contains(err.Error(), "swap already exist") {
+			if tools.IsSwapAlreadyExistRegisterError(err) {
 				break
 			}
-			log.Warn("post swapin register failed", "txid", txid, "err", err)
+			log.Warn("post swapin register failed", "txid", txid, "bind", bindAddress, "err", err)
 		}
 	}
 }

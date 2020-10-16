@@ -135,21 +135,10 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 	default:
 		return fmt.Errorf("unknown swap type %v", args.SwapType)
 	}
-	var (
-		swapInfo *tokens.TxSwapInfo
-		err      error
-	)
-	switch args.TxType {
-	case tokens.P2shSwapinTx:
-		if btc.BridgeInstance == nil {
-			return tokens.ErrNoBtcBridge
-		}
-		swapInfo, err = btc.BridgeInstance.VerifyP2shTransaction(args.PairID, args.SwapID, args.Bind, false)
-	default:
-		swapInfo, err = srcBridge.VerifyTransaction(args.PairID, args.SwapID, false)
-	}
+
+	swapInfo, err := verifySwapTransaction(srcBridge, args.PairID, args.SwapID, args.Bind, args.TxType)
 	if err != nil {
-		logWorkerError("accept", "verifySignInfo failed", err, "pairID", args.PairID, "txid", args.SwapID, "swaptype", args.SwapType)
+		logWorkerError("accept", "verifySignInfo failed", err, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
 		return err
 	}
 

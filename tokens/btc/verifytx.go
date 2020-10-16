@@ -78,7 +78,7 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 	return nil
 }
 
-// VerifyTransaction impl (must be stable)
+// VerifyTransaction impl
 func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if !b.IsSrc {
 		return nil, tokens.ErrBridgeDestinationNotSupported
@@ -120,10 +120,7 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 	swapInfo.To = depositAddress                 // To
 	swapInfo.Value = common.BigFromUint64(value) // Value
 
-	memoStr, bindAddress, bindOk := getBindAddressFromMemoScipt(memoScript)
-	if memoStr == aggregateMemo {
-		return swapInfo, tokens.ErrTxIsAggregateTx
-	}
+	bindAddress, bindOk := GetBindAddressFromMemoScipt(memoScript)
 
 	swapInfo.Bind = bindAddress // Bind
 
@@ -195,20 +192,24 @@ func getTxFrom(vin []*electrs.ElectTxin, priorityAddress string) string {
 	return from
 }
 
-func getBindAddressFromMemoScipt(memoScript string) (memoStr, bind string, ok bool) {
+// GetBindAddressFromMemoScipt get bind address
+func GetBindAddressFromMemoScipt(memoScript string) (bind string, ok bool) {
 	parts := regexMemo.Split(memoScript, -1)
 	if len(parts) != 2 {
-		return "", "", false
+		return "", false
 	}
 	memoHex := strings.TrimSpace(parts[1])
 	memo := common.FromHex(memoHex)
-	memoStr = string(memo)
-	if len(memo) <= len(tokens.LockMemoPrefix) {
-		return memoStr, "", false
+	memoStr := string(memo)
+	if memoStr == aggregateMemo {
+		return "", false
 	}
-	if !strings.HasPrefix(string(memo), tokens.LockMemoPrefix) {
-		return memoStr, "", false
+	if len(memo) <= len(tokens.LockMemoPrefix) {
+		return "", false
+	}
+	if !strings.HasPrefix(memoStr, tokens.LockMemoPrefix) {
+		return "", false
 	}
 	bind = string(memo[len(tokens.LockMemoPrefix):])
-	return memoStr, bind, true
+	return bind, true
 }
