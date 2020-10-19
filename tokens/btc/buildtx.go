@@ -149,14 +149,18 @@ func (b *Bridge) BuildTransaction(from string, receivers []string, amounts []int
 }
 
 func (b *Bridge) getTxOutputs(to string, amount *big.Int, memo string) (txOuts []*wire.TxOut, err error) {
-	err = b.addPayToAddrOutput(&txOuts, to, amount.Int64())
-	if err != nil {
-		return nil, err
+	if amount != nil {
+		err = b.addPayToAddrOutput(&txOuts, to, amount.Int64())
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	err = addMemoOutput(&txOuts, memo)
-	if err != nil {
-		return nil, err
+	if memo != "" {
+		err = addMemoOutput(&txOuts, memo)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return txOuts, err

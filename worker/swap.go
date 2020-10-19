@@ -151,12 +151,12 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	if err != nil {
 		return err
 	}
-	tokenCfg := tokens.GetTokenConfig(pairID, isSwapin)
-	if tokenCfg == nil {
+	fromTokenCfg, toTokenCfg := tokens.GetTokenConfigsByDirection(pairID, isSwapin)
+	if fromTokenCfg == nil || toTokenCfg == nil {
 		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "isSwapin", isSwapin)
 		return nil
 	}
-	if tokenCfg.DisableSwap {
+	if fromTokenCfg.DisableSwap {
 		logWorkerTrace("swap", "swap is disabled", "pairID", pairID, "isSwapin", isSwapin)
 		return nil
 	}
@@ -190,7 +190,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 			TxType:   tokens.SwapTxType(swap.TxType),
 			Bind:     bind,
 		},
-		From:  tokenCfg.DcrmAddress,
+		From:  toTokenCfg.DcrmAddress,
 		To:    bind,
 		Value: value,
 	}
@@ -315,7 +315,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 
 	var signedTx interface{}
 	var txHash string
-	tokenCfg := tokens.GetTokenConfig(pairID, isSwapin)
+	tokenCfg := resBridge.GetTokenConfig(pairID)
 	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
 		signedTx, txHash, err = resBridge.SignTransaction(rawTx, pairID)
 	} else {

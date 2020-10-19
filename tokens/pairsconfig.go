@@ -114,6 +114,19 @@ func GetTokenConfig(pairID string, isSrc bool) *TokenConfig {
 	return pairCfg.DestToken
 }
 
+// GetTokenConfigsByDirection get token configs by direction
+func GetTokenConfigsByDirection(pairID string, isSwapin bool) (fromTokenConfig, toTokenConfig *TokenConfig) {
+	pairCfg, exist := tokenPairsConfig[strings.ToLower(pairID)]
+	if !exist {
+		log.Warn("GetTokenConfigs: pairID not exist", "pairID", pairID)
+		return nil, nil
+	}
+	if isSwapin {
+		return pairCfg.SrcToken, pairCfg.DestToken
+	}
+	return pairCfg.DestToken, pairCfg.SrcToken
+}
+
 func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) {
 	pairsMap := make(map[string]struct{})
 	srcContractsMap := make(map[string]struct{})

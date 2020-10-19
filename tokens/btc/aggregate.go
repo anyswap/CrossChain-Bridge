@@ -44,7 +44,7 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 
 	var signedTx interface{}
 	var txHash string
-	tokenCfg := tokens.GetTokenConfig(PairID, true)
+	tokenCfg := b.GetTokenConfig(PairID)
 	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
 		signedTx, txHash, err = b.SignTransaction(authoredTx, PairID)
 	} else {
