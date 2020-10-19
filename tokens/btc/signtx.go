@@ -34,6 +34,11 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", tokens.ErrWrongRawTx
 	}
 
+	cPkData, err := b.GetCompressedPublicKey(tokens.BtcFromPublicKey, false)
+	if err != nil {
+		return nil, "", err
+	}
+
 	var (
 		msgHashes    []string
 		rsvs         []string
@@ -69,7 +74,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 
-	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, sigScripts, args.PairID)
+	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, sigScripts, cPkData)
 }
 
 func checkEqualLength(authoredTx *txauthor.AuthoredTx, msgHash, rsv []string, sigScripts [][]byte) error {
@@ -87,21 +92,15 @@ func checkEqualLength(authoredTx *txauthor.AuthoredTx, msgHash, rsv []string, si
 }
 
 // MakeSignedTransaction make signed tx
-func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash, rsv []string, sigScripts [][]byte, pairID string) (signedTx interface{}, txHash string, err error) {
+func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash, rsv []string, sigScripts [][]byte, cPkData []byte) (signedTx interface{}, txHash string, err error) {
+	if len(cPkData) == 0 {
+		return nil, "", errors.New("empty public key data")
+	}
 	err = checkEqualLength(authoredTx, msgHash, rsv, sigScripts)
 	if err != nil {
 		return nil, "", err
 	}
-	log.Info(b.ChainConfig.BlockChain+" Bridge MakeSignedTransaction", "pairID", pairID, "msghash", msgHash, "count", len(msgHash))
-
-	var sigScript, cPkData []byte
-
-	if pairID != "" && tokens.BtcFromPublicKey != "" {
-		cPkData, err = b.GetCompressedPublicKey(tokens.BtcFromPublicKey, false)
-		if err != nil {
-			return nil, "", err
-		}
-	}
+	log.Info(b.ChainConfig.BlockChain+" Bridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
 	for i, txin := range authoredTx.Tx.TxIn {
 		signData, ok := getSigDataFromRSV(rsv[i])
@@ -109,13 +108,7 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash,
 			return nil, "", errors.New("wrong RSV data")
 		}
 
-		if len(cPkData) == 0 {
-			cPkData, err = b.getPkDataFromSig(rsv[i], msgHash[i], true)
-			if err != nil {
-				return nil, "", err
-			}
-		}
-
+		var sigScript []byte
 		prevScript := authoredTx.PrevScripts[i]
 		scriptClass := txscript.GetScriptClass(prevScript)
 		switch scriptClass {
@@ -330,6 +323,8 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *btcec
 		return nil, "", tokens.ErrWrongRawTx
 	}
 
+	cPkData := (*btcec.PublicKey)(&privKey.PublicKey).SerializeCompressed()
+
 	var (
 		msgHashes    []string
 		rsvs         []string
@@ -370,5 +365,5 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *btcec
 		rsvs = append(rsvs, rsv)
 	}
 
-	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, sigScripts, "")
+	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, sigScripts, cPkData)
 }
