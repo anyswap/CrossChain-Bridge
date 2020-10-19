@@ -72,6 +72,7 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 			return err
 		}
 		if hex.EncodeToString(sigHash) != msgHash[i] {
+			log.Trace("message hash mismatch", "index", i, "want", msgHash[i], "have", hex.EncodeToString(sigHash))
 			return tokens.ErrMsgHashMismatch
 		}
 	}

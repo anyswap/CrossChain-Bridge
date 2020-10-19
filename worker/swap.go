@@ -29,12 +29,12 @@ var (
 func StartSwapJob() {
 	for pairID, pairCfg := range tokens.GetTokenPairsConfig() {
 		pairID = strings.ToLower(pairID)
-		swapinDcrmAddr := strings.ToLower(pairCfg.SrcToken.DcrmAddress)
+		swapinDcrmAddr := strings.ToLower(pairCfg.DestToken.DcrmAddress)
 		if _, exist := swapinTaskChanMap[swapinDcrmAddr]; !exist {
 			swapinTaskChanMap[swapinDcrmAddr] = make(chan *tokens.BuildTxArgs, swapChanSize)
 			go processSwapTask(swapinTaskChanMap[swapinDcrmAddr])
 		}
-		swapoutDcrmAddr := strings.ToLower(pairCfg.DestToken.DcrmAddress)
+		swapoutDcrmAddr := strings.ToLower(pairCfg.SrcToken.DcrmAddress)
 		if _, exist := swapoutTaskChanMap[swapoutDcrmAddr]; !exist {
 			swapoutTaskChanMap[swapoutDcrmAddr] = make(chan *tokens.BuildTxArgs, swapChanSize)
 			go processSwapTask(swapoutTaskChanMap[swapoutDcrmAddr])
@@ -48,12 +48,12 @@ func StartSwapJob() {
 // AddSwapJob add swap job
 func AddSwapJob(pairCfg *tokens.TokenPairConfig) {
 	pairID := strings.ToLower(pairCfg.PairID)
-	swapinDcrmAddr := strings.ToLower(pairCfg.SrcToken.DcrmAddress)
+	swapinDcrmAddr := strings.ToLower(pairCfg.DestToken.DcrmAddress)
 	if _, exist := swapinTaskChanMap[swapinDcrmAddr]; !exist {
 		swapinTaskChanMap[swapinDcrmAddr] = make(chan *tokens.BuildTxArgs, swapChanSize)
 		go processSwapTask(swapinTaskChanMap[swapinDcrmAddr])
 	}
-	swapoutDcrmAddr := strings.ToLower(pairCfg.DestToken.DcrmAddress)
+	swapoutDcrmAddr := strings.ToLower(pairCfg.SrcToken.DcrmAddress)
 	if _, exist := swapoutTaskChanMap[swapoutDcrmAddr]; !exist {
 		swapoutTaskChanMap[swapoutDcrmAddr] = make(chan *tokens.BuildTxArgs, swapChanSize)
 		go processSwapTask(swapoutTaskChanMap[swapoutDcrmAddr])
@@ -78,7 +78,7 @@ func startSwapinSwapJob(pairID string) {
 			switch err {
 			case nil, errAlreadySwapped:
 			default:
-				logWorkerError("swapin", "process swapin swap error", err, "pairID", swap.PairID, "txid", swap.TxID)
+				logWorkerError("swapin", "process swapin swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
 			}
 		}
 		restInJob(restIntervalInDoSwapJob)
@@ -100,7 +100,7 @@ func startSwapoutSwapJob(pairID string) {
 			switch err {
 			case nil, errAlreadySwapped:
 			default:
-				logWorkerError("swapout", "process swapout swap error", err, "pairID", swap.PairID, "txid", swap.TxID)
+				logWorkerError("swapout", "process swapout swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
 			}
 		}
 		restInJob(restIntervalInDoSwapJob)
@@ -145,12 +145,14 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	pairID := swap.PairID
 	txid := swap.TxID
 	bind := swap.Bind
-	logWorker("swap", "start process swap", "pairID", pairID, "txid", txid, "bind", bind, "status", swap.Status, "isSwapin", isSwapin)
 
 	res, err := mongodb.FindSwapResult(isSwapin, txid, pairID, bind)
 	if err != nil {
 		return err
 	}
+
+	logWorker("swap", "start process swap", "pairID", pairID, "txid", txid, "bind", bind, "status", swap.Status, "isSwapin", isSwapin, "value", res.Value)
+
 	fromTokenCfg, toTokenCfg := tokens.GetTokenConfigsByDirection(pairID, isSwapin)
 	if fromTokenCfg == nil || toTokenCfg == nil {
 		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "isSwapin", isSwapin)
@@ -165,7 +167,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		return err
 	}
 	if isBlacked {
-		logWorkerTrace("swap", "address is in blacklist", "txid", txid, "isSwapin", isSwapin)
+		logWorkerTrace("swap", "address is in blacklist", "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		err = tokens.ErrAddressIsInBlacklist
 		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.SwapInBlacklist, now(), err.Error())
 		return nil
@@ -190,9 +192,8 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 			TxType:   tokens.SwapTxType(swap.TxType),
 			Bind:     bind,
 		},
-		From:  toTokenCfg.DcrmAddress,
-		To:    bind,
-		Value: value,
+		From:        toTokenCfg.DcrmAddress,
+		OriginValue: value,
 	}
 
 	return dispatchSwapTask(args)
@@ -258,19 +259,19 @@ func dispatchSwapTask(args *tokens.BuildTxArgs) error {
 	case tokens.SwapinType:
 		swapChan, exist := swapinTaskChanMap[from]
 		if !exist {
-			return fmt.Errorf("no swapin task channel for withdraw address '%v'", args.From)
+			return fmt.Errorf("no swapin task channel for dcrm address '%v'", args.From)
 		}
 		swapChan <- args
 	case tokens.SwapoutType:
 		swapChan, exist := swapoutTaskChanMap[from]
 		if !exist {
-			return fmt.Errorf("no swapout task channel for withdraw address '%v'", args.From)
+			return fmt.Errorf("no swapout task channel for dcrm address '%v'", args.From)
 		}
 		swapChan <- args
 	default:
 		return fmt.Errorf("wrong swap type '%v'", args.SwapType.String())
 	}
-	logWorker("doSwap", "dispatch swap task", "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swapType", args.SwapType.String())
+	logWorker("doSwap", "dispatch swap task", "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swapType", args.SwapType.String(), "value", args.OriginValue)
 	return nil
 }
 
@@ -281,7 +282,7 @@ func processSwapTask(swapChan <-chan *tokens.BuildTxArgs) {
 		switch err {
 		case nil, errAlreadySwapped:
 		default:
-			logWorkerError("doSwap", "process failed", err, "pairID", args.PairID, "txid", args.SwapID, "swapType", args.SwapType.String())
+			logWorkerError("doSwap", "process failed", err, "pairID", args.PairID, "txid", args.SwapID, "swapType", args.SwapType.String(), "value", args.OriginValue)
 		}
 	}
 }
@@ -291,7 +292,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	txid := args.SwapID
 	bind := args.Bind
 	swapType := args.SwapType
-	originValue := args.Value
+	originValue := args.OriginValue
 
 	isSwapin := swapType == tokens.SwapinType
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)

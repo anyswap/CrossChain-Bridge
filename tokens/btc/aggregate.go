@@ -50,7 +50,7 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 	} else {
 		maxRetryDcrmSignCount := 5
 		for i := 0; i < maxRetryDcrmSignCount; i++ {
-			signedTx, txHash, err = b.DcrmSignTransaction(authoredTx, args)
+			signedTx, txHash, err = b.DcrmSignTransaction(authoredTx, args.GetExtraArgs())
 			if err == nil {
 				break
 			}

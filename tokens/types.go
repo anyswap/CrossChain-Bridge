@@ -158,13 +158,14 @@ type SwapInfo struct {
 
 // BuildTxArgs struct
 type BuildTxArgs struct {
-	SwapInfo `json:"swapInfo,omitempty"`
-	From     string     `json:"from,omitempty"`
-	To       string     `json:"to,omitempty"`
-	Value    *big.Int   `json:"value,omitempty"`
-	Memo     string     `json:"memo,omitempty"`
-	Input    *[]byte    `json:"input,omitempty"`
-	Extra    *AllExtras `json:"extra,omitempty"`
+	SwapInfo    `json:"swapInfo,omitempty"`
+	From        string     `json:"from,omitempty"`
+	To          string     `json:"to,omitempty"`
+	Value       *big.Int   `json:"value,omitempty"`
+	OriginValue *big.Int   `json:"originValue,omitempty"`
+	Memo        string     `json:"memo,omitempty"`
+	Input       *[]byte    `json:"input,omitempty"`
+	Extra       *AllExtras `json:"extra,omitempty"`
 }
 
 // GetExtraArgs get extra args

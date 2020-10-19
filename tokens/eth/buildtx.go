@@ -60,6 +60,9 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		}
 	} else {
 		input = *args.Input
+		if args.SwapType != tokens.NoSwapType {
+			return nil, fmt.Errorf("forbid build raw swap tx with input data")
+		}
 	}
 
 	extra, err := b.setDefaults(args)
@@ -86,7 +89,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 			return nil, tokens.ErrUnknownPairID
 		}
 		if !tokenCfg.IsErc20() {
-			value = tokens.CalcSwappedValue(pairID, value, false)
+			value = tokens.CalcSwappedValue(pairID, args.OriginValue, false)
 		}
 	}
 
@@ -115,7 +118,15 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		return nil, errors.New("not enough coin balance")
 	}
 
-	return types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input), nil
+	rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)
+
+	log.Trace("build raw tx", "pairID", args.PairID, "identifier", args.Identifier,
+		"swapID", args.SwapID, "swapType", args.SwapType,
+		"bind", args.Bind, "originValue", args.OriginValue,
+		"from", args.From, "to", to.String(), "value", value, "nonce", nonce,
+		"gasLimit", gasLimit, "gasPrice", gasPrice, "data", common.ToHex(input))
+
+	return rawTx, nil
 }
 
 func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraArgs, err error) {
@@ -195,12 +206,12 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 	pairID := args.PairID
 	funcHash := getSwapinFuncHash()
 	txHash := common.HexToHash(args.SwapID)
-	address := common.HexToAddress(args.To)
-	if address == (common.Address{}) || !common.IsHexAddress(args.To) {
-		log.Warn("swapin to wrong address", "address", args.To)
+	address := common.HexToAddress(args.Bind)
+	if address == (common.Address{}) || !common.IsHexAddress(args.Bind) {
+		log.Warn("swapin to wrong address", "address", args.Bind)
 		return errors.New("can not swapin to empty or invalid address")
 	}
-	amount := tokens.CalcSwappedValue(pairID, args.Value, true)
+	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, true)
 
 	input := PackDataWithFuncHash(funcHash, txHash, address, amount)
 	args.Input = &input // input
@@ -210,19 +221,18 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 		return tokens.ErrUnknownPairID
 	}
 	args.To = token.ContractAddress // to
-	args.Value = big.NewInt(0)      // value
 	return nil
 }
 
 func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) {
 	pairID := args.PairID
 	funcHash := erc20CodeParts["transfer"]
-	address := common.HexToAddress(args.To)
-	if address == (common.Address{}) || !common.IsHexAddress(args.To) {
-		log.Warn("swapout to wrong address", "address", args.To)
+	address := common.HexToAddress(args.Bind)
+	if address == (common.Address{}) || !common.IsHexAddress(args.Bind) {
+		log.Warn("swapout to wrong address", "address", args.Bind)
 		return errors.New("can not swapout to empty or invalid address")
 	}
-	amount := tokens.CalcSwappedValue(pairID, args.Value, false)
+	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, false)
 
 	input := PackDataWithFuncHash(funcHash, address, amount)
 	args.Input = &input // input
@@ -232,7 +242,6 @@ func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) 
 		return tokens.ErrUnknownPairID
 	}
 	args.To = token.ContractAddress // to
-	args.Value = big.NewInt(0)      // value
 
 	var balance *big.Int
 	for i := 0; i < retryRPCCount; i++ {

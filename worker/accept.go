@@ -120,10 +120,7 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 }
 
 func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
-	var (
-		srcBridge, dstBridge tokens.CrossChainBridge
-		memo                 string
-	)
+	var srcBridge, dstBridge tokens.CrossChainBridge
 	switch args.SwapType {
 	case tokens.SwapinType:
 		srcBridge = tokens.SrcBridge
@@ -131,9 +128,13 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 	case tokens.SwapoutType:
 		srcBridge = tokens.DstBridge
 		dstBridge = tokens.SrcBridge
-		memo = fmt.Sprintf("%s%s", tokens.UnlockMemoPrefix, args.SwapID)
 	default:
 		return fmt.Errorf("unknown swap type %v", args.SwapType)
+	}
+
+	tokenCfg := dstBridge.GetTokenConfig(args.PairID)
+	if tokenCfg == nil {
+		return tokens.ErrUnknownPairID
 	}
 
 	swapInfo, err := verifySwapTransaction(srcBridge, args.PairID, args.SwapID, args.Bind, args.TxType)
@@ -143,11 +144,10 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 	}
 
 	buildTxArgs := &tokens.BuildTxArgs{
-		SwapInfo: args.SwapInfo,
-		To:       swapInfo.Bind,
-		Value:    swapInfo.Value,
-		Memo:     memo,
-		Extra:    args.Extra,
+		SwapInfo:    args.SwapInfo,
+		From:        tokenCfg.DcrmAddress,
+		OriginValue: swapInfo.Value,
+		Extra:       args.Extra,
 	}
 	rawTx, err := dstBridge.BuildRawTransaction(buildTxArgs)
 	if err != nil {

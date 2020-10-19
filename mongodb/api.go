@@ -173,22 +173,22 @@ func GetSwapKey(txid, pairID, bind string) string {
 }
 
 func findSwap(collection *mgo.Collection, txid, pairID, bind string) (*MgoSwap, error) {
-	var result MgoSwap
-	err := findSwapOrSwapResult(&result, collection, txid, pairID, bind)
+	result := &MgoSwap{}
+	err := findSwapOrSwapResult(result, collection, txid, pairID, bind)
 	if err != nil {
 		return nil, err
 	}
-	return &result, nil
+	return result, nil
 }
 
 func findSwapOrSwapResult(result interface{}, collection *mgo.Collection, txid, pairID, bind string) (err error) {
 	if bind != "" {
-		err = collection.FindId(GetSwapKey(txid, pairID, bind)).One(&result)
+		err = collection.FindId(GetSwapKey(txid, pairID, bind)).One(result)
 	} else {
 		qtxid := bson.M{"txid": txid}
 		qpair := bson.M{"pairid": strings.ToLower(pairID)}
 		queries := []bson.M{qtxid, qpair}
-		err = collection.Find(bson.M{"$and": queries}).One(&result)
+		err = collection.Find(bson.M{"$and": queries}).One(result)
 	}
 	return mgoError(err)
 }
@@ -316,9 +316,9 @@ func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
 	ms.Key = GetSwapKey(ms.TxID, ms.PairID, ms.Bind)
 	err := collection.Insert(ms)
 	if err == nil {
-		log.Info("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "isSwapin", isSwapin(collection))
+		log.Info("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection))
 	} else {
-		log.Debug("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "isSwapin", isSwapin(collection), "err", err)
+		log.Debug("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
@@ -386,12 +386,12 @@ func updateSwapResultStatus(collection *mgo.Collection, txid, pairID, bind strin
 }
 
 func findSwapResult(collection *mgo.Collection, txid, pairID, bind string) (*MgoSwapResult, error) {
-	var result MgoSwapResult
-	err := findSwapOrSwapResult(&result, collection, txid, pairID, bind)
+	result := &MgoSwapResult{}
+	err := findSwapOrSwapResult(result, collection, txid, pairID, bind)
 	if err != nil {
 		return nil, err
 	}
-	return &result, nil
+	return result, nil
 }
 
 func findSwapResultsWithStatus(collection *mgo.Collection, status SwapStatus, septime int64) (result []*MgoSwapResult, err error) {

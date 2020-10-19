@@ -57,7 +57,11 @@ func packAddress(address common.Address) []byte {
 }
 
 func packBigInt(bi *big.Int) []byte {
-	return common.LeftPadBytes(bi.Bytes(), 32)
+	var bs []byte
+	if bi != nil {
+		bs = bi.Bytes()
+	}
+	return common.LeftPadBytes(bs, 32)
 }
 
 func packString(str string) []byte {
