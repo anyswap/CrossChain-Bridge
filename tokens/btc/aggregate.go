@@ -26,12 +26,15 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 	}
 
 	args := &tokens.BuildTxArgs{
+		SwapInfo: tokens.SwapInfo{
+			PairID:     PairID,
+			Identifier: AggregateIdentifier,
+		},
 		Extra: &tokens.AllExtras{
 			BtcExtra: &tokens.BtcExtraArgs{},
 		},
 	}
 
-	args.Identifier = AggregateIdentifier
 	extra := args.Extra.BtcExtra
 	extra.PreviousOutPoints = make([]*tokens.BtcOutPoint, len(authoredTx.Tx.TxIn))
 	for i, txin := range authoredTx.Tx.TxIn {

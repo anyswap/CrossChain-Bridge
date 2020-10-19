@@ -242,7 +242,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	}
 	jsondata, _ := json.Marshal(args)
 	msgContext := []string{string(jsondata)}
-	keyID, err := dcrm.DoSign(b.GetDcrmPublicKey(args.PairID), msgHash, msgContext)
+	keyID, err := dcrm.DoSign(tokens.BtcFromPublicKey, msgHash, msgContext)
 	if err != nil {
 		return nil, err
 	}
