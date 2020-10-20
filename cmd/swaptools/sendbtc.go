@@ -44,50 +44,9 @@ Example:
 			dryRunFlag,
 		},
 	}
-
-	networkFlag = &cli.StringFlag{
-		Name:  "net",
-		Usage: "network identifier, ie. mainnet, testnet3",
-		Value: "testnet3",
-	}
-	wifFileFlag = &cli.StringFlag{
-		Name:  "wif",
-		Usage: "WIF file",
-	}
-	priKeyFileFlag = &cli.StringFlag{
-		Name:  "pri",
-		Usage: "private key file",
-	}
-	senderFlag = &cli.StringFlag{
-		Name:  "from",
-		Usage: "from address",
-	}
-	receiverSliceFlag = &cli.StringSliceFlag{
-		Name:  "to",
-		Usage: "to address slice",
-	}
-	valueSliceFlag = &cli.Int64SliceFlag{
-		Name:  "value",
-		Usage: "satoshi value slice",
-	}
-	memoFlag = &cli.StringFlag{
-		Name:  "memo",
-		Usage: "tx memo",
-	}
-	relayFeePerKbFlag = &cli.Int64Flag{
-		Name:  "fee",
-		Usage: "relay fee per kilo bytes",
-		Value: 2000,
-	}
-	dryRunFlag = &cli.BoolFlag{
-		Name:  "dryrun",
-		Usage: "dry run",
-	}
 )
 
-var (
-	btcBridge *btc.Bridge
-
+type btcTxSender struct {
 	gateway       string
 	netID         string
 	wifFile       string
@@ -98,49 +57,54 @@ var (
 	memo          string
 	relayFeePerKb int64
 	dryRun        bool
+}
+
+var (
+	btcBridge *btc.Bridge
+	btcSender = &btcTxSender{}
 )
 
-func initArgs(ctx *cli.Context) {
-	gateway = ctx.String(utils.GatewayFlag.Name)
-	netID = ctx.String(networkFlag.Name)
-	wifFile = ctx.String(wifFileFlag.Name)
-	priFile = ctx.String(priKeyFileFlag.Name)
-	sender = ctx.String(senderFlag.Name)
-	receivers = ctx.StringSlice(receiverSliceFlag.Name)
-	amounts = ctx.Int64Slice(valueSliceFlag.Name)
-	memo = ctx.String(memoFlag.Name)
-	relayFeePerKb = ctx.Int64(relayFeePerKbFlag.Name)
-	dryRun = ctx.Bool(dryRunFlag.Name)
+func (bts *btcTxSender) initArgs(ctx *cli.Context) {
+	bts.gateway = ctx.String(utils.GatewayFlag.Name)
+	bts.netID = ctx.String(networkFlag.Name)
+	bts.wifFile = ctx.String(wifFileFlag.Name)
+	bts.priFile = ctx.String(priKeyFileFlag.Name)
+	bts.sender = ctx.String(senderFlag.Name)
+	bts.receivers = ctx.StringSlice(receiverSliceFlag.Name)
+	bts.amounts = ctx.Int64Slice(valueSliceFlag.Name)
+	bts.memo = ctx.String(memoFlag.Name)
+	bts.relayFeePerKb = ctx.Int64(relayFeePerKbFlag.Name)
+	bts.dryRun = ctx.Bool(dryRunFlag.Name)
 
-	if netID == "" {
+	if bts.netID == "" {
 		log.Fatal("must specify '-net' flag")
 	}
-	if wifFile == "" && priFile == "" {
+	if bts.wifFile == "" && bts.priFile == "" {
 		log.Fatal("must specify '-wif' or '-pri' flag")
 	}
-	if sender == "" {
+	if bts.sender == "" {
 		log.Fatal("must specify '-from' flag")
 	}
-	if len(receivers) == 0 {
+	if len(bts.receivers) == 0 {
 		log.Fatal("must specify '-to' flag")
 	}
-	if len(amounts) == 0 {
+	if len(bts.amounts) == 0 {
 		log.Fatal("must specify '-value' flag")
 	}
-	if len(receivers) != len(amounts) {
+	if len(bts.receivers) != len(bts.amounts) {
 		log.Fatal("count of receivers and values are not equal")
 	}
 }
 
 func sendBtc(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
-	initArgs(ctx)
+	btcSender.initArgs(ctx)
 
-	initBridge()
+	btcSender.initBridge()
 
-	wifStr := loadWIFForAddress()
+	wifStr := btcSender.loadWIFForAddress()
 
-	rawTx, err := btcBridge.BuildTransaction(sender, receivers, amounts, memo, relayFeePerKb)
+	rawTx, err := btcBridge.BuildTransaction(btcSender.sender, btcSender.receivers, btcSender.amounts, btcSender.memo, btcSender.relayFeePerKb)
 	if err != nil {
 		log.Fatal("BuildRawTransaction error", "err", err)
 	}
@@ -153,7 +117,7 @@ func sendBtc(ctx *cli.Context) error {
 
 	fmt.Println(btc.AuthoredTxToString(signedTx, true))
 
-	if !dryRun {
+	if !btcSender.dryRun {
 		_, err = btcBridge.SendTransaction(signedTx)
 		if err != nil {
 			log.Error("SendTransaction failed", "err", err)
@@ -164,27 +128,27 @@ func sendBtc(ctx *cli.Context) error {
 	return nil
 }
 
-func initBridge() {
+func (bts *btcTxSender) initBridge() {
 	btcBridge = btc.NewCrossChainBridge(true)
 	btcBridge.ChainConfig = &tokens.ChainConfig{
 		BlockChain: "Bitcoin",
-		NetID:      netID,
+		NetID:      bts.netID,
 	}
 	btcBridge.GatewayConfig = &tokens.GatewayConfig{
-		APIAddress: []string{gateway},
+		APIAddress: []string{bts.gateway},
 	}
 }
 
-func loadWIFForAddress() string {
+func (bts *btcTxSender) loadWIFForAddress() string {
 	var wifStr string
-	if wifFile != "" {
-		wifdata, err := ioutil.ReadFile(wifFile)
+	if bts.wifFile != "" {
+		wifdata, err := ioutil.ReadFile(bts.wifFile)
 		if err != nil {
 			log.Fatal("Read WIF file failed", "err", err)
 		}
 		wifStr = strings.TrimSpace(string(wifdata))
 	} else {
-		pridata, err := ioutil.ReadFile(priFile)
+		pridata, err := ioutil.ReadFile(bts.priFile)
 		if err != nil {
 			log.Fatal("Read private key file failed", "err", err)
 		}
@@ -214,8 +178,8 @@ func loadWIFForAddress() string {
 	}
 	pkdata := wif.SerializePubKey()
 	pkaddr, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkdata), btcBridge.GetChainParams())
-	if pkaddr.EncodeAddress() != sender {
-		log.Fatal("address mismatch", "decoded", pkaddr.EncodeAddress(), "from", sender)
+	if pkaddr.EncodeAddress() != bts.sender {
+		log.Fatal("address mismatch", "decoded", pkaddr.EncodeAddress(), "from", bts.sender)
 	}
 	return wifStr
 }
