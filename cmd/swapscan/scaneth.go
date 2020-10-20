@@ -62,7 +62,8 @@ type ethSwapScanner struct {
 	rpcInterval   time.Duration
 	rpcRetryCount int
 
-	isSwapin bool
+	isSwapin    bool
+	isBtcPairID bool
 }
 
 func scanEth(ctx *cli.Context) error {
@@ -131,6 +132,9 @@ func (scanner *ethSwapScanner) verifyOptions() {
 		if scanner.tokenAddresses[i] != "" && !common.IsHexAddress(scanner.tokenAddresses[i]) {
 			log.Fatalf("invalid token address '%v'", scanner.tokenAddresses[i])
 		}
+		if strings.EqualFold(pairID, "btc") {
+			scanner.isBtcPairID = true
+		}
 	}
 	if scanner.gateway == "" {
 		log.Fatal("must specify gateway address")
@@ -171,7 +175,7 @@ func (scanner *ethSwapScanner) init() {
 		log.Fatal("get server version failed", "swapServer", scanner.swapServer)
 	}
 
-	eth.InitExtCodeParts()
+	eth.InitExtCodePartsWithFlag(scanner.isBtcPairID)
 
 	for _, tokenAddr := range scanner.tokenAddresses {
 		if scanner.isSwapin && tokenAddr == "" {

@@ -105,15 +105,20 @@ func (b *Bridge) VerifyMbtcContractAddress(contract string) (err error) {
 	return b.VerifyContractCode(contract, ExtCodeParts, erc20CodeParts)
 }
 
-// InitExtCodeParts int extended code parts
+// InitExtCodeParts init extended code parts
 func InitExtCodeParts() {
+	InitExtCodePartsWithFlag(isMbtcSwapout())
+}
+
+// InitExtCodePartsWithFlag init extended code parts with flag
+func InitExtCodePartsWithFlag(isMbtc bool) {
 	switch {
-	case isMbtcSwapout():
+	case isMbtc:
 		ExtCodeParts = mBTCExtCodeParts
 	default:
 		ExtCodeParts = mETHExtCodeParts
 	}
-	log.Info("init extented code parts", "isMBTC", isMbtcSwapout())
+	log.Info("init extented code parts", "isMBTC", isMbtc)
 }
 
 func isMbtcSwapout() bool {
