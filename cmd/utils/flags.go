@@ -6,11 +6,6 @@ import (
 )
 
 var (
-	// DataDirFlag --datadir
-	DataDirFlag = &cli.StringFlag{
-		Name:  "datadir",
-		Usage: "Data directory (default in the execute directory)",
-	}
 	// ConfigFileFlag -c|--config
 	ConfigFileFlag = &cli.StringFlag{
 		Name:    "config",

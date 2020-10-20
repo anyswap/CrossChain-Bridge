@@ -31,7 +31,6 @@ func initApp() {
 		utils.VersionCommand,
 	}
 	app.Flags = []cli.Flag{
-		utils.DataDirFlag,
 		utils.ConfigFileFlag,
 		utils.TokenPairsDirFlag,
 		utils.LogFileFlag,
@@ -61,7 +60,6 @@ func swaporacle(ctx *cli.Context) error {
 	configFile := utils.GetConfigFilePath(ctx)
 	params.LoadConfig(configFile, false)
 
-	params.SetDataDir(ctx.String(utils.DataDirFlag.Name))
 	tokens.SetTokenPairsDir(utils.GetTokenPairsDir(ctx))
 
 	worker.StartWork(false)

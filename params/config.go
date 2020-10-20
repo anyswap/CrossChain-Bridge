@@ -2,7 +2,6 @@ package params
 
 import (
 	"encoding/json"
-	"os"
 	"strings"
 	"sync"
 
@@ -23,9 +22,6 @@ var (
 
 	// ServerAPIAddress server api address
 	ServerAPIAddress string
-
-	// DataDir datadir
-	DataDir = "datadir"
 )
 
 // ServerConfig config items (decode from toml file)
@@ -139,14 +135,6 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 		}
 	})
 	return serverConfig
-}
-
-// SetDataDir set data dir
-func SetDataDir(datadir string) {
-	if datadir != "" {
-		DataDir = datadir
-	}
-	_ = os.MkdirAll(DataDir, os.ModePerm)
 }
 
 // HasAdmin has admin
