@@ -124,13 +124,11 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		err = tokens.ErrAddressIsInBlacklist
 		return mongodb.UpdateSwapinStatus(txid, pairID, bind, mongodb.SwapInBlacklist, now(), err.Error())
 	}
-	return updateSwapStatus(txid, swapInfo, isSwapin, err)
+	return updateSwapStatus(pairID, txid, bind, swapInfo, isSwapin, err)
 }
 
-func updateSwapStatus(txid string, swapInfo *tokens.TxSwapInfo, isSwapin bool, err error) error {
+func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, isSwapin bool, err error) error {
 	resultStatus := mongodb.MatchTxEmpty
-	pairID := swapInfo.PairID
-	bind := swapInfo.Bind
 
 	switch err {
 	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:

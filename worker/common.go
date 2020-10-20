@@ -20,8 +20,8 @@ type MatchTx struct {
 	SwapNonce  uint64
 }
 
-func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSwapin bool) (err error) {
-	txid := tx.Hash
+func addInitialSwapResult(swapInfo *tokens.TxSwapInfo, status mongodb.SwapStatus, isSwapin bool) (err error) {
+	txid := swapInfo.Hash
 	var swapType tokens.SwapType
 	if isSwapin {
 		swapType = tokens.SwapinType
@@ -29,15 +29,15 @@ func addInitialSwapResult(tx *tokens.TxSwapInfo, status mongodb.SwapStatus, isSw
 		swapType = tokens.SwapoutType
 	}
 	swapResult := &mongodb.MgoSwapResult{
-		PairID:     tx.PairID,
+		PairID:     swapInfo.PairID,
 		TxID:       txid,
-		TxTo:       tx.TxTo,
-		TxHeight:   tx.Height,
-		TxTime:     tx.Timestamp,
-		From:       tx.From,
-		To:         tx.To,
-		Bind:       tx.Bind,
-		Value:      tx.Value.String(),
+		TxTo:       swapInfo.TxTo,
+		TxHeight:   swapInfo.Height,
+		TxTime:     swapInfo.Timestamp,
+		From:       swapInfo.From,
+		To:         swapInfo.To,
+		Bind:       swapInfo.Bind,
+		Value:      swapInfo.Value.String(),
 		SwapTx:     "",
 		SwapHeight: 0,
 		SwapTime:   0,
