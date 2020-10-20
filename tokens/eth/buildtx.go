@@ -25,14 +25,17 @@ var (
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var input []byte
+	var tokenCfg *tokens.TokenConfig
 	if args.Input == nil {
-		pairID := args.PairID
-		tokenCfg := b.GetTokenConfig(pairID)
-		if tokenCfg == nil {
-			return nil, tokens.ErrUnknownPairID
-		}
-		if args.From == "" && args.SwapType != tokens.NoSwapType {
-			args.From = tokenCfg.DcrmAddress // from
+		if args.SwapType != tokens.NoSwapType {
+			pairID := args.PairID
+			tokenCfg = b.GetTokenConfig(pairID)
+			if tokenCfg == nil {
+				return nil, tokens.ErrUnknownPairID
+			}
+			if args.From == "" {
+				args.From = tokenCfg.DcrmAddress // from
+			}
 		}
 		switch args.SwapType {
 		case tokens.SwapinType:
@@ -144,17 +147,19 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 		if err != nil {
 			return nil, err
 		}
-		pairID := args.PairID
-		tokenCfg := b.GetTokenConfig(pairID)
-		if tokenCfg == nil {
-			return nil, tokens.ErrUnknownPairID
+		if args.SwapType != tokens.NoSwapType {
+			pairID := args.PairID
+			tokenCfg := b.GetTokenConfig(pairID)
+			if tokenCfg == nil {
+				return nil, tokens.ErrUnknownPairID
+			}
+			addPercent := tokenCfg.PlusGasPricePercentage
+			if addPercent == 0 {
+				addPercent = defPlusGasPricePercentage
+			}
+			extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
+			extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
 		}
-		addPercent := tokenCfg.PlusGasPricePercentage
-		if addPercent == 0 {
-			addPercent = defPlusGasPricePercentage
-		}
-		extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
-		extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
 	}
 	if extra.Nonce == nil {
 		extra.Nonce, err = b.getAccountNonce(args.PairID, args.From, args.SwapType)
@@ -192,9 +197,9 @@ func (b *Bridge) getAccountNonce(pairID, from string, swapType tokens.SwapType) 
 	if err != nil {
 		return nil, err
 	}
-	tokenCfg := b.GetTokenConfig(pairID)
-	if tokenCfg != nil && from == tokenCfg.DcrmAddress {
-		if swapType != tokens.NoSwapType {
+	if swapType != tokens.NoSwapType {
+		tokenCfg := b.GetTokenConfig(pairID)
+		if tokenCfg != nil && from == tokenCfg.DcrmAddress {
 			nonce = b.AdjustNonce(pairID, nonce)
 		}
 	}

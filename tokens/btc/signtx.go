@@ -212,6 +212,7 @@ func (b *Bridge) GetCompressedPublicKey(fromPublicKey string, needVerify bool) (
 	return cPkData, nil
 }
 
+// the rsv must have correct v (recovery id), otherwise will get wrong public key data.
 func (b *Bridge) getPkDataFromSig(rsv, msgHash string, compressed bool) (pkData []byte, err error) {
 	rsvData := common.FromHex(rsv)
 	hashData := common.FromHex(msgHash)
