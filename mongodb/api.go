@@ -309,6 +309,8 @@ func updateSwapResultStatus(collection *mgo.Collection, txid string, status Swap
 	} else if status == MatchTxEmpty {
 		updates["memo"] = ""
 		updates["swaptx"] = ""
+		updates["swapheight"] = 0
+		updates["swaptime"] = 0
 	}
 	err := collection.UpdateId(txid, bson.M{"$set": updates})
 	isSwapin := isSwapin(collection)
