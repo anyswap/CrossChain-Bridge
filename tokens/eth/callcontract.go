@@ -18,7 +18,7 @@ const (
 func (b *Bridge) GetErc20TotalSupply(contract string) (*big.Int, error) {
 	data := make(hexutil.Bytes, 4)
 	copy(data[:4], erc20CodeParts["totalSupply"])
-	result, err := b.CallContract(contract, data, "pending")
+	result, err := b.CallContract(contract, data, "latest")
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (b *Bridge) GetErc20Balance(contract, address string) (*big.Int, error) {
 	data := make(hexutil.Bytes, 36)
 	copy(data[:4], erc20CodeParts["balanceOf"])
 	copy(data[4:], common.HexToAddress(address).Hash().Bytes())
-	result, err := b.CallContract(contract, data, "pending")
+	result, err := b.CallContract(contract, data, "latest")
 	if err != nil {
 		return nil, err
 	}
