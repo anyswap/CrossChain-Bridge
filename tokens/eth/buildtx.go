@@ -17,8 +17,6 @@ var (
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
 
-	defPlusGasPricePercentage uint64 = 15 // 15%
-
 	defReserveGasFee = big.NewInt(1e16) // 0.01 ETH
 )
 
@@ -154,11 +152,10 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 				return nil, tokens.ErrUnknownPairID
 			}
 			addPercent := tokenCfg.PlusGasPricePercentage
-			if addPercent == 0 {
-				addPercent = defPlusGasPricePercentage
+			if addPercent > 0 {
+				extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
+				extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
 			}
-			extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
-			extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
 		}
 	}
 	if extra.Nonce == nil {
