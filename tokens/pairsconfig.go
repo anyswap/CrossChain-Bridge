@@ -76,6 +76,15 @@ func IsTokenPairExist(pairID string) bool {
 	return exist
 }
 
+// GetAllPairIDs get all pairIDs
+func GetAllPairIDs() []string {
+	pairIDs := make([]string, 0, len(tokenPairsConfig))
+	for _, pairCfg := range tokenPairsConfig {
+		pairIDs = append(pairIDs, strings.ToLower(pairCfg.PairID))
+	}
+	return pairIDs
+}
+
 // FindTokenConfig find by (tx to) address
 func FindTokenConfig(address string, isSrc bool) (configs []*TokenConfig, pairIDs []string) {
 	for _, pairCfg := range tokenPairsConfig {
