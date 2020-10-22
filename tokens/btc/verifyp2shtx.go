@@ -49,18 +49,13 @@ func (b *Bridge) verifyP2shSwapinTx(pairID, txHash, bindAddress string, allowUns
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
-	swapInfo.To = p2shAddress                    // To
-	swapInfo.Value = common.BigFromUint64(value) // Value
-
+	swapInfo.To = p2shAddress                      // To
+	swapInfo.Value = common.BigFromUint64(value)   // Value
 	swapInfo.From = getTxFrom(tx.Vin, p2shAddress) // From
 
-	// check sender
-	if swapInfo.From == swapInfo.To {
-		return swapInfo, tokens.ErrTxWithWrongSender
-	}
-
-	if !tokens.CheckSwapValue(pairID, swapInfo.Value, b.IsSrc) {
-		return swapInfo, tokens.ErrTxWithWrongValue
+	err = b.checkSwapinInfo(swapInfo)
+	if err != nil {
+		return swapInfo, err
 	}
 
 	if !allowUnstable {

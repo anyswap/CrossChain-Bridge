@@ -51,7 +51,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID stri
 	swapInfo.Value = value                // Value
 	swapInfo.Bind = strings.ToLower(from) // Bind
 
-	err = b.checkSwapInfo(swapInfo)
+	err = b.checkSwapinInfo(swapInfo)
 	if err != nil {
 		return swapInfo, err
 	}
@@ -94,7 +94,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(tx *types.RPCTransaction, pairID st
 		swapInfo.Bind = swapInfo.From // Bind
 	}
 
-	err = b.checkSwapInfo(swapInfo)
+	err = b.checkSwapinInfo(swapInfo)
 	if err != nil {
 		return swapInfo, err
 	}

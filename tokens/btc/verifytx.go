@@ -118,29 +118,19 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
-	swapInfo.To = depositAddress                 // To
-	swapInfo.Value = common.BigFromUint64(value) // Value
-
 	bindAddress, bindOk := GetBindAddressFromMemoScipt(memoScript)
 
-	swapInfo.Bind = bindAddress // Bind
-
+	swapInfo.To = depositAddress                      // To
+	swapInfo.Value = common.BigFromUint64(value)      // Value
+	swapInfo.Bind = bindAddress                       // Bind
 	swapInfo.From = getTxFrom(tx.Vin, depositAddress) // From
 
-	// check sender
-	if swapInfo.From == swapInfo.To {
-		return swapInfo, tokens.ErrTxWithWrongSender
+	err = b.checkSwapinInfo(swapInfo)
+	if err != nil {
+		return swapInfo, err
 	}
-
-	if !tokens.CheckSwapValue(pairID, swapInfo.Value, b.IsSrc) {
-		return swapInfo, tokens.ErrTxWithWrongValue
-	}
-
 	if !bindOk {
 		log.Debug("wrong memo", "memo", memoScript)
-		return swapInfo, tokens.ErrTxWithWrongMemo
-	} else if !tokens.DstBridge.IsValidAddress(swapInfo.Bind) {
-		log.Debug("wrong bind address in memo", "bind", swapInfo.Bind)
 		return swapInfo, tokens.ErrTxWithWrongMemo
 	}
 
@@ -148,6 +138,20 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 		log.Debug("verify swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfo, nil
+}
+
+func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
+	if swapInfo.From == swapInfo.To {
+		return tokens.ErrTxWithWrongSender
+	}
+	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
+		return tokens.ErrTxWithWrongValue
+	}
+	if !tokens.DstBridge.IsValidAddress(swapInfo.Bind) {
+		log.Debug("wrong bind address in swapin", "bind", swapInfo.Bind)
+		return tokens.ErrTxWithWrongMemo
+	}
+	return nil
 }
 
 func (b *Bridge) checkStable(txHash string) bool {

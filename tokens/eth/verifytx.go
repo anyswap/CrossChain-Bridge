@@ -117,7 +117,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	swapInfo.Bind = swapInfo.From                     // Bind
 	swapInfo.Value = tx.Amount.ToInt()                // Value
 
-	err = b.checkSwapInfo(swapInfo)
+	err = b.checkSwapinInfo(swapInfo)
 	if err != nil {
 		return swapInfo, err
 	}
@@ -177,7 +177,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (swapInfos []
 			}
 		}
 
-		err = b.checkSwapInfo(swapInfo)
+		err = b.checkSwapinInfo(swapInfo)
 		addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)
 
 		if !allowUnstable && err == nil {
@@ -214,20 +214,21 @@ func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxRece
 	return receipt, nil
 }
 
-func (b *Bridge) checkSwapInfo(swapInfo *tokens.TxSwapInfo) error {
-	// check sender
+func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 	if swapInfo.Bind == swapInfo.To {
 		return tokens.ErrTxWithWrongSender
 	}
-
 	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
 		return tokens.ErrTxWithWrongValue
 	}
-
 	return b.checkSwapinBindAddress(swapInfo.Bind)
 }
 
 func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
+	if !tokens.DstBridge.IsValidAddress(bindAddr) {
+		log.Warn("wrong bind address in swapin", "bind", bindAddr)
+		return tokens.ErrTxWithWrongMemo
+	}
 	if !tools.IsAddressRegistered(bindAddr) {
 		return tokens.ErrTxSenderNotRegistered
 	}

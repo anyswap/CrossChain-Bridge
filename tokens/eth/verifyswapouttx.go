@@ -58,13 +58,9 @@ func (b *Bridge) verifySwapoutTxWithPairIDStable(pairID, txHash string) (*tokens
 	}
 	swapInfo.Value = value // Value
 
-	if !tokens.CheckSwapValue(pairID, swapInfo.Value, b.IsSrc) {
-		return swapInfo, tokens.ErrTxWithWrongValue
-	}
-
-	if !tokens.SrcBridge.IsValidAddress(swapInfo.Bind) {
-		log.Debug("wrong bind address in swapout", "bind", swapInfo.Bind)
-		return swapInfo, tokens.ErrTxWithWrongMemo
+	err = b.checkSwapoutInfo(swapInfo)
+	if err != nil {
+		return swapInfo, err
 	}
 
 	log.Debug("verify swapout stable pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
@@ -113,13 +109,9 @@ func (b *Bridge) verifySwapoutTxWithPairIDUnstable(pairID, txHash string) (*toke
 	}
 	swapInfo.Value = value // Value
 
-	if !tokens.CheckSwapValue(pairID, swapInfo.Value, b.IsSrc) {
-		return swapInfo, tokens.ErrTxWithWrongValue
-	}
-
-	if !tokens.SrcBridge.IsValidAddress(swapInfo.Bind) {
-		log.Debug("wrong bind address in swapout", "bind", swapInfo.Bind)
-		return swapInfo, tokens.ErrTxWithWrongMemo
+	err = b.checkSwapoutInfo(swapInfo)
+	if err != nil {
+		return swapInfo, err
 	}
 
 	return swapInfo, nil
@@ -180,14 +172,9 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (swapInfos []*tokens.TxSwa
 		}
 		swapInfo.Value = value // Value
 
-		if !tokens.CheckSwapValue(pairID, swapInfo.Value, b.IsSrc) {
-			addSwapInfoConsiderError(swapInfo, tokens.ErrTxWithWrongValue, &swapInfos, &errs)
-			continue
-		}
-
-		if !tokens.SrcBridge.IsValidAddress(swapInfo.Bind) {
-			log.Debug("wrong bind address in swapout", "bind", swapInfo.Bind)
-			addSwapInfoConsiderError(swapInfo, tokens.ErrTxWithWrongMemo, &swapInfos, &errs)
+		err = b.checkSwapoutInfo(swapInfo)
+		if err != nil {
+			addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)
 			continue
 		}
 
@@ -247,14 +234,9 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (swapInfos []*tokens.TxS
 		}
 		swapInfo.Value = value // Value
 
-		if !tokens.CheckSwapValue(pairID, swapInfo.Value, b.IsSrc) {
-			addSwapInfoConsiderError(swapInfo, tokens.ErrTxWithWrongValue, &swapInfos, &errs)
-			continue
-		}
-
-		if !tokens.SrcBridge.IsValidAddress(swapInfo.Bind) {
-			log.Debug("wrong bind address in swapout", "bind", swapInfo.Bind)
-			addSwapInfoConsiderError(swapInfo, tokens.ErrTxWithWrongMemo, &swapInfos, &errs)
+		err = b.checkSwapoutInfo(swapInfo)
+		if err != nil {
+			addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)
 			continue
 		}
 
@@ -262,6 +244,17 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (swapInfos []*tokens.TxS
 	}
 
 	return swapInfos, errs
+}
+
+func (b *Bridge) checkSwapoutInfo(swapInfo *tokens.TxSwapInfo) error {
+	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
+		return tokens.ErrTxWithWrongValue
+	}
+	if !tokens.SrcBridge.IsValidAddress(swapInfo.Bind) {
+		log.Debug("wrong bind address in swapout", "bind", swapInfo.Bind)
+		return tokens.ErrTxWithWrongMemo
+	}
+	return nil
 }
 
 // ParseSwapoutTxInput parse swapout tx input
