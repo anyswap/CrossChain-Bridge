@@ -29,13 +29,17 @@ func wrapPostError(method string, err error) error {
 }
 
 func httpPost(result interface{}, method string, params ...interface{}) error {
-	return client.RPCPost(&result, dcrmRPCAddress, method, params...)
+	return client.RPCPost(&result, defaultDcrmNode.dcrmRPCAddress, method, params...)
+}
+
+func httpPostTo(result interface{}, rpcAddress, method string, params ...interface{}) error {
+	return client.RPCPost(&result, rpcAddress, method, params...)
 }
 
 // GetEnode call dcrm_getEnode
-func GetEnode() (string, error) {
+func GetEnode(rpcAddr string) (string, error) {
 	var result GetEnodeResp
-	err := httpPost(&result, "dcrm_getEnode")
+	err := httpPostTo(&result, rpcAddr, "dcrm_getEnode")
 	if err != nil {
 		return "", wrapPostError("dcrm_getEnode", err)
 	}
@@ -46,9 +50,9 @@ func GetEnode() (string, error) {
 }
 
 // GetSignNonce call dcrm_getSignNonce
-func GetSignNonce() (uint64, error) {
+func GetSignNonce(dcrmUser, rpcAddr string) (uint64, error) {
 	var result DataResultResp
-	err := httpPost(&result, "dcrm_getSignNonce", keyWrapper.Address.String())
+	err := httpPostTo(&result, rpcAddr, "dcrm_getSignNonce", dcrmUser)
 	if err != nil {
 		return 0, wrapPostError("dcrm_getSignNonce", err)
 	}
@@ -63,9 +67,9 @@ func GetSignNonce() (uint64, error) {
 }
 
 // GetSignStatus call dcrm_getSignStatus
-func GetSignStatus(key string) (*SignStatus, error) {
+func GetSignStatus(key, rpcAddr string) (*SignStatus, error) {
 	var result DataResultResp
-	err := httpPost(&result, "dcrm_getSignStatus", key)
+	err := httpPostTo(&result, rpcAddr, "dcrm_getSignStatus", key)
 	if err != nil {
 		return nil, wrapPostError("dcrm_getSignStatus", err)
 	}
@@ -95,7 +99,7 @@ func GetSignStatus(key string) (*SignStatus, error) {
 // GetCurNodeSignInfo call dcrm_getCurNodeSignInfo
 func GetCurNodeSignInfo() ([]*SignInfoData, error) {
 	var result SignInfoResp
-	err := httpPost(&result, "dcrm_getCurNodeSignInfo", keyWrapper.Address.String())
+	err := httpPost(&result, "dcrm_getCurNodeSignInfo", defaultDcrmNode.keyWrapper.Address.String())
 	if err != nil {
 		return nil, wrapPostError("dcrm_getCurNodeSignInfo", err)
 	}
@@ -106,9 +110,9 @@ func GetCurNodeSignInfo() ([]*SignInfoData, error) {
 }
 
 // Sign call dcrm_sign
-func Sign(raw string) (string, error) {
+func Sign(raw, rpcAddr string) (string, error) {
 	var result DataResultResp
-	err := httpPost(&result, "dcrm_sign", raw)
+	err := httpPostTo(&result, rpcAddr, "dcrm_sign", raw)
 	if err != nil {
 		return "", wrapPostError("dcrm_sign", err)
 	}
@@ -132,9 +136,9 @@ func AcceptSign(raw string) (string, error) {
 }
 
 // GetGroupByID call dcrm_getGroupByID
-func GetGroupByID(groupID string) (*GroupInfo, error) {
+func GetGroupByID(groupID, rpcAddr string) (*GroupInfo, error) {
 	var result GetGroupByIDResp
-	err := httpPost(&result, "dcrm_getGroupByID", groupID)
+	err := httpPostTo(&result, rpcAddr, "dcrm_getGroupByID", groupID)
 	if err != nil {
 		return nil, wrapPostError("dcrm_getGroupByID", err)
 	}

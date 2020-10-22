@@ -74,9 +74,6 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	if c.Disable {
 		return nil
 	}
-	if c.RPCAddress == nil {
-		return errors.New("dcrm must config 'RPCAddress'")
-	}
 	if c.GroupID == nil {
 		return errors.New("dcrm must config 'GroupID'")
 	}
@@ -89,17 +86,38 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	if !(c.Mode == 0 || c.Mode == 1) {
 		return errors.New("dcrm must config 'Mode' to 0 (managed) or 1 (private)")
 	}
-	if c.ServerAccount == "" {
-		return errors.New("dcrm must config 'ServerAccount'")
+	if len(c.Initiators) == 0 {
+		return errors.New("dcrm must config 'Initiators'")
 	}
-	if isServer && len(c.SignGroups) == 0 {
-		return errors.New("swap server dcrm must config 'SignGroups'")
+	if c.DefaultNode == nil {
+		return errors.New("dcrm must config 'DefaultNode'")
+	}
+	err = c.DefaultNode.CheckConfig(isServer)
+	if err != nil {
+		return err
+	}
+	for _, dcrmNode := range c.OtherNodes {
+		err = dcrmNode.CheckConfig(isServer)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CheckConfig check dcrm node config
+func (c *DcrmNodeConfig) CheckConfig(isServer bool) (err error) {
+	if c.RPCAddress == nil {
+		return errors.New("dcrm node must config 'RPCAddress'")
 	}
 	if c.KeystoreFile == nil {
-		return errors.New("dcrm must config 'KeystoreFile'")
+		return errors.New("dcrm node must config 'KeystoreFile'")
 	}
 	if c.PasswordFile == nil {
-		return errors.New("dcrm must config 'PasswordFile'")
+		return errors.New("dcrm node must config 'PasswordFile'")
+	}
+	if isServer && len(c.SignGroups) == 0 {
+		return errors.New("swap server dcrm node must config 'SignGroups'")
 	}
 	return nil
 }

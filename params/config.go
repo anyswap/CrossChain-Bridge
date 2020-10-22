@@ -42,16 +42,21 @@ type ServerConfig struct {
 // DcrmConfig dcrm related config
 type DcrmConfig struct {
 	Disable       bool
-	ServerAccount string
-	RPCAddress    *string
 	GroupID       *string
-	SignGroups    []string
 	NeededOracles *uint32
 	TotalOracles  *uint32
-	Mode          uint32  // 0:managed 1:private (default 0)
-	Pubkey        *string `toml:",omitempty"`
-	KeystoreFile  *string `toml:",omitempty"`
-	PasswordFile  *string `toml:",omitempty"`
+	Mode          uint32 // 0:managed 1:private (default 0)
+	Initiators    []string
+	DefaultNode   *DcrmNodeConfig
+	OtherNodes    []*DcrmNodeConfig
+}
+
+// DcrmNodeConfig dcrm node config
+type DcrmNodeConfig struct {
+	RPCAddress   *string
+	SignGroups   []string `toml:",omitempty" json:",omitempty"`
+	KeystoreFile *string  `json:"-"`
+	PasswordFile *string  `json:"-"`
 }
 
 // OracleConfig oracle config
@@ -87,9 +92,14 @@ func GetIdentifier() string {
 	return GetConfig().Identifier
 }
 
-// GetServerDcrmUser get server dcrm user (initiator of dcrm sign)
-func GetServerDcrmUser() string {
-	return GetConfig().Dcrm.ServerAccount
+// IsDcrmInitiator is initiator of dcrm sign
+func IsDcrmInitiator(account string) bool {
+	for _, initiator := range GetConfig().Dcrm.Initiators {
+		if strings.EqualFold(account, initiator) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetConfig get config items structure

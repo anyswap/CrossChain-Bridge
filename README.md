@@ -24,7 +24,7 @@ copy the example config file `config-example.toml` in `./build/bin` directory, a
 
 see more, please refer [config file example](https://github.com/anyswap/CrossChain-Bridge/blob/master/params/config-example.toml)
 
-### Identifier
+#### Identifier
 
 Identifier should be a short string to identify the bridge (eg. `BTC2ETH`, `BTC2FSN`)
 
@@ -43,7 +43,7 @@ APIServer is used by the server to provide API service to register swap and to p
 Oracle is needed by the swap oracle to post swap register RPC requests to swap server
 (the swap server don't need `Oracle`).
 
-### BtcExtra
+#### BtcExtra
 
 BtcExtra is used to customize fees when build transaction on Bitcoin blockchain
 
@@ -67,7 +67,11 @@ DestGateway is used to do RPC request to verify transactions on dest blockchain,
 
 Dcrm is used to config DCRM node info and group info.
 
-`ServerAccount` is used to specify the server dcrm user (initiator of dcrm sign)
+`Initiators` is used to specify the server dcrm user (initiators of dcrm sign)
+
+`Dcrm.DefaultNode` is used to specify default dcrm node to connect.
+
+`Dcrm.OtherNodes` is an array used by server to specify other initiators of dcrm node.
 
 for the swap server, `SignGroups` is needed for dcrm signing.
 
@@ -147,7 +151,7 @@ For the config file, please refer [config file example](https://github.com/anysw
 
     We can get the corresponding `DCRM addresses` on supported blockchains. Then we should config `DcrmAddress` in `[SrcToken]` and `[DestToken]` section according to the blockchain of them.
 
-    We should config the `[Dcrm]` section accordingly（ eg. `ServerAccount`, `GroupID`, `TotalOracles`，`Mode`）
+    We should config the `[Dcrm]` section accordingly（ eg. `GroupID`, `TotalOracles`，`Mode`, `DefaultNode`, etc.）
 
     And we should config the following `[Dcrm]` section items sparately for each user in the DCRM group:
 

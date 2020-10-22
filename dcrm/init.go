@@ -1,82 +1,223 @@
 package dcrm
 
 import (
+	"fmt"
 	"math/big"
+	"strings"
+	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tools"
 	"github.com/anyswap/CrossChain-Bridge/tools/keystore"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 const (
-	// DcrmToAddress used in dcrm sign and accept
-	DcrmToAddress = "0x00000000000000000000000000000000000000dc"
-	// DcrmWalletServiceID to make dcrm signer
-	DcrmWalletServiceID = 30400
+	dcrmToAddress       = "0x00000000000000000000000000000000000000dc"
+	dcrmWalletServiceID = 30400
 )
 
 var (
-	dcrmSigner = types.MakeSigner("EIP155", big.NewInt(DcrmWalletServiceID))
-	dcrmToAddr = common.HexToAddress(DcrmToAddress)
-	signGroups []string // sub groups for sign
+	dcrmSigner = types.MakeSigner("EIP155", big.NewInt(dcrmWalletServiceID))
+	dcrmToAddr = common.HexToAddress(dcrmToAddress)
 
+	dcrmGroupID       string
+	dcrmThreshold     string
+	dcrmMode          string
+	dcrmNeededOracles uint32
+	dcrmTotalOracles  uint32
+
+	defaultDcrmNode   *NodeInfo
+	allInitiatorNodes []*NodeInfo // server only
+
+	selfEnode string
+	allEnodes []string
+)
+
+// NodeInfo dcrm node info
+type NodeInfo struct {
 	keyWrapper     *keystore.Key
 	dcrmUser       common.Address
 	dcrmRPCAddress string
-
-	groupID   string
-	threshold string
-	mode      string
-
-	// ServerDcrmUser dcrm initiator for sign
-	ServerDcrmUser common.Address
-)
-
-// SetDcrmRPCAddress set dcrm node rpc address
-func SetDcrmRPCAddress(url string) {
-	dcrmRPCAddress = url
+	signGroups     []string // sub groups for sign
 }
 
-// SetDcrmGroup set dcrm group
-func SetDcrmGroup(group, thresh, mod string) {
-	groupID = group
-	threshold = thresh
-	mode = mod
+// SetDefaultDcrmNodeInfo set default dcrm node info
+func SetDefaultDcrmNodeInfo(nodeInfo *NodeInfo) {
+	defaultDcrmNode = nodeInfo
 }
 
-// GetGroupID return dcrm group id
-func GetGroupID() string {
-	return groupID
+// GetAllInitiatorNodes get all initiator dcrm node info
+func GetAllInitiatorNodes() []*NodeInfo {
+	return allInitiatorNodes
 }
 
-// SetSignGroups set sign subgroups
-func SetSignGroups(groups []string) {
-	signGroups = groups
-}
-
-// GetSignGroups get sign subgroups
-func GetSignGroups() []string {
-	return signGroups
-}
-
-// LoadKeyStore load keystore
-func LoadKeyStore(keyfile, passfile string) error {
-	key, err := tools.LoadKeyStore(keyfile, passfile)
-	if err != nil {
-		return err
+// AddInitiatorNode add initiator dcrm node info
+func AddInitiatorNode(nodeInfo *NodeInfo) {
+	for _, oldNode := range allInitiatorNodes {
+		if oldNode.dcrmRPCAddress == nodeInfo.dcrmRPCAddress ||
+			oldNode.dcrmUser == nodeInfo.dcrmUser {
+			log.Fatal("duplicate initiator", "user", nodeInfo.dcrmUser, "rpcAddr", nodeInfo.dcrmRPCAddress)
+		}
 	}
-	keyWrapper = key
-	dcrmUser = keyWrapper.Address
-	return nil
-}
-
-// GetDcrmUser returns the dcrm user of specified keystore
-func GetDcrmUser() common.Address {
-	return dcrmUser
+	allInitiatorNodes = append(allInitiatorNodes, nodeInfo)
 }
 
 // IsSwapServer returns if this dcrm user is the swap server
 func IsSwapServer() bool {
-	return GetDcrmUser() == ServerDcrmUser
+	return len(allInitiatorNodes) > 0
+}
+
+// SetDcrmGroup set dcrm group
+func SetDcrmGroup(group string, mode, neededOracles, totalOracles uint32) {
+	dcrmGroupID = group
+	dcrmNeededOracles = neededOracles
+	dcrmTotalOracles = totalOracles
+	dcrmThreshold = fmt.Sprintf("%d/%d", neededOracles, totalOracles)
+	dcrmMode = fmt.Sprintf("%d", mode)
+	log.Info("Init dcrm group", "group", dcrmGroupID, "threshold", dcrmThreshold, "mode", dcrmMode)
+}
+
+// GetGroupID return dcrm group id
+func GetGroupID() string {
+	return dcrmGroupID
+}
+
+// SetDcrmRPCAddress set dcrm node rpc address
+func (ni *NodeInfo) SetDcrmRPCAddress(url string) {
+	ni.dcrmRPCAddress = url
+}
+
+// GetDcrmRPCAddress get dcrm node rpc address
+func (ni *NodeInfo) GetDcrmRPCAddress() string {
+	return ni.dcrmRPCAddress
+}
+
+// SetSignGroups set sign subgroups
+func (ni *NodeInfo) SetSignGroups(groups []string) {
+	ni.signGroups = groups
+}
+
+// GetSignGroups get sign subgroups
+func (ni *NodeInfo) GetSignGroups() []string {
+	return ni.signGroups
+}
+
+// GetDcrmUser returns the dcrm user of specified keystore
+func (ni *NodeInfo) GetDcrmUser() common.Address {
+	return ni.dcrmUser
+}
+
+// LoadKeyStore load keystore
+func (ni *NodeInfo) LoadKeyStore(keyfile, passfile string) (common.Address, error) {
+	key, err := tools.LoadKeyStore(keyfile, passfile)
+	if err != nil {
+		return common.Address{}, err
+	}
+	ni.keyWrapper = key
+	ni.dcrmUser = ni.keyWrapper.Address
+	return ni.dcrmUser, nil
+}
+
+// Init init dcrm
+func Init(initiators []string) {
+	initSelfEnode()
+	initAllEnodes()
+
+	verifyInitiators(initiators)
+}
+
+func initSelfEnode() {
+	for {
+		enode, err := GetEnode(defaultDcrmNode.dcrmRPCAddress)
+		if err == nil {
+			selfEnode = enode
+			log.Info("get dcrm enode info success", "enode", enode)
+			return
+		}
+		log.Error("can't get enode info", "rpcAddr", defaultDcrmNode.dcrmRPCAddress, "err", err)
+		time.Sleep(3 * time.Second)
+	}
+}
+
+func isEnodeExistIn(enode string, enodes []string) bool {
+	sepIndex := strings.Index(enode, "@")
+	if sepIndex == -1 {
+		log.Fatal("wrong self enode, has no '@' char", "enode", enode)
+	}
+	cmpStr := enode[:sepIndex]
+	for _, item := range enodes {
+		if item[:sepIndex] == cmpStr {
+			return true
+		}
+	}
+	return false
+}
+
+func initAllEnodes() {
+	allEnodes = verifySignGroupInfo(defaultDcrmNode.dcrmRPCAddress, dcrmGroupID, false, true)
+}
+
+func verifySignGroupInfo(rpcAddr, groupID string, isSignGroup, includeSelf bool) []string {
+	memberCount := dcrmTotalOracles
+	if isSignGroup {
+		memberCount = dcrmNeededOracles
+	}
+	for {
+		groupInfo, err := GetGroupByID(groupID, rpcAddr)
+		if err != nil {
+			log.Error("get group info failed", "groupID", groupID, "err", err)
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		log.Info("get dcrm group info success", "groupInfo", groupInfo)
+		if uint32(groupInfo.Count) != memberCount {
+			log.Fatal("dcrm group member count mismatch", "groupID", dcrmGroupID, "have", groupInfo.Count, "want", memberCount)
+		}
+		if uint32(len(groupInfo.Enodes)) != memberCount {
+			log.Error("get group info enodes count mismatch", "groupID", groupID, "have", len(groupInfo.Enodes), "want", memberCount)
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		exist := isEnodeExistIn(selfEnode, groupInfo.Enodes)
+		if exist != includeSelf {
+			log.Fatal("self enode's existence in group mismatch", "groupID", groupID, "groupInfo", groupInfo, "want", includeSelf, "have", exist)
+		}
+		if isSignGroup {
+			for _, enode := range groupInfo.Enodes {
+				if !isEnodeExistIn(enode, allEnodes) {
+					log.Fatal("sign group has unrelated enode", "groupID", groupID, "enode", enode)
+				}
+			}
+		}
+		return groupInfo.Enodes
+	}
+}
+
+func verifyInitiators(initiators []string) {
+	if len(allInitiatorNodes) == 0 {
+		return
+	}
+	if len(initiators) != len(allInitiatorNodes) {
+		log.Fatal("initiators count mismatch", "initiators", len(initiators), "initiatorNodes", len(allInitiatorNodes))
+	}
+
+	isInGroup := true
+	for _, dcrmNodeInfo := range allInitiatorNodes {
+		exist := false
+		dcrmUser := dcrmNodeInfo.dcrmUser.String()
+		for _, initiator := range initiators {
+			if strings.EqualFold(initiator, dcrmUser) {
+				exist = true
+			}
+		}
+		if !exist {
+			log.Fatal("initiator misatch", "user", dcrmUser)
+		}
+		for _, signGroupID := range dcrmNodeInfo.GetSignGroups() {
+			verifySignGroupInfo(dcrmNodeInfo.dcrmRPCAddress, signGroupID, true, isInGroup)
+		}
+		isInGroup = false
+	}
 }

@@ -236,7 +236,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	}
 	jsondata, _ := json.Marshal(args)
 	msgContext := []string{string(jsondata)}
-	keyID, err := dcrm.DoSign(tokens.BtcFromPublicKey, msgHash, msgContext)
+	rpcAddr, keyID, err := dcrm.DoSign(tokens.BtcFromPublicKey, msgHash, msgContext)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +246,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	var signStatus *dcrm.SignStatus
 	i := 0
 	for ; i < retryGetSignStatusCount; i++ {
-		signStatus, err = dcrm.GetSignStatus(keyID)
+		signStatus, err = dcrm.GetSignStatus(keyID, rpcAddr)
 		if err == nil {
 			if len(signStatus.Rsv) != len(msgHash) {
 				return nil, fmt.Errorf("get sign status require %v rsv but have %v (keyID = %v)", len(msgHash), len(signStatus.Rsv), keyID)

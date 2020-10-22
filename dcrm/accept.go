@@ -21,7 +21,7 @@ func DoAcceptSign(keyID, agreeResult string, msgHash, msgContext []string) (stri
 	if err != nil {
 		return "", err
 	}
-	rawTX, err := BuildDcrmRawTx(nonce, payload)
+	rawTX, err := BuildDcrmRawTx(nonce, payload, defaultDcrmNode.keyWrapper)
 	if err != nil {
 		return "", err
 	}

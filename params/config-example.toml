@@ -26,7 +26,7 @@ AllowedOrigins = []
 # post swap register RPC requests to this server
 ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 
-# customize fees in building btc transaction (server only)
+# customize fees in building btc transaction (btc only)
 [BtcExtra]
 MinRelayFee   = 400
 RelayFeePerKb = 2000
@@ -72,17 +72,8 @@ APIAddress = ["http://5.189.139.168:8018"]
 # enable flag
 Disable = false
 
-# server dcrm user (initiator of dcrm sign)
-ServerAccount = "0x00c37841378920E2BA5151a5d1E074Cf367586c4"
-
 # dcrm group ID
 GroupID = "74245ef03937fa75b979bdaa6a5952a93f53e021e0832fca4c2ad8952572c9b70f49e291de7e024b0f7fc54ec5875210db2ac775dba44448b3972b75af074d17"
-
-# dcrm sub groups for signing (server only)
-SignGroups = [
-	"38a93f457c793ac3ee242b2c050a403774738e6558cfaa620fe5577bb15a28f63c39adcc0778497e5009a9ee776a0778ffcad4e95827e69efa21b893b8a78793",
-	"bb1dfe1ec046cc3a3b88408ae03976aabffe459b40e5def09e76f5d4c7a917133241da9da7fc05e3e172fab54ce3129a9a492d52a5a09494d0b9c1e608f661bf"
-]
 
 # dcrm threshold (NeededOracles=2,TotalOracles=3 represent '2/3' threshold)
 NeededOracles = 2
@@ -91,9 +82,38 @@ TotalOracles = 3
 # dcrm mode (0:managed 1:private)
 Mode = 0
 
+# initiators of dcrm sign
+Initiators = [
+	"0x00c37841378920E2BA5151a5d1E074Cf367586c4",
+	"0x897a9980808a2cae0d09ff693f02a4f80abb2233"
+]
+
+# DCRM other initiators nodes config (server only)
+[[Dcrm.OtherNodes]]
+# dcrm sub groups for signing
+SignGroups = [
+	"38a93f457c793ac3ee242b2c050a403774738e6558cfaa620fe5577bb15a28f63c39adcc0778497e5009a9ee776a0778ffcad4e95827e69efa21b893b8a78793",
+	"bb1dfe1ec046cc3a3b88408ae03976aabffe459b40e5def09e76f5d4c7a917133241da9da7fc05e3e172fab54ce3129a9a492d52a5a09494d0b9c1e608f661bf"
+]
+
+# dcrm user keystore and password file (suggest using absolute path)
+KeystoreFile = "/home/xxx/accounts/keystore2"
+PasswordFile = "/home/xxx/accounts/password2"
+
+# dcrm backend node (gdcrm node RPC address)
+RPCAddress = "http://127.0.0.1:2922"
+
+# DCRM default node config
+[Dcrm.DefaultNode]
+# dcrm sub groups for signing (server only)
+SignGroups = [
+	"38a93f457c793ac3ee242b2c050a403774738e6558cfaa620fe5577bb15a28f63c39adcc0778497e5009a9ee776a0778ffcad4e95827e69efa21b893b8a78793",
+	"bb1dfe1ec046cc3a3b88408ae03976aabffe459b40e5def09e76f5d4c7a917133241da9da7fc05e3e172fab54ce3129a9a492d52a5a09494d0b9c1e608f661bf"
+]
+
 # dcrm user keystore and password file (suggest using absolute path)
 KeystoreFile = "/home/xxx/accounts/keystore1"
 PasswordFile = "/home/xxx/accounts/password1"
 
 # dcrm backend node (gdcrm node RPC address)
-RPCAddress = "http://127.0.0.1:2922"
+RPCAddress = "http://127.0.0.1:2921"

@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -91,7 +90,7 @@ func acceptSign() {
 }
 
 func verifySignInfo(signInfo *dcrm.SignInfoData) error {
-	if common.HexToAddress(signInfo.Account) != common.HexToAddress(params.GetServerDcrmUser()) {
+	if !params.IsDcrmInitiator(signInfo.Account) {
 		return errInitiatorMismatch
 	}
 	msgHash := signInfo.MsgHash
