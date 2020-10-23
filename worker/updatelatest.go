@@ -65,6 +65,9 @@ func adjustSrcGatewayOrder() {
 	var weightedAPIs tools.WeightedStringSlice
 
 	gateway := tokens.SrcBridge.GetGatewayConfig()
+	if len(gateway.APIAddress) < 2 {
+		return
+	}
 	for _, apiAddress := range gateway.APIAddress {
 		height, _ := tokens.SrcBridge.GetLatestBlockNumberOf(apiAddress)
 		weightedAPIs = weightedAPIs.Add(apiAddress, height)
@@ -79,6 +82,9 @@ func adjustDstGatewayOrder() {
 	var weightedAPIs tools.WeightedStringSlice
 
 	gateway := tokens.DstBridge.GetGatewayConfig()
+	if len(gateway.APIAddress) < 2 {
+		return
+	}
 	for _, apiAddress := range gateway.APIAddress {
 		height, _ := tokens.DstBridge.GetLatestBlockNumberOf(apiAddress)
 		weightedAPIs = weightedAPIs.Add(apiAddress, height)

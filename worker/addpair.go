@@ -31,6 +31,7 @@ func AddTokenPairDynamically() {
 	}
 
 	ops := []fsnotify.Op{
+		fsnotify.Create,
 		fsnotify.Write,
 	}
 
@@ -40,7 +41,7 @@ func AddTokenPairDynamically() {
 			if !ok {
 				continue
 			}
-			log.Info("fsnotify watch event", "event", ev)
+			log.Trace("fsnotify watch event", "event", ev)
 			for _, op := range ops {
 				if ev.Op&op == op {
 					err = addTokenPair(ev.Name)
