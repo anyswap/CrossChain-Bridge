@@ -51,19 +51,19 @@ func (s *RPCAPI) GetSwapStatistics(r *http.Request, pairID *string, result *swap
 
 // RPCTxAndPairIDArgs txid and pairID
 type RPCTxAndPairIDArgs struct {
-	TxID   *string `json:"txid"`
-	PairID *string `json:"pairid"`
-	Bind   *string `json:"bind"`
+	TxID   string `json:"txid"`
+	PairID string `json:"pairid"`
+	Bind   string `json:"bind"`
 }
 
 func (args *RPCTxAndPairIDArgs) getTxAndPairID() (txid, pairID, bind *string, err error) {
-	txid = args.TxID
-	pairID = args.PairID
-	bind = args.Bind
-	if txid == nil || *txid == "" {
+	txid = &args.TxID
+	pairID = &args.PairID
+	bind = &args.Bind
+	if *txid == "" {
 		return nil, nil, nil, errors.New("empty tx id")
 	}
-	if pairID == nil || *pairID == "" {
+	if *pairID == "" {
 		return nil, nil, nil, errors.New("empty pair id")
 	}
 	return txid, pairID, bind, nil
