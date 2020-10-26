@@ -55,6 +55,15 @@ func GetAllInitiatorNodes() []*NodeInfo {
 
 // AddInitiatorNode add initiator dcrm node info
 func AddInitiatorNode(nodeInfo *NodeInfo) {
+	if nodeInfo.dcrmRPCAddress == "" {
+		log.Fatal("initiator: empty dcrm rpc address")
+	}
+	if nodeInfo.dcrmUser == (common.Address{}) {
+		log.Fatal("initiator: empty dcrm user")
+	}
+	if len(nodeInfo.signGroups) == 0 {
+		log.Fatal("initiator: empty sign groups")
+	}
 	for _, oldNode := range allInitiatorNodes {
 		if oldNode.dcrmRPCAddress == nodeInfo.dcrmRPCAddress ||
 			oldNode.dcrmUser == nodeInfo.dcrmUser {

@@ -69,7 +69,7 @@ APIAddress = ["http://5.189.139.168:8018"]
 
 # DCRM config
 [Dcrm]
-# enable flag
+# disable flag
 Disable = false
 
 # dcrm group ID

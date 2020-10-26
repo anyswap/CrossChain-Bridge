@@ -339,8 +339,13 @@ func (c *TokenConfig) LoadDcrmAddressPrivateKey() error {
 		if !strings.EqualFold(keyAddr.String(), c.DcrmAddress) {
 			return fmt.Errorf("dcrm address %v and its keystore address %v is not match", c.DcrmAddress, keyAddr.String())
 		}
-	} else if c.DcrmPubkey == "" {
-		return fmt.Errorf("token must config 'DcrmPubkey'")
+	} else {
+		if c.DcrmPubkey == "" {
+			return fmt.Errorf("token must config 'DcrmPubkey'")
+		}
+		if IsDcrmDisabled {
+			return fmt.Errorf("dcrm is disabled but no private key is provided")
+		}
 	}
 	return nil
 }

@@ -32,7 +32,7 @@ var (
 
 // StartAcceptSignJob accept job
 func StartAcceptSignJob() {
-	if params.GetConfig().Dcrm.Disable {
+	if !params.IsDcrmEnabled() {
 		logWorker("accept", "no need to start accept sign job as dcrm is disabled")
 		return
 	}

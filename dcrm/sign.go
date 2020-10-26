@@ -9,6 +9,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/anyswap/CrossChain-Bridge/tools/keystore"
 	"github.com/anyswap/CrossChain-Bridge/tools/rlp"
@@ -47,11 +48,17 @@ func DoSignOne(signPubkey, msgHash, msgContext string) (rpcAddr, result string, 
 
 // DoSign dcrm sign msgHash with context msgContext
 func DoSign(signPubkey string, msgHash, msgContext []string) (rpcAddr, result string, err error) {
+	if !params.IsDcrmEnabled() {
+		return "", "", fmt.Errorf("dcrm sign is disabled")
+	}
 	log.Debug("dcrm DoSign", "msgHash", msgHash, "msgContext", msgContext)
 	if signPubkey == "" {
 		return "", "", fmt.Errorf("dcrm sign with empty public key")
 	}
 	dcrmNode := getDcrmNode()
+	if dcrmNode == nil {
+		return "", "", fmt.Errorf("dcrm sign with nil node info")
+	}
 	nonce, err := GetSignNonce(dcrmNode.dcrmUser.String(), dcrmNode.dcrmRPCAddress)
 	if err != nil {
 		return "", "", err

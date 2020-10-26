@@ -107,10 +107,10 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 
 // CheckConfig check dcrm node config
 func (c *DcrmNodeConfig) CheckConfig(isServer bool) (err error) {
-	if c.RPCAddress == nil {
+	if c.RPCAddress == nil || *c.RPCAddress == "" {
 		return errors.New("dcrm node must config 'RPCAddress'")
 	}
-	if c.KeystoreFile == nil {
+	if c.KeystoreFile == nil || *c.KeystoreFile == "" {
 		return errors.New("dcrm node must config 'KeystoreFile'")
 	}
 	if c.PasswordFile == nil {

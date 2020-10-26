@@ -92,6 +92,11 @@ func GetIdentifier() string {
 	return GetConfig().Identifier
 }
 
+// IsDcrmEnabled is dcrm enabled (for dcrm sign)
+func IsDcrmEnabled() bool {
+	return !GetConfig().Dcrm.Disable
+}
+
 // IsDcrmInitiator is initiator of dcrm sign
 func IsDcrmInitiator(account string) bool {
 	for _, initiator := range GetConfig().Dcrm.Initiators {

@@ -52,11 +52,14 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge.SetChainAndGateway(dstChain, dstGateway)
 	log.Info("Init bridge destation", "dest", dstID, "gateway", dstGateway)
 
+	tokens.IsDcrmDisabled = cfg.Dcrm.Disable
 	tokens.LoadTokenPairsConfig(true)
 
 	initBtcWithExtra(cfg.BtcExtra)
 
 	initDcrm(cfg.Dcrm, isServer)
+
+	log.Info("Init bridge success", "isServer", isServer, "dcrmEnabled", !cfg.Dcrm.Disable)
 }
 
 func initBtcWithExtra(btcExtra *tokens.BtcExtraConfig) {
@@ -155,11 +158,6 @@ func initDcrmNodeInfo(dcrmNodeCfg *params.DcrmNodeConfig, isServer bool) *dcrm.N
 		signGroups := dcrmNodeCfg.SignGroups
 		log.Info("Init dcrm sign groups", "signGroups", signGroups)
 		dcrmNodeInfo.SetSignGroups(signGroups)
-
-		if len(signGroups) == 0 {
-			log.Fatal("server has no sign groups")
-		}
-
 		dcrm.AddInitiatorNode(dcrmNodeInfo)
 	}
 
