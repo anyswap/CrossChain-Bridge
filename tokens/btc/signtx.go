@@ -27,11 +27,38 @@ const (
 	hashType = txscript.SigHashAll
 )
 
+func (b *Bridge) verifyTransactionWithArgs(tx *txauthor.AuthoredTx, args *tokens.BuildTxArgs) error {
+	checkReceiver := args.Bind
+	if args.Identifier == AggregateIdentifier {
+		checkReceiver = tokens.BtcUtxoAggregateToAddress
+	}
+	payToReceiverScript, err := b.getPayToAddrScript(checkReceiver)
+	if err != nil {
+		return err
+	}
+	isRightReceiver := false
+	for _, out := range tx.Tx.TxOut {
+		if bytes.Equal(out.PkScript, payToReceiverScript) {
+			isRightReceiver = true
+			break
+		}
+	}
+	if !isRightReceiver {
+		return fmt.Errorf("[sign] verify tx receiver failed")
+	}
+	return nil
+}
+
 // DcrmSignTransaction dcrm sign raw tx
 func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
 		return nil, "", tokens.ErrWrongRawTx
+	}
+
+	err = b.verifyTransactionWithArgs(authoredTx, args)
+	if err != nil {
+		return nil, "", err
 	}
 
 	cPkData, err := b.GetCompressedPublicKey(tokens.BtcFromPublicKey, false)

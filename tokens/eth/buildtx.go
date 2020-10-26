@@ -56,6 +56,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 				}
 				input = *args.Input
 			} else {
+				args.To = args.Bind
 				input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
 			}
 		}
