@@ -115,7 +115,12 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 	if value != nil && value.Sign() > 0 {
 		needValue = value
 	}
-	needValue = new(big.Int).Add(needValue, defReserveGasFee)
+	if args.SwapType != tokens.NoSwapType {
+		needValue = new(big.Int).Add(needValue, defReserveGasFee)
+	} else {
+		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
+		needValue = new(big.Int).Add(needValue, gasFee)
+	}
 	if balance.Cmp(needValue) < 0 {
 		return nil, errors.New("not enough coin balance")
 	}
