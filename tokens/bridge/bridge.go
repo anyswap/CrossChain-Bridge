@@ -97,7 +97,7 @@ func initBtcWithExtra(btcExtra *tokens.BtcExtraConfig) {
 
 	if btcExtra.RelayFeePerKb > 0 {
 		tokens.BtcRelayFeePerKb = btcExtra.RelayFeePerKb
-		maxRelayFeePerKb, _ := btcutil.NewAmount(0.001)
+		maxRelayFeePerKb, _ := btcutil.NewAmount(0.01)
 		relayFeePerKb := btcutil.Amount(tokens.BtcRelayFeePerKb)
 		if relayFeePerKb > maxRelayFeePerKb {
 			log.Fatal("BtcRelayFeePerKb is too large", "value", relayFeePerKb, "max", maxRelayFeePerKb)
