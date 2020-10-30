@@ -58,9 +58,7 @@ var erc20CodeParts = map[string][]byte{
 	"LogApproval":  common.FromHex("0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"),
 }
 
-// VerifyContractCode verify contract code
-func (b *Bridge) VerifyContractCode(contract string, codePartsSlice ...map[string][]byte) (err error) {
-	var code []byte
+func (b *Bridge) getContractCode(contract string) (code []byte, err error) {
 	retryCount := 3
 	for i := 0; i < retryCount; i++ {
 		code, err = b.GetCode(contract)
@@ -69,6 +67,15 @@ func (b *Bridge) VerifyContractCode(contract string, codePartsSlice ...map[strin
 		}
 		log.Warn("get contract code failed", "contract", contract, "err", err)
 		time.Sleep(1 * time.Second)
+	}
+	return code, err
+}
+
+// VerifyContractCode verify contract code
+func (b *Bridge) VerifyContractCode(contract string, codePartsSlice ...map[string][]byte) (err error) {
+	code, err := b.getContractCode(contract)
+	if err != nil {
+		return err
 	}
 	return VerifyContractCodeParts(code, codePartsSlice...)
 }
@@ -96,8 +103,27 @@ func VerifySwapContractCode(code []byte) (err error) {
 }
 
 // VerifyErc20ContractAddress verify erc20 contract
-func (b *Bridge) VerifyErc20ContractAddress(contract string) (err error) {
-	return b.VerifyContractCode(contract, erc20CodeParts)
+// For proxy contract delegating erc20 contract, verify its contract code hash
+func (b *Bridge) VerifyErc20ContractAddress(contract, codeHash string, isProxy bool) (err error) {
+	code, err := b.getContractCode(contract)
+	if err != nil {
+		return err
+	}
+	if !isProxy {
+		err = VerifyErc20ContractCode(code)
+		if err != nil {
+			return err
+		}
+	} else if codeHash == "" {
+		return fmt.Errorf("proxy contract of erc20 must specify code hash")
+	}
+	if codeHash != "" {
+		calcedCodeHash := common.Keccak256Hash(code).String()
+		if codeHash != calcedCodeHash {
+			return fmt.Errorf("code hash mismatch. contract=%v, have=%v, want=%v", contract, codeHash, calcedCodeHash)
+		}
+	}
+	return nil
 }
 
 // VerifyMbtcContractAddress verify mbtc contract

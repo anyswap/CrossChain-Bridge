@@ -50,6 +50,7 @@ type TokenConfig struct {
 	DcrmAddress            string
 	DcrmPubkey             string   `json:"-"`
 	ContractAddress        string   `json:",omitempty"`
+	ContractCodeHash       string   `json:",omitempty"`
 	MaximumSwap            *float64 // whole unit (eg. BTC, ETH, FSN), not Satoshi
 	MinimumSwap            *float64 // whole unit
 	BigValueThreshold      *float64
@@ -75,7 +76,12 @@ type TokenConfig struct {
 
 // IsErc20 return if token is erc20
 func (c *TokenConfig) IsErc20() bool {
-	return strings.EqualFold(c.ID, "ERC20")
+	return strings.EqualFold(c.ID, "ERC20") || c.IsProxyErc20()
+}
+
+// IsProxyErc20 return if token is proxy contract of erc20
+func (c *TokenConfig) IsProxyErc20() bool {
+	return strings.EqualFold(c.ID, "ProxyERC20")
 }
 
 // SwapType type
@@ -295,6 +301,9 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	}
 	if isSrc && c.IsErc20() && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
+	}
+	if isSrc && c.IsProxyErc20() && c.ContractCodeHash == "" {
+		return errors.New("token must config 'ContractCodeHash' for ProxyERC20 in source chain")
 	}
 	// calc value and store
 	c.CalcAndStoreValue()

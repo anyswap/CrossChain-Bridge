@@ -191,6 +191,10 @@ func (scanner *ethSwapScanner) init() {
 		}
 		if scanner.isSwapin {
 			err = eth.VerifyErc20ContractCode(code)
+			if err != nil {
+				log.Warn("verify erc20 code failed. please ensure it's proxy contract of erc20", "contract", tokenAddr, "err", err)
+				err = nil // do not exit
+			}
 		} else {
 			err = eth.VerifySwapContractCode(code)
 		}

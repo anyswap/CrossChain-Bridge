@@ -154,7 +154,7 @@ func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
 				return fmt.Errorf("wrong contract address: %v, %v", tokenCfg.ContractAddress, err)
 			}
 		case tokenCfg.IsErc20():
-			if err := b.VerifyErc20ContractAddress(tokenCfg.ContractAddress); err != nil {
+			if err := b.VerifyErc20ContractAddress(tokenCfg.ContractAddress, tokenCfg.ContractCodeHash, tokenCfg.IsProxyErc20()); err != nil {
 				return fmt.Errorf("wrong contract address: %v, %v", tokenCfg.ContractAddress, err)
 			}
 		default:
