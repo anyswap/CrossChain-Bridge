@@ -41,6 +41,13 @@ func SetLogFile(logFile string, logRotation, logMaxAge uint64) {
 	if logFile == "" {
 		return
 	}
+	// always write in json format to log file
+	if !JSONFormat {
+		JSONFormat = true
+		logrus.SetFormatter(&logrus.JSONFormatter{
+			TimestampFormat: timestampFormat,
+		})
+	}
 	var (
 		logRotateSuffix = "%Y%m%d%H"
 		logRotationTime = time.Duration(logRotation) * time.Hour
