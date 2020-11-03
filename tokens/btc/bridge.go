@@ -18,9 +18,6 @@ const (
 // PairID unique btc pair ID
 const PairID = "btc"
 
-// BridgeInstance btc bridge instance
-var BridgeInstance *Bridge
-
 // Bridge btc bridge
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
@@ -31,8 +28,9 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	if !isSrc {
 		log.Fatalf("btc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
-	BridgeInstance = &Bridge{tokens.NewCrossChainBridgeBase(isSrc)}
-	return BridgeInstance
+	instance := &Bridge{tokens.NewCrossChainBridgeBase(isSrc)}
+	BridgeInstance = instance
+	return instance
 }
 
 // SetChainAndGateway set chain and gateway config
