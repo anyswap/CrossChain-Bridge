@@ -26,7 +26,7 @@ type RPCBlock struct {
 	Extra           *hexutil.Bytes  `json:"extraData"`
 	MixDigest       *common.Hash    `json:"mixHash"`
 	Nonce           *hexutil.Bytes  `json:"nonce"`
-	Size            *string         `json:"size"`
+	Size            interface{}     `json:"size"`
 	TotalDifficulty *hexutil.Big    `json:"totalDifficulty"`
 	Transactions    []*common.Hash  `json:"transactions"`
 	Uncles          []*common.Hash  `json:"uncles"`
