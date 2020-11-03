@@ -2,6 +2,7 @@ package btc
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -14,17 +15,12 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 )
 
 const (
 	retryGetSignStatusCount    = 70
 	retryGetSignStatusInterval = 10 * time.Second
-
-	hashType = txscript.SigHashAll
 )
 
 func (b *Bridge) verifyTransactionWithArgs(tx *txauthor.AuthoredTx, args *tokens.BuildTxArgs) error {
@@ -32,7 +28,7 @@ func (b *Bridge) verifyTransactionWithArgs(tx *txauthor.AuthoredTx, args *tokens
 	if args.Identifier == AggregateIdentifier {
 		checkReceiver = tokens.BtcUtxoAggregateToAddress
 	}
-	payToReceiverScript, err := b.getPayToAddrScript(checkReceiver)
+	payToReceiverScript, err := b.GetPayToAddrScript(checkReceiver)
 	if err != nil {
 		return err
 	}
@@ -76,7 +72,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 
 	for i, preScript := range authoredTx.PrevScripts {
 		sigScript := preScript
-		if txscript.IsPayToScriptHash(preScript) {
+		if b.IsPayToScriptHash(preScript) {
 			sigScript, err = b.getRedeemScriptByOutputScrpit(preScript)
 			if err != nil {
 				return nil, "", err
@@ -84,7 +80,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 			hasP2shInput = true
 		}
 
-		sigHash, err = txscript.CalcSignatureHash(sigScript, hashType, authoredTx.Tx, i)
+		sigHash, err = b.CalcSignatureHash(sigScript, authoredTx.Tx, i)
 		if err != nil {
 			return nil, "", err
 		}
@@ -130,30 +126,12 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash,
 	log.Info(b.ChainConfig.BlockChain+" Bridge MakeSignedTransaction", "msghash", msgHash, "count", len(msgHash))
 
 	for i, txin := range authoredTx.Tx.TxIn {
-		signData, ok := getSigDataFromRSV(rsv[i])
+		signData, ok := b.getSigDataFromRSV(rsv[i])
 		if !ok {
 			return nil, "", errors.New("wrong RSV data")
 		}
 
-		var sigScript []byte
-		prevScript := authoredTx.PrevScripts[i]
-		scriptClass := txscript.GetScriptClass(prevScript)
-		switch scriptClass {
-		case txscript.PubKeyHashTy:
-			sigScript, err = txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).Script()
-		case txscript.ScriptHashTy:
-			if sigScripts == nil {
-				err = fmt.Errorf("call MakeSignedTransaction spend p2sh without redeem scripts")
-			} else {
-				redeemScript := sigScripts[i]
-				err = b.verifyRedeemScript(prevScript, redeemScript)
-				if err == nil {
-					sigScript, err = txscript.NewScriptBuilder().AddData(signData).AddData(cPkData).AddData(redeemScript).Script()
-				}
-			}
-		default:
-			err = fmt.Errorf("unsupport to spend '%v' output", scriptClass.String())
-		}
+		sigScript, err := b.GetSigScript(sigScripts, authoredTx.PrevScripts[i], signData, cPkData, i)
 		if err != nil {
 			return nil, "", err
 		}
@@ -164,7 +142,8 @@ func (b *Bridge) MakeSignedTransaction(authoredTx *txauthor.AuthoredTx, msgHash,
 	return authoredTx, txHash, nil
 }
 
-func (b *Bridge) verifyRedeemScript(prevScript, redeemScript []byte) error {
+// VerifyRedeemScript verify redeem script
+func (b *Bridge) VerifyRedeemScript(prevScript, redeemScript []byte) error {
 	p2shScript, err := b.GetP2shSigScript(redeemScript)
 	if err != nil {
 		return err
@@ -175,7 +154,7 @@ func (b *Bridge) verifyRedeemScript(prevScript, redeemScript []byte) error {
 	return nil
 }
 
-func getSigDataFromRSV(rsv string) ([]byte, bool) {
+func (b *Bridge) getSigDataFromRSV(rsv string) ([]byte, bool) {
 	rs := rsv[0 : len(rsv)-2]
 
 	r := rs[:64]
@@ -191,13 +170,7 @@ func getSigDataFromRSV(rsv string) ([]byte, bool) {
 		return nil, false
 	}
 
-	sign := &btcec.Signature{
-		R: rr,
-		S: ss,
-	}
-
-	signData := append(sign.Serialize(), byte(hashType))
-	return signData, true
+	return b.SerializeSignature(rr, ss), true
 }
 
 func (b *Bridge) verifyPublickeyData(pkData []byte) error {
@@ -209,7 +182,7 @@ func (b *Bridge) verifyPublickeyData(pkData []byte) error {
 	if dcrmAddress == "" {
 		return nil
 	}
-	address, err := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkData), b.GetChainParams())
+	address, err := b.NewAddressPubKeyHash(pkData)
 	if err != nil {
 		return err
 	}
@@ -225,11 +198,10 @@ func (b *Bridge) GetCompressedPublicKey(fromPublicKey string, needVerify bool) (
 		return nil, nil
 	}
 	pkData := common.FromHex(fromPublicKey)
-	pubKey, err := btcec.ParsePubKey(pkData, btcec.S256())
+	cPkData, err = b.ToCompressedPublicKey(pkData)
 	if err != nil {
 		return nil, err
 	}
-	cPkData = pubKey.SerializeCompressed()
 	if needVerify {
 		err = b.verifyPublickeyData(cPkData)
 		if err != nil {
@@ -243,16 +215,11 @@ func (b *Bridge) GetCompressedPublicKey(fromPublicKey string, needVerify bool) (
 func (b *Bridge) getPkDataFromSig(rsv, msgHash string, compressed bool) (pkData []byte, err error) {
 	rsvData := common.FromHex(rsv)
 	hashData := common.FromHex(msgHash)
-	pub, err := crypto.SigToPub(hashData, rsvData)
+	ecPub, err := crypto.SigToPub(hashData, rsvData)
 	if err != nil {
 		return nil, err
 	}
-	if compressed {
-		pkData = (*btcec.PublicKey)(pub).SerializeCompressed()
-	} else {
-		pkData = (*btcec.PublicKey)(pub).SerializeUncompressed()
-	}
-	return pkData, nil
+	return b.SerializePublicKey(ecPub, compressed), nil
 }
 
 // DcrmSignMsgHash dcrm sign msg hash
@@ -332,26 +299,24 @@ func (b *Bridge) adjustRsvOrders(rsvs, msgHashes []string, fromPublicKey string)
 // SignTransaction sign tx with pairID
 func (b *Bridge) SignTransaction(rawTx interface{}, pairID string) (signedTx interface{}, txHash string, err error) {
 	privKey := b.GetTokenConfig(pairID).GetDcrmAddressPrivateKey()
-	return b.SignTransactionWithPrivateKey(rawTx, (*btcec.PrivateKey)(privKey))
+	return b.SignTransactionWithPrivateKey(rawTx, privKey)
 }
 
 // SignTransactionWithWIF sign tx with WIF
 func (b *Bridge) SignTransactionWithWIF(rawTx interface{}, wif string) (signedTx interface{}, txHash string, err error) {
-	pkwif, err := btcutil.DecodeWIF(wif)
+	pkwif, err := DecodeWIF(wif)
 	if err != nil {
 		return nil, "", err
 	}
-	return b.SignTransactionWithPrivateKey(rawTx, pkwif.PrivKey)
+	return b.SignTransactionWithPrivateKey(rawTx, pkwif.PrivKey.ToECDSA())
 }
 
 // SignTransactionWithPrivateKey sign tx with ECDSA private key
-func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *btcec.PrivateKey) (signTx interface{}, txHash string, err error) {
+func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa.PrivateKey) (signTx interface{}, txHash string, err error) {
 	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
 	if !ok {
 		return nil, "", tokens.ErrWrongRawTx
 	}
-
-	cPkData := (*btcec.PublicKey)(&privKey.PublicKey).SerializeCompressed()
 
 	var (
 		msgHashes    []string
@@ -362,7 +327,7 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *btcec
 
 	for i, preScript := range authoredTx.PrevScripts {
 		sigScript := preScript
-		if txscript.IsPayToScriptHash(preScript) {
+		if b.IsPayToScriptHash(preScript) {
 			sigScript, err = b.getRedeemScriptByOutputScrpit(preScript)
 			if err != nil {
 				return nil, "", err
@@ -370,7 +335,7 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *btcec
 			hasP2shInput = true
 		}
 
-		sigHash, err := txscript.CalcSignatureHash(sigScript, hashType, authoredTx.Tx, i)
+		sigHash, err := b.CalcSignatureHash(sigScript, authoredTx.Tx, i)
 		if err != nil {
 			return nil, "", err
 		}
@@ -383,15 +348,13 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *btcec
 	}
 
 	for _, msgHash := range msgHashes {
-		signature, err := privKey.Sign(common.FromHex(msgHash))
-		if err != nil {
-			return nil, "", err
+		rsv, errf := b.SignWithECDSA(privKey, common.FromHex(msgHash))
+		if errf != nil {
+			return nil, "", errf
 		}
-		rr := fmt.Sprintf("%064X", signature.R)
-		ss := fmt.Sprintf("%064X", signature.S)
-		rsv := fmt.Sprintf("%s%s00", rr, ss)
 		rsvs = append(rsvs, rsv)
 	}
 
+	cPkData := b.GetPublicKeyFromECDSA(privKey, true)
 	return b.MakeSignedTransaction(authoredTx, msgHashes, rsvs, sigScripts, cPkData)
 }

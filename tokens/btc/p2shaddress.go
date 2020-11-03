@@ -6,23 +6,14 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcutil"
 )
 
-// GetP2shAddressWithMemo common
-func GetP2shAddressWithMemo(memo, pubKeyHash []byte, net *chaincfg.Params) (p2shAddress string, redeemScript []byte, err error) {
-	redeemScript, err = txscript.NewScriptBuilder().
-		AddData(memo).AddOp(txscript.OP_DROP).
-		AddOp(txscript.OP_DUP).AddOp(txscript.OP_HASH160).AddData(pubKeyHash).
-		AddOp(txscript.OP_EQUALVERIFY).AddOp(txscript.OP_CHECKSIG).
-		Script()
+func (b *Bridge) getP2shAddressWithMemo(memo, pubKeyHash []byte) (p2shAddress string, redeemScript []byte, err error) {
+	redeemScript, err = b.GetP2shRedeemScript(memo, pubKeyHash)
 	if err != nil {
 		return
 	}
-	var addressScriptHash *btcutil.AddressScriptHash
-	addressScriptHash, err = btcutil.NewAddressScriptHash(redeemScript, net)
+	addressScriptHash, err := b.NewAddressScriptHash(redeemScript)
 	if err != nil {
 		return
 	}
@@ -36,7 +27,6 @@ func (b *Bridge) GetP2shAddress(bindAddr string) (p2shAddress string, redeemScri
 		return "", nil, fmt.Errorf("invalid bind address %v", bindAddr)
 	}
 	memo := common.FromHex(bindAddr)
-	net := b.GetChainParams()
 	pairID := PairID
 	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
@@ -44,16 +34,16 @@ func (b *Bridge) GetP2shAddress(bindAddr string) (p2shAddress string, redeemScri
 	}
 
 	dcrmAddress := tokenCfg.DcrmAddress
-	address, err := btcutil.DecodeAddress(dcrmAddress, net)
+	address, err := b.DecodeAddress(dcrmAddress)
 	if err != nil {
 		return "", nil, fmt.Errorf("invalid dcrm address %v, %v", dcrmAddress, err)
 	}
 	pubKeyHash := address.ScriptAddress()
-	return GetP2shAddressWithMemo(memo, pubKeyHash, net)
+	return b.getP2shAddressWithMemo(memo, pubKeyHash)
 }
 
 func (b *Bridge) getRedeemScriptByOutputScrpit(preScript []byte) ([]byte, error) {
-	pkScript, err := txscript.ParsePkScript(preScript)
+	pkScript, err := b.ParsePkScript(preScript)
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +66,7 @@ func (b *Bridge) getRedeemScriptByOutputScrpit(preScript []byte) ([]byte, error)
 
 // GetP2shAddressByRedeemScript get p2sh address by redeem script
 func (b *Bridge) GetP2shAddressByRedeemScript(redeemScript []byte) (string, error) {
-	net := b.GetChainParams()
-	addressScriptHash, err := btcutil.NewAddressScriptHash(redeemScript, net)
+	addressScriptHash, err := b.NewAddressScriptHash(redeemScript)
 	if err != nil {
 		return "", err
 	}
@@ -90,5 +79,5 @@ func (b *Bridge) GetP2shSigScript(redeemScript []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return b.getPayToAddrScript(p2shAddr)
+	return b.GetPayToAddrScript(p2shAddr)
 }

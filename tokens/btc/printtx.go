@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 )
 
@@ -53,7 +51,7 @@ func AuthoredTxToString(authtx interface{}, pretty bool) string {
 		encTx.TxOut[i] = &EncTxOut{
 			Value: txOut.Value,
 		}
-		encTx.TxOut[i].PkScript, _ = txscript.DisasmString(txOut.PkScript)
+		encTx.TxOut[i].PkScript, _ = disasmScriptToString(txOut.PkScript)
 	}
 
 	encTx.TxIn = make([]*EncTxIn, len(tx.TxIn))
@@ -66,7 +64,7 @@ func AuthoredTxToString(authtx interface{}, pretty bool) string {
 			Sequence: txIn.Sequence,
 			Value:    authoredTx.PrevInputValues[i],
 		}
-		encTx.TxIn[i].SignatureScript, _ = txscript.DisasmString(txIn.SignatureScript)
+		encTx.TxIn[i].SignatureScript, _ = disasmScriptToString(txIn.SignatureScript)
 		encTx.TxIn[i].Witness = make([]hexutil.Bytes, len(txIn.Witness))
 		for j, witness := range txIn.Witness {
 			encTx.TxIn[i].Witness[j] = hexutil.Bytes(witness)
@@ -80,7 +78,7 @@ func AuthoredTxToString(authtx interface{}, pretty bool) string {
 // EncAuthoredTx stuct
 type EncAuthoredTx struct {
 	Tx          *EncMsgTx
-	TotalInput  btcutil.Amount
+	TotalInput  btcAmountType
 	ChangeIndex int
 }
 
@@ -111,5 +109,5 @@ type EncTxIn struct {
 	SignatureScript  string
 	Witness          []hexutil.Bytes
 	Sequence         uint32
-	Value            btcutil.Amount
+	Value            btcAmountType
 }

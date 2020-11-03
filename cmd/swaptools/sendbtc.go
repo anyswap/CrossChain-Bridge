@@ -177,7 +177,7 @@ func (bts *btcTxSender) loadWIFForAddress() string {
 		log.Fatal("failed to decode WIF to verify")
 	}
 	pkdata := wif.SerializePubKey()
-	pkaddr, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkdata), btcBridge.GetChainParams())
+	pkaddr, _ := btcBridge.NewAddressPubKeyHash(pkdata)
 	if pkaddr.EncodeAddress() != bts.sender {
 		log.Fatal("address mismatch", "decoded", pkaddr.EncodeAddress(), "from", bts.sender)
 	}

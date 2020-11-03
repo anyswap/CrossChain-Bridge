@@ -10,10 +10,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
@@ -37,7 +33,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		to            = args.To
 		amount        = args.Value
 		memo          = args.Memo
-		relayFeePerKb btcutil.Amount
+		relayFeePerKb btcAmountType
 		changeAddress string
 	)
 
@@ -74,9 +70,9 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	}
 
 	if extra.RelayFeePerKb != nil {
-		relayFeePerKb = btcutil.Amount(*extra.RelayFeePerKb)
+		relayFeePerKb = btcAmountType(*extra.RelayFeePerKb)
 	} else {
-		relayFeePerKb = btcutil.Amount(tokens.BtcRelayFeePerKb)
+		relayFeePerKb = btcAmountType(tokens.BtcRelayFeePerKb)
 	}
 
 	txOuts, err := b.getTxOutputs(to, amount, memo)
@@ -84,7 +80,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
-	inputSource := func(target btcutil.Amount) (total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
+	inputSource := func(target btcAmountType) (total btcAmountType, inputs []*wireTxInType, inputValues []btcAmountType, scripts [][]byte, err error) {
 		if len(extra.PreviousOutPoints) != 0 {
 			return b.getUtxos(from, target, extra.PreviousOutPoints)
 		}
@@ -92,10 +88,10 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	}
 
 	changeSource := func() ([]byte, error) {
-		return b.getPayToAddrScript(changeAddress)
+		return b.GetPayToAddrScript(changeAddress)
 	}
 
-	authoredTx, err := NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource, false)
+	authoredTx, err := b.NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource, false)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +120,7 @@ func (b *Bridge) BuildTransaction(from string, receivers []string, amounts []int
 		return nil, fmt.Errorf("count of receivers and amounts are not equal")
 	}
 
-	var txOuts []*wire.TxOut
+	var txOuts []*wireTxOutType
 
 	for i, receiver := range receivers {
 		err = b.addPayToAddrOutput(&txOuts, receiver, amounts[i])
@@ -133,23 +129,23 @@ func (b *Bridge) BuildTransaction(from string, receivers []string, amounts []int
 		}
 	}
 
-	err = addMemoOutput(&txOuts, memo)
+	err = b.addMemoOutput(&txOuts, memo)
 	if err != nil {
 		return nil, err
 	}
 
-	inputSource := func(target btcutil.Amount) (total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
+	inputSource := func(target btcAmountType) (total btcAmountType, inputs []*wireTxInType, inputValues []btcAmountType, scripts [][]byte, err error) {
 		return b.selectUtxos(from, target)
 	}
 
 	changeSource := func() ([]byte, error) {
-		return b.getPayToAddrScript(from)
+		return b.GetPayToAddrScript(from)
 	}
 
-	return NewUnsignedTransaction(txOuts, btcutil.Amount(relayFeePerKb), inputSource, changeSource, false)
+	return b.NewUnsignedTransaction(txOuts, btcAmountType(relayFeePerKb), inputSource, changeSource, false)
 }
 
-func (b *Bridge) getTxOutputs(to string, amount *big.Int, memo string) (txOuts []*wire.TxOut, err error) {
+func (b *Bridge) getTxOutputs(to string, amount *big.Int, memo string) (txOuts []*wireTxOutType, err error) {
 	if amount != nil {
 		err = b.addPayToAddrOutput(&txOuts, to, amount.Int64())
 		if err != nil {
@@ -158,7 +154,7 @@ func (b *Bridge) getTxOutputs(to string, amount *big.Int, memo string) (txOuts [
 	}
 
 	if memo != "" {
-		err = addMemoOutput(&txOuts, memo)
+		err = b.addMemoOutput(&txOuts, memo)
 		if err != nil {
 			return nil, err
 		}
@@ -167,37 +163,28 @@ func (b *Bridge) getTxOutputs(to string, amount *big.Int, memo string) (txOuts [
 	return txOuts, err
 }
 
-func (b *Bridge) addPayToAddrOutput(txOuts *[]*wire.TxOut, to string, amount int64) error {
+func (b *Bridge) addPayToAddrOutput(txOuts *[]*wireTxOutType, to string, amount int64) error {
 	if amount <= 0 {
 		return nil
 	}
-	pkscript, err := b.getPayToAddrScript(to)
+	pkscript, err := b.GetPayToAddrScript(to)
 	if err != nil {
 		return err
 	}
-	*txOuts = append(*txOuts, wire.NewTxOut(amount, pkscript))
+	*txOuts = append(*txOuts, b.NewTxOut(amount, pkscript))
 	return nil
 }
 
-func addMemoOutput(txOuts *[]*wire.TxOut, memo string) error {
+func (b *Bridge) addMemoOutput(txOuts *[]*wireTxOutType, memo string) error {
 	if memo == "" {
 		return nil
 	}
-	nullScript, err := txscript.NullDataScript([]byte(memo))
+	nullScript, err := b.NullDataScript(memo)
 	if err != nil {
 		return err
 	}
-	*txOuts = append(*txOuts, wire.NewTxOut(0, nullScript))
+	*txOuts = append(*txOuts, b.NewTxOut(0, nullScript))
 	return nil
-}
-
-func (b *Bridge) getPayToAddrScript(address string) ([]byte, error) {
-	chainConfig := b.GetChainParams()
-	toAddr, err := btcutil.DecodeAddress(address, chainConfig)
-	if err != nil {
-		return nil, fmt.Errorf("decode btc address '%v' failed. %v", address, err)
-	}
-	return txscript.PayToAddrScript(toAddr)
 }
 
 func (b *Bridge) findUxtosWithRetry(from string) (utxos []*electrs.ElectUtxo, err error) {
@@ -233,8 +220,8 @@ func (b *Bridge) getOutspendWithRetry(point *tokens.BtcOutPoint) (outspend *elec
 	return outspend, err
 }
 
-func (b *Bridge) selectUtxos(from string, target btcutil.Amount) (total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
-	p2pkhScript, err := b.getPayToAddrScript(from)
+func (b *Bridge) selectUtxos(from string, target btcAmountType) (total btcAmountType, inputs []*wireTxInType, inputValues []btcAmountType, scripts [][]byte, err error) {
+	p2pkhScript, err := b.GetPayToAddrScript(from)
 	if err != nil {
 		return 0, nil, nil, nil, err
 	}
@@ -250,11 +237,8 @@ func (b *Bridge) selectUtxos(from string, target btcutil.Amount) (total btcutil.
 	)
 
 	for _, utxo := range utxos {
-		value := btcutil.Amount(*utxo.Value)
-		if value <= 0 {
-			continue
-		}
-		if value > btcutil.MaxSatoshi {
+		value := btcAmountType(*utxo.Value)
+		if !isValidValue(value) {
 			continue
 		}
 		tx, err = b.getTransactionByHashWithRetry(*utxo.Txid)
@@ -271,12 +255,11 @@ func (b *Bridge) selectUtxos(from string, target btcutil.Amount) (total btcutil.
 		if output.ScriptpubkeyAddress == nil || *output.ScriptpubkeyAddress != from {
 			continue
 		}
-		txHash, err2 := chainhash.NewHashFromStr(*utxo.Txid)
-		if err2 != nil {
+
+		txIn, errf := b.NewTxIn(*utxo.Txid, *utxo.Vout, p2pkhScript)
+		if errf != nil {
 			continue
 		}
-		preOut := wire.NewOutPoint(txHash, *utxo.Vout)
-		txIn := wire.NewTxIn(preOut, p2pkhScript, nil)
 
 		total += value
 		inputs = append(inputs, txIn)
@@ -297,22 +280,16 @@ func (b *Bridge) selectUtxos(from string, target btcutil.Amount) (total btcutil.
 	return total, inputs, inputValues, scripts, nil
 }
 
-func (b *Bridge) getUtxos(from string, target btcutil.Amount, prevOutPoints []*tokens.BtcOutPoint) (total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
-	p2pkhScript, err := b.getPayToAddrScript(from)
+func (b *Bridge) getUtxos(from string, target btcAmountType, prevOutPoints []*tokens.BtcOutPoint) (total btcAmountType, inputs []*wireTxInType, inputValues []btcAmountType, scripts [][]byte, err error) {
+	p2pkhScript, err := b.GetPayToAddrScript(from)
 	if err != nil {
 		return 0, nil, nil, nil, err
 	}
-	var (
-		tx       *electrs.ElectTx
-		txHash   *chainhash.Hash
-		outspend *electrs.ElectOutspend
-		value    btcutil.Amount
-	)
 
 	for _, point := range prevOutPoints {
-		outspend, err = b.getOutspendWithRetry(point)
-		if err != nil {
-			return 0, nil, nil, nil, err
+		outspend, errf := b.getOutspendWithRetry(point)
+		if errf != nil {
+			return 0, nil, nil, nil, errf
 		}
 		if *outspend.Spent {
 			if outspend.Status != nil && outspend.Status.BlockHeight != nil {
@@ -323,9 +300,9 @@ func (b *Bridge) getUtxos(from string, target btcutil.Amount, prevOutPoints []*t
 			}
 			return 0, nil, nil, nil, err
 		}
-		tx, err = b.getTransactionByHashWithRetry(point.Hash)
-		if err != nil {
-			return 0, nil, nil, nil, err
+		tx, errf := b.getTransactionByHashWithRetry(point.Hash)
+		if errf != nil {
+			return 0, nil, nil, nil, errf
 		}
 		if point.Index >= uint32(len(tx.Vout)) {
 			err = fmt.Errorf("out point (%v, %v) index overflow", point.Hash, point.Index)
@@ -340,15 +317,16 @@ func (b *Bridge) getUtxos(from string, target btcutil.Amount, prevOutPoints []*t
 			err = fmt.Errorf("out point (%v, %v) script pubkey address %v is not %v", point.Hash, point.Index, *output.ScriptpubkeyAddress, from)
 			return 0, nil, nil, nil, err
 		}
-		value = btcutil.Amount(*output.Value)
+		value := btcAmountType(*output.Value)
 		if value == 0 {
 			err = fmt.Errorf("out point (%v, %v) with zero value", point.Hash, point.Index)
 			return 0, nil, nil, nil, err
 		}
 
-		txHash, _ = chainhash.NewHashFromStr(point.Hash)
-		prevOutPoint := wire.NewOutPoint(txHash, point.Index)
-		txIn := wire.NewTxIn(prevOutPoint, p2pkhScript, nil)
+		txIn, errf := b.NewTxIn(point.Hash, point.Index, p2pkhScript)
+		if errf != nil {
+			return 0, nil, nil, nil, errf
+		}
 
 		total += value
 		inputs = append(inputs, txIn)
@@ -373,7 +351,7 @@ func (insufficientFundsError) Error() string {
 // ref. https://github.com/btcsuite/btcwallet/blob/b07494fc2d662fdda2b8a9db2a3eacde3e1ef347/wallet/txauthor/author.go
 // we only modify it to support P2PKH change script (the origin only support P2WPKH change script)
 // and update estimate size because we are not use P2WKH
-func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount, fetchInputs txauthor.InputSource, fetchChange txauthor.ChangeSource, isAggregate bool) (*txauthor.AuthoredTx, error) {
+func (b *Bridge) NewUnsignedTransaction(outputs []*wireTxOutType, relayFeePerKb btcAmountType, fetchInputs txauthor.InputSource, fetchChange txauthor.ChangeSource, isAggregate bool) (*txauthor.AuthoredTx, error) {
 	targetAmount := txauthor.SumOutputValues(outputs)
 	estimatedSize := txsizes.EstimateSerializeSize(1, outputs, true)
 	targetFee := txrules.FeeForSerializeSize(relayFeePerKb, estimatedSize)
@@ -387,10 +365,10 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount,
 			return nil, insufficientFundsError{}
 		}
 
-		maxSignedSize := estimateSize(scripts, outputs, true, isAggregate)
+		maxSignedSize := b.estimateSize(scripts, outputs, true, isAggregate)
 		maxRequiredFee := txrules.FeeForSerializeSize(relayFeePerKb, maxSignedSize)
-		if maxRequiredFee < btcutil.Amount(tokens.BtcMinRelayFee) {
-			maxRequiredFee = btcutil.Amount(tokens.BtcMinRelayFee)
+		if maxRequiredFee < btcAmountType(tokens.BtcMinRelayFee) {
+			maxRequiredFee = btcAmountType(tokens.BtcMinRelayFee)
 		}
 		remainingAmount := inputAmount - targetAmount
 		if remainingAmount < maxRequiredFee {
@@ -401,12 +379,8 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount,
 			continue
 		}
 
-		unsignedTransaction := &wire.MsgTx{
-			Version:  wire.TxVersion,
-			TxIn:     inputs,
-			TxOut:    outputs,
-			LockTime: 0,
-		}
+		unsignedTransaction := b.NewMsgTx(inputs, outputs, 0)
+
 		changeIndex := -1
 		changeAmount := inputAmount - targetAmount - maxRequiredFee
 		if changeAmount != 0 {
@@ -423,7 +397,7 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount,
 			if changeAmount < threshold {
 				log.Debug("get rid of dust change", "amount", changeAmount, "threshold", threshold, "scriptsize", len(changeScript))
 			} else {
-				change := wire.NewTxOut(int64(changeAmount), changeScript)
+				change := b.NewTxOut(int64(changeAmount), changeScript)
 				l := len(outputs)
 				outputs = append(outputs[:l:l], change)
 				unsignedTransaction.TxOut = outputs
@@ -441,7 +415,7 @@ func NewUnsignedTransaction(outputs []*wire.TxOut, relayFeePerKb btcutil.Amount,
 	}
 }
 
-func estimateSize(scripts [][]byte, txOuts []*wire.TxOut, addChangeOutput, isAggregate bool) int {
+func (b *Bridge) estimateSize(scripts [][]byte, txOuts []*wireTxOutType, addChangeOutput, isAggregate bool) int {
 	if !isAggregate {
 		return txsizes.EstimateSerializeSize(len(scripts), txOuts, addChangeOutput)
 	}
@@ -449,7 +423,7 @@ func estimateSize(scripts [][]byte, txOuts []*wire.TxOut, addChangeOutput, isAgg
 	var p2sh, p2pkh int
 	for _, pkScript := range scripts {
 		switch {
-		case txscript.IsPayToScriptHash(pkScript):
+		case b.IsPayToScriptHash(pkScript):
 			p2sh++
 		default:
 			p2pkh++

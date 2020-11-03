@@ -9,7 +9,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
-	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 )
 
@@ -61,13 +60,13 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 	}
 	for i, preScript := range authoredTx.PrevScripts {
 		sigScript := preScript
-		if txscript.IsPayToScriptHash(sigScript) {
+		if b.IsPayToScriptHash(sigScript) {
 			sigScript, err = b.getRedeemScriptByOutputScrpit(preScript)
 			if err != nil {
 				return err
 			}
 		}
-		sigHash, err := txscript.CalcSignatureHash(sigScript, hashType, authoredTx.Tx, i)
+		sigHash, err := b.CalcSignatureHash(sigScript, authoredTx.Tx, i)
 		if err != nil {
 			return err
 		}

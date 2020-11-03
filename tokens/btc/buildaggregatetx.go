@@ -8,9 +8,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 )
 
@@ -25,17 +22,17 @@ func (b *Bridge) BuildAggregateTransaction(addrs []string, utxos []*electrs.Elec
 		return nil, err
 	}
 
-	inputSource := func(target btcutil.Amount) (total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
+	inputSource := func(target btcAmountType) (total btcAmountType, inputs []*wireTxInType, inputValues []btcAmountType, scripts [][]byte, err error) {
 		return b.getUtxosFromElectUtxos(target, addrs, utxos)
 	}
 
 	changeSource := func() ([]byte, error) {
-		return b.getPayToAddrScript(tokens.BtcUtxoAggregateToAddress)
+		return b.GetPayToAddrScript(tokens.BtcUtxoAggregateToAddress)
 	}
 
-	relayFeePerKb := btcutil.Amount(tokens.BtcRelayFeePerKb + 2000)
+	relayFeePerKb := btcAmountType(tokens.BtcRelayFeePerKb + 2000)
 
-	return NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource, true)
+	return b.NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource, true)
 }
 
 func (b *Bridge) rebuildAggregateTransaction(prevOutPoints []*tokens.BtcOutPoint) (rawTx *txauthor.AuthoredTx, err error) {
@@ -46,17 +43,9 @@ func (b *Bridge) rebuildAggregateTransaction(prevOutPoints []*tokens.BtcOutPoint
 	return b.BuildAggregateTransaction(addrs, utxos)
 }
 
-func (b *Bridge) getUtxosFromElectUtxos(target btcutil.Amount, addrs []string, utxos []*electrs.ElectUtxo) (total btcutil.Amount, inputs []*wire.TxIn, inputValues []btcutil.Amount, scripts [][]byte, err error) {
-	var (
-		txHash   *chainhash.Hash
-		value    btcutil.Amount
-		pkScript []byte
-		p2shAddr string
-		errt     error
-	)
-
+func (b *Bridge) getUtxosFromElectUtxos(target btcAmountType, addrs []string, utxos []*electrs.ElectUtxo) (total btcAmountType, inputs []*wireTxInType, inputValues []btcAmountType, scripts [][]byte, err error) {
 	for i, utxo := range utxos {
-		value = btcutil.Amount(*utxo.Value)
+		value := btcAmountType(*utxo.Value)
 		if value == 0 {
 			continue
 		}
@@ -67,21 +56,22 @@ func (b *Bridge) getUtxosFromElectUtxos(target btcutil.Amount, addrs []string, u
 			if bindAddr == "" {
 				continue
 			}
-			p2shAddr, _, _ = b.GetP2shAddress(bindAddr)
+			p2shAddr, _, _ := b.GetP2shAddress(bindAddr)
 			if p2shAddr != address {
 				log.Warn("wrong registered p2sh address", "have", address, "bind", bindAddr, "want", p2shAddr)
 				continue
 			}
 		}
 
-		pkScript, errt = b.getPayToAddrScript(address)
+		pkScript, errt := b.GetPayToAddrScript(address)
 		if errt != nil {
 			continue
 		}
 
-		txHash, _ = chainhash.NewHashFromStr(*utxo.Txid)
-		prevOutPoint := wire.NewOutPoint(txHash, *utxo.Vout)
-		txIn := wire.NewTxIn(prevOutPoint, pkScript, nil)
+		txIn, errf := b.NewTxIn(*utxo.Txid, *utxo.Vout, pkScript)
+		if errf != nil {
+			continue
+		}
 
 		total += value
 		inputs = append(inputs, txIn)
