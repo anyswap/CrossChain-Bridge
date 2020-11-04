@@ -266,9 +266,15 @@ func (s *RPCAPI) GetLatestScanInfo(r *http.Request, isSrc *bool, result *swapapi
 	return err
 }
 
+// RegisterAddressArgs args
+type RegisterAddressArgs struct {
+	Address string `json:"address"`
+	PairID  string `json:"pairid"`
+}
+
 // RegisterAddress api
-func (s *RPCAPI) RegisterAddress(r *http.Request, address *string, result *swapapi.PostResult) error {
-	res, err := swapapi.RegisterAddress(*address)
+func (s *RPCAPI) RegisterAddress(r *http.Request, args *RegisterAddressArgs, result *swapapi.RegisteredAddress) error {
+	res, err := swapapi.RegisterAddress(args.Address, args.PairID)
 	if err == nil && res != nil {
 		*result = *res
 	}
@@ -276,8 +282,17 @@ func (s *RPCAPI) RegisterAddress(r *http.Request, address *string, result *swapa
 }
 
 // GetRegisteredAddress api
-func (s *RPCAPI) GetRegisteredAddress(r *http.Request, address *string, result *swapapi.RegisteredAddress) error {
-	res, err := swapapi.GetRegisteredAddress(*address)
+func (s *RPCAPI) GetRegisteredAddress(r *http.Request, args *RegisterAddressArgs, result *swapapi.RegisteredAddress) error {
+	res, err := swapapi.GetRegisteredAddress(args.Address, args.PairID)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+// GetBip32AddressInfo api
+func (s *RPCAPI) GetBip32AddressInfo(r *http.Request, args *RegisterAddressArgs, result *swapapi.RegisteredAddress) error {
+	res, err := swapapi.GetBip32AddressInfo(args.Address, args.PairID)
 	if err == nil && res != nil {
 		*result = *res
 	}

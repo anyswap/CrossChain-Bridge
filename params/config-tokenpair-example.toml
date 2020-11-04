@@ -1,4 +1,5 @@
 PairID = "BTC"
+UseBip32 = false
 
 # source token config
 [SrcToken]

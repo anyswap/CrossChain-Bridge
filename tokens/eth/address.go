@@ -1,9 +1,14 @@
 package eth
 
 import (
+	"crypto/ecdsa"
+	"fmt"
+	"math/big"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
 
 // IsValidAddress check address
@@ -33,4 +38,30 @@ func (b *Bridge) IsContractAddress(address string) (bool, error) {
 		time.Sleep(retryRPCInterval)
 	}
 	return false, err
+}
+
+// GetBip32InputCode get bip32 input code
+func (b *Bridge) GetBip32InputCode(addr string) (string, error) {
+	if !b.IsValidAddress(addr) {
+		return "", fmt.Errorf("invalid address")
+	}
+	address := common.HexToAddress(addr)
+	return fmt.Sprintf("m/%s", strings.ToLower(address.String())), nil
+}
+
+// PublicKeyToAddress public key to address
+func (b *Bridge) PublicKeyToAddress(hexPubkey string) (string, error) {
+	pkData := common.FromHex(hexPubkey)
+	if len(pkData) != 64 {
+		return "", fmt.Errorf("wrong length of public key")
+	}
+	ecPub := ecdsa.PublicKey{
+		Curve: crypto.S256(),
+		X:     new(big.Int).SetBytes(pkData[:32]),
+		Y:     new(big.Int).SetBytes(pkData[32:]),
+	}
+	if !ecPub.Curve.IsOnCurve(ecPub.X, ecPub.Y) {
+		return "", fmt.Errorf("invalid secp256k1 curve point")
+	}
+	return crypto.PubkeyToAddress(ecPub).String(), nil
 }

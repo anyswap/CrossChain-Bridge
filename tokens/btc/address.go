@@ -60,3 +60,25 @@ func (b *Bridge) IsP2shAddress(addr string) bool {
 func DecodeWIF(wif string) (*btcutil.WIF, error) {
 	return btcutil.DecodeWIF(wif)
 }
+
+// GetBip32InputCode get bip32 input code
+func (b *Bridge) GetBip32InputCode(addr string) (string, error) {
+	address, err := b.DecodeAddress(addr)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("m/%s", address.EncodeAddress()), nil
+}
+
+// PublicKeyToAddress public key to address
+func (b *Bridge) PublicKeyToAddress(hexPubkey string) (string, error) {
+	cpkData, err := b.GetCompressedPublicKey(hexPubkey, false)
+	if err != nil {
+		return "", err
+	}
+	address, err := b.NewAddressPubKeyHash(cpkData)
+	if err != nil {
+		return "", err
+	}
+	return address.EncodeAddress(), nil
+}

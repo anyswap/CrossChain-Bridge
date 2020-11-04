@@ -226,14 +226,23 @@ func UpdateLatestScanInfo(isSrc bool, height uint64) error {
 }
 
 // IsAddressRegistered is address registered
-func IsAddressRegistered(address string) bool {
+func IsAddressRegistered(address, pairID string) bool {
+	pairCfg := tokens.GetTokenPairConfig(pairID)
+	if pairCfg == nil {
+		return false
+	}
+	rootPubkey := pairCfg.SrcToken.DcrmPubkey
 	if mongodb.HasSession() {
-		result, _ := mongodb.FindRegisteredAddress(address)
+		result, _ := mongodb.FindRegisteredAddress(address, rootPubkey)
 		return result != nil
+	}
+	args := map[string]interface{}{
+		"address": address,
+		"pairid":  pairID,
 	}
 	var result interface{}
 	for i := 0; i < retryRPCCount; i++ {
-		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetRegisteredAddress", address)
+		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetRegisteredAddress", args)
 		if err == nil {
 			return result != nil
 		}

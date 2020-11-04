@@ -147,3 +147,16 @@ func GetGroupByID(groupID, rpcAddr string) (*GroupInfo, error) {
 	}
 	return result.Data, nil
 }
+
+// GetBip32ChildKey get bip32 child key
+func GetBip32ChildKey(rootPubkey, inputCode string) (string, error) {
+	var result DataResultResp
+	err := httpPost(&result, "dcrm_getBip32ChildKey", rootPubkey, inputCode)
+	if err != nil {
+		return "", wrapPostError("dcrm_getBip32ChildKey", err)
+	}
+	if result.Status != successStatus {
+		return "", newWrongStatusError("getBip32ChildKey", result.Status, result.Error)
+	}
+	return result.Data.Result, nil
+}

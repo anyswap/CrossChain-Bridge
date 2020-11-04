@@ -22,6 +22,7 @@ var (
 // TokenPairConfig pair config
 type TokenPairConfig struct {
 	PairID    string
+	UseBip32  bool
 	SrcToken  *TokenConfig
 	DestToken *TokenConfig
 }

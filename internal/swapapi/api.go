@@ -2,9 +2,9 @@ package swapapi
 
 import (
 	"encoding/hex"
-	"strings"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
@@ -18,6 +18,7 @@ var (
 	errNotBtcBridge      = newRPCError(-32096, "bridge is not btc")
 	errTokenPairNotExist = newRPCError(-32095, "token pair not exist")
 	errSwapCannotRetry   = newRPCError(-32094, "swap can not retry")
+	errForbidOperation   = newRPCError(-32093, "forbid operation")
 )
 
 func newRPCError(ec rpcjson.ErrorCode, message string) error {
@@ -325,18 +326,73 @@ func GetLatestScanInfo(isSrc bool) (*LatestScanInfo, error) {
 }
 
 // RegisterAddress register address
-func RegisterAddress(address string) (*PostResult, error) {
-	address = strings.ToLower(address)
-	err := mongodb.AddRegisteredAddress(address)
+func RegisterAddress(address, pairID string) (result *RegisteredAddress, err error) {
+	pairCfg := tokens.GetTokenPairConfig(pairID)
+	if pairCfg == nil {
+		return nil, errTokenPairNotExist
+	}
+	if !pairCfg.UseBip32 && btc.BridgeInstance != nil {
+		// use RegisterP2shAddress instead
+		return nil, errForbidOperation
+	}
+
+	var rootPubkey string
+	if pairCfg.UseBip32 {
+		rootPubkey = pairCfg.SrcToken.DcrmPubkey
+	}
+
+	result, err = mongodb.FindRegisteredAddress(address, rootPubkey)
+	if err == nil && result != nil {
+		return result, nil
+	}
+
+	if pairCfg.UseBip32 {
+		err = registerBip32Address(address, rootPubkey)
+	} else {
+		err = mongodb.AddRegisteredAddress(address, "", "", address)
+	}
 	if err != nil {
 		return nil, err
 	}
-	log.Info("[api] register address", "address", address)
-	return &SuccessPostResult, nil
+
+	return mongodb.FindRegisteredAddress(address, rootPubkey)
 }
 
-// GetRegisteredAddress get registered address
-func GetRegisteredAddress(address string) (*RegisteredAddress, error) {
-	address = strings.ToLower(address)
-	return mongodb.FindRegisteredAddress(address)
+func registerBip32Address(address, rootPubkey string) error {
+	inputCode, err := tokens.SrcBridge.GetBip32InputCode(address)
+	if err != nil {
+		return err
+	}
+	childPubkey, err := dcrm.GetBip32ChildKey(rootPubkey, inputCode)
+	if err != nil {
+		return err
+	}
+	childAddress, err := tokens.SrcBridge.PublicKeyToAddress(childPubkey)
+	if err != nil {
+		return err
+	}
+	return mongodb.AddRegisteredAddress(address, rootPubkey, childPubkey, childAddress)
+}
+
+// GetRegisteredAddress get registered address info
+func GetRegisteredAddress(address, pairID string) (*RegisteredAddress, error) {
+	pairCfg := tokens.GetTokenPairConfig(pairID)
+	if pairCfg == nil {
+		return nil, errTokenPairNotExist
+	}
+	var rootPubkey string
+	if pairCfg.UseBip32 {
+		rootPubkey = pairCfg.SrcToken.DcrmPubkey
+	}
+	return mongodb.FindRegisteredAddress(address, rootPubkey)
+}
+
+// GetBip32AddressInfo get bip32 address info
+func GetBip32AddressInfo(bip32Addr, pairID string) (*RegisteredAddress, error) {
+	pairCfg := tokens.GetTokenPairConfig(pairID)
+	if pairCfg == nil {
+		return nil, errTokenPairNotExist
+	}
+	rootPubkey := pairCfg.SrcToken.DcrmPubkey
+	return mongodb.FindRegisteredAddress(bip32Addr, rootPubkey)
 }

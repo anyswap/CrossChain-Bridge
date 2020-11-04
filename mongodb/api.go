@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"fmt"
 	"math/big"
 	"strings"
 	"sync"
@@ -130,9 +131,9 @@ func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
 	ms.Key = GetSwapKey(ms.TxID, ms.PairID, ms.Bind)
 	err := collection.Insert(ms)
 	if err == nil {
-		log.Info("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
-	} else {
-		log.Debug("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection), "err", err)
+		log.Info("mongodb add swap success", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
+	} else if !mgo.IsDup(err) {
+		log.Error("mongodb add swap failed", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
@@ -316,9 +317,9 @@ func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
 	ms.Key = GetSwapKey(ms.TxID, ms.PairID, ms.Bind)
 	err := collection.Insert(ms)
 	if err == nil {
-		log.Info("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection))
-	} else {
-		log.Debug("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection), "err", err)
+		log.Info("mongodb add swap result success", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection))
+	} else if !mgo.IsDup(err) {
+		log.Error("mongodb add swap result failed", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
@@ -548,9 +549,9 @@ func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
 func AddP2shAddress(ma *MgoP2shAddress) error {
 	err := collP2shAddress.Insert(ma)
 	if err == nil {
-		log.Info("mongodb add p2sh address", "key", ma.Key, "p2shaddress", ma.P2shAddress)
-	} else {
-		log.Debug("mongodb add p2sh address", "key", ma.Key, "p2shaddress", ma.P2shAddress, "err", err)
+		log.Info("mongodb add p2sh address success", "key", ma.Key, "p2shaddress", ma.P2shAddress)
+	} else if !mgo.IsDup(err) {
+		log.Error("mongodb add p2sh address failed", "key", ma.Key, "p2shaddress", ma.P2shAddress, "err", err)
 	}
 	return mgoError(err)
 }
@@ -631,25 +632,50 @@ func FindLatestScanInfo(isSrc bool) (*MgoLatestScanInfo, error) {
 
 // ------------------------ register address ------------------------------
 
+func getRegisteredAddressKey(address, rootPubkey string) string {
+	if rootPubkey != "" {
+		return strings.ToLower(fmt.Sprintf("%s:%s", rootPubkey, address))
+	}
+	return strings.ToLower(address)
+}
+
 // AddRegisteredAddress add register address
-func AddRegisteredAddress(address string) error {
+func AddRegisteredAddress(address, rootPubkey, childPubkey, childAddress string) error {
 	ma := &MgoRegisteredAddress{
-		Key:       address,
-		Timestamp: time.Now().Unix(),
+		Key:            getRegisteredAddressKey(rootPubkey, address),
+		Address:        address,
+		RootPublicKey:  rootPubkey,
+		Bip32PublicKey: childPubkey,
+		Bip32Adddress:  childAddress,
+		Timestamp:      time.Now().Unix(),
 	}
 	err := collRegisteredAddress.Insert(ma)
 	if err == nil {
-		log.Info("mongodb add register address", "key", ma.Key)
-	} else {
-		log.Debug("mongodb add register address", "key", ma.Key, "err", err)
+		log.Info("mongodb register address success", "address", address, "childAddress", childAddress)
+	} else if !mgo.IsDup(err) {
+		log.Error("mongodb register address failed", "address", address, "childAddress", childAddress, "err", err)
 	}
 	return mgoError(err)
 }
 
 // FindRegisteredAddress find register address
-func FindRegisteredAddress(key string) (*MgoRegisteredAddress, error) {
+func FindRegisteredAddress(address, rootPubkey string) (*MgoRegisteredAddress, error) {
+	key := getRegisteredAddressKey(address, rootPubkey)
 	var result MgoRegisteredAddress
 	err := collRegisteredAddress.FindId(key).One(&result)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+	return &result, nil
+}
+
+// FindBip32AddressInfo find bip32 address info
+func FindBip32AddressInfo(bip32Address, rootPubkey string) (*MgoRegisteredAddress, error) {
+	qbip32Address := bson.M{"bip32address": bip32Address}
+	qrootPubkey := bson.M{"rootpubkey": rootPubkey}
+	queries := []bson.M{qbip32Address, qrootPubkey}
+	var result MgoRegisteredAddress
+	err := collRegisteredAddress.Find(bson.M{"$and": queries}).One(&result)
 	if err != nil {
 		return nil, mgoError(err)
 	}

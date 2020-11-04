@@ -221,15 +221,15 @@ func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
 		return tokens.ErrTxWithWrongValue
 	}
-	return b.checkSwapinBindAddress(swapInfo.Bind)
+	return b.checkSwapinBindAddress(swapInfo.Bind, swapInfo.PairID)
 }
 
-func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
+func (b *Bridge) checkSwapinBindAddress(bindAddr, pairID string) error {
 	if !tokens.DstBridge.IsValidAddress(bindAddr) {
 		log.Warn("wrong bind address in swapin", "bind", bindAddr)
 		return tokens.ErrTxWithWrongMemo
 	}
-	if !tools.IsAddressRegistered(bindAddr) {
+	if !tools.IsAddressRegistered(bindAddr, pairID) {
 		return tokens.ErrTxSenderNotRegistered
 	}
 	isContract, err := b.IsContractAddress(bindAddr)

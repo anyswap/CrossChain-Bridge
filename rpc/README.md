@@ -43,6 +43,7 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 [swap.GetP2shAddressInfo](#swapgetp2shaddressinfo)  
 [swap.RegisterAddress](#swapregisteraddress)  
 [swap.GetRegisteredAddress](#swapgetregisteredaddress)  
+[swap.GetBip32AddressInfo](#swapgetbip32addressinfo)  
 
 ### swap.GetServerInfo
 
@@ -220,7 +221,7 @@ limit 最大值为 100
 
 ##### 参数：
 ```json
-["P2sh地址"]
+["p2sh地址"]
 ```
 ##### 返回值：
 ```text
@@ -229,15 +230,15 @@ limit 最大值为 100
 
 ### swap.RegisterAddress
 
-注册账户地址 (ETH like 专用接口)
+注册账户地址 (ETH like, Bip32 专用接口)
 
 ##### 参数：
 ```json
-["账户地址"]
+[{"address":"账户地址", "pairid":"交易对"}]
 ```
 ##### 返回值：
 ```text
-成功返回`Success`，失败返回错误。
+成功返回注册账户信息，失败返回错误。
 ```
 
 ### swap.GetRegisteredAddress
@@ -246,7 +247,20 @@ limit 最大值为 100
 
 ##### 参数：
 ```json
-["账户地址"]
+[{"address":"账户地址", "pairid":"交易对"}]
+```
+##### 返回值：
+```text
+成功返回注册账户信息，失败返回错误。
+```
+
+### swap.GetBip32AddressInfo
+
+根据账户地址对应的充值地址查询注册账户信息
+
+##### 参数：
+```json
+[{"address":"充值地址", "pairid":"交易对"}]
 ```
 ##### 返回值：
 ```text
@@ -321,8 +335,12 @@ limit 最大值为 100
 
 ### GET /registered/{address}
 
-获取注册账户地址信息
+获取注册账户信息, address 为用户地址
 
 ### POST /register/{address}
 
-注册账户地址 (ETH like 专用接口)
+注册账户地址, address 为用户地址 (ETH like, Bip32 专用接口)
+
+### GET /bip32/{address}/{pairid}
+
+根据充值地址查询注册账户信息, address 为用户地址对应的充值地址 (Bip32 专用接口)

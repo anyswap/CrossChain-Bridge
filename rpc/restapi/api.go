@@ -226,7 +226,8 @@ func GetP2shAddressInfo(w http.ResponseWriter, r *http.Request) {
 func RegisterAddress(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	address := vars["address"]
-	res, err := swapapi.RegisterAddress(address)
+	pairID := vars["pairid"]
+	res, err := swapapi.RegisterAddress(address, pairID)
 	writeResponse(w, res, err)
 }
 
@@ -234,6 +235,16 @@ func RegisterAddress(w http.ResponseWriter, r *http.Request) {
 func GetRegisteredAddress(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	address := vars["address"]
-	res, err := swapapi.GetRegisteredAddress(address)
+	pairID := vars["pairid"]
+	res, err := swapapi.GetRegisteredAddress(address, pairID)
+	writeResponse(w, res, err)
+}
+
+// GetBip32AddressInfo handler
+func GetBip32AddressInfo(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	address := vars["address"]
+	pairID := vars["pairid"]
+	res, err := swapapi.GetBip32AddressInfo(address, pairID)
 	writeResponse(w, res, err)
 }

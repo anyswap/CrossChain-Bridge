@@ -78,6 +78,10 @@ type CrossChainBridge interface {
 	VerifyTokenConfig(*TokenConfig) error
 	IsValidAddress(address string) bool
 
+	// Bip32 suppport
+	GetBip32InputCode(address string) (string, error)
+	PublicKeyToAddress(hexPubkey string) (string, error)
+
 	GetTransaction(txHash string) (interface{}, error)
 	GetTransactionStatus(txHash string) *TxStatus
 	VerifyTransaction(pairID, txHash string, allowUnstable bool) (*TxSwapInfo, error)
