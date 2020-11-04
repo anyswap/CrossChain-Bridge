@@ -7,6 +7,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/block"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
@@ -23,6 +24,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return eth.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
+	case blockChainIden == "BLOCK":
+		return block.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
 		return nil

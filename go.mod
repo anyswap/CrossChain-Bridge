@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/BurntSushi/toml v0.3.1
+	github.com/blocknetdx/btcd v0.20.1-beta.0.20200618032145-59a950423708
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.0.0
