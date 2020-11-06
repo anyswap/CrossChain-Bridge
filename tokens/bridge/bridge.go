@@ -60,7 +60,7 @@ func InitCrossChainBridge(isServer bool) {
 
 	initBtcWithExtra(cfg.BtcExtra)
 
-	initDcrm(cfg.Dcrm, isServer)
+	dcrm.Init(cfg.Dcrm, isServer)
 
 	log.Info("Init bridge success", "isServer", isServer, "dcrmEnabled", !cfg.Dcrm.Disable)
 }
@@ -123,46 +123,4 @@ func initBtcWithExtra(btcExtra *tokens.BtcExtraConfig) {
 	}
 
 	log.Info("Init Btc extra", "UtxoAggregateMinCount", tokens.BtcUtxoAggregateMinCount, "UtxoAggregateMinValue", tokens.BtcUtxoAggregateMinValue, "UtxoAggregateToAddress", tokens.BtcUtxoAggregateToAddress)
-}
-
-func initDcrm(dcrmConfig *params.DcrmConfig, isServer bool) {
-	if dcrmConfig.Disable {
-		return
-	}
-
-	dcrm.SetDcrmGroup(*dcrmConfig.GroupID, dcrmConfig.Mode, *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
-	dcrm.SetDefaultDcrmNodeInfo(initDcrmNodeInfo(dcrmConfig.DefaultNode, isServer))
-
-	if isServer {
-		for _, nodeCfg := range dcrmConfig.OtherNodes {
-			initDcrmNodeInfo(nodeCfg, isServer)
-		}
-	}
-
-	dcrm.Init(dcrmConfig.Initiators)
-}
-
-func initDcrmNodeInfo(dcrmNodeCfg *params.DcrmNodeConfig, isServer bool) *dcrm.NodeInfo {
-	dcrmNodeInfo := &dcrm.NodeInfo{}
-	dcrmNodeInfo.SetDcrmRPCAddress(*dcrmNodeCfg.RPCAddress)
-	log.Info("Init dcrm rpc address", "rpcaddress", *dcrmNodeCfg.RPCAddress)
-
-	dcrmUser, err := dcrmNodeInfo.LoadKeyStore(*dcrmNodeCfg.KeystoreFile, *dcrmNodeCfg.PasswordFile)
-	if err != nil {
-		log.Fatalf("load keystore error %v", err)
-	}
-	log.Info("Init dcrm, load keystore success", "user", dcrmUser.String())
-
-	if isServer {
-		if !params.IsDcrmInitiator(dcrmUser.String()) {
-			log.Fatalf("server dcrm user %v is not in configed initiators", dcrmUser.String())
-		}
-
-		signGroups := dcrmNodeCfg.SignGroups
-		log.Info("Init dcrm sign groups", "signGroups", signGroups)
-		dcrmNodeInfo.SetSignGroups(signGroups)
-		dcrm.AddInitiatorNode(dcrmNodeInfo)
-	}
-
-	return dcrmNodeInfo
 }

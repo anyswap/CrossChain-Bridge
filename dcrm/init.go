@@ -8,6 +8,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tools"
 	"github.com/anyswap/CrossChain-Bridge/tools/keystore"
 	"github.com/anyswap/CrossChain-Bridge/types"
@@ -43,8 +44,29 @@ type NodeInfo struct {
 	signGroups     []string // sub groups for sign
 }
 
-// SetDefaultDcrmNodeInfo set default dcrm node info
-func SetDefaultDcrmNodeInfo(nodeInfo *NodeInfo) {
+// Init init dcrm
+func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
+	if dcrmConfig.Disable {
+		return
+	}
+
+	setDcrmGroup(*dcrmConfig.GroupID, dcrmConfig.Mode, *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
+	setDefaultDcrmNodeInfo(initDcrmNodeInfo(dcrmConfig.DefaultNode, isServer))
+
+	if isServer {
+		for _, nodeCfg := range dcrmConfig.OtherNodes {
+			initDcrmNodeInfo(nodeCfg, isServer)
+		}
+	}
+
+	initSelfEnode()
+	initAllEnodes()
+
+	verifyInitiators(dcrmConfig.Initiators)
+}
+
+// setDefaultDcrmNodeInfo set default dcrm node info
+func setDefaultDcrmNodeInfo(nodeInfo *NodeInfo) {
 	defaultDcrmNode = nodeInfo
 }
 
@@ -53,8 +75,8 @@ func GetAllInitiatorNodes() []*NodeInfo {
 	return allInitiatorNodes
 }
 
-// AddInitiatorNode add initiator dcrm node info
-func AddInitiatorNode(nodeInfo *NodeInfo) {
+// addInitiatorNode add initiator dcrm node info
+func addInitiatorNode(nodeInfo *NodeInfo) {
 	if nodeInfo.dcrmRPCAddress == "" {
 		log.Fatal("initiator: empty dcrm rpc address")
 	}
@@ -78,8 +100,8 @@ func IsSwapServer() bool {
 	return len(allInitiatorNodes) > 0
 }
 
-// SetDcrmGroup set dcrm group
-func SetDcrmGroup(group string, mode, neededOracles, totalOracles uint32) {
+// setDcrmGroup set dcrm group
+func setDcrmGroup(group string, mode, neededOracles, totalOracles uint32) {
 	dcrmGroupID = group
 	dcrmNeededOracles = neededOracles
 	dcrmTotalOracles = totalOracles
@@ -93,8 +115,8 @@ func GetGroupID() string {
 	return dcrmGroupID
 }
 
-// SetDcrmRPCAddress set dcrm node rpc address
-func (ni *NodeInfo) SetDcrmRPCAddress(url string) {
+// setDcrmRPCAddress set dcrm node rpc address
+func (ni *NodeInfo) setDcrmRPCAddress(url string) {
 	ni.dcrmRPCAddress = url
 }
 
@@ -103,8 +125,8 @@ func (ni *NodeInfo) GetDcrmRPCAddress() string {
 	return ni.dcrmRPCAddress
 }
 
-// SetSignGroups set sign subgroups
-func (ni *NodeInfo) SetSignGroups(groups []string) {
+// setSignGroups set sign subgroups
+func (ni *NodeInfo) setSignGroups(groups []string) {
 	ni.signGroups = groups
 }
 
@@ -127,14 +149,6 @@ func (ni *NodeInfo) LoadKeyStore(keyfile, passfile string) (common.Address, erro
 	ni.keyWrapper = key
 	ni.dcrmUser = ni.keyWrapper.Address
 	return ni.dcrmUser, nil
-}
-
-// Init init dcrm
-func Init(initiators []string) {
-	initSelfEnode()
-	initAllEnodes()
-
-	verifyInitiators(initiators)
 }
 
 func initSelfEnode() {
@@ -229,4 +243,29 @@ func verifyInitiators(initiators []string) {
 		}
 		isInGroup = false
 	}
+}
+
+func initDcrmNodeInfo(dcrmNodeCfg *params.DcrmNodeConfig, isServer bool) *NodeInfo {
+	dcrmNodeInfo := &NodeInfo{}
+	dcrmNodeInfo.setDcrmRPCAddress(*dcrmNodeCfg.RPCAddress)
+	log.Info("Init dcrm rpc address", "rpcaddress", *dcrmNodeCfg.RPCAddress)
+
+	dcrmUser, err := dcrmNodeInfo.LoadKeyStore(*dcrmNodeCfg.KeystoreFile, *dcrmNodeCfg.PasswordFile)
+	if err != nil {
+		log.Fatalf("load keystore error %v", err)
+	}
+	log.Info("Init dcrm, load keystore success", "user", dcrmUser.String())
+
+	if isServer {
+		if !params.IsDcrmInitiator(dcrmUser.String()) {
+			log.Fatalf("server dcrm user %v is not in configed initiators", dcrmUser.String())
+		}
+
+		signGroups := dcrmNodeCfg.SignGroups
+		log.Info("Init dcrm sign groups", "signGroups", signGroups)
+		dcrmNodeInfo.setSignGroups(signGroups)
+		addInitiatorNode(dcrmNodeInfo)
+	}
+
+	return dcrmNodeInfo
 }
