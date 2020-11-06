@@ -26,7 +26,7 @@ const (
 func (b *Bridge) verifyTransactionWithArgs(tx *txauthor.AuthoredTx, args *tokens.BuildTxArgs) error {
 	checkReceiver := args.Bind
 	if args.Identifier == AggregateIdentifier {
-		checkReceiver = tokens.BtcUtxoAggregateToAddress
+		checkReceiver = cfgUtxoAggregateToAddress
 	}
 	payToReceiverScript, err := b.GetPayToAddrScript(checkReceiver)
 	if err != nil {
@@ -57,7 +57,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 
-	cPkData, err := b.GetCompressedPublicKey(tokens.BtcFromPublicKey, false)
+	cPkData, err := b.GetCompressedPublicKey(cfgFromPublicKey, false)
 	if err != nil {
 		return nil, "", err
 	}
@@ -230,7 +230,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	}
 	jsondata, _ := json.Marshal(args)
 	msgContext := []string{string(jsondata)}
-	rpcAddr, keyID, err := dcrm.DoSign(tokens.BtcFromPublicKey, msgHash, msgContext)
+	rpcAddr, keyID, err := dcrm.DoSign(cfgFromPublicKey, msgHash, msgContext)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +259,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 		return nil, errors.New("get sign status failed")
 	}
 
-	rsv, err = b.adjustRsvOrders(rsv, msgHash, tokens.BtcFromPublicKey)
+	rsv, err = b.adjustRsvOrders(rsv, msgHash, cfgFromPublicKey)
 	if err != nil {
 		return nil, err
 	}

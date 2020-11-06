@@ -12,18 +12,17 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
 
-// btc extra default values
-var (
-	BtcMinRelayFee   int64 = 400
-	BtcRelayFeePerKb int64 = 2000
-	BtcFromPublicKey string
+// BtcExtraConfig used to build swpout to btc tx
+type BtcExtraConfig struct {
+	MinRelayFee       int64
+	MinRelayFeePerKb  int64
+	MaxRelayFeePerKb  int64
+	EstimateFeeBlocks int
 
-	BtcUtxoAggregateMinCount  = 20
-	BtcUtxoAggregateMinValue  = uint64(1000000)
-	BtcUtxoAggregateToAddress = ""
-
-	maxPlusGasPricePercentage uint64 = 10000
-)
+	UtxoAggregateMinCount  int
+	UtxoAggregateMinValue  uint64
+	UtxoAggregateToAddress string
+}
 
 // ChainConfig struct
 type ChainConfig struct {
@@ -217,15 +216,6 @@ type BtcExtraArgs struct {
 	PreviousOutPoints []*BtcOutPoint `json:"previousOutPoints,omitempty"`
 }
 
-// BtcExtraConfig used to build swpout to btc tx
-type BtcExtraConfig struct {
-	MinRelayFee            int64
-	RelayFeePerKb          int64
-	UtxoAggregateMinCount  int
-	UtxoAggregateMinValue  uint64
-	UtxoAggregateToAddress string
-}
-
 // P2shAddressInfo struct
 type P2shAddressInfo struct {
 	BindAddress        string
@@ -284,6 +274,7 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if *c.SwapFeeRate == 0.0 && *c.MinimumSwapFee > 0.0 {
 		return errors.New("wrong token config, MinimumSwapFee should be 0 if SwapFeeRate is 0")
 	}
+	maxPlusGasPricePercentage := uint64(10000)
 	if c.PlusGasPricePercentage > maxPlusGasPricePercentage {
 		return errors.New("too large 'PlusGasPricePercentage' value")
 	}

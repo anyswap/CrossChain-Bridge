@@ -18,6 +18,17 @@ const (
 	redeemAggregateP2SHInputSize = 198
 )
 
+// ShouldAggregate should aggregate
+func ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
+	if aggUtxoCount >= cfgUtxoAggregateMinCount {
+		return true
+	}
+	if aggSumVal >= cfgUtxoAggregateMinValue {
+		return true
+	}
+	return false
+}
+
 // AggregateUtxos aggregate uxtos
 func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (string, error) {
 	authoredTx, err := b.BuildAggregateTransaction(addrs, utxos)

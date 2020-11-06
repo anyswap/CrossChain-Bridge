@@ -26,6 +26,10 @@ func isValidValue(value btcAmountType) bool {
 	return value > 0 && value <= btcutil.MaxSatoshi
 }
 
+func newAmount(value float64) (btcAmountType, error) {
+	return btcutil.NewAmount(value)
+}
+
 // GetChainParams get chain config (net params)
 func (b *Bridge) GetChainParams() *chaincfg.Params {
 	networkID := strings.ToLower(b.ChainConfig.NetID)

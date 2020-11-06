@@ -28,12 +28,18 @@ ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 
 # customize fees in building btc transaction (btc only)
 [BtcExtra]
-MinRelayFee   = 400
-RelayFeePerKb = 2000
+# minimum relay fee of tx
+MinRelayFee = 400
+# relay fee per kilobytes
+MinRelayFeePerKb = 2000
+# maximum relay fee per kilobytes
+MaxRelayFeePerKb = 500000
+# estimate smart fee with such many target blocks
+EstimateFeeBlocks = 6
 # aggregate if have more than so many utxos
-UtxoAggregateMinCount = 10
+UtxoAggregateMinCount = 20
 # aggregate if have more than so many value
-UtxoAggregateMinValue = 100000 # unit satoshi
+UtxoAggregateMinValue = 1000000 # unit satoshi
 # aggreate to this address
 UtxoAggregateToAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 

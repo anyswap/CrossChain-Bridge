@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
-	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
@@ -67,7 +66,7 @@ func findUtxosAndAggregate(addr string) {
 		aggAddrs = append(aggAddrs, addr)
 		aggUtxos = append(aggUtxos, utxo)
 
-		if shouldAggregate() {
+		if btc.ShouldAggregate(len(aggUtxos), aggSumVal) {
 			aggregate()
 		}
 	}
@@ -78,16 +77,6 @@ func isUtxoExist(utxo *electrs.ElectUtxo) bool {
 		if *item.Txid == *utxo.Txid && *item.Vout == *utxo.Vout {
 			return true
 		}
-	}
-	return false
-}
-
-func shouldAggregate() bool {
-	if len(aggUtxos) >= tokens.BtcUtxoAggregateMinCount {
-		return true
-	}
-	if aggSumVal >= tokens.BtcUtxoAggregateMinValue {
-		return true
 	}
 	return false
 }

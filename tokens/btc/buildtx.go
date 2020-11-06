@@ -24,6 +24,28 @@ const (
 	retryInterval = 3 * time.Second
 )
 
+func (b *Bridge) getRelayFeePerKb() (btcAmountType, error) {
+	var estimateFee int64
+	var err error
+	for i := 0; i < retryCount; i++ {
+		estimateFee, err = b.EstimateFeePerKb(cfgEstimateFeeBlocks)
+		if err == nil {
+			break
+		}
+		time.Sleep(retryInterval)
+	}
+	if err != nil {
+		log.Warn("estimate smart fee failed", "err", err)
+		return 0, err
+	}
+	if estimateFee > cfgMaxRelayFeePerKb {
+		estimateFee = cfgMaxRelayFeePerKb
+	} else if estimateFee < cfgMinRelayFeePerKb {
+		estimateFee = cfgMinRelayFeePerKb
+	}
+	return btcAmountType(estimateFee), nil
+}
+
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var (
@@ -72,7 +94,10 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	if extra.RelayFeePerKb != nil {
 		relayFeePerKb = btcAmountType(*extra.RelayFeePerKb)
 	} else {
-		relayFeePerKb = btcAmountType(tokens.BtcRelayFeePerKb)
+		relayFeePerKb, err = b.getRelayFeePerKb()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	txOuts, err := b.getTxOutputs(to, amount, memo)
@@ -96,22 +121,27 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
-	if len(extra.PreviousOutPoints) == 0 {
-		extra.PreviousOutPoints = make([]*tokens.BtcOutPoint, len(authoredTx.Tx.TxIn))
-		for i, txin := range authoredTx.Tx.TxIn {
-			point := txin.PreviousOutPoint
-			extra.PreviousOutPoints[i] = &tokens.BtcOutPoint{
-				Hash:  point.Hash.String(),
-				Index: point.Index,
-			}
-		}
-	}
+	updateExtraInfo(extra, authoredTx.Tx.TxIn)
 
 	if args.SwapType != tokens.NoSwapType {
 		args.Identifier = params.GetIdentifier()
 	}
 
 	return authoredTx, nil
+}
+
+func updateExtraInfo(extra *tokens.BtcExtraArgs, txins []*wireTxInType) {
+	if len(extra.PreviousOutPoints) > 0 {
+		return
+	}
+	extra.PreviousOutPoints = make([]*tokens.BtcOutPoint, len(txins))
+	for i, txin := range txins {
+		point := txin.PreviousOutPoint
+		extra.PreviousOutPoints[i] = &tokens.BtcOutPoint{
+			Hash:  point.Hash.String(),
+			Index: point.Index,
+		}
+	}
 }
 
 // BuildTransaction build tx
@@ -367,8 +397,8 @@ func (b *Bridge) NewUnsignedTransaction(outputs []*wireTxOutType, relayFeePerKb 
 
 		maxSignedSize := b.estimateSize(scripts, outputs, true, isAggregate)
 		maxRequiredFee := txrules.FeeForSerializeSize(relayFeePerKb, maxSignedSize)
-		if maxRequiredFee < btcAmountType(tokens.BtcMinRelayFee) {
-			maxRequiredFee = btcAmountType(tokens.BtcMinRelayFee)
+		if maxRequiredFee < btcAmountType(cfgMinRelayFee) {
+			maxRequiredFee = btcAmountType(cfgMinRelayFee)
 		}
 		remainingAmount := inputAmount - targetAmount
 		if remainingAmount < maxRequiredFee {

@@ -77,6 +77,11 @@ func (b *Bridge) GetBlockTransactions(blockHash string, startIndex uint32) ([]*e
 	return electrs.GetBlockTransactions(b, blockHash, startIndex)
 }
 
+// EstimateFeePerKb impl
+func (b *Bridge) EstimateFeePerKb(blocks int) (int64, error) {
+	return electrs.EstimateFeePerKb(b, blocks)
+}
+
 // GetBalance impl
 func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 	utxos, err := b.FindUtxos(account)

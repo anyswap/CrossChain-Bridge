@@ -199,3 +199,20 @@ func GetBlockTransactions(b tokens.CrossChainBridge, blockHash string, startInde
 	}
 	return nil, err
 }
+
+// EstimateFeePerKb call /fee-estimates and multiply 1000
+func EstimateFeePerKb(b tokens.CrossChainBridge, blocks int) (fee int64, err error) {
+	var result map[int]float64
+	gateway := b.GetGatewayConfig()
+	for _, apiAddress := range gateway.APIAddress {
+		url := apiAddress + "/fee-estimates"
+		err = client.RPCGet(&result, url)
+		if err == nil {
+			break
+		}
+	}
+	if err != nil {
+		return 0, err
+	}
+	return int64(result[blocks] * 1000), nil
+}
