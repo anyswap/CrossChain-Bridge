@@ -17,6 +17,7 @@ type BtcExtraConfig struct {
 	MinRelayFee       int64
 	MinRelayFeePerKb  int64
 	MaxRelayFeePerKb  int64
+	PlusFeePercentage uint64
 	EstimateFeeBlocks int
 
 	UtxoAggregateMinCount  int

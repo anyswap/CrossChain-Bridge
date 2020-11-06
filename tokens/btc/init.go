@@ -6,10 +6,11 @@ import (
 )
 
 var (
-	cfgMinRelayFee       int64 = 400
-	cfgMinRelayFeePerKb  int64 = 2000
-	cfgMaxRelayFeePerKb  int64 = 500000
-	cfgEstimateFeeBlocks       = 6
+	cfgMinRelayFee       int64  = 400
+	cfgMinRelayFeePerKb  int64  = 2000
+	cfgMaxRelayFeePerKb  int64  = 500000
+	cfgPlusFeePercentage uint64 = 0
+	cfgEstimateFeeBlocks        = 6
 
 	cfgFromPublicKey string
 
@@ -67,6 +68,13 @@ func initRelayFee(btcExtra *tokens.BtcExtraConfig) {
 		}
 	}
 
+	if btcExtra.PlusFeePercentage > 0 {
+		cfgPlusFeePercentage = btcExtra.PlusFeePercentage
+		if cfgPlusFeePercentage > 5000 {
+			log.Fatal("PlusFeePercentage is too large, must <= 5000")
+		}
+	}
+
 	if btcExtra.MaxRelayFeePerKb > 0 {
 		cfgMaxRelayFeePerKb = btcExtra.MaxRelayFeePerKb
 	}
@@ -79,7 +87,7 @@ func initRelayFee(btcExtra *tokens.BtcExtraConfig) {
 		log.Fatal("MinRelayFeePerKb is larger than MaxRelayFeePerKb", "min", cfgMinRelayFeePerKb, "max", cfgMaxRelayFeePerKb)
 	}
 
-	log.Info("Init Btc extra", "MinRelayFee", cfgMinRelayFee, "MinRelayFeePerKb", cfgMinRelayFeePerKb, "MaxRelayFeePerKb", cfgMaxRelayFeePerKb)
+	log.Info("Init Btc extra", "MinRelayFee", cfgMinRelayFee, "MinRelayFeePerKb", cfgMinRelayFeePerKb, "MaxRelayFeePerKb", cfgMaxRelayFeePerKb, "PlusFeePercentage", cfgPlusFeePercentage)
 }
 
 func initAggregate(btcExtra *tokens.BtcExtraConfig) {

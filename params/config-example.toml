@@ -34,6 +34,8 @@ MinRelayFee = 400
 MinRelayFeePerKb = 2000
 # maximum relay fee per kilobytes
 MaxRelayFeePerKb = 500000
+# plus percentage of estimate fee to speed tx packing
+PlusFeePercentage = 0
 # estimate smart fee with such many target blocks
 EstimateFeeBlocks = 6
 # aggregate if have more than so many utxos

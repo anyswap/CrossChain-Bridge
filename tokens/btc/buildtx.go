@@ -38,6 +38,9 @@ func (b *Bridge) getRelayFeePerKb() (btcAmountType, error) {
 		log.Warn("estimate smart fee failed", "err", err)
 		return 0, err
 	}
+	if cfgPlusFeePercentage > 0 {
+		estimateFee += estimateFee * int64(cfgPlusFeePercentage) / 100
+	}
 	if estimateFee > cfgMaxRelayFeePerKb {
 		estimateFee = cfgMaxRelayFeePerKb
 	} else if estimateFee < cfgMinRelayFeePerKb {
