@@ -31,7 +31,12 @@ func ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
 
 // AggregateUtxos aggregate uxtos
 func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (string, error) {
-	authoredTx, err := b.BuildAggregateTransaction(addrs, utxos)
+	relayFee, err := b.getRelayFeePerKb()
+	if err != nil {
+		return "", err
+	}
+
+	authoredTx, err := b.BuildAggregateTransaction(relayFee, addrs, utxos)
 	if err != nil {
 		return "", err
 	}
@@ -47,6 +52,7 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 	}
 
 	extra := args.Extra.BtcExtra
+	extra.RelayFeePerKb = &relayFee
 	extra.PreviousOutPoints = make([]*tokens.BtcOutPoint, len(authoredTx.Tx.TxIn))
 	for i, txin := range authoredTx.Tx.TxIn {
 		point := txin.PreviousOutPoint
@@ -87,7 +93,10 @@ func (b *Bridge) VerifyAggregateMsgHash(msgHash []string, args *tokens.BuildTxAr
 	if args == nil || args.Extra == nil || args.Extra.BtcExtra == nil || len(args.Extra.BtcExtra.PreviousOutPoints) == 0 {
 		return errors.New("empty btc extra")
 	}
-	rawTx, err := b.rebuildAggregateTransaction(args.Extra.BtcExtra.PreviousOutPoints)
+	if args.Extra.BtcExtra.RelayFeePerKb == nil {
+		return errors.New("empty relay fee")
+	}
+	rawTx, err := b.rebuildAggregateTransaction(args.Extra.BtcExtra)
 	if err != nil {
 		return err
 	}

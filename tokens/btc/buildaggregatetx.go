@@ -12,7 +12,7 @@ import (
 )
 
 // BuildAggregateTransaction build aggregate tx (spend p2sh utxo)
-func (b *Bridge) BuildAggregateTransaction(addrs []string, utxos []*electrs.ElectUtxo) (rawTx *txauthor.AuthoredTx, err error) {
+func (b *Bridge) BuildAggregateTransaction(relayFeePerKb int64, addrs []string, utxos []*electrs.ElectUtxo) (rawTx *txauthor.AuthoredTx, err error) {
 	if len(addrs) != len(utxos) {
 		return nil, fmt.Errorf("call BuildAggregateTransaction: count of addrs (%v) is not equal to count of utxos (%v)", len(addrs), len(utxos))
 	}
@@ -30,20 +30,15 @@ func (b *Bridge) BuildAggregateTransaction(addrs []string, utxos []*electrs.Elec
 		return b.GetPayToAddrScript(cfgUtxoAggregateToAddress)
 	}
 
-	relayFeePerKb, err := b.getRelayFeePerKb()
-	if err != nil {
-		return nil, err
-	}
-
-	return b.NewUnsignedTransaction(txOuts, relayFeePerKb, inputSource, changeSource, true)
+	return b.NewUnsignedTransaction(txOuts, btcAmountType(relayFeePerKb), inputSource, changeSource, true)
 }
 
-func (b *Bridge) rebuildAggregateTransaction(prevOutPoints []*tokens.BtcOutPoint) (rawTx *txauthor.AuthoredTx, err error) {
-	addrs, utxos, err := b.getUtxosFromOutPoints(prevOutPoints)
+func (b *Bridge) rebuildAggregateTransaction(extra *tokens.BtcExtraArgs) (rawTx *txauthor.AuthoredTx, err error) {
+	addrs, utxos, err := b.getUtxosFromOutPoints(extra.PreviousOutPoints)
 	if err != nil {
 		return nil, err
 	}
-	return b.BuildAggregateTransaction(addrs, utxos)
+	return b.BuildAggregateTransaction(*extra.RelayFeePerKb, addrs, utxos)
 }
 
 func (b *Bridge) getUtxosFromElectUtxos(target btcAmountType, addrs []string, utxos []*electrs.ElectUtxo) (total btcAmountType, inputs []*wireTxInType, inputValues []btcAmountType, scripts [][]byte, err error) {

@@ -24,9 +24,7 @@ const (
 	retryInterval = 3 * time.Second
 )
 
-func (b *Bridge) getRelayFeePerKb() (btcAmountType, error) {
-	var estimateFee int64
-	var err error
+func (b *Bridge) getRelayFeePerKb() (estimateFee int64, err error) {
 	for i := 0; i < retryCount; i++ {
 		estimateFee, err = b.EstimateFeePerKb(cfgEstimateFeeBlocks)
 		if err == nil {
@@ -46,7 +44,7 @@ func (b *Bridge) getRelayFeePerKb() (btcAmountType, error) {
 	} else if estimateFee < cfgMinRelayFeePerKb {
 		estimateFee = cfgMinRelayFeePerKb
 	}
-	return btcAmountType(estimateFee), nil
+	return estimateFee, nil
 }
 
 // BuildRawTransaction build raw tx
@@ -56,10 +54,10 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		token         = b.GetTokenConfig(pairID)
 		from          = args.From
 		to            = args.To
+		changeAddress = args.From
 		amount        = args.Value
 		memo          = args.Memo
 		relayFeePerKb btcAmountType
-		changeAddress string
 	)
 
 	if token == nil {
@@ -72,6 +70,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	case tokens.SwapoutType:
 		from = token.DcrmAddress                                          // from
 		to = args.Bind                                                    // to
+		changeAddress = token.DcrmAddress                                 // change
 		amount = tokens.CalcSwappedValue(pairID, args.OriginValue, false) // amount
 		memo = tokens.UnlockMemoPrefix + args.SwapID
 	}
@@ -86,21 +85,20 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		args.Extra = &tokens.AllExtras{BtcExtra: extra}
 	} else {
 		extra = args.Extra.BtcExtra
-	}
-
-	if extra.ChangeAddress != nil {
-		changeAddress = *extra.ChangeAddress
-	} else {
-		changeAddress = from
+		if extra.ChangeAddress != nil && args.SwapType == tokens.NoSwapType {
+			changeAddress = *extra.ChangeAddress
+		}
 	}
 
 	if extra.RelayFeePerKb != nil {
 		relayFeePerKb = btcAmountType(*extra.RelayFeePerKb)
 	} else {
-		relayFeePerKb, err = b.getRelayFeePerKb()
-		if err != nil {
-			return nil, err
+		relayFee, errf := b.getRelayFeePerKb()
+		if errf != nil {
+			return nil, errf
 		}
+		extra.RelayFeePerKb = &relayFee
+		relayFeePerKb = btcAmountType(relayFee)
 	}
 
 	txOuts, err := b.getTxOutputs(to, amount, memo)

@@ -73,7 +73,7 @@ func acceptSign() {
 				continue
 			}
 			if err != nil {
-				logWorkerError("accept", "disagree sign", err, "keyID", keyID)
+				logWorkerError("accept", "DISAGREE sign", err, "keyID", keyID)
 				agreeResult = "DISAGREE"
 			}
 			logWorker("accept", "dcrm DoAcceptSign", "keyID", keyID, "result", agreeResult)

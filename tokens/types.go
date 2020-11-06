@@ -211,9 +211,8 @@ type BtcOutPoint struct {
 
 // BtcExtraArgs struct
 type BtcExtraArgs struct {
-	RelayFeePerKb *int64  `json:"relayFeePerKb,omitempty"`
-	ChangeAddress *string `json:"changeAddress,omitempty"`
-
+	RelayFeePerKb     *int64         `json:"relayFeePerKb,omitempty"`
+	ChangeAddress     *string        `json:"-"`
 	PreviousOutPoints []*BtcOutPoint `json:"previousOutPoints,omitempty"`
 }
 
