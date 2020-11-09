@@ -331,7 +331,7 @@ func RegisterAddress(address, pairID string) (result *RegisteredAddress, err err
 	if pairCfg == nil {
 		return nil, errTokenPairNotExist
 	}
-	if !pairCfg.UseBip32 && btc.BridgeInstance != nil {
+	if btc.BridgeInstance != nil {
 		// use RegisterP2shAddress instead
 		return nil, errForbidOperation
 	}

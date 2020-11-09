@@ -2,6 +2,7 @@ package btc
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/btcsuite/btcutil"
 )
@@ -67,7 +68,8 @@ func (b *Bridge) GetBip32InputCode(addr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("m/%s", address.EncodeAddress()), nil
+	index := new(big.Int).SetBytes(address.ScriptAddress()).String()
+	return fmt.Sprintf("m/%s", index), nil
 }
 
 // PublicKeyToAddress public key to address

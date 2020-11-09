@@ -53,37 +53,22 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	msgHash := signer.Hash(tx)
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
-	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), msgHash.String(), msgContext)
+	rootPubkey := b.GetDcrmPublicKey(args.PairID)
+	inputCode, err := b.GetBip32InputCode(args.Bind)
+	if err != nil {
+		return nil, "", err
+	}
+	rpcAddr, keyID, err := dcrm.DoSignOne(rootPubkey, inputCode, msgHash.String(), msgContext)
 	if err != nil {
 		return nil, "", err
 	}
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash.String(), "txid", args.SwapID)
 	time.Sleep(retryGetSignStatusInterval)
 
-	var rsv string
-	i := 0
-	for ; i < retryGetSignStatusCount; i++ {
-		signStatus, err2 := dcrm.GetSignStatus(keyID, rpcAddr)
-		if err2 == nil {
-			if len(signStatus.Rsv) != 1 {
-				return nil, "", fmt.Errorf("get sign status require one rsv but have %v (keyID = %v)", len(signStatus.Rsv), keyID)
-			}
-
-			rsv = signStatus.Rsv[0]
-			break
-		}
-		switch err2 {
-		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
-			return nil, "", err2
-		}
-		log.Warn("retry get sign status as error", "err", err2, "txid", args.SwapID, "keyID", keyID, "bridge", args.Identifier, "swaptype", args.SwapType.String())
-		time.Sleep(retryGetSignStatusInterval)
+	rsv, err := b.getSignStatus(keyID, rpcAddr, args)
+	if err != nil {
+		return nil, "", err
 	}
-	if i == retryGetSignStatusCount || rsv == "" {
-		return nil, "", errors.New("get sign status failed")
-	}
-
-	log.Trace(b.ChainConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
 
 	signature := common.FromHex(rsv)
 
@@ -111,6 +96,34 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	txHash = signedTx.Hash().String()
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", signedTx.Nonce())
 	return signedTx, txHash, err
+}
+
+func (b *Bridge) getSignStatus(keyID, rpcAddr string, args *tokens.BuildTxArgs) (rsv string, err error) {
+	var signStatus *dcrm.SignStatus
+	i := 0
+	for ; i < retryGetSignStatusCount; i++ {
+		signStatus, err = dcrm.GetSignStatus(keyID, rpcAddr)
+		if err == nil {
+			if len(signStatus.Rsv) != 1 {
+				return "", fmt.Errorf("get sign status require one rsv but have %v (keyID = %v)", len(signStatus.Rsv), keyID)
+			}
+
+			rsv = signStatus.Rsv[0]
+			break
+		}
+		switch err {
+		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
+			return "", err
+		}
+		log.Warn("retry get sign status as error", "err", err, "txid", args.SwapID, "keyID", keyID, "bridge", args.Identifier, "swaptype", args.SwapType.String())
+		time.Sleep(retryGetSignStatusInterval)
+	}
+	if i == retryGetSignStatusCount || rsv == "" {
+		return "", errors.New("get sign status failed")
+	}
+
+	log.Trace(b.ChainConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
+	return rsv, nil
 }
 
 // SignTransaction sign tx with pairID

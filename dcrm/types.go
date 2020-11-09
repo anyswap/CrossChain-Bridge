@@ -71,6 +71,7 @@ type SignInfoResp struct {
 type SignData struct {
 	TxType     string
 	PubKey     string
+	InputCode  string
 	MsgHash    []string
 	MsgContext []string
 	Keytype    string

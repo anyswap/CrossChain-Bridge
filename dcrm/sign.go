@@ -42,12 +42,12 @@ func getDcrmNode() *NodeInfo {
 }
 
 // DoSignOne dcrm sign single msgHash with context msgContext
-func DoSignOne(signPubkey, msgHash, msgContext string) (rpcAddr, result string, err error) {
-	return DoSign(signPubkey, []string{msgHash}, []string{msgContext})
+func DoSignOne(signPubkey, inputCode, msgHash, msgContext string) (rpcAddr, result string, err error) {
+	return DoSign(signPubkey, inputCode, []string{msgHash}, []string{msgContext})
 }
 
 // DoSign dcrm sign msgHash with context msgContext
-func DoSign(signPubkey string, msgHash, msgContext []string) (rpcAddr, result string, err error) {
+func DoSign(signPubkey, inputCode string, msgHash, msgContext []string) (rpcAddr, result string, err error) {
 	if !params.IsDcrmEnabled() {
 		return "", "", fmt.Errorf("dcrm sign is disabled")
 	}
@@ -70,6 +70,7 @@ func DoSign(signPubkey string, msgHash, msgContext []string) (rpcAddr, result st
 	txdata := SignData{
 		TxType:     "SIGN",
 		PubKey:     signPubkey,
+		InputCode:  inputCode,
 		MsgHash:    msgHash,
 		MsgContext: msgContext,
 		Keytype:    "ECDSA",

@@ -4,7 +4,6 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -46,7 +45,8 @@ func (b *Bridge) GetBip32InputCode(addr string) (string, error) {
 		return "", fmt.Errorf("invalid address")
 	}
 	address := common.HexToAddress(addr)
-	return fmt.Sprintf("m/%s", strings.ToLower(address.String())), nil
+	index := new(big.Int).SetBytes(address.Bytes()).String()
+	return fmt.Sprintf("m/%s", index), nil
 }
 
 // PublicKeyToAddress public key to address
