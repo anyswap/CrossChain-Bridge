@@ -94,38 +94,11 @@ func GetAllPairIDs() []string {
 	return pairIDs
 }
 
-// FindTokenPairConfig find by (tx to) address
-func FindTokenPairConfig(address string, isSrc bool) (configs []*TokenPairConfig) {
+// FindSwapoutTokenConfig find by (tx to) address
+func FindSwapoutTokenConfig(address string) (configs []*TokenConfig, pairIDs []string) {
 	for _, pairCfg := range tokenPairsConfig {
-		tokenCfg := pairCfg.GetTokenConfig(isSrc)
-		match := false
-		if tokenCfg.ContractAddress != "" {
-			if strings.EqualFold(tokenCfg.ContractAddress, address) {
-				match = true
-			}
-		} else if isSrc && strings.EqualFold(tokenCfg.DepositAddress, address) {
-			match = true
-		}
-		if match {
-			configs = append(configs, pairCfg)
-		}
-	}
-	return configs
-}
-
-// FindTokenConfig find by (tx to) address
-func FindTokenConfig(address string, isSrc bool) (configs []*TokenConfig, pairIDs []string) {
-	for _, pairCfg := range tokenPairsConfig {
-		tokenCfg := pairCfg.GetTokenConfig(isSrc)
-		match := false
-		if tokenCfg.ContractAddress != "" {
-			if strings.EqualFold(tokenCfg.ContractAddress, address) {
-				match = true
-			}
-		} else if isSrc && strings.EqualFold(tokenCfg.DepositAddress, address) {
-			match = true
-		}
-		if match {
+		tokenCfg := pairCfg.GetTokenConfig(false)
+		if strings.EqualFold(tokenCfg.ContractAddress, address) {
 			configs = append(configs, tokenCfg)
 			pairIDs = append(pairIDs, pairCfg.PairID)
 		}

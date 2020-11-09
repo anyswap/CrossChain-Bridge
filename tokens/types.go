@@ -306,17 +306,23 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.DcrmAddress == "" {
 		return errors.New("token must config 'DcrmAddress'")
 	}
-	if isSrc && c.DepositAddress == "" {
-		return errors.New("token must config 'DepositAddress' for source chain")
-	}
-	if !isSrc && c.ContractAddress == "" {
-		return errors.New("token must config 'ContractAddress' for destination chain")
-	}
-	if isSrc && c.IsErc20() && c.ContractAddress == "" {
-		return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
-	}
-	if isSrc && c.IsProxyErc20() && c.ContractCodeHash == "" {
-		return errors.New("token must config 'ContractCodeHash' for ProxyERC20 in source chain")
+	if isSrc {
+		if c.DepositAddress == "" {
+			return errors.New("token must config 'DepositAddress' for source chain")
+		}
+		if c.IsErc20() && c.ContractAddress == "" {
+			return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
+		}
+		if c.IsProxyErc20() && c.ContractCodeHash == "" {
+			return errors.New("token must config 'ContractCodeHash' for ProxyERC20 in source chain")
+		}
+	} else {
+		if c.DepositAddress != "" {
+			return errors.New("token must *not* config 'DepositAddress' for destination chain")
+		}
+		if c.ContractAddress == "" {
+			return errors.New("token must config 'ContractAddress' for destination chain")
+		}
 	}
 	// calc value and store
 	c.CalcAndStoreValue()

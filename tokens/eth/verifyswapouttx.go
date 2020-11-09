@@ -138,7 +138,7 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (swapInfos []*tokens.TxSwa
 		return swapInfos, errs
 	}
 	txRecipient := strings.ToLower(receipt.Recipient.String())
-	tokenCfgs, pairIDs := tokens.FindTokenConfig(txRecipient, false)
+	tokenCfgs, pairIDs := tokens.FindSwapoutTokenConfig(txRecipient)
 	if len(pairIDs) == 0 {
 		addSwapInfoConsiderError(nil, tokens.ErrTxWithWrongContract, &swapInfos, &errs)
 		return swapInfos, errs
@@ -200,7 +200,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (swapInfos []*tokens.TxS
 	}
 
 	txRecipient := strings.ToLower(tx.Recipient.String())
-	tokenCfgs, pairIDs := tokens.FindTokenConfig(txRecipient, false)
+	tokenCfgs, pairIDs := tokens.FindSwapoutTokenConfig(txRecipient)
 	if len(pairIDs) == 0 {
 		addSwapInfoConsiderError(nil, tokens.ErrTxWithWrongContract, &swapInfos, &errs)
 		return swapInfos, errs
