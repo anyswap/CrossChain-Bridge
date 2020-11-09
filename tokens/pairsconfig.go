@@ -71,6 +71,14 @@ func GetTokenPairConfig(pairID string) *TokenPairConfig {
 	return pairCfg
 }
 
+// GetTokenConfig method
+func (c *TokenPairConfig) GetTokenConfig(isSrc bool) *TokenConfig {
+	if isSrc {
+		return c.SrcToken
+	}
+	return c.DestToken
+}
+
 // IsTokenPairExist is token pair exist
 func IsTokenPairExist(pairID string) bool {
 	_, exist := tokenPairsConfig[strings.ToLower(pairID)]
@@ -86,15 +94,29 @@ func GetAllPairIDs() []string {
 	return pairIDs
 }
 
+// FindTokenPairConfig find by (tx to) address
+func FindTokenPairConfig(address string, isSrc bool) (configs []*TokenPairConfig) {
+	for _, pairCfg := range tokenPairsConfig {
+		tokenCfg := pairCfg.GetTokenConfig(isSrc)
+		match := false
+		if tokenCfg.ContractAddress != "" {
+			if strings.EqualFold(tokenCfg.ContractAddress, address) {
+				match = true
+			}
+		} else if isSrc && strings.EqualFold(tokenCfg.DepositAddress, address) {
+			match = true
+		}
+		if match {
+			configs = append(configs, pairCfg)
+		}
+	}
+	return configs
+}
+
 // FindTokenConfig find by (tx to) address
 func FindTokenConfig(address string, isSrc bool) (configs []*TokenConfig, pairIDs []string) {
 	for _, pairCfg := range tokenPairsConfig {
-		var tokenCfg *TokenConfig
-		if isSrc {
-			tokenCfg = pairCfg.SrcToken
-		} else {
-			tokenCfg = pairCfg.DestToken
-		}
+		tokenCfg := pairCfg.GetTokenConfig(isSrc)
 		match := false
 		if tokenCfg.ContractAddress != "" {
 			if strings.EqualFold(tokenCfg.ContractAddress, address) {

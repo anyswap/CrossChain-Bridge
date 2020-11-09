@@ -31,6 +31,7 @@ var (
 	ErrTxWithWrongLogData   = errors.New("tx with wrong log data")
 	ErrTxIsAggregateTx      = errors.New("tx is aggregate tx")
 	ErrWrongP2shBindAddress = errors.New("wrong p2sh bind address")
+	ErrNoBip32BindAddress   = errors.New("no bip32 bind address")
 	ErrTxFuncHashMismatch   = errors.New("tx func hash mismatch")
 	ErrDepositLogNotFound   = errors.New("deposit log not found or removed")
 	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
