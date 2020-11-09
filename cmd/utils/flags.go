@@ -89,6 +89,11 @@ var (
 		Name:  "dcrmAddress",
 		Usage: "dcrm address",
 	}
+	// PublicKeySliceFlag --pubkey
+	PublicKeySliceFlag = &cli.StringSliceFlag{
+		Name:  "pubkey",
+		Usage: "public key slice",
+	}
 	// DepositAddressSliceFlag --deposit
 	DepositAddressSliceFlag = &cli.StringSliceFlag{
 		Name:  "deposit",

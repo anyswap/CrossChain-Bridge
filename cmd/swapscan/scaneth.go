@@ -10,6 +10,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
@@ -35,12 +36,17 @@ var (
 scan swap on eth
 `,
 		Flags: []cli.Flag{
+			mongoURLFlag,
+			dbNameFlag,
+			dbUserFlag,
+			dbPassFlag,
 			utils.GatewayFlag,
 			utils.SwapServerFlag,
 			utils.SwapTypeFlag,
 			utils.DepositAddressSliceFlag,
 			utils.TokenAddressSliceFlag,
 			utils.PairIDSliceFlag,
+			utils.PublicKeySliceFlag,
 			utils.StartHeightFlag,
 			utils.EndHeightFlag,
 			utils.StableHeightFlag,
@@ -57,6 +63,7 @@ type ethSwapScanner struct {
 	depositAddresses []string
 	tokenAddresses   []string
 	pairIDs          []string
+	pubkeys          []string
 	startHeight      uint64
 	endHeight        uint64
 	stableHeight     uint64
@@ -85,6 +92,7 @@ func scanEth(ctx *cli.Context) error {
 	scanner.depositAddresses = ctx.StringSlice(utils.DepositAddressSliceFlag.Name)
 	scanner.tokenAddresses = ctx.StringSlice(utils.TokenAddressSliceFlag.Name)
 	scanner.pairIDs = ctx.StringSlice(utils.PairIDSliceFlag.Name)
+	scanner.pubkeys = ctx.StringSlice(utils.PublicKeySliceFlag.Name)
 	scanner.startHeight = ctx.Uint64(utils.StartHeightFlag.Name)
 	scanner.endHeight = ctx.Uint64(utils.EndHeightFlag.Name)
 	scanner.stableHeight = ctx.Uint64(utils.StableHeightFlag.Name)
@@ -107,6 +115,7 @@ func scanEth(ctx *cli.Context) error {
 		"depositAddress", scanner.depositAddresses,
 		"tokenAddress", scanner.tokenAddresses,
 		"pairID", scanner.pairIDs,
+		"pubkey", scanner.pubkeys,
 		"start", scanner.startHeight,
 		"end", scanner.endHeight,
 		"stable", scanner.stableHeight,
@@ -114,20 +123,26 @@ func scanEth(ctx *cli.Context) error {
 	)
 
 	scanner.verifyOptions()
+	scanner.initMongodb(ctx)
 	scanner.init()
 	scanner.run()
 	return nil
 }
 
+// nolint:gocyclo // ok
 func (scanner *ethSwapScanner) verifyOptions() {
-	if scanner.isSwapin && len(scanner.depositAddresses) != len(scanner.pairIDs) {
-		log.Fatalf("count of depositAddresses and pairIDs mismatch")
+	if scanner.isSwapin {
+		if len(scanner.depositAddresses) != len(scanner.pairIDs) {
+			log.Fatalf("count of depositAddresses and pairIDs mismatch")
+		}
+		if len(scanner.pubkeys) != 0 && len(scanner.pubkeys) != len(scanner.pairIDs) {
+			log.Fatalf("count of pubkeys and pairIDs mismatch")
+		}
+	} else if len(scanner.tokenAddresses) == 0 {
+		log.Fatal("must sepcify token address for swapout scan")
 	}
 	if len(scanner.tokenAddresses) != len(scanner.pairIDs) {
 		log.Fatalf("count of tokenAddresses and pairIDs mismatch")
-	}
-	if !scanner.isSwapin && len(scanner.tokenAddresses) == 0 {
-		log.Fatal("must sepcify token address for swapout scan")
 	}
 	for i, pairID := range scanner.pairIDs {
 		if pairID == "" {
@@ -159,6 +174,16 @@ func (scanner *ethSwapScanner) verifyJobsOption() {
 	}
 	if scanner.jobCount == 0 {
 		log.Fatal("zero jobs specified")
+	}
+}
+
+func (scanner *ethSwapScanner) initMongodb(ctx *cli.Context) {
+	dbURL := ctx.String(mongoURLFlag.Name)
+	dbName := ctx.String(dbNameFlag.Name)
+	userName := ctx.String(dbUserFlag.Name)
+	passwd := ctx.String(dbPassFlag.Name)
+	if dbName != "" {
+		mongodb.MongoServerInit([]string{dbURL}, dbName, userName, passwd)
 	}
 }
 
@@ -326,11 +351,10 @@ func (scanner *ethSwapScanner) scanTransaction(tx *types.Transaction) {
 	for i, pairID := range scanner.pairIDs {
 		tokenAddress := scanner.tokenAddresses[i]
 		if scanner.isSwapin {
-			depositAddress := scanner.depositAddresses[i]
 			if tokenAddress != "" {
-				err = scanner.verifyErc20SwapinTx(tx, tokenAddress, depositAddress)
+				err = scanner.verifyErc20SwapinTx(tx, i)
 			} else {
-				err = scanner.verifySwapinTx(tx, depositAddress)
+				err = scanner.verifySwapinTx(tx, i)
 			}
 		} else {
 			err = scanner.verifySwapoutTx(tx, tokenAddress)
@@ -372,13 +396,14 @@ func (scanner *ethSwapScanner) postSwap(txid, pairID string) {
 	}
 }
 
-func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction, tokenAddress, depositAddress string) error {
+func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction, i int) error {
+	tokenAddress := scanner.tokenAddresses[i]
 	if tx.To() == nil || !strings.EqualFold(tx.To().String(), tokenAddress) {
 		return tokens.ErrTxWithWrongContract
 	}
 
 	input := tx.Data()
-	_, _, value, err := eth.ParseErc20SwapinTxInput(&input, depositAddress)
+	_, to, value, err := eth.ParseErc20SwapinTxInput(&input)
 	if err != nil {
 		return err
 	}
@@ -387,16 +412,40 @@ func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction, tokenA
 		return tokens.ErrTxWithWrongValue
 	}
 
+	if len(scanner.pubkeys) > i {
+		rootPubkey := scanner.pubkeys[i]
+		pairID := scanner.pairIDs[i]
+		bindAddress := tools.GetBip32BindAddress(to, pairID, rootPubkey)
+		if bindAddress == "" {
+			return tokens.ErrNoBip32BindAddress
+		}
+	} else if !strings.EqualFold(to, scanner.depositAddresses[i]) {
+		return tokens.ErrTxWithWrongReceiver
+	}
+
 	return nil
 }
 
-func (scanner *ethSwapScanner) verifySwapinTx(tx *types.Transaction, depositAddress string) error {
-	if tx.To() == nil || !strings.EqualFold(tx.To().String(), depositAddress) {
+func (scanner *ethSwapScanner) verifySwapinTx(tx *types.Transaction, i int) error {
+	if tx.To() == nil {
 		return tokens.ErrTxWithWrongReceiver
 	}
 
 	if tx.Value().Sign() <= 0 {
 		return tokens.ErrTxWithWrongValue
+	}
+
+	to := strings.ToLower(tx.To().String())
+
+	if len(scanner.pubkeys) > i {
+		rootPubkey := scanner.pubkeys[i]
+		pairID := scanner.pairIDs[i]
+		bindAddress := tools.GetBip32BindAddress(to, pairID, rootPubkey)
+		if bindAddress == "" {
+			return tokens.ErrNoBip32BindAddress
+		}
+	} else if !strings.EqualFold(to, scanner.depositAddresses[i]) {
+		return tokens.ErrTxWithWrongReceiver
 	}
 
 	return nil
