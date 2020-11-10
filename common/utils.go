@@ -33,6 +33,12 @@ func Keccak256Hash(data ...[]byte) (h Hash) {
 	return h
 }
 
+// BigPow returns a ** b as a big integer.
+func BigPow(a, b int64) *big.Int {
+	r := big.NewInt(a)
+	return r.Exp(r, big.NewInt(b), nil)
+}
+
 // IsEqualIgnoreCase returns if s1 and s2 are equal ignore case.
 func IsEqualIgnoreCase(s1, s2 string) bool {
 	return strings.EqualFold(s1, s2)

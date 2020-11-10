@@ -45,8 +45,9 @@ func (b *Bridge) GetBip32InputCode(addr string) (string, error) {
 		return "", fmt.Errorf("invalid address")
 	}
 	address := common.HexToAddress(addr)
-	index := new(big.Int).SetBytes(address.Bytes()).String()
-	return fmt.Sprintf("m/%s", index), nil
+	index := new(big.Int).SetBytes(address.Bytes())
+	index.Add(index, common.BigPow(2, 31))
+	return fmt.Sprintf("m/%s", index.String()), nil
 }
 
 // PublicKeyToAddress public key to address

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/btcsuite/btcutil"
 )
 
@@ -68,8 +69,10 @@ func (b *Bridge) GetBip32InputCode(addr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	index := new(big.Int).SetBytes(address.ScriptAddress()).String()
-	return fmt.Sprintf("m/%s", index), nil
+	bsData := btcutil.Hash160([]byte(address.EncodeAddress()))
+	index := new(big.Int).SetBytes(bsData)
+	index.Add(index, common.BigPow(2, 31))
+	return fmt.Sprintf("m/%s", index.String()), nil
 }
 
 // PublicKeyToAddress public key to address
