@@ -396,6 +396,20 @@ func (scanner *ethSwapScanner) postSwap(txid, pairID string) {
 	}
 }
 
+func (scanner *ethSwapScanner) verifyTxToAddress(to string, i int) error {
+	if len(scanner.pubkeys) > i {
+		rootPubkey := scanner.pubkeys[i]
+		pairID := scanner.pairIDs[i]
+		bindAddress := tools.GetBip32BindAddress(to, pairID, rootPubkey)
+		if bindAddress == "" {
+			return tokens.ErrNoBip32BindAddress
+		}
+	} else if !strings.EqualFold(to, scanner.depositAddresses[i]) {
+		return tokens.ErrTxWithWrongReceiver
+	}
+	return nil
+}
+
 func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction, i int) error {
 	tokenAddress := scanner.tokenAddresses[i]
 	if tx.To() == nil || !strings.EqualFold(tx.To().String(), tokenAddress) {
@@ -412,18 +426,7 @@ func (scanner *ethSwapScanner) verifyErc20SwapinTx(tx *types.Transaction, i int)
 		return tokens.ErrTxWithWrongValue
 	}
 
-	if len(scanner.pubkeys) > i {
-		rootPubkey := scanner.pubkeys[i]
-		pairID := scanner.pairIDs[i]
-		bindAddress := tools.GetBip32BindAddress(to, pairID, rootPubkey)
-		if bindAddress == "" {
-			return tokens.ErrNoBip32BindAddress
-		}
-	} else if !strings.EqualFold(to, scanner.depositAddresses[i]) {
-		return tokens.ErrTxWithWrongReceiver
-	}
-
-	return nil
+	return scanner.verifyTxToAddress(to, i)
 }
 
 func (scanner *ethSwapScanner) verifySwapinTx(tx *types.Transaction, i int) error {
@@ -435,20 +438,7 @@ func (scanner *ethSwapScanner) verifySwapinTx(tx *types.Transaction, i int) erro
 		return tokens.ErrTxWithWrongValue
 	}
 
-	to := strings.ToLower(tx.To().String())
-
-	if len(scanner.pubkeys) > i {
-		rootPubkey := scanner.pubkeys[i]
-		pairID := scanner.pairIDs[i]
-		bindAddress := tools.GetBip32BindAddress(to, pairID, rootPubkey)
-		if bindAddress == "" {
-			return tokens.ErrNoBip32BindAddress
-		}
-	} else if !strings.EqualFold(to, scanner.depositAddresses[i]) {
-		return tokens.ErrTxWithWrongReceiver
-	}
-
-	return nil
+	return scanner.verifyTxToAddress(tx.To().String(), i)
 }
 
 func (scanner *ethSwapScanner) verifySwapoutTx(tx *types.Transaction, tokenAddress string) error {

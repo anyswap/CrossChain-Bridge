@@ -394,5 +394,5 @@ func GetBip32AddressInfo(bip32Addr, pairID string) (*RegisteredAddress, error) {
 		return nil, errTokenPairNotExist
 	}
 	rootPubkey := pairCfg.SrcToken.DcrmPubkey
-	return mongodb.FindRegisteredAddress(bip32Addr, rootPubkey)
+	return mongodb.FindBip32AddressInfo(bip32Addr, rootPubkey)
 }

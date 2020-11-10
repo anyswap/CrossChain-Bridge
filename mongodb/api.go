@@ -671,7 +671,11 @@ func FindRegisteredAddress(address, rootPubkey string) (*MgoRegisteredAddress, e
 
 // FindBip32AddressInfo find bip32 address info
 func FindBip32AddressInfo(bip32Address, rootPubkey string) (*MgoRegisteredAddress, error) {
-	qbip32Address := bson.M{"bip32address": bip32Address}
+	// ignore case
+	qbip32Address := bson.M{"bip32address": bson.RegEx{
+		Pattern: fmt.Sprintf("^%s$", bip32Address),
+		Options: "i",
+	}}
 	qrootPubkey := bson.M{"rootpubkey": rootPubkey}
 	queries := []bson.M{qbip32Address, qrootPubkey}
 	var result MgoRegisteredAddress
