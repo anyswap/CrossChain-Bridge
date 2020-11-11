@@ -232,7 +232,7 @@ func IsAddressRegistered(address string, pairCfg *tokens.TokenPairConfig) bool {
 		if pairCfg.UseBip32 {
 			rootPubkey = pairCfg.SrcToken.DcrmPubkey
 		}
-		result, _ := mongodb.FindRegisteredAddress(address, rootPubkey)
+		result, _ := mongodb.FindRegisteredAddress(rootPubkey, address)
 		return result != nil
 	}
 	args := map[string]interface{}{
@@ -253,7 +253,7 @@ func IsAddressRegistered(address string, pairCfg *tokens.TokenPairConfig) bool {
 // GetBip32BindAddress get bip32 bind address
 func GetBip32BindAddress(bip32Address, pairID, rootPubkey string) (bindAddress string) {
 	if mongodb.HasSession() {
-		bip32AddrInfo, err := mongodb.FindBip32AddressInfo(bip32Address, rootPubkey)
+		bip32AddrInfo, err := mongodb.FindBip32AddressInfo(rootPubkey, bip32Address)
 		if err != nil {
 			return ""
 		}

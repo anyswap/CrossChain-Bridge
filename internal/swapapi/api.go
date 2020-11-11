@@ -341,13 +341,13 @@ func RegisterAddress(address, pairID string) (result *RegisteredAddress, err err
 		rootPubkey = pairCfg.SrcToken.DcrmPubkey
 	}
 
-	result, err = mongodb.FindRegisteredAddress(address, rootPubkey)
+	result, err = mongodb.FindRegisteredAddress(rootPubkey, address)
 	if err == nil && result != nil {
 		return result, nil
 	}
 
 	if pairCfg.UseBip32 {
-		err = registerBip32Address(address, rootPubkey)
+		err = registerBip32Address(rootPubkey, address)
 	} else {
 		err = mongodb.AddRegisteredAddress("", address, "")
 	}
@@ -355,10 +355,10 @@ func RegisterAddress(address, pairID string) (result *RegisteredAddress, err err
 		return nil, err
 	}
 
-	return mongodb.FindRegisteredAddress(address, rootPubkey)
+	return mongodb.FindRegisteredAddress(rootPubkey, address)
 }
 
-func registerBip32Address(address, rootPubkey string) error {
+func registerBip32Address(rootPubkey, address string) error {
 	inputCode, err := tokens.SrcBridge.GetBip32InputCode(address)
 	if err != nil {
 		return err
@@ -384,7 +384,7 @@ func GetRegisteredAddress(address, pairID string) (*RegisteredAddress, error) {
 	if pairCfg.UseBip32 {
 		rootPubkey = pairCfg.SrcToken.DcrmPubkey
 	}
-	return mongodb.FindRegisteredAddress(address, rootPubkey)
+	return mongodb.FindRegisteredAddress(rootPubkey, address)
 }
 
 // GetBip32AddressInfo get bip32 address info
@@ -394,5 +394,5 @@ func GetBip32AddressInfo(bip32Addr, pairID string) (*RegisteredAddress, error) {
 		return nil, errTokenPairNotExist
 	}
 	rootPubkey := pairCfg.SrcToken.DcrmPubkey
-	return mongodb.FindBip32AddressInfo(bip32Addr, rootPubkey)
+	return mongodb.FindBip32AddressInfo(rootPubkey, bip32Addr)
 }

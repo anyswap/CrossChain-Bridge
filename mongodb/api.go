@@ -632,7 +632,7 @@ func FindLatestScanInfo(isSrc bool) (*MgoLatestScanInfo, error) {
 
 // ------------------------ register address ------------------------------
 
-func getRegisteredAddressKey(address, rootPubkey string) string {
+func getRegisteredAddressKey(rootPubkey, address string) string {
 	if rootPubkey != "" {
 		return strings.ToLower(fmt.Sprintf("%s:%s", rootPubkey, address))
 	}
@@ -641,6 +641,9 @@ func getRegisteredAddressKey(address, rootPubkey string) string {
 
 // AddRegisteredAddress add register address
 func AddRegisteredAddress(rootPubkey, address, childAddress string) error {
+	if err := checkPublicKeyStringLength(rootPubkey); err != nil {
+		return mgoError(err)
+	}
 	if rootPubkey == "" && childAddress != "" {
 		return mgoError(fmt.Errorf("register bip32 child address without root public key"))
 	}
@@ -661,8 +664,11 @@ func AddRegisteredAddress(rootPubkey, address, childAddress string) error {
 }
 
 // FindRegisteredAddress find register address
-func FindRegisteredAddress(address, rootPubkey string) (*MgoRegisteredAddress, error) {
-	key := getRegisteredAddressKey(address, rootPubkey)
+func FindRegisteredAddress(rootPubkey, address string) (*MgoRegisteredAddress, error) {
+	if err := checkPublicKeyStringLength(rootPubkey); err != nil {
+		return nil, mgoError(err)
+	}
+	key := getRegisteredAddressKey(rootPubkey, address)
 	var result MgoRegisteredAddress
 	err := collRegisteredAddress.FindId(key).One(&result)
 	if err != nil {
@@ -672,7 +678,10 @@ func FindRegisteredAddress(address, rootPubkey string) (*MgoRegisteredAddress, e
 }
 
 // FindBip32AddressInfo find bip32 address info
-func FindBip32AddressInfo(bip32Address, rootPubkey string) (*MgoRegisteredAddress, error) {
+func FindBip32AddressInfo(rootPubkey, bip32Address string) (*MgoRegisteredAddress, error) {
+	if err := checkPublicKeyStringLength(rootPubkey); err != nil {
+		return nil, mgoError(err)
+	}
 	// ignore case
 	qbip32Address := bson.M{"bip32address": bson.RegEx{
 		Pattern: fmt.Sprintf("^%s$", bip32Address),
