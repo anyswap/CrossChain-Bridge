@@ -72,12 +72,11 @@ type MgoP2shAddress struct {
 
 // MgoRegisteredAddress key is address (in whitelist)
 type MgoRegisteredAddress struct {
-	Key            string `bson:"_id"` // rootpubkey + address
-	RootPublicKey  string `bson:"rootpubkey"`
-	Address        string `bson:"address"`
-	Bip32PublicKey string `bson:"bip32pubkey"`
-	Bip32Adddress  string `bson:"bip32address"`
-	Timestamp      int64  `bson:"timestamp"`
+	Key           string `bson:"_id"` // rootpubkey + address
+	RootPublicKey string `bson:"rootpubkey"`
+	Address       string `bson:"address"`
+	Bip32Adddress string `bson:"bip32address"`
+	Timestamp     int64  `bson:"timestamp"`
 }
 
 // MgoSwapStatistics swap statistics

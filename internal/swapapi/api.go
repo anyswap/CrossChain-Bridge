@@ -349,7 +349,7 @@ func RegisterAddress(address, pairID string) (result *RegisteredAddress, err err
 	if pairCfg.UseBip32 {
 		err = registerBip32Address(address, rootPubkey)
 	} else {
-		err = mongodb.AddRegisteredAddress(address, "", "", address)
+		err = mongodb.AddRegisteredAddress("", address, "")
 	}
 	if err != nil {
 		return nil, err
@@ -371,7 +371,7 @@ func registerBip32Address(address, rootPubkey string) error {
 	if err != nil {
 		return err
 	}
-	return mongodb.AddRegisteredAddress(address, rootPubkey, childPubkey, childAddress)
+	return mongodb.AddRegisteredAddress(rootPubkey, address, childAddress)
 }
 
 // GetRegisteredAddress get registered address info

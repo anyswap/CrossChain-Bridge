@@ -34,14 +34,14 @@ func deinintCollections() {
 }
 
 func initCollections() {
-	initCollection(tbSwapins, &collSwapin, "timestamp", "status")
-	initCollection(tbSwapouts, &collSwapout, "timestamp", "status")
-	initCollection(tbSwapinResults, &collSwapinResult, "from", "timestamp")
-	initCollection(tbSwapoutResults, &collSwapoutResult, "from", "timestamp")
+	initCollection(tbSwapins, &collSwapin, "timestamp", "status", "pairid")
+	initCollection(tbSwapouts, &collSwapout, "timestamp", "status", "pairid")
+	initCollection(tbSwapinResults, &collSwapinResult, "from", "timestamp", "pairid")
+	initCollection(tbSwapoutResults, &collSwapoutResult, "from", "timestamp", "pairid")
 	initCollection(tbP2shAddresses, &collP2shAddress, "p2shaddress")
 	initCollection(tbSwapStatistics, &collSwapStatistics)
 	initCollection(tbLatestScanInfo, &collLatestScanInfo)
-	initCollection(tbRegisteredAddress, &collRegisteredAddress)
+	initCollection(tbRegisteredAddress, &collRegisteredAddress, "bip32address")
 	initCollection(tbBlacklist, &collBlacklist)
 
 	initDefaultValue()

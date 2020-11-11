@@ -53,9 +53,13 @@ func (b *Bridge) GetBip32InputCode(addr string) (string, error) {
 // PublicKeyToAddress public key to address
 func (b *Bridge) PublicKeyToAddress(hexPubkey string) (string, error) {
 	pkData := common.FromHex(hexPubkey)
-	if len(pkData) != 64 {
+	if len(pkData) != 65 {
 		return "", fmt.Errorf("wrong length of public key")
 	}
+	if pkData[0] != 4 {
+		return "", fmt.Errorf("wrong public key, shoule be uncompressed")
+	}
+	pkData = pkData[1:]
 	ecPub := ecdsa.PublicKey{
 		Curve: crypto.S256(),
 		X:     new(big.Int).SetBytes(pkData[:32]),

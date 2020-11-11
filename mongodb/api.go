@@ -640,14 +640,16 @@ func getRegisteredAddressKey(address, rootPubkey string) string {
 }
 
 // AddRegisteredAddress add register address
-func AddRegisteredAddress(address, rootPubkey, childPubkey, childAddress string) error {
+func AddRegisteredAddress(rootPubkey, address, childAddress string) error {
+	if rootPubkey == "" && childAddress != "" {
+		return mgoError(fmt.Errorf("register bip32 child address without root public key"))
+	}
 	ma := &MgoRegisteredAddress{
-		Key:            getRegisteredAddressKey(rootPubkey, address),
-		Address:        address,
-		RootPublicKey:  rootPubkey,
-		Bip32PublicKey: childPubkey,
-		Bip32Adddress:  childAddress,
-		Timestamp:      time.Now().Unix(),
+		Key:           getRegisteredAddressKey(rootPubkey, address),
+		RootPublicKey: rootPubkey,
+		Address:       address,
+		Bip32Adddress: childAddress,
+		Timestamp:     time.Now().Unix(),
 	}
 	err := collRegisteredAddress.Insert(ma)
 	if err == nil {
