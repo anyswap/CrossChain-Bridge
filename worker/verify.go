@@ -20,21 +20,21 @@ func StartVerifyJob() {
 
 func startSwapinVerifyJob() {
 	swapinVerifyStarter.Do(func() {
-		logWorker("verify", "start swapin verify job")
+		logWorker("verifySwap", "start swapin verify job")
 		for {
 			res, err := findSwapinsToVerify()
 			if err != nil {
-				logWorkerError("verify", "find swapins error", err)
+				logWorkerError("verifySwap", "find swapins error", err)
 			}
 			if len(res) > 0 {
-				logWorker("verify", "find swapins to verify", "count", len(res))
+				logWorker("verifySwap", "find swapins to verify", "count", len(res))
 			}
 			for _, swap := range res {
 				err = processSwapinVerify(swap)
 				switch err {
 				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
 				default:
-					logWorkerError("verify", "process swapin verify error", err, "txid", swap.TxID)
+					logWorkerError("verifySwap", "process swapin verify error", err, "pairID", swap.PairID, "txid", swap.TxID)
 				}
 			}
 			restInJob(restIntervalInVerifyJob)
@@ -44,21 +44,21 @@ func startSwapinVerifyJob() {
 
 func startSwapoutVerifyJob() {
 	swapoutVerifyStarter.Do(func() {
-		logWorker("verify", "start swapout verify job")
+		logWorker("verifySwap", "start swapout verify job")
 		for {
 			res, err := findSwapoutsToVerify()
 			if err != nil {
-				logWorkerError("verify", "find swapouts error", err)
+				logWorkerError("verifySwap", "find swapouts error", err)
 			}
 			if len(res) > 0 {
-				logWorker("verify", "find swapouts to verify", "count", len(res))
+				logWorker("verifySwap", "find swapouts to verify", "count", len(res))
 			}
 			for _, swap := range res {
 				err = processSwapoutVerify(swap)
 				switch err {
 				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
 				default:
-					logWorkerError("verify", "process swapout verify error", err, "txid", swap.TxID)
+					logWorkerError("verifySwap", "process swapout verify error", err, "pairID", swap.PairID, "txid", swap.TxID)
 				}
 			}
 			restInJob(restIntervalInVerifyJob)
@@ -161,12 +161,12 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 	case tokens.ErrRPCQueryError:
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.RPCQueryError, now(), err.Error())
 	default:
-		logWorkerWarn("verify", "maybe not considered tx verify error", "err", err)
+		logWorkerWarn("verifySwap", "maybe not considered tx verify error", "pairID", pairID, "txid", txid, "err", err)
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
 	}
 
 	if err != nil {
-		logWorkerError("verify", "update swap status", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		logWorkerError("verifySwap", "update swap status", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
 	}
 	return addInitialSwapResult(swapInfo, resultStatus, isSwapin)
