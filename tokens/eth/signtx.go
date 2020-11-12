@@ -57,11 +57,12 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	msgHash := b.Signer.Hash(tx)
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
-	rootPubkey := b.GetDcrmPublicKey(args.PairID)
-	inputCode, err := b.GetBip32InputCode(args.Bind)
+
+	rootPubkey, inputCode, signerAddr, err := b.prepareDcrmSign(args)
 	if err != nil {
 		return nil, "", err
 	}
+
 	if params.IsDebugging() {
 		log.Warn("DcrmSignTransaction start", "raw", tx.RawStr(), "msgHash", msgHash.String(), "txid", args.SwapID, "pairID", args.PairID)
 	}
@@ -77,7 +78,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 
-	signedTx, err := b.signTransactionUseRsv(tx, rsv, keyID, args)
+	signedTx, err := b.signTransactionUseRsv(tx, rsv, keyID, signerAddr, args)
 	if err != nil {
 		if err != errSenderMismatch {
 			return nil, "", err
@@ -87,7 +88,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		}
 		// invert v value and retry sign
 		invRsv := invertV(rsv)
-		signedTx, err = b.signTransactionUseRsv(tx, invRsv, keyID, args)
+		signedTx, err = b.signTransactionUseRsv(tx, invRsv, keyID, signerAddr, args)
 		if err != nil {
 			return nil, "", err
 		}
@@ -98,6 +99,28 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	return signedTx, txHash, err
 }
 
+func (b *Bridge) prepareDcrmSign(args *tokens.BuildTxArgs) (rootPubkey, inputCode, signerAddr string, err error) {
+	rootPubkey = b.GetDcrmPublicKey(args.PairID)
+	token := b.GetTokenConfig(args.PairID)
+	signerAddr = token.DcrmAddress
+	if args.Identifier != tokens.AggregateIdentifier {
+		return
+	}
+
+	inputCode, err = b.GetBip32InputCode(args.Bind)
+	if err != nil {
+		return
+	}
+
+	childPubkey, err := dcrm.GetBip32ChildKey(rootPubkey, inputCode)
+	if err != nil {
+		return
+	}
+
+	signerAddr, err = tokens.SrcBridge.PublicKeyToAddress(childPubkey)
+	return
+}
+
 func invertV(rsv string) string {
 	signature := common.FromHex(rsv)
 	v := signature[len(signature)-1]
@@ -106,7 +129,7 @@ func invertV(rsv string) string {
 	return common.Bytes2Hex(newSignature)
 }
 
-func (b *Bridge) signTransactionUseRsv(tx *types.Transaction, rsv, keyID string, args *tokens.BuildTxArgs) (signedTx *types.Transaction, err error) {
+func (b *Bridge) signTransactionUseRsv(tx *types.Transaction, rsv, keyID, signerAddr string, args *tokens.BuildTxArgs) (signedTx *types.Transaction, err error) {
 	signature := common.FromHex(rsv)
 
 	if len(signature) != crypto.SignatureLength {
@@ -128,9 +151,8 @@ func (b *Bridge) signTransactionUseRsv(tx *types.Transaction, rsv, keyID string,
 		return nil, err
 	}
 
-	token := b.GetTokenConfig(args.PairID)
-	if sender.String() != token.DcrmAddress {
-		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", token.DcrmAddress, "keyID", keyID, "txid", args.SwapID, "pairID", args.PairID)
+	if sender.String() != signerAddr {
+		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", signerAddr, "keyID", keyID, "txid", args.SwapID, "pairID", args.PairID)
 		return nil, errSenderMismatch
 	}
 	return signedTx, err

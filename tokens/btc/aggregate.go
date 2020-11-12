@@ -10,11 +10,6 @@ import (
 )
 
 const (
-	// AggregateIdentifier used in accepting
-	//AggregateIdentifier = "aggregate"
-
-	//aggregateMemo = "aggregate"
-
 	redeemAggregateP2SHInputSize = 198
 )
 
