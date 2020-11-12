@@ -27,6 +27,7 @@ var (
 // ServerConfig config items (decode from toml file)
 type ServerConfig struct {
 	Identifier  string
+	Debugging   bool             `toml:",omitempty" json:",omitempty"`
 	MongoDB     *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
 	APIServer   *APIServerConfig `toml:",omitempty" json:",omitempty"`
 	SrcChain    *tokens.ChainConfig
@@ -95,6 +96,11 @@ func GetIdentifier() string {
 // IsDcrmEnabled is dcrm enabled (for dcrm sign)
 func IsDcrmEnabled() bool {
 	return !GetConfig().Dcrm.Disable
+}
+
+// IsDebugging is in debugging mode
+func IsDebugging() bool {
+	return GetConfig().Debugging
 }
 
 // IsDcrmInitiator is initiator of dcrm sign
