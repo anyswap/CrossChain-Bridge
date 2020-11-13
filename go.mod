@@ -16,16 +16,19 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/rpc v1.2.0
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
-	github.com/jonboulle/clockwork v0.2.2 // indirect
-	github.com/jordan-wright/email v0.0.0-20200917010138-e1c00e156980
-	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
-	github.com/lestrrat-go/strftime v1.0.3 // indirect
+	github.com/jonboulle/clockwork v0.2.0 // indirect
+	github.com/jordan-wright/email v0.0.0-20200602115436-fd8a7622303e
+	github.com/lestrrat-go/file-rotatelogs v0.0.0-20201029035330-b789b39afbd7
+	github.com/lestrrat-go/strftime v1.0.1 // indirect
 	github.com/ltcsuite/ltcd v0.20.1-beta
 	github.com/ltcsuite/ltcutil v1.0.2-beta
 	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txrules v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.0.0
-	github.com/pborman/uuid v1.2.1
+	github.com/mattn/go-runewidth v0.0.4 // indirect
+	github.com/pborman/uuid v1.2.0
+	github.com/peterh/liner v1.1.1-0.20190123174540-a2c9a5303de7 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1
