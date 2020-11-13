@@ -587,6 +587,17 @@ func FindP2shAddresses(offset, limit int) ([]*MgoP2shAddress, error) {
 	return result, nil
 }
 
+// FindRegisteredAddresses find registered addresses
+func FindRegisteredAddresses(offset, limit int) ([]*MgoRegisteredAddress, error) {
+	result := make([]*MgoRegisteredAddress, 0, limit)
+	q := collRegisteredAddress.Find(nil).Skip(offset).Limit(limit)
+	err := q.All(&result)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+	return result, nil
+}
+
 // ------------------ latest scan info ------------------------
 
 // UpdateLatestScanInfo update latest scan info

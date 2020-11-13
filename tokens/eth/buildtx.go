@@ -18,6 +18,7 @@ var (
 	retryRPCInterval = 1 * time.Second
 
 	defReserveGasFee = big.NewInt(1e16) // 0.01 ETH
+	defGasLimit      = uint64(90000)
 )
 
 // BuildRawTransaction build raw tx
@@ -99,14 +100,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		args.Identifier = params.GetIdentifier()
 	}
 
-	var balance *big.Int
-	for i := 0; i < retryRPCCount; i++ {
-		balance, err = b.GetBalance(args.From)
-		if err == nil {
-			break
-		}
-		time.Sleep(retryRPCInterval)
-	}
+	balance, err := b.getBalance(args.From)
 	if err != nil {
 		log.Warn("get balance error", "from", args.From, "err", err)
 		return nil, fmt.Errorf("get balance error: %v", err)
@@ -172,20 +166,31 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 	}
 	if extra.Gas == nil {
 		extra.Gas = new(uint64)
-		*extra.Gas = b.getDefaultGasLimit(args.PairID)
+		*extra.Gas = defGasLimit
 	}
 	return extra, nil
 }
 
-func (b *Bridge) getDefaultGasLimit(pairID string) (gasLimit uint64) {
-	tokenCfg := b.GetTokenConfig(pairID)
-	if tokenCfg != nil {
-		gasLimit = tokenCfg.DefaultGasLimit
+func (b *Bridge) getBalance(account string) (balance *big.Int, err error) {
+	for i := 0; i < retryRPCCount; i++ {
+		balance, err = b.GetBalance(account)
+		if err == nil {
+			return balance, nil
+		}
+		time.Sleep(retryRPCInterval)
 	}
-	if gasLimit == 0 {
-		gasLimit = 90000
+	return nil, err
+}
+
+func (b *Bridge) getErc20Balance(erc20Addr, account string) (balance *big.Int, err error) {
+	for i := 0; i < retryRPCCount; i++ {
+		balance, err = b.GetErc20Balance(erc20Addr, account)
+		if err == nil {
+			return balance, nil
+		}
+		time.Sleep(retryRPCInterval)
 	}
-	return gasLimit
+	return nil, err
 }
 
 func (b *Bridge) getGasPrice() (price *big.Int, err error) {

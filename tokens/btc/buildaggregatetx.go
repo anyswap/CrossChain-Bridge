@@ -33,6 +33,21 @@ func (b *Bridge) BuildAggregateTransaction(relayFeePerKb int64, addrs []string, 
 	return b.NewUnsignedTransaction(txOuts, btcAmountType(relayFeePerKb), inputSource, changeSource, true)
 }
 
+// VerifyAggregateMsgHash verify aggregate msgHash
+func (b *Bridge) VerifyAggregateMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
+	if args == nil || args.Extra == nil || args.Extra.BtcExtra == nil || len(args.Extra.BtcExtra.PreviousOutPoints) == 0 {
+		return fmt.Errorf("empty btc extra")
+	}
+	if args.Extra.BtcExtra.RelayFeePerKb == nil {
+		return fmt.Errorf("empty relay fee")
+	}
+	rawTx, err := b.rebuildAggregateTransaction(args.Extra.BtcExtra)
+	if err != nil {
+		return err
+	}
+	return b.VerifyMsgHash(rawTx, msgHash)
+}
+
 func (b *Bridge) rebuildAggregateTransaction(extra *tokens.BtcExtraArgs) (rawTx *txauthor.AuthoredTx, err error) {
 	addrs, utxos, err := b.getUtxosFromOutPoints(extra.PreviousOutPoints)
 	if err != nil {

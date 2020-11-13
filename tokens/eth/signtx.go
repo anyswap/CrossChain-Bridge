@@ -58,7 +58,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
 
-	rootPubkey, inputCode, signerAddr, err := b.prepareDcrmSign(args)
+	rootPubkey, err := b.prepareDcrmSign(args)
 	if err != nil {
 		return nil, "", err
 	}
@@ -66,7 +66,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	if params.IsDebugging() {
 		log.Warn("DcrmSignTransaction start", "raw", tx.RawStr(), "msgHash", msgHash.String(), "txid", args.SwapID, "pairID", args.PairID)
 	}
-	rpcAddr, keyID, err := dcrm.DoSignOne(rootPubkey, inputCode, msgHash.String(), msgContext)
+	rpcAddr, keyID, err := dcrm.DoSignOne(rootPubkey, args.InputCode, msgHash.String(), msgContext)
 	if err != nil {
 		return nil, "", err
 	}
@@ -78,7 +78,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 
-	signedTx, err := b.signTransactionUseRsv(tx, rsv, keyID, signerAddr, args)
+	signedTx, err := b.signTransactionUseRsv(tx, rsv, keyID, args)
 	if err != nil {
 		if err != errSenderMismatch {
 			return nil, "", err
@@ -88,7 +88,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		}
 		// invert v value and retry sign
 		invRsv := invertV(rsv)
-		signedTx, err = b.signTransactionUseRsv(tx, invRsv, keyID, signerAddr, args)
+		signedTx, err = b.signTransactionUseRsv(tx, invRsv, keyID, args)
 		if err != nil {
 			return nil, "", err
 		}
@@ -99,26 +99,33 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	return signedTx, txHash, err
 }
 
-func (b *Bridge) prepareDcrmSign(args *tokens.BuildTxArgs) (rootPubkey, inputCode, signerAddr string, err error) {
+func (b *Bridge) prepareDcrmSign(args *tokens.BuildTxArgs) (rootPubkey string, err error) {
 	rootPubkey = b.GetDcrmPublicKey(args.PairID)
-	token := b.GetTokenConfig(args.PairID)
-	signerAddr = token.DcrmAddress
-	if args.Identifier != tokens.AggregateIdentifier {
-		return
+
+	signerAddr := args.From
+	if signerAddr == "" {
+		token := b.GetTokenConfig(args.PairID)
+		signerAddr = token.DcrmAddress
 	}
 
-	inputCode, err = b.GetBip32InputCode(args.Bind)
-	if err != nil {
-		return
+	if args.InputCode != "" {
+		childPubkey, err := dcrm.GetBip32ChildKey(rootPubkey, args.InputCode)
+		if err != nil {
+			return "", err
+		}
+		signerAddr, err = b.PublicKeyToAddress(childPubkey)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	childPubkey, err := dcrm.GetBip32ChildKey(rootPubkey, inputCode)
-	if err != nil {
-		return
+	if args.From == "" {
+		args.From = signerAddr
+	} else if !strings.EqualFold(args.From, signerAddr) {
+		log.Error("dcrm sign sender mismath", "inputCode", args.InputCode, "have", args.From, "want", signerAddr)
+		return rootPubkey, fmt.Errorf("dcrm sign sender mismath")
 	}
-
-	signerAddr, err = tokens.SrcBridge.PublicKeyToAddress(childPubkey)
-	return
+	return rootPubkey, nil
 }
 
 func invertV(rsv string) string {
@@ -129,7 +136,7 @@ func invertV(rsv string) string {
 	return common.Bytes2Hex(newSignature)
 }
 
-func (b *Bridge) signTransactionUseRsv(tx *types.Transaction, rsv, keyID, signerAddr string, args *tokens.BuildTxArgs) (signedTx *types.Transaction, err error) {
+func (b *Bridge) signTransactionUseRsv(tx *types.Transaction, rsv, keyID string, args *tokens.BuildTxArgs) (signedTx *types.Transaction, err error) {
 	signature := common.FromHex(rsv)
 
 	if len(signature) != crypto.SignatureLength {
@@ -151,8 +158,8 @@ func (b *Bridge) signTransactionUseRsv(tx *types.Transaction, rsv, keyID, signer
 		return nil, err
 	}
 
-	if sender.String() != signerAddr {
-		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", signerAddr, "keyID", keyID, "txid", args.SwapID, "pairID", args.PairID)
+	if !strings.EqualFold(sender.String(), args.From) {
+		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", args.From, "keyID", keyID, "txid", args.SwapID, "pairID", args.PairID)
 		return nil, errSenderMismatch
 	}
 	return signedTx, err

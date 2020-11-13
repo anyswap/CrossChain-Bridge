@@ -1,20 +1,99 @@
 package btc
 
 import (
-	"errors"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
 const (
 	redeemAggregateP2SHInputSize = 198
+	utxoPageLimit                = 100
+	aggInterval                  = 10 * time.Minute
 )
 
-// ShouldAggregate should aggregate
-func (b *Bridge) ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
+var (
+	aggSumVal uint64
+	aggAddrs  []string
+	aggUtxos  []*electrs.ElectUtxo
+	aggOffset int
+)
+
+// StartAggregateJob aggregate job
+func (b *Bridge) StartAggregateJob() {
+	for loop := 1; ; loop++ {
+		log.Info("[aggregate] start aggregate job", "loop", loop)
+		b.doAggregateJob()
+		log.Info("[aggregate] finish aggregate job", "loop", loop)
+		time.Sleep(aggInterval)
+	}
+}
+
+func (b *Bridge) doAggregateJob() {
+	aggOffset = 0
+	for {
+		p2shAddrs, err := mongodb.FindP2shAddresses(aggOffset, utxoPageLimit)
+		if err != nil {
+			log.Error("[aggregate] FindP2shAddresses failed", "err", err, "offset", aggOffset, "limit", utxoPageLimit)
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		for _, p2shAddr := range p2shAddrs {
+			b.findUtxosAndAggregate(p2shAddr.P2shAddress)
+		}
+		if len(p2shAddrs) < utxoPageLimit {
+			break
+		}
+		aggOffset += utxoPageLimit
+	}
+}
+
+func (b *Bridge) findUtxosAndAggregate(addr string) {
+	findUtxos, _ := b.FindUtxos(addr)
+	for _, utxo := range findUtxos {
+		if utxo.Value == nil || *utxo.Value == 0 {
+			continue
+		}
+		if isUtxoExist(utxo) {
+			continue
+		}
+		log.Info("[aggregate] find utxo", "address", addr, "utxo", utxo.String())
+
+		aggSumVal += *utxo.Value
+		aggAddrs = append(aggAddrs, addr)
+		aggUtxos = append(aggUtxos, utxo)
+
+		if shouldAggregate(len(aggUtxos), aggSumVal) {
+			b.aggregate()
+		}
+	}
+}
+
+func isUtxoExist(utxo *electrs.ElectUtxo) bool {
+	for _, item := range aggUtxos {
+		if *item.Txid == *utxo.Txid && *item.Vout == *utxo.Vout {
+			return true
+		}
+	}
+	return false
+}
+
+func (b *Bridge) aggregate() {
+	txHash, err := b.AggregateUtxos(aggAddrs, aggUtxos)
+	if err != nil {
+		log.Error("[aggregate] AggregateUtxos failed", "err", err)
+	} else {
+		log.Info("[aggregate] AggregateUtxos succeed", "txHash", txHash, "utxos", len(aggUtxos), "sumVal", aggSumVal)
+	}
+	aggSumVal = 0
+	aggAddrs = nil
+	aggUtxos = nil
+}
+
+func shouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
 	if aggUtxoCount >= cfgUtxoAggregateMinCount {
 		return true
 	}
@@ -69,7 +148,7 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 			if err == nil {
 				break
 			}
-			log.Warn("retry dcrm sign for aggregate", "count", i+1, "err", err)
+			log.Warn("[aggregate] retry dcrm sign", "count", i+1, "err", err)
 			time.Sleep(time.Second)
 		}
 	}
@@ -81,19 +160,4 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 		return "", err
 	}
 	return txHash, nil
-}
-
-// VerifyAggregateMsgHash verify aggregate msgHash
-func (b *Bridge) VerifyAggregateMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
-	if args == nil || args.Extra == nil || args.Extra.BtcExtra == nil || len(args.Extra.BtcExtra.PreviousOutPoints) == 0 {
-		return errors.New("empty btc extra")
-	}
-	if args.Extra.BtcExtra.RelayFeePerKb == nil {
-		return errors.New("empty relay fee")
-	}
-	rawTx, err := b.rebuildAggregateTransaction(args.Extra.BtcExtra)
-	if err != nil {
-		return err
-	}
-	return b.VerifyMsgHash(rawTx, msgHash)
 }

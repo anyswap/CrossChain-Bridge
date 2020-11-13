@@ -11,7 +11,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 var (
@@ -106,11 +105,8 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	switch args.Identifier {
 	case params.GetIdentifier():
 	case tokens.AggregateIdentifier:
-		if btc.BridgeInstance == nil {
-			return tokens.ErrNoBtcBridge
-		}
-		logWorker("acceptSwap", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
-		return btc.BridgeInstance.VerifyAggregateMsgHash(msgHash, &args)
+		logWorker("acceptSwap", "verifySignInfo of aggregate", "msgHash", msgHash, "msgContext", msgContext)
+		return tokens.SrcBridge.VerifyAggregateMsgHash(msgHash, &args)
 	default:
 		return errIdentifierMismatch
 	}

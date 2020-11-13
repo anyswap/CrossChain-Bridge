@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/bridge"
 )
 
@@ -38,5 +39,5 @@ func StartWork(isServer bool) {
 	go StartStableJob()
 	time.Sleep(interval)
 
-	go StartAggregateJob()
+	go tokens.SrcBridge.StartAggregateJob()
 }
