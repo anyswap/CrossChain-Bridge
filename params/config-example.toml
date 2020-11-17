@@ -56,6 +56,12 @@ InitialHeight = 0
 # whether enable scan blocks and register swaps
 EnableScan = false
 
+# aggregate job related parameters (server only)
+AggregateMaxGasPrice = 1000 # unit is gwei
+AggPlusGasPricePercentage = 10 # plus percentage
+AggGasKeystoreFile = "/home/xxx/accounts/keystore"
+AggGasPasswordFile = "/home/xxx/accounts/password"
+
 # source blockchain gateway config
 [SrcGateway]
 APIAddress = ["http://47.107.50.83:3002"]
@@ -70,9 +76,6 @@ Confirmations = 0 # suggest >= 30 for Mainnet
 InitialHeight = 0
 # whether enable scan blocks and register swaps
 EnableScan = false
-
-# only auto aggrate when gas price is larger than this value
-AggregateMaxGasPrice = 1000 # unit is gwei
 
 # dest blockchain gateway config
 [DestGateway]

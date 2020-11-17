@@ -33,7 +33,11 @@ type ChainConfig struct {
 	InitialHeight *uint64
 	EnableScan    bool
 
-	AggregateMaxGasPrice *uint64
+	// aggregate job related
+	AggregateMaxGasPrice      *uint64
+	AggPlusGasPricePercentage uint64
+	AggGasKeystoreFile        string
+	AggGasPasswordFile        string
 }
 
 // GatewayConfig struct
