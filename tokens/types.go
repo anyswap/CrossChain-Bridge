@@ -32,6 +32,8 @@ type ChainConfig struct {
 	Confirmations *uint64
 	InitialHeight *uint64
 	EnableScan    bool
+
+	AggregateMaxGasPrice *uint64
 }
 
 // GatewayConfig struct
@@ -264,7 +266,17 @@ func (c *ChainConfig) CheckConfig() error {
 	if c.InitialHeight == nil {
 		return errors.New("token must config 'InitialHeight'")
 	}
+	if c.AggregateMaxGasPrice == nil {
+		return errors.New("token must config 'AggregateMaxGasPrice'")
+	}
 	return nil
+}
+
+// GetAggregateMaxGasPrice get aggregate max gas price
+func (c *ChainConfig) GetAggregateMaxGasPrice() *big.Int {
+	gasPrice := new(big.Int).SetUint64(*c.AggregateMaxGasPrice)
+	gasPrice.Mul(gasPrice, big.NewInt(1e9))
+	return gasPrice
 }
 
 // CheckConfig check token config

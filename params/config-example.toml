@@ -71,6 +71,9 @@ InitialHeight = 0
 # whether enable scan blocks and register swaps
 EnableScan = false
 
+# only auto aggrate when gas price is larger than this value
+AggregateMaxGasPrice = 1000 # unit is gwei
+
 # dest blockchain gateway config
 [DestGateway]
 APIAddress = ["http://5.189.139.168:8018"]

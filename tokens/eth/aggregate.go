@@ -14,15 +14,36 @@ const (
 	aggInterval  = 10 * time.Minute
 )
 
-var aggOffset int
+var (
+	aggOffset      int
+	aggMaxGasPrice *big.Int
+)
 
 // StartAggregateJob aggregate job
 func (b *Bridge) StartAggregateJob() {
+	aggMaxGasPrice = b.ChainConfig.GetAggregateMaxGasPrice()
 	for loop := 1; ; loop++ {
+		b.waitSatisfiedGasPrice()
 		log.Info("[aggregate] start aggregate job", "loop", loop)
 		b.doAggregateJob()
 		log.Info("[aggregate] finish aggregate job", "loop", loop)
 		time.Sleep(aggInterval)
+	}
+}
+
+func (b *Bridge) waitSatisfiedGasPrice() {
+	for {
+		gasPrice, err := b.getGasPrice()
+		if err != nil {
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		if gasPrice.Cmp(aggMaxGasPrice) <= 0 {
+			log.Info("[aggregate] gas price satisfy", "current", gasPrice, "max", aggMaxGasPrice)
+			break
+		}
+		log.Info("[aggregate] gas price does not satisfy", "current", gasPrice, "max", aggMaxGasPrice)
+		time.Sleep(60 * time.Second)
 	}
 }
 
@@ -102,9 +123,6 @@ func (b *Bridge) aggregate(regAddr *mongodb.MgoRegisteredAddress, pairCfg *token
 }
 
 func (b *Bridge) getAggregateValue(account string, tokenCfg *tokens.TokenConfig) (value *big.Int, err error) {
-	if tokenCfg.ContractAddress != "" {
-		return b.getErc20Balance(tokenCfg.ContractAddress, account)
-	}
 	value, err = b.getBalance(account)
 	if err != nil {
 		return nil, err
@@ -114,9 +132,17 @@ func (b *Bridge) getAggregateValue(account string, tokenCfg *tokens.TokenConfig)
 		return nil, err
 	}
 	gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(defGasLimit))
-	gasFee.Mul(gasFee, big.NewInt(2)) // double to allow slippage
-	value.Sub(value, gasFee)
-	return value, nil
+	if tokenCfg.ContractAddress == "" {
+		value.Sub(value, gasFee)
+		return value, nil
+	}
+	if value.Cmp(gasFee) < 0 {
+		err = b.prepareAggregateGasFee(account, new(big.Int).Sub(gasFee, value))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return b.getErc20Balance(tokenCfg.ContractAddress, account)
 }
 
 func (b *Bridge) signAndSendAggregateTx(rawTx interface{}, args *tokens.BuildTxArgs, tokenCfg *tokens.TokenConfig) {
@@ -151,4 +177,8 @@ func (b *Bridge) signAndSendAggregateTx(rawTx interface{}, args *tokens.BuildTxA
 		return
 	}
 	log.Info("[aggregate] send tx success", "txHash", txHash)
+}
+
+func (b *Bridge) prepareAggregateGasFee(account string, value *big.Int) error {
+	return tokens.ErrTodo
 }
