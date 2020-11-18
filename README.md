@@ -1,6 +1,25 @@
 # crossChain-Bridge
 cross chain bridge using DCRM technology
 
+# Install the Docker version
+## 1. Install Docker. This depends on your platform, on Ubuntu this works:
+```
+sudo apt update
+sudo apt install docker.io
+```
+## 2. Download the Docker image and create and run the container:
+### swap
+```
+docker run -itd --name swap --network host --restart always -v /var/lib/docker/swap:/swap anywap/swap
+```
+### client
+```
+docker exec -d swap swaporacle ...
+```
+tools: `swapserver swaporacle swapscan riskctrl swapadmin swaptools` (/usr/local/bin)  
+conf: `config-example.toml config-tokenpair-example.toml` (/usr/local/bin)  
+
+# Install the Source version
 ## Building
 
 ```shell
