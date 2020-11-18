@@ -200,9 +200,9 @@ type BuildTxArgs struct {
 	Value       *big.Int   `json:"value,omitempty"`
 	OriginValue *big.Int   `json:"originValue,omitempty"`
 	Memo        string     `json:"memo,omitempty"`
-	Input       *[]byte    `json:"input,omitempty"`
+	Input       *[]byte    `json:"-"`
 	Extra       *AllExtras `json:"extra,omitempty"`
-	InputCode   string     `json:"inputCode,omitempty"`
+	InputCode   string     `json:"-"`
 }
 
 // GetExtraArgs get extra args

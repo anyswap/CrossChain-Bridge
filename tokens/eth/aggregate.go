@@ -200,7 +200,7 @@ func (b *Bridge) signAndSendAggregateTx(rawTx interface{}, args *tokens.BuildTxA
 	} else {
 		maxRetryDcrmSignCount := 5
 		for i := 0; i < maxRetryDcrmSignCount; i++ {
-			signedTx, txHash, err = b.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+			signedTx, txHash, err = b.DcrmSignTransaction(rawTx, args)
 			if err == nil {
 				break
 			}

@@ -55,7 +55,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 	msgHash := b.Signer.Hash(tx)
-	jsondata, _ := json.Marshal(args)
+	jsondata, _ := json.Marshal(args.GetExtraArgs())
 	msgContext := string(jsondata)
 
 	rootPubkey, err := b.prepareDcrmSign(args)

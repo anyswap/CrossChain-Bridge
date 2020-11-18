@@ -148,7 +148,7 @@ func verifySwapTransaction(bridge tokens.CrossChainBridge, pairID, txid, bind st
 func dcrmSignTransaction(bridge tokens.CrossChainBridge, rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
 	maxRetryDcrmSignCount := 5
 	for i := 0; i < maxRetryDcrmSignCount; i++ {
-		signedTx, txHash, err = bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+		signedTx, txHash, err = bridge.DcrmSignTransaction(rawTx, args)
 		if err == nil {
 			break
 		}
