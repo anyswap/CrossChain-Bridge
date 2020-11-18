@@ -92,9 +92,7 @@ func (b *Bridge) doAggregateJob() {
 			time.Sleep(3 * time.Second)
 			continue
 		}
-		for _, regAddr := range regAddrs {
-			b.doAggregate(regAddr)
-		}
+		b.doAggregate(regAddrs)
 		if len(regAddrs) < aggPageLimit {
 			break
 		}
@@ -102,17 +100,25 @@ func (b *Bridge) doAggregateJob() {
 	}
 }
 
-func (b *Bridge) doAggregate(regAddr *mongodb.MgoRegisteredAddress) {
-	if regAddr == nil || regAddr.RootPublicKey == "" || regAddr.Bip32Adddress == "" {
-		return
-	}
-	if regAddr.Address == "" {
-		log.Warn("[aggregate] bip32 address without bind", "bip32Address", regAddr.Bip32Adddress, "rootPubkey", regAddr.RootPublicKey)
-		return
-	}
-
+func (b *Bridge) doAggregate(regAddrs []*mongodb.MgoRegisteredAddress) {
 	for _, pairCfg := range tokens.GetTokenPairsConfig() {
-		b.aggregate(regAddr, pairCfg)
+		pairID := pairCfg.PairID
+		tokenCfg := b.GetTokenConfig(pairID)
+		for _, regAddr := range regAddrs {
+			if regAddr == nil ||
+				regAddr.RootPublicKey != tokenCfg.DcrmPubkey ||
+				regAddr.Bip32Adddress == "" {
+				continue
+			}
+			if regAddr.Address == "" {
+				log.Warn("[aggregate] bip32 address without bind",
+					"bip32Address", regAddr.Bip32Adddress,
+					"rootPubkey", regAddr.RootPublicKey)
+				continue
+			}
+			b.aggregate(regAddr, pairCfg)
+		}
+		time.Sleep(30 * time.Second)
 	}
 }
 
@@ -156,7 +162,7 @@ func (b *Bridge) aggregate(regAddr *mongodb.MgoRegisteredAddress, pairCfg *token
 	}
 	rawTx, err := b.BuildAggregateTransaction(args)
 	if err != nil {
-		log.Warn("[aggregate] build tx failed", "pairID", pairID, "from", regAddr.Bip32Adddress, "err", err)
+		log.Warn("[aggregate] build tx failed", "args", args, "err", err)
 		return
 	}
 	b.signAndSendAggregateTx(rawTx, args, tokenCfg)
@@ -210,7 +216,7 @@ func (b *Bridge) signAndSendAggregateTx(rawTx interface{}, args *tokens.BuildTxA
 
 	_, err = b.SendTransaction(signedTx)
 	if err != nil {
-		log.Info("[aggregate] send tx failed", "err", err)
+		log.Info("[aggregate] send tx failed", "txHash", txHash, "args", args, "err", err)
 		return
 	}
 	log.Info("[aggregate] send tx success", "txHash", txHash)
@@ -229,7 +235,7 @@ func (b *Bridge) prepareAggregateGasFee(account string, value, gasPrice *big.Int
 	}
 	rawTx, err := b.BuildRawTransaction(args)
 	if err != nil {
-		log.Warn("[aggregate] prepare gas fee build tx failed", "err", err)
+		log.Warn("[aggregate] prepare gas fee build tx failed", "args", args, "err", err)
 		return err
 	}
 	signedTx, txHash, err := b.SignTransactionWithPrivateKey(rawTx, aggKeyWrapper.PrivateKey)

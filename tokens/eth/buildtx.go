@@ -100,24 +100,14 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		args.Identifier = params.GetIdentifier()
 	}
 
-	balance, err := b.getBalance(args.From)
-	if err != nil {
-		log.Warn("get balance error", "from", args.From, "err", err)
-		return nil, fmt.Errorf("get balance error: %v", err)
-	}
-	var gasFee *big.Int
-	needValue := big.NewInt(0)
-	if value != nil && value.Sign() > 0 {
-		needValue = value
-	}
-	if args.SwapType != tokens.NoSwapType {
-		needValue = new(big.Int).Add(needValue, defReserveGasFee)
-	} else {
+	gasFee := defReserveGasFee
+	if args.SwapType == tokens.NoSwapType {
 		gasFee = new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
-		needValue = new(big.Int).Add(needValue, gasFee)
 	}
-	if balance.Cmp(needValue) < 0 {
-		return nil, fmt.Errorf("not enough coin balance, balance is %v, need %v. value is %v and gas fee is %v", balance, needValue, value, gasFee)
+
+	err = b.checkCoinBalance(args.From, value, gasFee)
+	if err != nil {
+		return nil, err
 	}
 
 	rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)
@@ -267,17 +257,42 @@ func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) 
 		return tokens.ErrUnknownPairID
 	}
 	args.To = token.ContractAddress // to
+	return b.checkTokenBalance(token.ContractAddress, token.DcrmAddress, amount)
+}
 
+func (b *Bridge) checkTokenBalance(token, from string, value *big.Int) (err error) {
 	var balance *big.Int
 	for i := 0; i < retryRPCCount; i++ {
-		balance, err = b.GetErc20Balance(token.ContractAddress, token.DcrmAddress)
+		balance, err = b.GetErc20Balance(token, from)
 		if err == nil {
 			break
 		}
 		time.Sleep(retryRPCInterval)
 	}
-	if err == nil && balance.Cmp(amount) < 0 {
-		return errors.New("not enough token balance to swapout")
+	if err != nil {
+		return err
 	}
-	return err
+	if balance.Cmp(value) < 0 {
+		return fmt.Errorf("not enough token balance, have %v, need %v", balance, value)
+	}
+	return nil
+}
+
+func (b *Bridge) checkCoinBalance(from string, value, gasFee *big.Int) (err error) {
+	balance, err := b.getBalance(from)
+	if err != nil {
+		log.Warn("get balance error", "from", from, "err", err)
+		return fmt.Errorf("get balance of %v error: %v", from, err)
+	}
+	needValue := big.NewInt(0)
+	if value != nil && value.Sign() > 0 {
+		needValue.Add(needValue, value)
+	}
+	if gasFee != nil && gasFee.Sign() > 0 {
+		needValue.Add(needValue, gasFee)
+	}
+	if balance.Cmp(needValue) < 0 {
+		return fmt.Errorf("not enough coin balance, have %v, need %v plus gas fee %v", balance, value, gasFee)
+	}
+	return nil
 }
