@@ -105,6 +105,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		log.Warn("get balance error", "from", args.From, "err", err)
 		return nil, fmt.Errorf("get balance error: %v", err)
 	}
+	var gasFee *big.Int
 	needValue := big.NewInt(0)
 	if value != nil && value.Sign() > 0 {
 		needValue = value
@@ -112,11 +113,11 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 	if args.SwapType != tokens.NoSwapType {
 		needValue = new(big.Int).Add(needValue, defReserveGasFee)
 	} else {
-		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
+		gasFee = new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
 	}
 	if balance.Cmp(needValue) < 0 {
-		return nil, errors.New("not enough coin balance")
+		return nil, fmt.Errorf("not enough coin balance, balance is %v, need %v. value is %v and gas fee is %v", balance, needValue, value, gasFee)
 	}
 
 	rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)

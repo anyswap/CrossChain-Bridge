@@ -23,6 +23,7 @@ var (
 	aggMaxGasPrice            *big.Int
 	aggPlusGasPricePercentage uint64
 	aggKeyWrapper             *keystore.Key
+	aggGasFeeSender           string
 )
 
 // StartAggregateJob aggregate job
@@ -59,8 +60,8 @@ func (b *Bridge) initAggregate() error {
 		return err
 	}
 	aggKeyWrapper = key
-	aggGasFrom := aggKeyWrapper.Address.String()
-	log.Info("[aggregate] init aggregate success", "aggMaxGasPrice", aggMaxGasPrice, "aggGasFrom", aggGasFrom)
+	aggGasFeeSender = aggKeyWrapper.Address.String()
+	log.Info("[aggregate] init aggregate success", "aggMaxGasPrice", aggMaxGasPrice, "aggGasFeeSender", aggGasFeeSender)
 	return nil
 }
 
@@ -127,16 +128,17 @@ func (b *Bridge) aggregate(regAddr *mongodb.MgoRegisteredAddress, pairCfg *token
 
 	balance, err := b.getAggregateValue(regAddr.Bip32Adddress, gasPrice, tokenCfg)
 	if err != nil {
-		log.Warn("[aggregate] get aggregate value failed", "address", regAddr.Bip32Adddress, "err", err)
+		log.Warn("[aggregate] get aggregate value failed", "pairID", pairID, "address", regAddr.Bip32Adddress, "err", err)
 		return
 	}
 
 	if balance == nil || balance.Cmp(tokenCfg.GetAggregateMinValue()) < 0 {
-		log.Debug("[aggregate] ignore small value", "address", regAddr.Bip32Adddress, "balance", balance, "threshold", tokenCfg.GetAggregateMinValue())
+		log.Debug("[aggregate] ignore small value", "pairID", pairID, "address", regAddr.Bip32Adddress, "balance", balance, "threshold", tokenCfg.GetAggregateMinValue())
 		return
 	}
 
 	extra := &tokens.EthExtraArgs{
+		Gas:            &defGasLimit,
 		GasPrice:       gasPrice,
 		AggregateValue: balance,
 	}
@@ -154,7 +156,7 @@ func (b *Bridge) aggregate(regAddr *mongodb.MgoRegisteredAddress, pairCfg *token
 	}
 	rawTx, err := b.BuildAggregateTransaction(args)
 	if err != nil {
-		log.Warn("[aggregate] build tx failed", "err", err)
+		log.Warn("[aggregate] build tx failed", "pairID", pairID, "from", regAddr.Bip32Adddress, "err", err)
 		return
 	}
 	b.signAndSendAggregateTx(rawTx, args, tokenCfg)
@@ -216,6 +218,7 @@ func (b *Bridge) signAndSendAggregateTx(rawTx interface{}, args *tokens.BuildTxA
 
 func (b *Bridge) prepareAggregateGasFee(account string, value, gasPrice *big.Int) error {
 	args := &tokens.BuildTxArgs{
+		From:  aggGasFeeSender,
 		To:    account,
 		Value: value,
 		Extra: &tokens.AllExtras{
@@ -239,14 +242,14 @@ func (b *Bridge) prepareAggregateGasFee(account string, value, gasPrice *big.Int
 		log.Warn("[aggregate] prepare gas fee send tx failed", "err", err)
 		return err
 	}
-	log.Info("[aggregate] prepare gas fee send tx", "account", account, "value", value, "txHash", txHash)
+	log.Info("[aggregate] prepare gas fee send tx", "from", args.From, "to", account, "value", value, "txHash", txHash)
 	checkLoops := 20
 	for i := 0; i < checkLoops; i++ {
 		txr, err := b.GetTransactionReceipt(txHash)
 		if err == nil {
 			log.Info("[aggregate] prepare gas fee send tx success",
-				"account", account, "value", value, "txHash", txHash,
-				"blockNumber", txr.BlockNumber, "blockHash", txr.BlockHash)
+				"from", args.From, "to", account, "value", value, "txHash", txHash,
+				"blockNumber", txr.BlockNumber.ToInt(), "blockHash", txr.BlockHash)
 			return nil
 		}
 		time.Sleep(3 * time.Second)

@@ -150,6 +150,9 @@ func GetGroupByID(groupID, rpcAddr string) (*GroupInfo, error) {
 
 // GetBip32ChildKey get bip32 child key
 func GetBip32ChildKey(rootPubkey, inputCode string) (string, error) {
+	if len(rootPubkey) != 130 || rootPubkey[:2] != "04" {
+		return "", fmt.Errorf("wrong root public key '%v'", rootPubkey)
+	}
 	var result DataResultResp
 	err := httpPost(&result, "dcrm_getBip32ChildKey", rootPubkey, inputCode)
 	if err != nil {

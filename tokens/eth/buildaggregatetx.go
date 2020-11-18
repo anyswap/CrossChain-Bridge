@@ -2,6 +2,7 @@ package eth
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -53,6 +54,10 @@ func (b *Bridge) BuildAggregateTransaction(args *tokens.BuildTxArgs) (rawTx inte
 	bip32Addr, err := b.PublicKeyToAddress(childPubkey)
 	if err != nil {
 		return nil, err
+	}
+
+	if !strings.EqualFold(bip32Addr, args.From) {
+		return nil, fmt.Errorf("aggregate: sender mismatch. have %v, want %v. pairID is %v, input code is %v, root public key is %v", args.From, bip32Addr, pairID, inputCode, rootPubkey)
 	}
 
 	token := b.GetTokenConfig(pairID)
