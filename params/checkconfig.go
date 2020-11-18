@@ -58,11 +58,11 @@ func checkChainAndGatewayConfig() (err error) {
 	if config.DestGateway == nil {
 		return errors.New("server must config 'DestGateway'")
 	}
-	err = config.SrcChain.CheckConfig()
+	err = config.SrcChain.CheckConfig(true)
 	if err != nil {
 		return err
 	}
-	err = config.DestChain.CheckConfig()
+	err = config.DestChain.CheckConfig(false)
 	if err != nil {
 		return err
 	}

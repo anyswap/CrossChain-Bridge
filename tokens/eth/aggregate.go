@@ -27,6 +27,14 @@ var (
 
 // StartAggregateJob aggregate job
 func (b *Bridge) StartAggregateJob() {
+	if !b.IsSrc {
+		log.Error("[aggregate] bridge is not on source endpoint, stop aggregate")
+		return
+	}
+	if !tokens.IsBip32Used() {
+		log.Info("[aggregate] bip32 is not used, stop aggregate")
+		return
+	}
 	err := b.initAggregate()
 	if err != nil {
 		log.Error("[aggregate] init aggregate failed", "err", err)

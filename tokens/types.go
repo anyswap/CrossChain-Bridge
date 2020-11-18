@@ -257,21 +257,29 @@ type P2shAddressInfo struct {
 }
 
 // CheckConfig check chain config
-func (c *ChainConfig) CheckConfig() error {
+func (c *ChainConfig) CheckConfig(isSrc bool) error {
 	if c.BlockChain == "" {
-		return errors.New("token must config 'BlockChain'")
+		return errors.New("chain must config 'BlockChain'")
 	}
 	if c.NetID == "" {
-		return errors.New("token must config 'NetID'")
+		return errors.New("chain must config 'NetID'")
 	}
 	if c.Confirmations == nil {
-		return errors.New("token must config 'Confirmations'")
+		return errors.New("chain must config 'Confirmations'")
 	}
 	if c.InitialHeight == nil {
-		return errors.New("token must config 'InitialHeight'")
+		return errors.New("chain must config 'InitialHeight'")
 	}
-	if c.AggregateMaxGasPrice == nil {
-		return errors.New("token must config 'AggregateMaxGasPrice'")
+	if isSrc && IsBip32Used() {
+		if c.AggregateMaxGasPrice == nil {
+			return errors.New("source chain must config 'AggregateMaxGasPrice'")
+		}
+		if c.AggGasKeystoreFile == "" {
+			return errors.New("source chain must config 'AggGasKeystoreFile'")
+		}
+		if c.AggGasPasswordFile == "" {
+			return errors.New("source chain must config 'AggGasPasswordFile'")
+		}
 	}
 	return nil
 }
@@ -323,9 +331,6 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.BigValueThreshold == nil {
 		return errors.New("token must config 'BigValueThreshold'")
 	}
-	if c.AggregateMinValue == nil {
-		return errors.New("token must config 'AggregateMinValue'")
-	}
 	if c.DcrmAddress == "" {
 		return errors.New("token must config 'DcrmAddress'")
 	}
@@ -338,6 +343,9 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 		}
 		if c.IsProxyErc20() && c.ContractCodeHash == "" {
 			return errors.New("token must config 'ContractCodeHash' for ProxyERC20 in source chain")
+		}
+		if c.AggregateMinValue == nil && IsBip32Used() {
+			return errors.New("token must config 'AggregateMinValue' for source chain")
 		}
 	} else {
 		if c.DepositAddress != "" {
@@ -363,7 +371,9 @@ func (c *TokenConfig) CalcAndStoreValue() {
 	c.maxSwapFee = ToBits(*c.MaximumSwapFee, *c.Decimals)
 	c.minSwapFee = ToBits(*c.MinimumSwapFee, *c.Decimals)
 	c.bigValThreshhold = ToBits(*c.BigValueThreshold, *c.Decimals)
-	c.aggregateMinVal = ToBits(*c.AggregateMinValue, *c.Decimals)
+	if c.AggregateMinValue != nil {
+		c.aggregateMinVal = ToBits(*c.AggregateMinValue, *c.Decimals)
+	}
 }
 
 // GetAggregateMinValue get aggregate min value

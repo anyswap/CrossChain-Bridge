@@ -71,6 +71,16 @@ func GetTokenPairConfig(pairID string) *TokenPairConfig {
 	return pairCfg
 }
 
+// IsBip32Used is bip32 used
+func IsBip32Used() bool {
+	for _, pairCfg := range GetTokenPairsConfig() {
+		if pairCfg.UseBip32 {
+			return true
+		}
+	}
+	return false
+}
+
 // GetTokenConfig method
 func (c *TokenPairConfig) GetTokenConfig(isSrc bool) *TokenConfig {
 	if isSrc {
