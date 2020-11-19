@@ -11,7 +11,7 @@ import (
 
 const (
 	netMainnet  = "mainnet"
-	netTestnet3 = "testnet3"
+	netTestnet4 = "testnet4"
 	netCustom   = "custom"
 )
 
@@ -45,7 +45,7 @@ func (b *Bridge) VerifyChainConfig() {
 	chainCfg := b.ChainConfig
 	networkID := strings.ToLower(chainCfg.NetID)
 	switch networkID {
-	case netMainnet, netTestnet3:
+	case netMainnet, netTestnet4:
 	case netCustom:
 		return
 	default:
@@ -61,8 +61,8 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
-	if strings.EqualFold(tokenCfg.Symbol, "BTC") && *tokenCfg.Decimals != 8 {
-		return fmt.Errorf("invalid decimals for BTC: want 8 but have %v", *tokenCfg.Decimals)
+	if strings.EqualFold(tokenCfg.Symbol, "LTC") && *tokenCfg.Decimals != 8 {
+		return fmt.Errorf("invalid decimals for LTC: want 8 but have %v", *tokenCfg.Decimals)
 	}
 	return nil
 }
