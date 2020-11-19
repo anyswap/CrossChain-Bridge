@@ -7,8 +7,10 @@ import (
 
 // transaction memo prefix
 const (
-	LockMemoPrefix   = "SWAPTO:"
-	UnlockMemoPrefix = "SWAPTX:"
+	LockMemoPrefix      = "SWAPTO:"
+	UnlockMemoPrefix    = "SWAPTX:"
+	AggregateIdentifier = "aggregate"
+	AggregateMemo       = "aggregate"
 )
 
 // common variables

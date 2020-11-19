@@ -21,6 +21,11 @@ require (
 	github.com/jordan-wright/email v0.0.0-20200602115436-fd8a7622303e
 	github.com/lestrrat-go/file-rotatelogs v2.3.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.1 // indirect
+	github.com/ltcsuite/ltcd v0.20.1-beta
+	github.com/ltcsuite/ltcutil v1.0.2-beta
+	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.0.0
+	github.com/ltcsuite/ltcwallet/wallet/txrules v1.0.0
+	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.0.0
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/pborman/uuid v1.2.0
 	github.com/peterh/liner v1.1.1-0.20190123174540-a2c9a5303de7 // indirect
