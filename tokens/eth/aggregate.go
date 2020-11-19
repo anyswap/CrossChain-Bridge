@@ -223,10 +223,12 @@ func (b *Bridge) signAndSendAggregateTx(rawTx interface{}, args *tokens.BuildTxA
 }
 
 func (b *Bridge) prepareAggregateGasFee(account string, value, gasPrice *big.Int) error {
+	input := []byte(tokens.AggregateMemo)
 	args := &tokens.BuildTxArgs{
 		From:  aggGasFeeSender,
 		To:    account,
 		Value: value,
+		Input: &input,
 		Extra: &tokens.AllExtras{
 			EthExtra: &tokens.EthExtraArgs{
 				GasPrice: gasPrice,

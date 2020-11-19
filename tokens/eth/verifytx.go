@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"bytes"
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -100,6 +101,12 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return b.verifyErc20SwapinTx(tx, pairCfg, allowUnstable)
 	}
 
+	// filter out aggregte tx
+	txInput := (*[]byte)(tx.Payload)
+	if txInput != nil && bytes.Equal(*txInput, []byte(tokens.AggregateMemo)) {
+		return swapInfo, tokens.ErrTxIsAggregateTx
+	}
+
 	if !allowUnstable {
 		_, err = b.getStableReceipt(swapInfo)
 		if err != nil {
@@ -143,6 +150,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (swapInfos []
 		return swapInfos, errs
 	}
 	txRecipient := strings.ToLower(tx.Recipient.String())
+	txInput := (*[]byte)(tx.Payload)
 
 	for _, pairCfg := range tokens.GetTokenPairsConfig() {
 		token := pairCfg.GetTokenConfig(b.IsSrc)
@@ -151,6 +159,12 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (swapInfos []
 		if token.IsErc20() {
 			swapInfo, errf := b.verifyErc20SwapinTx(tx, pairCfg, allowUnstable)
 			addSwapInfoConsiderError(swapInfo, errf, &swapInfos, &errs)
+			continue
+		}
+
+		// filter out aggregte tx
+		if txInput != nil && bytes.Equal(*txInput, []byte(tokens.AggregateMemo)) {
+			addSwapInfoConsiderError(nil, tokens.ErrTxIsAggregateTx, &swapInfos, &errs)
 			continue
 		}
 

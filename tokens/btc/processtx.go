@@ -69,8 +69,8 @@ func isP2pkhSwapinPrior(tx *electrs.ElectTx, depositAddress string) bool {
 			break
 		}
 	}
-	bindAddress, bindOk := GetBindAddressFromMemoScipt(memoScript)
-	return bindOk && tokens.DstBridge.IsValidAddress(bindAddress)
+	bindAddress, memoErr := GetBindAddressFromMemoScipt(memoScript)
+	return memoErr == nil && tokens.DstBridge.IsValidAddress(bindAddress)
 }
 
 // CheckSwapinTxType check swapin type

@@ -341,8 +341,8 @@ func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 		if !rightReceiver || value == 0 {
 			return
 		}
-		bindAddress, bindOk := btc.GetBindAddressFromMemoScipt(memoScript)
-		if !bindOk {
+		bindAddress, memoErr := btc.GetBindAddressFromMemoScipt(memoScript)
+		if memoErr != nil {
 			return
 		}
 		log.Info("post swapin register", "txid", txid, "pairid", btc.PairID, "bind", bindAddress)

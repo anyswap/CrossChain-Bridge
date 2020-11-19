@@ -117,7 +117,10 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
-	bindAddress, bindOk := GetBindAddressFromMemoScipt(memoScript)
+	bindAddress, memoErr := GetBindAddressFromMemoScipt(memoScript)
+	if memoErr == tokens.ErrTxIsAggregateTx {
+		return swapInfo, memoErr
+	}
 
 	swapInfo.To = depositAddress                      // To
 	swapInfo.Value = common.BigFromUint64(value)      // Value
@@ -128,9 +131,10 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 	if err != nil {
 		return swapInfo, err
 	}
-	if !bindOk {
+
+	if memoErr != nil {
 		log.Debug("wrong memo", "memo", memoScript)
-		return swapInfo, tokens.ErrTxWithWrongMemo
+		return swapInfo, memoErr
 	}
 
 	if !allowUnstable {
@@ -197,23 +201,24 @@ func getTxFrom(vin []*electrs.ElectTxin, priorityAddress string) string {
 }
 
 // GetBindAddressFromMemoScipt get bind address
-func GetBindAddressFromMemoScipt(memoScript string) (bind string, ok bool) {
+func GetBindAddressFromMemoScipt(memoScript string) (bind string, err error) {
+	err = tokens.ErrTxWithWrongMemo
 	parts := regexMemo.Split(memoScript, -1)
 	if len(parts) != 2 {
-		return "", false
+		return "", err
 	}
 	memoHex := strings.TrimSpace(parts[1])
 	memo := common.FromHex(memoHex)
 	memoStr := string(memo)
 	if memoStr == tokens.AggregateMemo {
-		return "", false
+		return "", tokens.ErrTxIsAggregateTx
 	}
 	if len(memo) <= len(tokens.LockMemoPrefix) {
-		return "", false
+		return "", err
 	}
 	if !strings.HasPrefix(memoStr, tokens.LockMemoPrefix) {
-		return "", false
+		return "", err
 	}
 	bind = string(memo[len(tokens.LockMemoPrefix):])
-	return bind, true
+	return bind, nil
 }

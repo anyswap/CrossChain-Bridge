@@ -34,6 +34,8 @@ func (b *Bridge) BuildAggregateTransaction(args *tokens.BuildTxArgs) (rawTx inte
 		}
 	} else {
 		args.To = token.DcrmAddress
+		input := []byte(tokens.AggregateMemo)
+		args.Input = &input
 	}
 	return b.BuildRawTransaction(args)
 }
