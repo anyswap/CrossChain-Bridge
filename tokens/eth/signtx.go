@@ -35,11 +35,15 @@ func (b *Bridge) verifyTransactionWithArgs(tx *types.Transaction, args *tokens.B
 		return fmt.Errorf("[sign] verify tx with unknown pairID '%v'", args.PairID)
 	}
 	checkReceiver := tokenCfg.ContractAddress
-	if args.SwapType == tokens.SwapoutType && !tokenCfg.IsErc20() {
-		checkReceiver = args.Bind
+	if !tokenCfg.IsErc20() {
+		if args.Identifier == tokens.AggregateIdentifier {
+			checkReceiver = tokenCfg.DcrmAddress
+		} else if args.SwapType == tokens.SwapoutType {
+			checkReceiver = args.Bind
+		}
 	}
 	if !strings.EqualFold(tx.To().String(), checkReceiver) {
-		return fmt.Errorf("[sign] verify tx receiver failed")
+		return fmt.Errorf("[sign] verify tx receiver failed, have %v, want %v", tx.To().String(), checkReceiver)
 	}
 	return nil
 }
