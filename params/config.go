@@ -100,7 +100,7 @@ func IsDcrmEnabled() bool {
 
 // IsDebugging is in debugging mode
 func IsDebugging() bool {
-	return GetConfig().Debugging
+	return GetConfig() != nil && GetConfig().Debugging
 }
 
 // IsDcrmInitiator is initiator of dcrm sign
