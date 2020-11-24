@@ -8,6 +8,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ltc/electrs"
 )
 
 const (
@@ -33,6 +34,7 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	btc.PairID = PairID
 	instance := &Bridge{btc.NewCrossChainBridge(isSrc)}
 	btc.BridgeInstance = instance
+	electrs.SetAddressConvertor(instance.ConvertBTCAddress)
 	return instance
 }
 

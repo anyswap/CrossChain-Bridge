@@ -31,7 +31,7 @@ require (
 	github.com/peterh/liner v1.1.1-0.20190123174540-a2c9a5303de7 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/shopspring/decimal v1.2.0
-	github.com/sirupsen/logrus v1.5.0
+	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.5.1
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/urfave/cli/v2 v2.2.0

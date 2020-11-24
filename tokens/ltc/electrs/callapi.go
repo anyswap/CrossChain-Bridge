@@ -6,6 +6,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	belectrs "github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
 // GetLatestBlockNumberOf call /blocks/tip/height
@@ -33,14 +34,15 @@ func GetLatestBlockNumber(b tokens.CrossChainBridge) (result uint64, err error) 
 }
 
 // GetTransactionByHash call /tx/{txHash}
-func GetTransactionByHash(b tokens.CrossChainBridge, txHash string) (*ElectTx, error) {
+func GetTransactionByHash(b tokens.CrossChainBridge, txHash string) (*belectrs.ElectTx, error) {
 	gateway := b.GetGatewayConfig()
-	var result ElectTx
+	var result belectrs.ElectTx
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/tx/" + txHash
 		err = client.RPCGet(&result, url)
 		if err == nil {
+			result = ToLTCTx(result)
 			return &result, nil
 		}
 	}
@@ -48,9 +50,9 @@ func GetTransactionByHash(b tokens.CrossChainBridge, txHash string) (*ElectTx, e
 }
 
 // GetElectTransactionStatus call /tx/{txHash}/status
-func GetElectTransactionStatus(b tokens.CrossChainBridge, txHash string) (*ElectTxStatus, error) {
+func GetElectTransactionStatus(b tokens.CrossChainBridge, txHash string) (*belectrs.ElectTxStatus, error) {
 	gateway := b.GetGatewayConfig()
-	var result ElectTxStatus
+	var result belectrs.ElectTxStatus
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/tx/" + txHash + "/status"
@@ -63,13 +65,13 @@ func GetElectTransactionStatus(b tokens.CrossChainBridge, txHash string) (*Elect
 }
 
 // FindUtxos call /address/{add}/utxo (confirmed first, then big value first)
-func FindUtxos(b tokens.CrossChainBridge, addr string) (result []*ElectUtxo, err error) {
+func FindUtxos(b tokens.CrossChainBridge, addr string) (result []*belectrs.ElectUtxo, err error) {
 	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/address/" + addr + "/utxo"
 		err = client.RPCGet(&result, url)
 		if err == nil {
-			sort.Sort(SortableElectUtxoSlice(result))
+			sort.Sort(belectrs.SortableElectUtxoSlice(result))
 			return result, nil
 		}
 	}
@@ -90,7 +92,7 @@ func GetPoolTxidList(b tokens.CrossChainBridge) (result []string, err error) {
 }
 
 // GetPoolTransactions call /address/{addr}/txs/mempool
-func GetPoolTransactions(b tokens.CrossChainBridge, addr string) (result []*ElectTx, err error) {
+func GetPoolTransactions(b tokens.CrossChainBridge, addr string) (result []*belectrs.ElectTx, err error) {
 	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/address/" + addr + "/txs/mempool"
@@ -103,7 +105,7 @@ func GetPoolTransactions(b tokens.CrossChainBridge, addr string) (result []*Elec
 }
 
 // GetTransactionHistory call /address/{addr}/txs/chain
-func GetTransactionHistory(b tokens.CrossChainBridge, addr, lastSeenTxid string) (result []*ElectTx, err error) {
+func GetTransactionHistory(b tokens.CrossChainBridge, addr, lastSeenTxid string) (result []*belectrs.ElectTx, err error) {
 	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/address/" + addr + "/txs/chain"
@@ -119,9 +121,9 @@ func GetTransactionHistory(b tokens.CrossChainBridge, addr, lastSeenTxid string)
 }
 
 // GetOutspend call /tx/{txHash}/outspend/{vout}
-func GetOutspend(b tokens.CrossChainBridge, txHash string, vout uint32) (*ElectOutspend, error) {
+func GetOutspend(b tokens.CrossChainBridge, txHash string, vout uint32) (*belectrs.ElectOutspend, error) {
 	gateway := b.GetGatewayConfig()
-	var result ElectOutspend
+	var result belectrs.ElectOutspend
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/tx/" + txHash + "/outspend/" + fmt.Sprintf("%d", vout)
@@ -173,9 +175,9 @@ func GetBlockTxids(b tokens.CrossChainBridge, blockHash string) (result []string
 }
 
 // GetBlock call /block/{blockHash}
-func GetBlock(b tokens.CrossChainBridge, blockHash string) (*ElectBlock, error) {
+func GetBlock(b tokens.CrossChainBridge, blockHash string) (*belectrs.ElectBlock, error) {
 	gateway := b.GetGatewayConfig()
-	var result ElectBlock
+	var result belectrs.ElectBlock
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/block/" + blockHash
@@ -188,7 +190,7 @@ func GetBlock(b tokens.CrossChainBridge, blockHash string) (*ElectBlock, error) 
 }
 
 // GetBlockTransactions call /block/{blockHash}/txs[/:start_index] (should start_index%25 == 0)
-func GetBlockTransactions(b tokens.CrossChainBridge, blockHash string, startIndex uint32) (result []*ElectTx, err error) {
+func GetBlockTransactions(b tokens.CrossChainBridge, blockHash string, startIndex uint32) (result []*belectrs.ElectTx, err error) {
 	gateway := b.GetGatewayConfig()
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/block/" + blockHash + "/txs/" + fmt.Sprintf("%d", startIndex)

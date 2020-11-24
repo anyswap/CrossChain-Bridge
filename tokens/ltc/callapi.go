@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
+	belectrs "github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ltc/electrs"
 )
 
 // GetLatestBlockNumberOf impl
@@ -18,17 +19,17 @@ func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
 }
 
 // GetTransactionByHash impl
-func (b *Bridge) GetTransactionByHash(txHash string) (*electrs.ElectTx, error) {
+func (b *Bridge) GetTransactionByHash(txHash string) (*belectrs.ElectTx, error) {
 	return electrs.GetTransactionByHash(b, txHash)
 }
 
 // GetElectTransactionStatus impl
-func (b *Bridge) GetElectTransactionStatus(txHash string) (*electrs.ElectTxStatus, error) {
+func (b *Bridge) GetElectTransactionStatus(txHash string) (*belectrs.ElectTxStatus, error) {
 	return electrs.GetElectTransactionStatus(b, txHash)
 }
 
 // FindUtxos impl
-func (b *Bridge) FindUtxos(addr string) ([]*electrs.ElectUtxo, error) {
+func (b *Bridge) FindUtxos(addr string) ([]*belectrs.ElectUtxo, error) {
 	return electrs.FindUtxos(b, addr)
 }
 
@@ -38,17 +39,17 @@ func (b *Bridge) GetPoolTxidList() ([]string, error) {
 }
 
 // GetPoolTransactions impl
-func (b *Bridge) GetPoolTransactions(addr string) ([]*electrs.ElectTx, error) {
+func (b *Bridge) GetPoolTransactions(addr string) ([]*belectrs.ElectTx, error) {
 	return electrs.GetPoolTransactions(b, addr)
 }
 
 // GetTransactionHistory impl
-func (b *Bridge) GetTransactionHistory(addr, lastSeenTxid string) ([]*electrs.ElectTx, error) {
+func (b *Bridge) GetTransactionHistory(addr, lastSeenTxid string) ([]*belectrs.ElectTx, error) {
 	return electrs.GetTransactionHistory(b, addr, lastSeenTxid)
 }
 
 // GetOutspend impl
-func (b *Bridge) GetOutspend(txHash string, vout uint32) (*electrs.ElectOutspend, error) {
+func (b *Bridge) GetOutspend(txHash string, vout uint32) (*belectrs.ElectOutspend, error) {
 	return electrs.GetOutspend(b, txHash, vout)
 }
 
@@ -68,12 +69,12 @@ func (b *Bridge) GetBlockTxids(blockHash string) ([]string, error) {
 }
 
 // GetBlock impl
-func (b *Bridge) GetBlock(blockHash string) (*electrs.ElectBlock, error) {
+func (b *Bridge) GetBlock(blockHash string) (*belectrs.ElectBlock, error) {
 	return electrs.GetBlock(b, blockHash)
 }
 
 // GetBlockTransactions impl
-func (b *Bridge) GetBlockTransactions(blockHash string, startIndex uint32) ([]*electrs.ElectTx, error) {
+func (b *Bridge) GetBlockTransactions(blockHash string, startIndex uint32) ([]*belectrs.ElectTx, error) {
 	return electrs.GetBlockTransactions(b, blockHash, startIndex)
 }
 
