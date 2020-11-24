@@ -61,6 +61,7 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.LoadTokenPairsConfig(true)
 
 	btc.Init(cfg.BtcExtra)
+	ltc.Init(cfg.BtcExtra)
 
 	dcrm.Init(cfg.Dcrm, isServer)
 
