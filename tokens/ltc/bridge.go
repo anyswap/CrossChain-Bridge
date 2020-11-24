@@ -32,7 +32,7 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	}
 	btc.PairID = PairID
 	instance := &Bridge{btc.NewCrossChainBridge(isSrc)}
-	BridgeInstance = instance
+	btc.BridgeInstance = instance
 	return instance
 }
 

@@ -187,7 +187,7 @@ func (b *Bridge) verifyPublickeyData(pkData []byte) error {
 		return err
 	}
 	if address.EncodeAddress() != dcrmAddress {
-		return fmt.Errorf("public key address %v is not the configed dcrm address %v", address, dcrmAddress)
+		return fmt.Errorf("ltc public key address %v is not the configed dcrm address %v", address, dcrmAddress)
 	}
 	return nil
 }
