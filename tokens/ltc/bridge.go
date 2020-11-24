@@ -7,6 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 const (
@@ -20,7 +21,8 @@ const PairID = "ltc"
 
 // Bridge ltc bridge
 type Bridge struct {
-	*tokens.CrossChainBridgeBase
+	*btc.Bridge
+	//	*tokens.CrossChainBridgeBase
 }
 
 // NewCrossChainBridge new ltc bridge
@@ -28,7 +30,7 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	if !isSrc {
 		log.Fatalf("ltc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
-	instance := &Bridge{tokens.NewCrossChainBridgeBase(isSrc)}
+	instance := &Bridge{btc.NewCrossChainBridge(isSrc)}
 	BridgeInstance = instance
 	return instance
 }

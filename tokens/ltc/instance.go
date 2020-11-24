@@ -1,14 +1,13 @@
 package ltc
 
 import (
-	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/ltc/electrs"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 // BridgeInstance ltc bridge instance
-var BridgeInstance BridgeInterface
+var BridgeInstance btc.BridgeInterface
 
-// BridgeInterface ltc bridge interface
+/*// BridgeInterface ltc bridge interface
 type BridgeInterface interface {
 	tokens.CrossChainBridge
 
@@ -20,3 +19,4 @@ type BridgeInterface interface {
 	FindUtxos(addr string) ([]*electrs.ElectUtxo, error)
 	StartSwapHistoryScanJob()
 }
+*/

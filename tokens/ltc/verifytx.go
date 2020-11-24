@@ -8,7 +8,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/ltc/electrs"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/ltcsuite/ltcwallet/wallet/txauthor"
 )
 

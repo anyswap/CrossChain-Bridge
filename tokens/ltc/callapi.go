@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/anyswap/CrossChain-Bridge/tokens/ltc/electrs"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
 // GetLatestBlockNumberOf impl
