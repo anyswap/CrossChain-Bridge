@@ -8,7 +8,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
-	"github.com/anyswap/CrossChain-Bridge/tokens/ltc/electrs"
 )
 
 const (
@@ -23,8 +22,9 @@ var PairID = "ltc"
 // Bridge ltc bridge
 type Bridge struct {
 	*btc.Bridge
-	//	*tokens.CrossChainBridgeBase
 }
+
+var instance *Bridge
 
 // NewCrossChainBridge new ltc bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
@@ -32,10 +32,8 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 		log.Fatalf("ltc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
 	btc.PairID = PairID
-	instance := &Bridge{btc.NewCrossChainBridge(isSrc)}
+	instance = &Bridge{btc.NewCrossChainBridge(isSrc)}
 	btc.BridgeInstance = instance
-	electrs.SetB2LConvertor(instance.ConvertBTCAddress)
-	electrs.SetL2BConvertor(instance.ConvertLTCAddress)
 	return instance
 }
 
