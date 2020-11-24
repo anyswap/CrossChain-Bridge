@@ -6,25 +6,17 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/btcsuite/btcd/chaincfg"
 	bchaincfg "github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
-	"github.com/ltcsuite/ltcutil"
 	"github.com/ltcsuite/ltcutil/base58"
 	"github.com/ltcsuite/ltcutil/bech32"
 	"golang.org/x/crypto/ripemd160"
 )
 
-// ConvertBTCAddress decode btc address and convert to LTC address
-func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address, err error) {
-	var bchainConfig *bchaincfg.Params
-	switch BTCNet {
-	case "Main":
-		bchainConfig = &bchaincfg.MainNetParams
-	case "Test":
-		bchainConfig = &bchaincfg.TestNet3Params
-	default:
-		bchainConfig = &bchaincfg.MainNetParams
-	}
+// ConvertLTCAddress decode ltc address and convert to BTC address
+func (b *Bridge) ConvertLTCAddress(addr, net string) (address btcutil.Address, err error) {
+	bchainConfig := &bchaincfg.MainNetParams
 	lchainConfig := b.GetChainParams()
 	// Bech32 encoded segwit addresses start with a human-readable part
 	// (hrp) followed by '1'. For Bitcoin mainnet the hrp is "bc", and for
@@ -34,8 +26,8 @@ func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address
 	oneIndex := strings.LastIndexByte(addr, '1')
 	if oneIndex > 1 {
 		prefix := addr[:oneIndex+1]
-		if bchaincfg.IsBech32SegwitPrefix(prefix) {
-			witnessVer, witnessProg, err := decodeBTCSegWitAddress(addr)
+		if chaincfg.IsBech32SegwitPrefix(prefix) {
+			witnessVer, witnessProg, err := decodeLTCSegWitAddress(addr)
 			if err != nil {
 				return nil, err
 			}
@@ -48,9 +40,9 @@ func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address
 
 			switch len(witnessProg) {
 			case 20:
-				return ltcutil.NewAddressWitnessPubKeyHash(witnessProg, lchainConfig)
+				return btcutil.NewAddressWitnessPubKeyHash(witnessProg, bchainConfig)
 			case 32:
-				return ltcutil.NewAddressWitnessScriptHash(witnessProg, lchainConfig)
+				return btcutil.NewAddressWitnessScriptHash(witnessProg, bchainConfig)
 			default:
 				return nil, btcutil.UnsupportedWitnessProgLenError(len(witnessProg))
 			}
@@ -64,7 +56,7 @@ func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address
 		if err != nil {
 			return nil, err
 		}
-		return ltcutil.NewAddressPubKey(serializedPubKey, lchainConfig)
+		return btcutil.NewAddressPubKey(serializedPubKey, bchainConfig)
 	}
 
 	// Switch on decoded length to determine the type.
@@ -77,15 +69,15 @@ func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address
 	}
 	switch len(decoded) {
 	case ripemd160.Size: // P2PKH or P2SH
-		isP2PKH := netID == bchainConfig.PubKeyHashAddrID
-		isP2SH := netID == bchainConfig.ScriptHashAddrID
+		isP2PKH := netID == lchainConfig.PubKeyHashAddrID
+		isP2SH := netID == lchainConfig.ScriptHashAddrID
 		switch hash160 := decoded; {
 		case isP2PKH && isP2SH:
 			return nil, btcutil.ErrAddressCollision
 		case isP2PKH:
-			return ltcutil.NewAddressPubKeyHash(hash160, lchainConfig)
+			return btcutil.NewAddressPubKeyHash(hash160, bchainConfig)
 		case isP2SH:
-			return ltcutil.NewAddressScriptHashFromHash(hash160, lchainConfig)
+			return btcutil.NewAddressScriptHashFromHash(hash160, bchainConfig)
 		default:
 			return nil, btcutil.ErrUnknownAddressType
 		}
@@ -97,7 +89,7 @@ func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address
 
 // decodeSegWitAddress parses a bech32 encoded segwit address string and
 // returns the witness version and witness program byte representation.
-func decodeBTCSegWitAddress(address string) (byte, []byte, error) {
+func decodeLTCSegWitAddress(address string) (byte, []byte, error) {
 	// Decode the bech32 encoded address.
 	_, data, err := bech32.Decode(address)
 	if err != nil {

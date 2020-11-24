@@ -2,20 +2,27 @@ package electrs
 
 import (
 	belectrs "github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
+	"github.com/btcsuite/btcutil"
 	"github.com/ltcsuite/ltcutil"
 )
 
-var addressConvertor func(addr, BTCNet string) (address ltcutil.Address, err error)
+var convertB2L func(string, string) (ltcutil.Address, error)
+var convertL2B func(string, string) (btcutil.Address, error)
 
-// SetAddressConvertor set addressConvertor to f
-func SetAddressConvertor(f func(addr, BTCNet string) (address ltcutil.Address, err error)) {
-	addressConvertor = f
+// SetL2BConvertor set addressConvertor to f
+func SetL2BConvertor(f func(string, string) (btcutil.Address, error)) {
+	convertL2B = f
+}
+
+// SetB2LConvertor set addressConvertor to f
+func SetB2LConvertor(f func(string, string) (ltcutil.Address, error)) {
+	convertB2L = f
 }
 
 // ToLTCVout convert address in ElectTx to LTC format
 func ToLTCVout(vout belectrs.ElectTxOut) belectrs.ElectTxOut {
 	// ScriptpubkeyAddress
-	addr, err := addressConvertor(*vout.ScriptpubkeyAddress, "Main")
+	addr, err := convertB2L(*vout.ScriptpubkeyAddress, "Main")
 	if err != nil {
 		return vout
 	}

@@ -34,7 +34,8 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	btc.PairID = PairID
 	instance := &Bridge{btc.NewCrossChainBridge(isSrc)}
 	btc.BridgeInstance = instance
-	electrs.SetAddressConvertor(instance.ConvertBTCAddress)
+	electrs.SetB2LConvertor(instance.ConvertBTCAddress)
+	electrs.SetL2BConvertor(instance.ConvertLTCAddress)
 	return instance
 }
 

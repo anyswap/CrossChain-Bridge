@@ -67,6 +67,10 @@ func GetElectTransactionStatus(b tokens.CrossChainBridge, txHash string) (*belec
 // FindUtxos call /address/{add}/utxo (confirmed first, then big value first)
 func FindUtxos(b tokens.CrossChainBridge, addr string) (result []*belectrs.ElectUtxo, err error) {
 	gateway := b.GetGatewayConfig()
+	btcaddr, cvterr := convertL2B(addr, "")
+	if cvterr == nil {
+		addr = btcaddr.String()
+	}
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/address/" + addr + "/utxo"
 		err = client.RPCGet(&result, url)
@@ -94,6 +98,10 @@ func GetPoolTxidList(b tokens.CrossChainBridge) (result []string, err error) {
 // GetPoolTransactions call /address/{addr}/txs/mempool
 func GetPoolTransactions(b tokens.CrossChainBridge, addr string) (result []*belectrs.ElectTx, err error) {
 	gateway := b.GetGatewayConfig()
+	btcaddr, cvterr := convertL2B(addr, "")
+	if cvterr == nil {
+		addr = btcaddr.String()
+	}
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/address/" + addr + "/txs/mempool"
 		err = client.RPCGet(&result, url)
@@ -107,6 +115,10 @@ func GetPoolTransactions(b tokens.CrossChainBridge, addr string) (result []*bele
 // GetTransactionHistory call /address/{addr}/txs/chain
 func GetTransactionHistory(b tokens.CrossChainBridge, addr, lastSeenTxid string) (result []*belectrs.ElectTx, err error) {
 	gateway := b.GetGatewayConfig()
+	btcaddr, cvterr := convertL2B(addr, "")
+	if cvterr == nil {
+		addr = btcaddr.String()
+	}
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/address/" + addr + "/txs/chain"
 		if lastSeenTxid != "" {
