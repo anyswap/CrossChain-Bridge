@@ -26,7 +26,7 @@ func Init(btcExtra *tokens.BtcExtraConfig) {
 	}
 
 	if btcExtra == nil {
-		log.Fatal("Btc bridge must config 'BtcExtra'")
+		log.Fatal("Ltc bridge must config 'BtcExtra'")
 	}
 
 	initFromPublicKey()
@@ -36,12 +36,12 @@ func Init(btcExtra *tokens.BtcExtraConfig) {
 
 func initFromPublicKey() {
 	if len(tokens.GetTokenPairsConfig()) != 1 {
-		log.Fatalf("Btc bridge does not support multiple tokens")
+		log.Fatalf("Ltc bridge does not support multiple tokens")
 	}
 
 	pairCfg, exist := tokens.GetTokenPairsConfig()[PairID]
 	if !exist {
-		log.Fatalf("Btc bridge must have pairID %v", PairID)
+		log.Fatalf("Ltc bridge must have pairID %v", PairID)
 	}
 
 	cfgFromPublicKey = pairCfg.SrcToken.DcrmPubkey

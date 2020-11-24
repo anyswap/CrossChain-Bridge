@@ -17,7 +17,7 @@ const (
 )
 
 // PairID unique ltc pair ID
-const PairID = "ltc"
+var PairID = "ltc"
 
 // Bridge ltc bridge
 type Bridge struct {
@@ -30,6 +30,7 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	if !isSrc {
 		log.Fatalf("ltc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
+	btc.PairID = PairID
 	instance := &Bridge{btc.NewCrossChainBridge(isSrc)}
 	BridgeInstance = instance
 	return instance

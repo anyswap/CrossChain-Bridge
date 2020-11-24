@@ -16,7 +16,7 @@ const (
 )
 
 // PairID unique btc pair ID
-const PairID = "btc"
+var PairID = "btc"
 
 // Bridge btc bridge
 type Bridge struct {
