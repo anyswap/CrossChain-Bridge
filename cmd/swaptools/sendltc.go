@@ -1,3 +1,4 @@
+// nolint:dupl // keep it
 package main
 
 import (

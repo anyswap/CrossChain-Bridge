@@ -8,6 +8,7 @@ import (
 
 var b *Bridge
 
+// nolint:gochecknoinits // allow in testing
 func init() {
 	b = NewCrossChainBridge(true)
 	b.ChainConfig = &tokens.ChainConfig{
