@@ -7,6 +7,9 @@ import (
 // ToLTCVout convert address in ElectTx to LTC format
 func (b *Bridge) ToLTCVout(vout belectrs.ElectTxOut) belectrs.ElectTxOut {
 	// ScriptpubkeyAddress
+	if vout.ScriptpubkeyAddress == nil {
+		return vout
+	}
 	addr, err := b.ConvertBTCAddress(*vout.ScriptpubkeyAddress, "Main")
 	if err != nil {
 		return vout
