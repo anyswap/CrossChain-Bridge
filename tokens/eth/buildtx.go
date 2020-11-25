@@ -138,7 +138,7 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 	}
 	if extra.Gas == nil {
 		extra.Gas = new(uint64)
-		*extra.Gas = 90000
+		*extra.Gas = 200000
 	}
 	return extra, nil
 }
