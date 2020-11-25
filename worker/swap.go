@@ -191,7 +191,7 @@ func preventReswap(res *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	if err != nil {
 		return err
 	}
-	return processHistory(res.PairID, res.TxID, res.Bind, isSwapin)
+	return processHistory(res, isSwapin)
 }
 
 func getSwapType(isSwapin bool) tokens.SwapType {
@@ -219,9 +219,14 @@ func processNonEmptySwapResult(res *mongodb.MgoSwapResult, isSwapin bool) error 
 	return nil
 }
 
-func processHistory(pairID, txid, bind string, isSwapin bool) error {
+func processHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
+	pairID, txid, bind := res.PairID, res.TxID, res.Bind
 	history := getSwapHistory(txid, bind, isSwapin)
 	if history == nil {
+		return nil
+	}
+	if res.Status == mongodb.MatchTxFailed {
+		history.txid = "" // mark ineffective
 		return nil
 	}
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)
