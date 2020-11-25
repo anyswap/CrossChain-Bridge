@@ -60,6 +60,8 @@ type TokenConfig struct {
 	PlusGasPricePercentage uint64 `json:",omitempty"`
 	DisableSwap            bool
 
+	DefaultGasLimit uint64 `json:",omitempty"`
+
 	// use private key address instead
 	DcrmAddressKeyStore string `json:"-"`
 	DcrmAddressPassword string `json:"-"`

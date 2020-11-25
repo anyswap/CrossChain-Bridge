@@ -172,9 +172,20 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 	}
 	if extra.Gas == nil {
 		extra.Gas = new(uint64)
-		*extra.Gas = 90000
+		*extra.Gas = b.getDefaultGasLimit(args.PairID)
 	}
 	return extra, nil
+}
+
+func (b *Bridge) getDefaultGasLimit(pairID string) (gasLimit uint64) {
+	tokenCfg := b.GetTokenConfig(pairID)
+	if tokenCfg != nil {
+		gasLimit = tokenCfg.DefaultGasLimit
+	}
+	if gasLimit == 0 {
+		gasLimit = 90000
+	}
+	return gasLimit
 }
 
 func (b *Bridge) getGasPrice() (price *big.Int, err error) {
