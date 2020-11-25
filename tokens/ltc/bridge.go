@@ -1,4 +1,4 @@
-package btc
+package ltc
 
 import (
 	"fmt"
@@ -7,29 +7,33 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 const (
 	netMainnet  = "mainnet"
-	netTestnet3 = "testnet3"
+	netTestnet4 = "testnet4"
 	netCustom   = "custom"
 )
 
-// PairID unique btc pair ID
-var PairID = "btc"
+// PairID unique ltc pair ID
+var PairID = "ltc"
 
-// Bridge btc bridge
+// Bridge ltc bridge
 type Bridge struct {
-	*tokens.CrossChainBridgeBase
+	*btc.Bridge
 }
 
-// NewCrossChainBridge new btc bridge
+var instance *Bridge
+
+// NewCrossChainBridge new ltc bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	if !isSrc {
-		log.Fatalf("btc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
+		log.Fatalf("ltc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
-	instance := &Bridge{tokens.NewCrossChainBridgeBase(isSrc)}
-	BridgeInstance = instance
+	btc.PairID = PairID
+	instance = &Bridge{btc.NewCrossChainBridge(isSrc)}
+	btc.BridgeInstance = instance
 	return instance
 }
 
@@ -45,7 +49,7 @@ func (b *Bridge) VerifyChainConfig() {
 	chainCfg := b.ChainConfig
 	networkID := strings.ToLower(chainCfg.NetID)
 	switch networkID {
-	case netMainnet, netTestnet3:
+	case netMainnet, netTestnet4:
 	case netCustom:
 		return
 	default:
@@ -61,8 +65,8 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
-	if strings.EqualFold(tokenCfg.Symbol, "BTC") && *tokenCfg.Decimals != 8 {
-		return fmt.Errorf("invalid decimals for BTC: want 8 but have %v", *tokenCfg.Decimals)
+	if strings.EqualFold(tokenCfg.Symbol, "LTC") && *tokenCfg.Decimals != 8 {
+		return fmt.Errorf("invalid decimals for LTC: want 8 but have %v", *tokenCfg.Decimals)
 	}
 	return nil
 }
