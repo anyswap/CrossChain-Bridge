@@ -131,7 +131,7 @@ func sendLtc(ctx *cli.Context) error {
 func (bts *ltcTxSender) initBridge() {
 	ltcBridge = ltc.NewCrossChainBridge(true)
 	ltcBridge.ChainConfig = &tokens.ChainConfig{
-		BlockChain: "Bitcoin",
+		BlockChain: "Litecoin",
 		NetID:      bts.netID,
 	}
 	ltcBridge.GatewayConfig = &tokens.GatewayConfig{
