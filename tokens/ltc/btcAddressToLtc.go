@@ -11,7 +11,7 @@ import (
 	"github.com/ltcsuite/ltcutil"
 	"github.com/ltcsuite/ltcutil/base58"
 	"github.com/ltcsuite/ltcutil/bech32"
-	"golang.org/x/crypto/ripemd160"
+	//"golang.org/x/crypto/ripemd160"
 )
 
 // ConvertBTCAddress decode btc address and convert to LTC address
@@ -76,7 +76,8 @@ func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address
 		return nil, errors.New("decoded address is of unknown format")
 	}
 	switch len(decoded) {
-	case ripemd160.Size: // P2PKH or P2SH
+	//case ripemd160.Size: // P2PKH or P2SH
+	case 20: // P2PKH or P2SH
 		isP2PKH := netID == bchainConfig.PubKeyHashAddrID
 		isP2SH := netID == bchainConfig.ScriptHashAddrID
 		switch hash160 := decoded; {
