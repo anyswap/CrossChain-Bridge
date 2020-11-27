@@ -9,9 +9,13 @@ type Bridge struct {
 	*btc.Bridge
 }
 
+// PairID unique btc pair ID
+var PairID = "block"
+
 // NewCrossChainBridge new fsn bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	instance := &Bridge{Bridge: btc.NewCrossChainBridge(isSrc)}
 	btc.BridgeInstance = instance
+	btc.PairID = PairID
 	return instance
 }

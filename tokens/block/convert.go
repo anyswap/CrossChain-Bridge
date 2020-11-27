@@ -127,10 +127,14 @@ func ConvertVin(vin btcjson.Vin) *electrs.ElectTxin {
 	evin := &electrs.ElectTxin{
 		Txid:         &vin.Txid,
 		Vout:         &vin.Vout,
-		Scriptsig:    &vin.ScriptSig.Hex,
-		ScriptsigAsm: &vin.ScriptSig.Asm,
+		Scriptsig:    new(string),
+		ScriptsigAsm: new(string),
 		IsCoinbase:   new(bool),
 		Sequence:     &vin.Sequence,
+	}
+	if vin.ScriptSig != nil {
+		*evin.Scriptsig = &vin.ScriptSig.Hex
+		*evin.ScriptsigAsm = &vin.ScriptSig.Asm
 	}
 	*evin.IsCoinbase = (vin.Coinbase != "")
 	return evin

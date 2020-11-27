@@ -2,22 +2,34 @@ package block
 
 import (
 	"crypto/ecdsa"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"strings"
 
-	"github.com/blocknetdx/btcd/btcec"
-	"github.com/blocknetdx/btcd/chaincfg"
-	"github.com/blocknetdx/btcd/chaincfg/chainhash"
-	"github.com/blocknetdx/btcd/txscript"
-	"github.com/blocknetdx/btcd/wire"
+	/*
+		"github.com/blocknetdx/btcd/btcec"
+		"github.com/blocknetdx/btcd/chaincfg"
+		"github.com/blocknetdx/btcd/chaincfg/chainhash"
+		"github.com/blocknetdx/btcd/txscript"
+		"github.com/blocknetdx/btcd/wire"
 
-	btcsuitechaincfg "github.com/btcsuite/btcd/chaincfg"
-	btcsuitehash "github.com/btcsuite/btcd/chaincfg/chainhash"
-	btcsuitewire "github.com/btcsuite/btcd/wire"
+		btcsuitechaincfg "github.com/btcsuite/btcd/chaincfg"
+		btcsuitehash "github.com/btcsuite/btcd/chaincfg/chainhash"
+		btcsuitewire "github.com/btcsuite/btcd/wire"
+	*/
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 )
 
+type btcAmountType = btcutil.Amount
+type wireTxInType = wire.TxIn
+type wireTxOutType = wire.TxOut
+
+/*
 func convertToBTCSuite(origin, result interface{}) {
 	bz, err := json.Marshal(origin)
 	if err != nil {
@@ -28,9 +40,18 @@ func convertToBTCSuite(origin, result interface{}) {
 		panic("error unmarshaling to btcsuite")
 	}
 }
+*/
+
+func isValidValue(value btcAmountType) bool {
+	return value > 0 && value <= btcutil.MaxSatoshi
+}
+
+func newAmount(value float64) (btcAmountType, error) {
+	return btcutil.NewAmount(value)
+}
 
 // GetChainParams get chain config (net params)
-func (b *Bridge) GetChainParams() *btcsuitechaincfg.Params {
+func (b *Bridge) GetChainParams() *chaincfg.Params {
 	var chainParams *chaincfg.Params
 	networkID := strings.ToLower(b.ChainConfig.NetID)
 	switch networkID {
@@ -39,9 +60,9 @@ func (b *Bridge) GetChainParams() *btcsuitechaincfg.Params {
 	default:
 		chainParams = &chaincfg.TestNet3Params
 	}
-	result := &btcsuitechaincfg.Params{}
-	convertToBTCSuite(chainParams, result)
-	return result
+	//result := &chaincfg.Params{}
+	//convertToBTCSuite(chainParams, result)
+	return chainParams
 }
 
 // ParsePkScript parse pkScript
@@ -78,7 +99,7 @@ func (b *Bridge) IsPayToScriptHash(sigScript []byte) bool {
 }
 
 // CalcSignatureHash calc sig hash
-func (b *Bridge) CalcSignatureHash(sigScript []byte, tx *btcsuitewire.MsgTx, i int) (sigHash []byte, err error) {
+func (b *Bridge) CalcSignatureHash(sigScript []byte, tx *wire.MsgTx, i int) (sigHash []byte, err error) {
 	return txscript.CalcSignatureHash(sigScript, txscript.SigHashAll, tx, i)
 }
 
@@ -148,22 +169,22 @@ func (b *Bridge) SignWithECDSA(privKey *ecdsa.PrivateKey, msgHash []byte) (rsv s
 }
 
 // NewTxIn new txin
-func (b *Bridge) NewTxIn(txid string, vout uint32, pkScript []byte) (*btcsuitewire.TxIn, error) {
+func (b *Bridge) NewTxIn(txid string, vout uint32, pkScript []byte) (*wire.TxIn, error) {
 	txHash, err := chainhash.NewHashFromStr(txid)
 	if err != nil {
 		return nil, err
 	}
-	prevOutPoint := wire.NewOutPoint((*btcsuitehash.Hash)(txHash), vout)
+	prevOutPoint := wire.NewOutPoint((*chainhash.Hash)(txHash), vout)
 	txin := wire.NewTxIn(prevOutPoint, pkScript, nil)
-	result := &btcsuitewire.TxIn{}
-	convertToBTCSuite(txin, result)
-	return result, nil
+	//result := &wire.TxIn{}
+	//convertToBTCSuite(txin, result)
+	return txin, nil
 }
 
 // NewTxOut new txout
-func (b *Bridge) NewTxOut(amount int64, pkScript []byte) *btcsuitewire.TxOut {
+func (b *Bridge) NewTxOut(amount int64, pkScript []byte) *wire.TxOut {
 	txout := wire.NewTxOut(amount, pkScript)
-	result := &btcsuitewire.TxOut{}
-	convertToBTCSuite(txout, result)
-	return result
+	//result := &wire.TxOut{}
+	//convertToBTCSuite(txout, result)
+	return txout
 }
