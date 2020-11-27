@@ -127,7 +127,15 @@ func BigUint64(v *big.Int) (uint64, bool) {
 
 // GetBigInt get big int from data[start:start+size]
 func GetBigInt(data []byte, start, size uint64) *big.Int {
-	return new(big.Int).SetBytes(GetData(data, start, size))
+	length := uint64(len(data))
+	if length <= start || size == 0 {
+		return big.NewInt(0)
+	}
+	end := start + size
+	if end > length {
+		end = length
+	}
+	return new(big.Int).SetBytes(data[start:end])
 }
 
 // GetUint64 get uint64 from data[start:start+size]

@@ -11,7 +11,7 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.0.0
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
-	github.com/fsn-dev/fsn-go-sdk v0.0.0-20200924054943-42f8aa0d3973
+	github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.7.4
