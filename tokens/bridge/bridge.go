@@ -9,9 +9,9 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/block"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
-	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
 )
 
 // NewCrossChainBridge new bridge according to chain name
