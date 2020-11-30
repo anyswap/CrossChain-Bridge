@@ -172,7 +172,7 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 	}
 	if extra.Gas == nil {
 		extra.Gas = new(uint64)
-		*extra.Gas = b.getDefaultGasLimit(args.PairID, args.SwapType)
+		*extra.Gas = b.getDefaultGasLimit(args.PairID)
 	}
 	return extra, nil
 }
