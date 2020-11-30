@@ -1,15 +1,21 @@
 package block
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
+	"net/http"
 	"sort"
+	"strings"
 
-	primaryclient "github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 )
+
+var utxoTimeout = 100
 
 // CoreClient extends btcd rpcclient
 type CoreClient struct {
@@ -22,6 +28,16 @@ type CoreClient struct {
 type Client struct {
 	CClients         []CoreClient
 	UTXOAPIAddresses []string
+	id               *int
+}
+
+// NextID returns next id for FindUtxo request
+func (c *Client) NextID() int {
+	if c.id == nil {
+		c.id = new(int)
+		*c.id = 1
+	}
+	return *c.id
 }
 
 // GetClient returns new Client
@@ -145,13 +161,15 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 		return
 	}
 
+	errs := make([]error, 0)
 	for _, url := range cli.UTXOAPIAddresses {
-		req := primaryclient.NewRequest("getutxos", "BLOCK", `[\"BmCQZdXFUhGvDZkFNyy9fshkGnoPzNnTnY\"]`)
 		res := struct {
 			Utxos []CloudchainUtxo `json:"utxos"`
 		}{}
 
-		err0 := primaryclient.RPCPostRequest(url, req, &res)
+		reqdata := fmt.Sprintf(`{ "version": 2.0, "id": "lalala", "method": "getutxos", "params": [ "BLOCK", "[\"%s\"]" ] }`, addr)
+		err0 := callCloudchains(url, reqdata, &res)
+		//err0 := primaryclient.RPCPostWithTimeoutAndID(&res, utxoTimeout, cli.NextID(), url, "getutxos", "BLOCK", `[\"BmCQZdXFUhGvDZkFNyy9fshkGnoPzNnTnY\"]`)
 
 		if err0 == nil {
 			for _, cutxo := range res.Utxos {
@@ -187,8 +205,31 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 			sort.Sort(electrs.SortableElectUtxoSlice(utxos))
 			return
 		}
+		errs = append(errs, err0)
 	}
+	err = fmt.Errorf("%+v", errs)
 	return
+}
+
+// callCloudchains
+func callCloudchains(url, reqdata string, result interface{}) error {
+	client := &http.Client{}
+	var data = strings.NewReader(reqdata)
+	req, err := http.NewRequest("POST", url, data)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	bodyText, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(bodyText, &result)
+	return err
 }
 
 // CloudchainUtxo struct
@@ -249,25 +290,25 @@ func (b *Bridge) GetTransactionHistory(addr, lastSeenTxid string) (etxs []*elect
 }
 
 // GetOutspend impl
+// Only to find out if txout is spent, does not tell in which transactions it is spent.
 func (b *Bridge) GetOutspend(txHash string, vout uint32) (evout *electrs.ElectOutspend, err error) {
-	/*cli := b.GetClient()
+	cli := b.GetClient()
 	errs := make([]error, 0)
 	hash, err := chainhash.NewHashFromStr(txHash)
 	if err != nil {
 		return
 	}
 	for _, ccli := range cli.CClients {
-		txraws, err0 := ccli.GetRawTransactionVerbose(hash)
+		txout, err0 := ccli.GetTxOut(hash, vout, true)
 		if err0 == nil {
 			ccli.Closer()
-			vout = TxOutspend(txraws, vout)
+			evout = TxOutspend(txout)
 			return
 		}
 		errs = append(errs, err0)
 		ccli.Closer()
 	}
 	err = fmt.Errorf("%+v", errs)
-	return*/
 	return
 }
 
@@ -363,9 +404,13 @@ func (b *Bridge) GetBlockTransactions(blockHash string, startIndex uint32) (etxs
 	for _, ccli := range cli.CClients {
 		block, err0 := ccli.GetBlockVerbose(hash)
 		if err0 == nil {
-			txs := block.RawTx
-			for _, tx := range txs {
-				etx := ConvertTx(&tx)
+			txs := block.Tx
+			for _, txid := range txs {
+				etx, err1 := b.GetTransactionByHash(txid)
+				if err1 != nil {
+					errs = append(errs, err1)
+					continue
+				}
 				etxs = append(etxs, etx)
 			}
 			ccli.Closer()
@@ -384,10 +429,14 @@ func (b *Bridge) EstimateFeePerKb(blocks int) (fee int64, err error) {
 	cli := b.GetClient()
 	errs := make([]error, 0)
 	for _, ccli := range cli.CClients {
-		fee, err0 := ccli.EstimateFee(int64(blocks))
+		res, err0 := ccli.Client.EstimateSmartFee(int64(blocks), &btcjson.EstimateModeEconomical)
 		if err0 == nil {
 			ccli.Closer()
-			return int64(fee), nil
+			if len(res.Errors) > 0 {
+				errs = append(errs, fmt.Errorf("%+v", res.Errors))
+				continue
+			}
+			return int64(*res.FeeRate * 1E8), nil
 		}
 		errs = append(errs, err0)
 		ccli.Closer()

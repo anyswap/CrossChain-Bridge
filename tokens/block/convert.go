@@ -3,6 +3,7 @@ package block
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"strconv"
 
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
@@ -53,22 +54,14 @@ func TxStatus(tx *btcjson.TxRawResult) *electrs.ElectTxStatus {
 }
 
 // TxOutspend make elect outspend from btcjson tx raw result
-func TxOutspend(tx *btcjson.TxRawResult, vout uint32) *electrs.ElectOutspend {
-	/*for _, txout := range tx.Vout{
-		if txout.N == vout {
-			outspend := &electrs.TxOutspend {
-				Spent: new(bool),
-				Txid: new(string),
-				Vin: new(uint32),
-				Status: TxStatus(tx),
-			}
-			*outspend.Txid = tx.Txid
-			*outspend.Vin = txout.Value
-			return outspend
-		}
+func TxOutspend(txout *btcjson.GetTxOutResult) *electrs.ElectOutspend {
+	outspend := &electrs.ElectOutspend{
+		Spent: new(bool),
 	}
-	return nil*/
-	return nil
+	if txout == nil {
+		*outspend.Spent = true
+	}
+	return outspend
 }
 
 // DecodeTxHex decode tx hex to msgTx
@@ -133,8 +126,8 @@ func ConvertVin(vin btcjson.Vin) *electrs.ElectTxin {
 		Sequence:     &vin.Sequence,
 	}
 	if vin.ScriptSig != nil {
-		*evin.Scriptsig = &vin.ScriptSig.Hex
-		*evin.ScriptsigAsm = &vin.ScriptSig.Asm
+		*evin.Scriptsig = vin.ScriptSig.Hex
+		*evin.ScriptsigAsm = vin.ScriptSig.Asm
 	}
 	*evin.IsCoinbase = (vin.Coinbase != "")
 	return evin
@@ -146,8 +139,14 @@ func ConvertVout(vout btcjson.Vout) *electrs.ElectTxOut {
 		Scriptpubkey:        &vout.ScriptPubKey.Hex,
 		ScriptpubkeyAsm:     &vout.ScriptPubKey.Asm,
 		ScriptpubkeyType:    &vout.ScriptPubKey.Type,
-		ScriptpubkeyAddress: &vout.ScriptPubKey.Addresses[0],
+		ScriptpubkeyAddress: new(string),
 		Value:               new(uint64),
+	}
+	if len(vout.ScriptPubKey.Addresses) == 1 {
+		*evout.ScriptpubkeyAddress = vout.ScriptPubKey.Addresses[0]
+	}
+	if len(vout.ScriptPubKey.Addresses) > 1 {
+		*evout.ScriptpubkeyAddress = fmt.Sprintf("%+v", vout.ScriptPubKey.Addresses)
 	}
 	*evout.Value = uint64(vout.Value * 1e8)
 	return evout
