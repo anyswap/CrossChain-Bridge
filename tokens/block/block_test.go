@@ -39,11 +39,6 @@ func init() {
 			},
 		},
 	}
-
-	fmt.Println("000000")
-	chainConfig := b.GetChainParams()
-	fmt.Printf("chainConfig: %+v\n\n", chainConfig)
-
 }
 
 func checkError(t *testing.T, err error) {
@@ -140,7 +135,7 @@ func TestPostTransaction(t *testing.T) {
 	fromAddress = "Bp23BeXEKXCTd7oRWtrKv8nc1SKXvDH3Hq"
 	changeAddress = fromAddress
 	toAddress = "BpeGP9ooFTGSsdcysmMMgbRCqYQgpjrCsE"
-	wif = "PnLR......NtKcv"
+	wif = "PnLR......tKcv"
 
 	pkwif, err := btcutil.DecodeWIF(wif)
 	checkError(t, err)
@@ -149,9 +144,11 @@ func TestPostTransaction(t *testing.T) {
 	// build tx
 	utxos, err := b.FindUtxos(fromAddress)
 	checkError(t, err)
+	t.Logf("utxos: %+v", utxos[0])
 
-	txOuts, err := b.getTxOutputs(toAddress, big.NewInt(1), "")
+	txOuts, err := b.getTxOutputs(toAddress, big.NewInt(100000), "")
 	checkError(t, err)
+	t.Logf("txouts: %+v\n", txOuts)
 
 	inputSource := func(target btcAmountType) (total btcAmountType, inputs []*wireTxInType, inputValues []btcAmountType, scripts [][]byte, err error) {
 		return b.getUtxosFromElectUtxos(target, []string{fromAddress}, utxos)
@@ -161,17 +158,19 @@ func TestPostTransaction(t *testing.T) {
 		return b.GetPayToAddrScript(changeAddress)
 	}
 
-	relayFeePerKb, err := b.getRelayFeePerKb()
-	checkError(t, err)
+	relayFeePerKb, _ := b.getRelayFeePerKb()
+	t.Logf("relayFeePerKb: %+v\n", relayFeePerKb)
 
 	authoredTx, err = b.NewUnsignedTransaction(txOuts, btcAmountType(relayFeePerKb), inputSource, changeSource, true)
 	checkError(t, err)
+	t.Logf("authoredTx: %+v\n", authoredTx)
 
 	// signTx
 	signedTx, _, err := b.SignTransactionWithPrivateKey(authoredTx, privkey)
 	checkError(t, err)
+	t.Logf("signedTx: %+v\n", signedTx)
 
-	tx := signedTx.(txauthor.AuthoredTx).Tx
+	tx := signedTx.(*txauthor.AuthoredTx).Tx
 
 	buf := bytes.NewBuffer(make([]byte, 0, tx.SerializeSize()))
 	err = tx.Serialize(buf)
