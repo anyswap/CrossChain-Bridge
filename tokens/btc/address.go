@@ -8,7 +8,7 @@ import (
 
 // DecodeAddress decode address
 func (b *Bridge) DecodeAddress(addr string) (address btcutil.Address, err error) {
-	chainConfig := b.GetChainParams()
+	chainConfig := b.Inherit.GetChainParams()
 	address, err = btcutil.DecodeAddress(addr, chainConfig)
 	if err != nil {
 		return
@@ -22,12 +22,12 @@ func (b *Bridge) DecodeAddress(addr string) (address btcutil.Address, err error)
 
 // NewAddressPubKeyHash encap
 func (b *Bridge) NewAddressPubKeyHash(pkData []byte) (*btcutil.AddressPubKeyHash, error) {
-	return btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkData), b.GetChainParams())
+	return btcutil.NewAddressPubKeyHash(btcutil.Hash160(pkData), b.Inherit.GetChainParams())
 }
 
 // NewAddressScriptHash encap
 func (b *Bridge) NewAddressScriptHash(redeemScript []byte) (*btcutil.AddressScriptHash, error) {
-	return btcutil.NewAddressScriptHash(redeemScript, b.GetChainParams())
+	return btcutil.NewAddressScriptHash(redeemScript, b.Inherit.GetChainParams())
 }
 
 // IsValidAddress check address

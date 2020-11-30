@@ -13,5 +13,6 @@ type Bridge struct {
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	instance := &Bridge{Bridge: btc.NewCrossChainBridge(isSrc)}
 	btc.BridgeInstance = instance
+	instance.SetInherit(instance)
 	return instance
 }
