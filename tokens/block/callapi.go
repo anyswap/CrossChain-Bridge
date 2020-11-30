@@ -195,7 +195,7 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 				}
 
 				utxo := &electrs.ElectUtxo{
-					Txid:   &cutxo.Address,
+					Txid:   &cutxo.Txhash,
 					Vout:   &cutxo.Vout,
 					Value:  &value,
 					Status: status,
