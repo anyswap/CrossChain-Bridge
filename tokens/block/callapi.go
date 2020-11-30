@@ -436,7 +436,7 @@ func (b *Bridge) EstimateFeePerKb(blocks int) (fee int64, err error) {
 				errs = append(errs, fmt.Errorf("%+v", res.Errors))
 				continue
 			}
-			return int64(*res.FeeRate * 1E8), nil
+			return int64(*res.FeeRate * 1e8), nil
 		}
 		errs = append(errs, err0)
 		ccli.Closer()
