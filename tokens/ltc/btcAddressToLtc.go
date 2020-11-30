@@ -11,13 +11,15 @@ import (
 	"github.com/ltcsuite/ltcutil"
 	"github.com/ltcsuite/ltcutil/base58"
 	"github.com/ltcsuite/ltcutil/bech32"
-	//"golang.org/x/crypto/ripemd160"
 )
 
+const ripemd160Size = 20
+
 // ConvertBTCAddress decode btc address and convert to LTC address
-func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address, err error) {
+// nolint:gocyclo // keep it
+func (b *Bridge) ConvertBTCAddress(addr, btcNet string) (address ltcutil.Address, err error) {
 	var bchainConfig *bchaincfg.Params
-	switch BTCNet {
+	switch btcNet {
 	case "Main":
 		bchainConfig = &bchaincfg.MainNetParams
 	case "Test":
@@ -35,9 +37,9 @@ func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address
 	if oneIndex > 1 {
 		prefix := addr[:oneIndex+1]
 		if bchaincfg.IsBech32SegwitPrefix(prefix) {
-			witnessVer, witnessProg, err := decodeBTCSegWitAddress(addr)
-			if err != nil {
-				return nil, err
+			witnessVer, witnessProg, errf := decodeBTCSegWitAddress(addr)
+			if errf != nil {
+				return nil, errf
 			}
 
 			// We currently only support P2WPKH and P2WSH, which is
@@ -60,9 +62,9 @@ func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address
 	// Serialized public keys are either 65 bytes (130 hex chars) if
 	// uncompressed/hybrid or 33 bytes (66 hex chars) if compressed.
 	if len(addr) == 130 || len(addr) == 66 {
-		serializedPubKey, err := hex.DecodeString(addr)
-		if err != nil {
-			return nil, err
+		serializedPubKey, errf := hex.DecodeString(addr)
+		if errf != nil {
+			return nil, errf
 		}
 		return ltcutil.NewAddressPubKey(serializedPubKey, lchainConfig)
 	}
@@ -98,7 +100,8 @@ func (b *Bridge) ConvertBTCAddress(addr, BTCNet string) (address ltcutil.Address
 
 // decodeSegWitAddress parses a bech32 encoded segwit address string and
 // returns the witness version and witness program byte representation.
-func decodeBTCSegWitAddress(address string) (byte, []byte, error) {
+// nolint:dupl // keep it
+func decodeBTCSegWitAddress(address string) (version byte, regrouped []byte, err error) {
 	// Decode the bech32 encoded address.
 	_, data, err := bech32.Decode(address)
 	if err != nil {
@@ -112,7 +115,7 @@ func decodeBTCSegWitAddress(address string) (byte, []byte, error) {
 	}
 
 	// ...and be <= 16.
-	version := data[0]
+	version = data[0]
 	if version > 16 {
 		return 0, nil, fmt.Errorf("invalid witness version: %v", version)
 	}
@@ -120,7 +123,7 @@ func decodeBTCSegWitAddress(address string) (byte, []byte, error) {
 	// The remaining characters of the address returned are grouped into
 	// words of 5 bits. In order to restore the original witness program
 	// bytes, we'll need to regroup into 8 bit words.
-	regrouped, err := bech32.ConvertBits(data[1:], 5, 8, false)
+	regrouped, err = bech32.ConvertBits(data[1:], 5, 8, false)
 	if err != nil {
 		return 0, nil, err
 	}

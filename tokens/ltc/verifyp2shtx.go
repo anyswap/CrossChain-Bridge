@@ -2,6 +2,7 @@ package ltc
 
 import (
 	"fmt"
+
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"

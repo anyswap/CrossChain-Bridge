@@ -21,7 +21,7 @@ func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
 func (b *Bridge) GetTransactionByHash(txHash string) (*electrs.ElectTx, error) {
 	result, err := electrs.GetTransactionByHash(b, txHash)
 	if err == nil {
-		*result = b.ToLTCTx(*result)
+		*result = *b.ToLTCTx(result)
 	}
 	return result, err
 }
@@ -54,7 +54,7 @@ func (b *Bridge) GetPoolTransactions(addr string) ([]*electrs.ElectTx, error) {
 	results, err := electrs.GetPoolTransactions(b, addr)
 	if err == nil {
 		for _, result := range results {
-			*result = b.ToLTCTx(*result)
+			*result = *b.ToLTCTx(result)
 		}
 	}
 	return results, err
@@ -69,7 +69,7 @@ func (b *Bridge) GetTransactionHistory(addr, lastSeenTxid string) ([]*electrs.El
 	results, err := electrs.GetTransactionHistory(b, addr, lastSeenTxid)
 	if err == nil {
 		for _, result := range results {
-			*result = b.ToLTCTx(*result)
+			*result = *b.ToLTCTx(result)
 		}
 	}
 	return results, err
@@ -105,7 +105,7 @@ func (b *Bridge) GetBlockTransactions(blockHash string, startIndex uint32) ([]*e
 	results, err := electrs.GetBlockTransactions(b, blockHash, startIndex)
 	if err == nil {
 		for _, result := range results {
-			*result = b.ToLTCTx(*result)
+			*result = *b.ToLTCTx(result)
 		}
 	}
 	return results, err

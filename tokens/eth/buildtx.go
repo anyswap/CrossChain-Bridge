@@ -177,15 +177,10 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 	return extra, nil
 }
 
-func (b *Bridge) getDefaultGasLimit(pairID string, swapType tokens.SwapType) (gasLimit uint64) {
+func (b *Bridge) getDefaultGasLimit(pairID string) (gasLimit uint64) {
 	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg != nil {
-		switch swapType {
-		case tokens.SwapinType:
-			gasLimit = tokenCfg.DefaultSwapinGasLimit
-		case tokens.SwapoutType:
-			gasLimit = tokenCfg.DefaultSwapoutGasLimit
-		}
+		gasLimit = tokenCfg.DefaultGasLimit
 	}
 	if gasLimit == 0 {
 		gasLimit = 90000

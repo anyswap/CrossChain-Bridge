@@ -47,7 +47,7 @@ func (b *Bridge) getRedeemScriptByOutputScrpit(preScript []byte) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	p2shAddress, err := pkScript.Address(b.GetChainParams())
+	p2shAddress, err := pkScript.Address(b.Inherit.GetChainParams())
 	if err != nil {
 		return nil, err
 	}

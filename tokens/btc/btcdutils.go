@@ -14,6 +14,11 @@ import (
 	"github.com/btcsuite/btcutil"
 )
 
+// Inheritable interface
+type Inheritable interface {
+	GetChainParams() *chaincfg.Params
+}
+
 type btcAmountType = btcutil.Amount
 type wireTxInType = wire.TxIn
 type wireTxOutType = wire.TxOut

@@ -7,16 +7,15 @@ import (
 	"strings"
 
 	"github.com/btcsuite/btcd/chaincfg"
-	bchaincfg "github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/ltcsuite/ltcutil/base58"
 	"github.com/ltcsuite/ltcutil/bech32"
-	//"golang.org/x/crypto/ripemd160"
 )
 
 // ConvertLTCAddress decode ltc address and convert to BTC address
+// nolint:gocyclo // keep it
 func (b *Bridge) ConvertLTCAddress(addr, net string) (address btcutil.Address, err error) {
-	bchainConfig := &bchaincfg.MainNetParams
+	bchainConfig := &chaincfg.MainNetParams
 	lchainConfig := b.GetChainParams()
 	// Bech32 encoded segwit addresses start with a human-readable part
 	// (hrp) followed by '1'. For Bitcoin mainnet the hrp is "bc", and for
@@ -27,9 +26,9 @@ func (b *Bridge) ConvertLTCAddress(addr, net string) (address btcutil.Address, e
 	if oneIndex > 1 {
 		prefix := addr[:oneIndex+1]
 		if chaincfg.IsBech32SegwitPrefix(prefix) {
-			witnessVer, witnessProg, err := decodeLTCSegWitAddress(addr)
-			if err != nil {
-				return nil, err
+			witnessVer, witnessProg, errf := decodeLTCSegWitAddress(addr)
+			if errf != nil {
+				return nil, errf
 			}
 
 			// We currently only support P2WPKH and P2WSH, which is
@@ -52,9 +51,9 @@ func (b *Bridge) ConvertLTCAddress(addr, net string) (address btcutil.Address, e
 	// Serialized public keys are either 65 bytes (130 hex chars) if
 	// uncompressed/hybrid or 33 bytes (66 hex chars) if compressed.
 	if len(addr) == 130 || len(addr) == 66 {
-		serializedPubKey, err := hex.DecodeString(addr)
-		if err != nil {
-			return nil, err
+		serializedPubKey, errf := hex.DecodeString(addr)
+		if errf != nil {
+			return nil, errf
 		}
 		return btcutil.NewAddressPubKey(serializedPubKey, bchainConfig)
 	}
@@ -68,7 +67,6 @@ func (b *Bridge) ConvertLTCAddress(addr, net string) (address btcutil.Address, e
 		return nil, errors.New("decoded address is of unknown format")
 	}
 	switch len(decoded) {
-	//case ripemd160.Size: // P2PKH or P2SH
 	case 20: // P2PKH or P2SH
 		isP2PKH := netID == lchainConfig.PubKeyHashAddrID
 		isP2SH := netID == lchainConfig.ScriptHashAddrID
@@ -90,7 +88,8 @@ func (b *Bridge) ConvertLTCAddress(addr, net string) (address btcutil.Address, e
 
 // decodeSegWitAddress parses a bech32 encoded segwit address string and
 // returns the witness version and witness program byte representation.
-func decodeLTCSegWitAddress(address string) (byte, []byte, error) {
+// nolint:dupl // keep it
+func decodeLTCSegWitAddress(address string) (version byte, regrouped []byte, err error) {
 	// Decode the bech32 encoded address.
 	_, data, err := bech32.Decode(address)
 	if err != nil {
@@ -104,7 +103,7 @@ func decodeLTCSegWitAddress(address string) (byte, []byte, error) {
 	}
 
 	// ...and be <= 16.
-	version := data[0]
+	version = data[0]
 	if version > 16 {
 		return 0, nil, fmt.Errorf("invalid witness version: %v", version)
 	}
@@ -112,7 +111,7 @@ func decodeLTCSegWitAddress(address string) (byte, []byte, error) {
 	// The remaining characters of the address returned are grouped into
 	// words of 5 bits. In order to restore the original witness program
 	// bytes, we'll need to regroup into 8 bit words.
-	regrouped, err := bech32.ConvertBits(data[1:], 5, 8, false)
+	regrouped, err = bech32.ConvertBits(data[1:], 5, 8, false)
 	if err != nil {
 		return 0, nil, err
 	}

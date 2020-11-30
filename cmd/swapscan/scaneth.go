@@ -21,6 +21,11 @@ import (
 )
 
 var (
+	isSwapoutType2Flag = &cli.BoolFlag{
+		Name:  "swapoutType2",
+		Usage: "is swapout bind address string type",
+	}
+
 	scanEthCommand = &cli.Command{
 		Action:    scanEth,
 		Name:      "scaneth",
@@ -40,6 +45,7 @@ scan swap on eth
 			utils.EndHeightFlag,
 			utils.StableHeightFlag,
 			utils.JobsFlag,
+			isSwapoutType2Flag,
 		},
 	}
 )
@@ -55,6 +61,7 @@ type ethSwapScanner struct {
 	endHeight        uint64
 	stableHeight     uint64
 	jobCount         uint64
+	isSwapoutType2   bool
 
 	client *ethclient.Client
 	ctx    context.Context
@@ -62,8 +69,7 @@ type ethSwapScanner struct {
 	rpcInterval   time.Duration
 	rpcRetryCount int
 
-	isSwapin    bool
-	isBtcPairID bool
+	isSwapin bool
 }
 
 func scanEth(ctx *cli.Context) error {
@@ -83,6 +89,7 @@ func scanEth(ctx *cli.Context) error {
 	scanner.endHeight = ctx.Uint64(utils.EndHeightFlag.Name)
 	scanner.stableHeight = ctx.Uint64(utils.StableHeightFlag.Name)
 	scanner.jobCount = ctx.Uint64(utils.JobsFlag.Name)
+	scanner.isSwapoutType2 = ctx.Bool(isSwapoutType2Flag.Name)
 
 	switch strings.ToLower(scanner.swapType) {
 	case "swapin":
@@ -132,8 +139,9 @@ func (scanner *ethSwapScanner) verifyOptions() {
 		if scanner.tokenAddresses[i] != "" && !common.IsHexAddress(scanner.tokenAddresses[i]) {
 			log.Fatalf("invalid token address '%v'", scanner.tokenAddresses[i])
 		}
-		if strings.EqualFold(pairID, "btc") {
-			scanner.isBtcPairID = true
+		switch strings.ToLower(pairID) {
+		case "btc", "ltc":
+			scanner.isSwapoutType2 = true
 		}
 	}
 	if scanner.gateway == "" {
@@ -175,7 +183,7 @@ func (scanner *ethSwapScanner) init() {
 		log.Fatal("get server version failed", "swapServer", scanner.swapServer)
 	}
 
-	eth.InitExtCodePartsWithFlag(scanner.isBtcPairID)
+	eth.InitExtCodePartsWithFlag(scanner.isSwapoutType2)
 
 	for _, tokenAddr := range scanner.tokenAddresses {
 		if scanner.isSwapin && tokenAddr == "" {

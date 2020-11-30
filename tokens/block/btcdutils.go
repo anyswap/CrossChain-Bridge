@@ -2,9 +2,12 @@ package block
 
 import (
 	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
+	"math"
 	"math/big"
 	"strings"
+	"time"
 
 	/*
 		"github.com/blocknetdx/btcd/btcec"
@@ -25,11 +28,6 @@ import (
 	"github.com/btcsuite/btcutil"
 )
 
-type btcAmountType = btcutil.Amount
-type wireTxInType = wire.TxIn
-type wireTxOutType = wire.TxOut
-
-/*
 func convertToBTCSuite(origin, result interface{}) {
 	bz, err := json.Marshal(origin)
 	if err != nil {
@@ -40,7 +38,82 @@ func convertToBTCSuite(origin, result interface{}) {
 		panic("error unmarshaling to btcsuite")
 	}
 }
-*/
+
+var bigOne = big.NewInt(1)
+
+// MainNetParams is blocknet mainnet cfg
+var MainNetParams = chaincfg.Params{
+	Name: "mainnet",
+	Net:  wire.MainNet,
+
+	// Chain parameters
+	PowLimit:                 new(big.Int).Sub(new(big.Int).Lsh(bigOne, 224), bigOne),
+	PowLimitBits:             0x00000fff,
+	BIP0034Height:            1,
+	BIP0065Height:            1,
+	BIP0066Height:            1,
+	CoinbaseMaturity:         100,
+	SubsidyReductionInterval: 210000,
+	TargetTimespan:           time.Minute * 1, // 1 minute
+	TargetTimePerBlock:       time.Minute * 1, // 1 minute
+	RetargetAdjustmentFactor: 4,               // 25% less, 400% more
+	ReduceMinDifficulty:      false,
+	MinDiffReductionTime:     0,
+	GenerateSupported:        false,
+
+	// Checkpoints ordered from oldest to newest.
+	Checkpoints: []chaincfg.Checkpoint{},
+
+	// Consensus rule change deployments.
+	//
+	// The miner confirmation window is defined as:
+	//   target proof of work timespan / target proof of work spacing
+	RuleChangeActivationThreshold: 1368, // 95% of MinerConfirmationWindow
+	MinerConfirmationWindow:       1440, //
+	Deployments: [chaincfg.DefinedDeployments]chaincfg.ConsensusDeployment{
+		chaincfg.DeploymentTestDummy: {
+			BitNumber:  28,
+			StartTime:  1199145601, // January 1, 2008 UTC
+			ExpireTime: 1230767999, // December 31, 2008 UTC
+		},
+		chaincfg.DeploymentCSV: {
+			BitNumber:  0,
+			StartTime:  0,             // Always vote
+			ExpireTime: math.MaxInt64, // No timeout
+		},
+		chaincfg.DeploymentSegwit: {
+			BitNumber:  1,
+			StartTime:  1584295200, // March 15, 2020
+			ExpireTime: 1589565600, // May 15, 2020
+		},
+	},
+
+	// Mempool parameters
+	RelayNonStdTxs: false,
+
+	// Human-readable part for Bech32 encoded segwit addresses, as defined in
+	// BIP 173.
+	Bech32HRPSegwit: "block", // always block for mainnet
+
+	// Address encoding magics
+	PubKeyHashAddrID:        0x1a, // starts with B
+	ScriptHashAddrID:        0x1c, // starts with C
+	PrivateKeyID:            0x9a, // starts with 6 (uncompressed) or P (compressed)
+	WitnessPubKeyHashAddrID: 0x06, // starts with p2
+	WitnessScriptHashAddrID: 0x0A, // starts with 7Xh
+
+	// BIP32 hierarchical deterministic extended key magics
+	HDPrivateKeyID: [4]byte{0x04, 0x88, 0xAD, 0xE4}, // starts with xprv
+	HDPublicKeyID:  [4]byte{0x04, 0x88, 0xB2, 0x1E}, // starts with xpub
+
+	// BIP44 coin type used in the hierarchical deterministic path for
+	// address generation.
+	HDCoinType: 0,
+}
+
+type btcAmountType = btcutil.Amount
+type wireTxInType = wire.TxIn
+type wireTxOutType = wire.TxOut
 
 func isValidValue(value btcAmountType) bool {
 	return value > 0 && value <= btcutil.MaxSatoshi
@@ -56,11 +129,11 @@ func (b *Bridge) GetChainParams() *chaincfg.Params {
 	networkID := strings.ToLower(b.ChainConfig.NetID)
 	switch networkID {
 	case "mainnet":
-		chainParams = &chaincfg.MainNetParams
+		chainParams = &MainNetParams
 	default:
-		chainParams = &chaincfg.TestNet3Params
+		chainParams = &MainNetParams
 	}
-	//result := &chaincfg.Params{}
+	//result := &btcsuitechaincfg.Params{}
 	//convertToBTCSuite(chainParams, result)
 	return chainParams
 }
@@ -170,13 +243,15 @@ func (b *Bridge) SignWithECDSA(privKey *ecdsa.PrivateKey, msgHash []byte) (rsv s
 
 // NewTxIn new txin
 func (b *Bridge) NewTxIn(txid string, vout uint32, pkScript []byte) (*wire.TxIn, error) {
+	fmt.Println(txid)
 	txHash, err := chainhash.NewHashFromStr(txid)
 	if err != nil {
+		fmt.Printf("NewTxIn: %v\n\n", err.Error())
 		return nil, err
 	}
-	prevOutPoint := wire.NewOutPoint((*chainhash.Hash)(txHash), vout)
+	prevOutPoint := wire.NewOutPoint(txHash, vout)
 	txin := wire.NewTxIn(prevOutPoint, pkScript, nil)
-	//result := &wire.TxIn{}
+	//result := &btcsuitewire.TxIn{}
 	//convertToBTCSuite(txin, result)
 	return txin, nil
 }
@@ -184,7 +259,7 @@ func (b *Bridge) NewTxIn(txid string, vout uint32, pkScript []byte) (*wire.TxIn,
 // NewTxOut new txout
 func (b *Bridge) NewTxOut(amount int64, pkScript []byte) *wire.TxOut {
 	txout := wire.NewTxOut(amount, pkScript)
-	//result := &wire.TxOut{}
+	//result := &btcsuitewire.TxOut{}
 	//convertToBTCSuite(txout, result)
 	return txout
 }

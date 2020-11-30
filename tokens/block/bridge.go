@@ -16,6 +16,6 @@ var PairID = "block"
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	instance := &Bridge{Bridge: btc.NewCrossChainBridge(isSrc)}
 	btc.BridgeInstance = instance
-	btc.PairID = PairID
+	instance.SetInherit(instance)
 	return instance
 }

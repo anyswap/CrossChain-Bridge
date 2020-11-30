@@ -21,6 +21,7 @@ var PairID = "btc"
 // Bridge btc bridge
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
+	Inherit Inheritable
 }
 
 // NewCrossChainBridge new btc bridge
@@ -28,9 +29,15 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	if !isSrc {
 		log.Fatalf("btc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
-	instance := &Bridge{tokens.NewCrossChainBridgeBase(isSrc)}
+	instance := &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
 	BridgeInstance = instance
+	instance.SetInherit(instance)
 	return instance
+}
+
+// SetInherit set inherit
+func (b *Bridge) SetInherit(inherit Inheritable) {
+	b.Inherit = inherit
 }
 
 // SetChainAndGateway set chain and gateway config
