@@ -84,9 +84,14 @@ func TestGetLatestBlockNumber(t *testing.T) {
 
 func TestGetTransactionByHash(t *testing.T) {
 	t.Logf("TestGetTransactionByHash")
-	tx, err := b.GetTransactionByHash("a3e8864b64391ad991d0f4376cc2d1539efb3dffba8f90870b230dde618e764e")
+	//tx, err := b.GetTransactionByHash("a3e8864b64391ad991d0f4376cc2d1539efb3dffba8f90870b230dde618e764e")
+	tx, err := b.GetTransactionByHash("8250273a112ec0b8d91d12d1652af77495df6c7c0cc2a2b1d93c02a6c5cfaba5")
 	checkError(t, err)
 	t.Logf("TestGetTransactionByHash: %+v\n", tx)
+	for _, vout := range tx.Vout {
+		t.Logf("ScriptpubkeyType: %+v\n", *vout.ScriptpubkeyType)
+		t.Logf("Vout: %+v\n", *vout.ScriptpubkeyAddress)
+	}
 }
 
 func TestGetElectTransactionStatus(t *testing.T) {
@@ -134,8 +139,9 @@ func TestPostTransaction(t *testing.T) {
 
 	fromAddress = "Bp23BeXEKXCTd7oRWtrKv8nc1SKXvDH3Hq"
 	changeAddress = fromAddress
-	toAddress = "BpeGP9ooFTGSsdcysmMMgbRCqYQgpjrCsE"
-	wif = "PnLR......tKcv"
+	//toAddress = "BpeGP9ooFTGSsdcysmMMgbRCqYQgpjrCsE"
+	toAddress = "Ccg7idzpeABztNarqwpcsF5NjVLinQJZLa"
+	wif = "PnLR......NtKcv"
 
 	pkwif, err := btcutil.DecodeWIF(wif)
 	checkError(t, err)
@@ -146,7 +152,7 @@ func TestPostTransaction(t *testing.T) {
 	checkError(t, err)
 	t.Logf("utxos: %+v", utxos[0])
 
-	txOuts, err := b.getTxOutputs(toAddress, big.NewInt(100000), "")
+	txOuts, err := b.getTxOutputs(toAddress, big.NewInt(1000000), "")
 	checkError(t, err)
 	t.Logf("txouts: %+v\n", txOuts)
 

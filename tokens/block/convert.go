@@ -138,9 +138,17 @@ func ConvertVout(vout btcjson.Vout) *electrs.ElectTxOut {
 	evout := &electrs.ElectTxOut{
 		Scriptpubkey:        &vout.ScriptPubKey.Hex,
 		ScriptpubkeyAsm:     &vout.ScriptPubKey.Asm,
-		ScriptpubkeyType:    &vout.ScriptPubKey.Type,
+		ScriptpubkeyType:    new(string),
 		ScriptpubkeyAddress: new(string),
 		Value:               new(uint64),
+	}
+	switch vout.ScriptPubKey.Type {
+	case "pubkeyhash":
+		*evout.ScriptpubkeyType = p2pkhType
+	case "scripthash":
+		*evout.ScriptpubkeyType = p2shType
+	default:
+		*evout.ScriptpubkeyType = opReturnType
 	}
 	if len(vout.ScriptPubKey.Addresses) == 1 {
 		*evout.ScriptpubkeyAddress = vout.ScriptPubKey.Addresses[0]
