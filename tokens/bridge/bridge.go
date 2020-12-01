@@ -61,7 +61,13 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.LoadTokenPairsConfig(true)
 
 	btc.Init(cfg.BtcExtra)
-	ltc.Init(cfg.BtcExtra)
+	switch btc.PairID {
+	case "ltc":
+		ltc.Init(cfg.BtcExtra)
+	case "block":
+		block.Init(cfg.BtcExtra)
+	default:
+	}
 
 	dcrm.Init(cfg.Dcrm, isServer)
 
