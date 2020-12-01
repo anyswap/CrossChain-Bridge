@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -18,25 +17,6 @@ import (
 // Inheritable interface
 type Inheritable interface {
 	GetChainParams() *chaincfg.Params
-
-	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
-	GetLatestBlockNumber() (uint64, error)
-	GetTransactionByHash(txHash string) (*electrs.ElectTx, error)
-	GetElectTransactionStatus(txHash string) (*electrs.ElectTxStatus, error)
-	FindUtxos(addr string) ([]*electrs.ElectUtxo, error)
-	GetPoolTxidList() ([]string, error)
-	GetPoolTransactions(addr string) ([]*electrs.ElectTx, error)
-	GetTransactionHistory(addr, lastSeenTxid string) ([]*electrs.ElectTx, error)
-	GetOutspend(txHash string, vout uint32) (*electrs.ElectOutspend, error)
-	PostTransaction(txHex string) (txHash string, err error)
-	GetBlockHash(height uint64) (string, error)
-	GetBlockTxids(blockHash string) ([]string, error)
-	GetBlock(blockHash string) (*electrs.ElectBlock, error)
-	GetBlockTransactions(blockHash string, startIndex uint32) ([]*electrs.ElectTx, error)
-	EstimateFeePerKb(blocks int) (int64, error)
-	GetBalance(account string) (*big.Int, error)
-	GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error)
-	GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error)
 }
 
 type btcAmountType = btcutil.Amount
