@@ -142,6 +142,11 @@ func (b *Bridge) GetElectTransactionStatus(txHash string) (txstatus *electrs.Ele
 		if err0 == nil {
 			ccli.Closer()
 			txstatus = TxStatus(txraw)
+			if h := txstatus.BlockHash; h != nil {
+				if blk, err1 := b.GetBlock(*h); err1 == nil {
+					*txstatus.BlockHeight = uint64(*blk.Height)
+				}
+			}
 			return
 		}
 		errs = append(errs, err0)

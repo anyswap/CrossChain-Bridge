@@ -96,9 +96,14 @@ func TestGetTransactionByHash(t *testing.T) {
 
 func TestGetElectTransactionStatus(t *testing.T) {
 	t.Logf("TestGetElectTransactionStatus")
-	status, err := b.GetElectTransactionStatus("a3e8864b64391ad991d0f4376cc2d1539efb3dffba8f90870b230dde618e764e")
+	//status, err := b.GetElectTransactionStatus("a3e8864b64391ad991d0f4376cc2d1539efb3dffba8f90870b230dde618e764e")
+	status, err := b.GetElectTransactionStatus("8250273a112ec0b8d91d12d1652af77495df6c7c0cc2a2b1d93c02a6c5cfaba5")
 	checkError(t, err)
 	t.Logf("TestGetElectTransactionStatus: %+v\n", status)
+	t.Logf("Confirmed: %+v\n", *status.Confirmed)
+	t.Logf("BlockHeight: %+v\n", *status.BlockHeight)
+	t.Logf("BlockHash: %+v\n", *status.BlockHash)
+	t.Logf("BlockTime: %+v\n", *status.BlockTime)
 }
 
 func TestFindUtxos(t *testing.T) {
