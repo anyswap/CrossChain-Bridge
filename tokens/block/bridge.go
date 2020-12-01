@@ -39,8 +39,7 @@ func (b *Bridge) VerifyChainConfig() {
 	chainCfg := b.ChainConfig
 	networkID := strings.ToLower(chainCfg.NetID)
 	switch networkID {
-	case netMainnet, netTestnet4:
-	case netCustom:
+	case "mainnet":
 		return
 	default:
 		log.Fatal("unsupported bitcoin network", "netID", chainCfg.NetID)
