@@ -147,7 +147,12 @@ func TestPostTransaction(t *testing.T) {
 	changeAddress = fromAddress
 	//toAddress = "BpeGP9ooFTGSsdcysmMMgbRCqYQgpjrCsE"
 	toAddress = "Ccg7idzpeABztNarqwpcsF5NjVLinQJZLa"
-	wif = "PnLR......NtKcv"
+	//wif = "PnLR......NtKcv"
+	wif = ""
+	if wif == "" {
+		t.Logf("Private key wif is required to test PostTransaction")
+		return
+	}
 
 	pkwif, err := btcutil.DecodeWIF(wif)
 	checkError(t, err)
