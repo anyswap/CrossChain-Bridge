@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
@@ -23,6 +22,7 @@ var (
 )
 
 // StartAggregateJob aggregate job
+/*
 func (b *Bridge) StartAggregateJob() {
 	for loop := 1; ; loop++ {
 		log.Info("[aggregate] start aggregate job", "loop", loop)
@@ -31,7 +31,9 @@ func (b *Bridge) StartAggregateJob() {
 		time.Sleep(aggInterval)
 	}
 }
+*/
 
+/*
 func (b *Bridge) doAggregateJob() {
 	aggOffset = 0
 	for {
@@ -50,7 +52,9 @@ func (b *Bridge) doAggregateJob() {
 		aggOffset += utxoPageLimit
 	}
 }
+*/
 
+/*
 func (b *Bridge) findUtxosAndAggregate(addr string) {
 	findUtxos, _ := b.FindUtxos(addr)
 	for _, utxo := range findUtxos {
@@ -71,7 +75,9 @@ func (b *Bridge) findUtxosAndAggregate(addr string) {
 		}
 	}
 }
+*/
 
+/*
 func isUtxoExist(utxo *electrs.ElectUtxo) bool {
 	for _, item := range aggUtxos {
 		if *item.Txid == *utxo.Txid && *item.Vout == *utxo.Vout {
@@ -80,7 +86,9 @@ func isUtxoExist(utxo *electrs.ElectUtxo) bool {
 	}
 	return false
 }
+*/
 
+/*
 func (b *Bridge) aggregate() {
 	txHash, err := b.AggregateUtxos(aggAddrs, aggUtxos)
 	if err != nil {
@@ -92,8 +100,10 @@ func (b *Bridge) aggregate() {
 	aggAddrs = nil
 	aggUtxos = nil
 }
+*/
 
-func shouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
+// ShouldAggregate should aggregate
+func (b *Bridge) ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
 	if aggUtxoCount >= cfgUtxoAggregateMinCount {
 		return true
 	}
