@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	cfgMinRelayFee       int64  = 2400 // BTC才400
+	cfgMinRelayFee       int64  = 3000 // BTC才400
 	cfgMinRelayFeePerKb  int64  = 2000
 	cfgMaxRelayFeePerKb  int64  = 500000
 	cfgPlusFeePercentage uint64 = 0
