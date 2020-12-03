@@ -36,13 +36,13 @@ DisableSwap = false
 
 # dest token config
 [DestToken]
-ID = "mBLOCK"
-Name = "SMPC BlockNet"
-Symbol = "mBLOCK"
+ID = "anyBLOCK"
+Name = "BlockNet coin"
+Symbol = "anyBLOCK"
 Decimals = 8
-Description = "cross chain bridge BLOCK with mBLOCK"
+Description = "cross chain bridge BLOCK with anyBLOCK"
 # mapping erc20 token address
-ContractAddress = "0x......"
+ContractAddress = "0xe1b02a6255ac84485cc5df2c457acedcb59fd536"
 # mapping erc20 token creator
 DcrmAddress = "0xbF0A46d3700E23a98F38079cE217742c92Bb66bC"
 # dcrm address public key

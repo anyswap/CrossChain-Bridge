@@ -28,8 +28,8 @@ ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 
 # customize fees in building btc transaction (btc only)
 [BtcExtra]
-# minimum relay fee of tx
-MinRelayFee = 2400 # !!! much greater than BTC
+# minimum relay fee of tx (much greater than BTC!!!)
+MinRelayFee = 3000
 # relay fee per kilobytes
 MinRelayFeePerKb = 2000
 # maximum relay fee per kilobytes
