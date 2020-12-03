@@ -120,7 +120,6 @@ func FindSwapoutTokenConfig(address string) (configs []*TokenConfig, pairIDs []s
 func GetTokenConfig(pairID string, isSrc bool) *TokenConfig {
 	pairCfg, exist := tokenPairsConfig[strings.ToLower(pairID)]
 	if !exist {
-		log.Warn("GetTokenConfig: pairID not exist", "pairID", pairID)
 		return nil
 	}
 	if isSrc {
