@@ -30,10 +30,6 @@ func Init(btcExtra *tokens.BtcExtraConfig) {
 		log.Fatal("Ltc bridge must config 'BtcExtra'")
 	}
 
-	if btc.PairID != PairID {
-		log.Fatal("Bridge instance pairID is not ltc")
-	}
-
 	initFromPublicKey()
 	initRelayFee(btcExtra)
 	initAggregate(btcExtra)

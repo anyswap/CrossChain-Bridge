@@ -34,7 +34,7 @@ func (b *Bridge) getRelayFeePerKb() (estimateFee int64, err error) {
 	}
 	if err != nil {
 		log.Warn("estimate smart fee failed", "err", err)
-		return 0, err
+		return cfgMinRelayFee, nil
 	}
 	if cfgPlusFeePercentage > 0 {
 		estimateFee += estimateFee * int64(cfgPlusFeePercentage) / 100

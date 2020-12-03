@@ -12,7 +12,7 @@ import (
 
 // Bridge block bridge inherit from btc bridge
 type Bridge struct {
-	*btc.Bridge
+	*tokens.CrossChainBridgeBase
 }
 
 // PairID unique btc pair ID
@@ -20,10 +20,10 @@ var PairID = "block"
 
 // NewCrossChainBridge new fsn bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	instance := &Bridge{Bridge: btc.NewCrossChainBridge(isSrc)}
 	btc.PairID = PairID
-	btc.BridgeInstance = instance
-	instance.SetInherit(instance)
+	instance := &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
+	BridgeInstance = instance
+	btc.BridgeInstance = BridgeInstance
 	return instance
 }
 

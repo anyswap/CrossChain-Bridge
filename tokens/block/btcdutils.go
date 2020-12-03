@@ -20,6 +20,7 @@ import (
 		btcsuitehash "github.com/btcsuite/btcd/chaincfg/chainhash"
 		btcsuitewire "github.com/btcsuite/btcd/wire"
 	*/
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -262,4 +263,14 @@ func (b *Bridge) NewTxOut(amount int64, pkScript []byte) *wire.TxOut {
 	//result := &btcsuitewire.TxOut{}
 	//convertToBTCSuite(txout, result)
 	return txout
+}
+
+// NewMsgTx new msg tx
+func (b *Bridge) NewMsgTx(inputs []*wire.TxIn, outputs []*wire.TxOut, locktime uint32) *wire.MsgTx {
+	return &wire.MsgTx{
+		Version:  wire.TxVersion,
+		TxIn:     inputs,
+		TxOut:    outputs,
+		LockTime: locktime,
+	}
 }

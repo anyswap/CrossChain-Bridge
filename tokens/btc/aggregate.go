@@ -19,7 +19,7 @@ const (
 )
 
 // ShouldAggregate should aggregate
-func ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
+func (b *Bridge) ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
 	if aggUtxoCount >= cfgUtxoAggregateMinCount {
 		return true
 	}
