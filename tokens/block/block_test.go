@@ -108,7 +108,8 @@ func TestGetElectTransactionStatus(t *testing.T) {
 
 func TestFindUtxos(t *testing.T) {
 	t.Logf("TestFindUtxos")
-	utxos, err := b.FindUtxos("BmCQZdXFUhGvDZkFNyy9fshkGnoPzNnTnY")
+	//utxos, err := b.FindUtxos("BmCQZdXFUhGvDZkFNyy9fshkGnoPzNnTnY")
+	utxos, err := b.FindUtxos("Ccg7idzpeABztNarqwpcsF5NjVLinQJZLa")
 	checkError(t, err)
 	t.Logf("TestFindUtxos: %+v\n", utxos)
 }
@@ -229,3 +230,10 @@ func TestEstimateFeePerKb(t *testing.T) {
 }
 
 func TestGetBalance(t *testing.T) {}
+
+func TestGetPayToAddrScript(t *testing.T) {
+	t.Logf("TestGetPayToAddrScript")
+	script, err := b.GetPayToAddrScript("Ccg7idzpeABztNarqwpcsF5NjVLinQJZLa")
+	checkError(t, err)
+	t.Logf("TestGetPayToAddrScript: %s\n", hex.EncodeToString(script))
+}
