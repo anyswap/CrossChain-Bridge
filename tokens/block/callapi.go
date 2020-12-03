@@ -288,7 +288,9 @@ func (b *Bridge) GetPoolTransactions(addr string) (txs []*electrs.ElectTx, err e
 			txs = append(txs, tx)
 		}
 	}
-	err = fmt.Errorf("%+v", errs)
+	if len(errs) > 0 {
+		err = fmt.Errorf("%+v", errs)
+	}
 	return
 }
 
