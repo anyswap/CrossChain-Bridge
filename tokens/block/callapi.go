@@ -200,11 +200,15 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 				}
 
 				utxo := &electrs.ElectUtxo{
-					Txid:   &cutxo.Txhash,
-					Vout:   &cutxo.Vout,
-					Value:  &value,
-					Status: status,
+					Txid:   new(string),
+					Vout:   new(uint32),
+					Value:  new(uint64),
+					Status: new(electrs.ElectTxStatus),
 				}
+				*utxo.Txid = cutxo.Txhash
+				*utxo.Vout = cutxo.Vout
+				*utxo.Value = value
+				utxo.Status = status
 				utxos = append(utxos, utxo)
 			}
 			sort.Sort(electrs.SortableElectUtxoSlice(utxos))
