@@ -22,12 +22,12 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return btc.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "LITECOIN"):
 		return ltc.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "BLOCK"):
+		return block.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "ETHEREUM"):
 		return eth.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
-	case blockChainIden == "BLOCK":
-		return block.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
 		return nil
@@ -60,13 +60,14 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.IsDcrmDisabled = cfg.Dcrm.Disable
 	tokens.LoadTokenPairsConfig(true)
 
-	btc.Init(cfg.BtcExtra)
-	switch btc.PairID {
-	case "ltc":
+	BlockChain := strings.ToUpper(srcChain.BlockChain)
+	switch BlockChain {
+	case "BITCOIN":
+		btc.Init(cfg.BtcExtra)
+	case "LITECOIN":
 		ltc.Init(cfg.BtcExtra)
-	case "block":
+	case "BLOCK":
 		block.Init(cfg.BtcExtra)
-	default:
 	}
 
 	dcrm.Init(cfg.Dcrm, isServer)
