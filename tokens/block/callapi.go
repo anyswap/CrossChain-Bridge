@@ -268,7 +268,7 @@ func (b *Bridge) GetPoolTxidList() (txids []string, err error) {
 		ccli.Closer()
 	}
 	err = fmt.Errorf("%+v", errs)
-	return electrs.GetPoolTxidList(b)
+	return
 }
 
 // GetPoolTransactions impl
@@ -419,7 +419,6 @@ func (b *Bridge) GetBlockTransactions(blockHash string, startIndex uint32) (etxs
 			for _, txid := range txs {
 				etx, err1 := b.GetTransactionByHash(txid)
 				if err1 != nil {
-					errs = append(errs, err1)
 					continue
 				}
 				etxs = append(etxs, etx)
