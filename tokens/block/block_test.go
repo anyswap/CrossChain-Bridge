@@ -28,7 +28,7 @@ func init() {
 		Extras: &tokens.GatewayExtras{
 			BlockExtra: &tokens.BlockExtraArgs{
 				CoreAPIs: []tokens.BlocknetCoreAPIArgs{
-					tokens.BlocknetCoreAPIArgs{
+					{
 						APIAddress:  "5.189.139.168:51515",
 						RPCUser:     "xxmm",
 						RPCPassword: "123456",
@@ -227,12 +227,12 @@ func TestGetBlockTransactions(t *testing.T) {
 	t.Logf("TestGetBlockTransactions: %+v\n", txs)
 }
 
-func TestEstimateFeePerKb(t *testing.T) {
+/*func TestEstimateFeePerKb(t *testing.T) {
 	t.Logf("TestEstimateFeePerKb")
 	fee, err := b.EstimateFeePerKb(3)
 	checkError(t, err)
 	t.Logf("TestEstimateFeePerKb: %+v\n", fee)
-}
+}*/
 
 func TestGetBalance(t *testing.T) {}
 
