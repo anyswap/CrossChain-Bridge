@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
@@ -46,6 +47,8 @@ func InitCrossChainBridge(isServer bool) {
 	dstID := dstChain.BlockChain
 	srcNet := srcChain.NetID
 	dstNet := dstChain.NetID
+
+	tokens.AggregateIdentifier = fmt.Sprintf("%s:%s", params.GetIdentifier(), tokens.AggregateIdentifier)
 
 	tokens.SrcBridge = NewCrossChainBridge(srcID, true)
 	tokens.DstBridge = NewCrossChainBridge(dstID, false)

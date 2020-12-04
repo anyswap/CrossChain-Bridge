@@ -7,14 +7,15 @@ import (
 
 // transaction memo prefix
 const (
-	LockMemoPrefix      = "SWAPTO:"
-	UnlockMemoPrefix    = "SWAPTX:"
-	AggregateIdentifier = "aggregate"
-	AggregateMemo       = "aggregate"
+	LockMemoPrefix   = "SWAPTO:"
+	UnlockMemoPrefix = "SWAPTX:"
+	AggregateMemo    = "aggregate"
 )
 
 // common variables
 var (
+	AggregateIdentifier = "aggregate"
+
 	SrcBridge CrossChainBridge
 	DstBridge CrossChainBridge
 
