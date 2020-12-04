@@ -11,9 +11,9 @@ import (
 
 const (
 	// AggregateIdentifier used in accepting
-	AggregateIdentifier = "aggregate"
+	//AggregateIdentifier = "aggregate"
 
-	aggregateMemo = "aggregate"
+	//aggregateMemo = "aggregate"
 
 	redeemAggregateP2SHInputSize = 198
 )
@@ -44,7 +44,7 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
 			PairID:     PairID,
-			Identifier: AggregateIdentifier,
+			Identifier: tokens.AggregateIdentifier,
 		},
 		Extra: &tokens.AllExtras{
 			BtcExtra: &tokens.BtcExtraArgs{},

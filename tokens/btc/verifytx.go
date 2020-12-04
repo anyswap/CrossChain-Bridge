@@ -205,7 +205,7 @@ func GetBindAddressFromMemoScipt(memoScript string) (bind string, ok bool) {
 	memoHex := strings.TrimSpace(parts[1])
 	memo := common.FromHex(memoHex)
 	memoStr := string(memo)
-	if memoStr == aggregateMemo {
+	if memoStr == tokens.AggregateMemo {
 		return "", false
 	}
 	if len(memo) <= len(tokens.LockMemoPrefix) {

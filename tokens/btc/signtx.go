@@ -25,7 +25,7 @@ const (
 
 func (b *Bridge) verifyTransactionWithArgs(tx *txauthor.AuthoredTx, args *tokens.BuildTxArgs) error {
 	checkReceiver := args.Bind
-	if args.Identifier == AggregateIdentifier {
+	if args.Identifier == tokens.AggregateIdentifier {
 		checkReceiver = cfgUtxoAggregateToAddress
 	}
 	payToReceiverScript, err := b.GetPayToAddrScript(checkReceiver)
