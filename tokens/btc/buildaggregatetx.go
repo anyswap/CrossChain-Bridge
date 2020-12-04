@@ -17,7 +17,7 @@ func (b *Bridge) BuildAggregateTransaction(relayFeePerKb int64, addrs []string, 
 		return nil, fmt.Errorf("call BuildAggregateTransaction: count of addrs (%v) is not equal to count of utxos (%v)", len(addrs), len(utxos))
 	}
 
-	txOuts, err := b.getTxOutputs("", nil, aggregateMemo)
+	txOuts, err := b.getTxOutputs("", nil, tokens.AggregateMemo)
 	if err != nil {
 		return nil, err
 	}
