@@ -14,6 +14,7 @@ import (
 )
 
 //const ripemd160Size = 20
+
 // ConvertBTCAddress decode btc address and convert to LTC address
 // nolint:gocyclo // keep it
 func (b *Bridge) ConvertBTCAddress(addr, btcNet string) (address ltcutil.Address, err error) {
@@ -77,7 +78,6 @@ func (b *Bridge) ConvertBTCAddress(addr, btcNet string) (address ltcutil.Address
 		return nil, errors.New("decoded address is of unknown format")
 	}
 	switch len(decoded) {
-	//case ripemd160.Size: // P2PKH or P2SH
 	case 20: // P2PKH or P2SH
 		isP2PKH := netID == bchainConfig.PubKeyHashAddrID
 		isP2SH := netID == bchainConfig.ScriptHashAddrID
