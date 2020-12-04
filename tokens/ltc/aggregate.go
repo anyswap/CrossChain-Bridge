@@ -10,16 +10,16 @@ import (
 
 const (
 	redeemAggregateP2SHInputSize = 198
-	utxoPageLimit                = 100
-	aggInterval                  = 10 * time.Minute
+	//utxoPageLimit                = 100
+	//aggInterval                  = 10 * time.Minute
 )
 
-var (
+/*var (
 	aggSumVal uint64
 	aggAddrs  []string
 	aggUtxos  []*electrs.ElectUtxo
 	aggOffset int
-)
+)*/
 
 // StartAggregateJob aggregate job
 /*
