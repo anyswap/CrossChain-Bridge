@@ -14,6 +14,7 @@ import (
 )
 
 //const ripemd160Size = 20
+
 // ConvertBTCAddress decode btc address and convert to LTC address
 // nolint:gocyclo // keep it
 func (b *Bridge) ConvertBTCAddress(addr, btcNet string) (address ltcutil.Address, err error) {
