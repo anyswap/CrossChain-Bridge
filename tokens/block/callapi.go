@@ -15,7 +15,7 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 )
 
-var utxoTimeout = 100
+//var utxoTimeout = 100
 
 // CoreClient extends btcd rpcclient
 type CoreClient struct {
@@ -243,11 +243,11 @@ func callCloudchains(url, reqdata string, result interface{}) error {
 
 // CloudchainUtxo struct
 type CloudchainUtxo struct {
-	Address     string  `json:address`
-	Txhash      string  `json:Txhash`
-	Vout        uint32  `json:Vout`
-	BlockNumber uint64  `json:block_number`
-	Value       float64 `json:value`
+	Address     string  `json:"address"`
+	Txhash      string  `json:"Txhash"`
+	Vout        uint32  `json:"Vout"`
+	BlockNumber uint64  `json:"block_number"`
+	Value       float64 `json:"value"`
 }
 
 // GetPoolTxidList impl

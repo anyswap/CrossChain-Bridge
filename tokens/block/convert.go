@@ -74,9 +74,9 @@ func DecodeTxHex(txHex string, protocolversion uint32, isWitness bool) *wire.Msg
 	msgtx := new(wire.MsgTx)
 
 	if isWitness {
-		msgtx.BtcDecode(bytes.NewReader(txBytes), protocolversion, wire.WitnessEncoding)
+		_ = msgtx.BtcDecode(bytes.NewReader(txBytes), protocolversion, wire.WitnessEncoding)
 	} else {
-		msgtx.BtcDecode(bytes.NewReader(txBytes), protocolversion, wire.BaseEncoding)
+		_ = msgtx.BtcDecode(bytes.NewReader(txBytes), protocolversion, wire.BaseEncoding)
 	}
 
 	return msgtx

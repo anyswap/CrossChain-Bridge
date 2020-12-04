@@ -13,11 +13,6 @@ import (
 
 // BuildAggregateTransaction build aggregate tx (spend p2sh utxo)
 func (b *Bridge) BuildAggregateTransaction(relayFeePerKb int64, addrs []string, utxos []*electrs.ElectUtxo) (rawTx *txauthor.AuthoredTx, err error) {
-	log.Info("BuildAggregateTransaction", "cfgUtxoAggregateToAddress", cfgUtxoAggregateToAddress)
-	if cfgUtxoAggregateToAddress == "" {
-		panic(fmt.Errorf("cfgUtxoAggregateToAddress is null"))
-	}
-
 	if len(addrs) != len(utxos) {
 		return nil, fmt.Errorf("call BuildAggregateTransaction: count of addrs (%v) is not equal to count of utxos (%v)", len(addrs), len(utxos))
 	}

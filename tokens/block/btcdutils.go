@@ -2,7 +2,6 @@ package block
 
 import (
 	"crypto/ecdsa"
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -29,6 +28,7 @@ import (
 	"github.com/btcsuite/btcutil"
 )
 
+/*
 func convertToBTCSuite(origin, result interface{}) {
 	bz, err := json.Marshal(origin)
 	if err != nil {
@@ -39,6 +39,7 @@ func convertToBTCSuite(origin, result interface{}) {
 		panic("error unmarshaling to btcsuite")
 	}
 }
+*/
 
 var bigOne = big.NewInt(1)
 
