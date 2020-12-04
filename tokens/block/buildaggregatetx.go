@@ -1,4 +1,4 @@
-package btc
+package block
 
 import (
 	"fmt"
@@ -26,6 +26,7 @@ func (b *Bridge) BuildAggregateTransaction(relayFeePerKb int64, addrs []string, 
 		return b.getUtxosFromElectUtxos(target, addrs, utxos)
 	}
 
+	log.Info("", "cfgUtxoAggregateToAddress", cfgUtxoAggregateToAddress)
 	changeSource := func() ([]byte, error) {
 		return b.GetPayToAddrScript(cfgUtxoAggregateToAddress)
 	}
@@ -33,7 +34,23 @@ func (b *Bridge) BuildAggregateTransaction(relayFeePerKb int64, addrs []string, 
 	return b.NewUnsignedTransaction(txOuts, btcAmountType(relayFeePerKb), inputSource, changeSource, true)
 }
 
+// VerifyAggregateMsgHash verify aggregate msgHash
+func (b *Bridge) VerifyAggregateMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
+	if args == nil || args.Extra == nil || args.Extra.BtcExtra == nil || len(args.Extra.BtcExtra.PreviousOutPoints) == 0 {
+		return fmt.Errorf("empty ltc extra")
+	}
+	if args.Extra.BtcExtra.RelayFeePerKb == nil {
+		return fmt.Errorf("empty relay fee")
+	}
+	rawTx, err := b.rebuildAggregateTransaction(args.Extra.BtcExtra)
+	if err != nil {
+		return err
+	}
+	return b.VerifyMsgHash(rawTx, msgHash)
+}
+
 func (b *Bridge) rebuildAggregateTransaction(extra *tokens.BtcExtraArgs) (rawTx *txauthor.AuthoredTx, err error) {
+	log.Info("rebuildAggregateTransaction", "extra", extra)
 	addrs, utxos, err := b.getUtxosFromOutPoints(extra.PreviousOutPoints)
 	if err != nil {
 		return nil, err
@@ -42,6 +59,10 @@ func (b *Bridge) rebuildAggregateTransaction(extra *tokens.BtcExtraArgs) (rawTx 
 }
 
 func (b *Bridge) getUtxosFromElectUtxos(target btcAmountType, addrs []string, utxos []*electrs.ElectUtxo) (total btcAmountType, inputs []*wireTxInType, inputValues []btcAmountType, scripts [][]byte, err error) {
+	if len(addrs) != len(utxos) {
+		return btcAmountType(0), nil, nil, nil, fmt.Errorf("call BuildAggregateTransaction: count of addrs (%v) is not equal to count of utxos (%v)", len(addrs), len(utxos))
+	}
+
 	for i, utxo := range utxos {
 		value := btcAmountType(*utxo.Value)
 		if value == 0 {

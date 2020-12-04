@@ -67,7 +67,7 @@ func (b *Bridge) ConvertLTCAddress(addr, net string) (address btcutil.Address, e
 		return nil, errors.New("decoded address is of unknown format")
 	}
 	switch len(decoded) {
-	case ripemd160Size: // P2PKH or P2SH
+	case 20: // P2PKH or P2SH
 		isP2PKH := netID == lchainConfig.PubKeyHashAddrID
 		isP2SH := netID == lchainConfig.ScriptHashAddrID
 		switch hash160 := decoded; {

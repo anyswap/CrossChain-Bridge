@@ -11,15 +11,15 @@ import (
 
 const (
 	// AggregateIdentifier used in accepting
-	AggregateIdentifier = "aggregate"
+	//AggregateIdentifier = "aggregate"
 
-	aggregateMemo = "aggregate"
+	//aggregateMemo = "aggregate"
 
 	redeemAggregateP2SHInputSize = 198
 )
 
 // ShouldAggregate should aggregate
-func ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
+func (b *Bridge) ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
 	if aggUtxoCount >= cfgUtxoAggregateMinCount {
 		return true
 	}
@@ -44,7 +44,7 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
 			PairID:     PairID,
-			Identifier: AggregateIdentifier,
+			Identifier: tokens.AggregateIdentifier,
 		},
 		Extra: &tokens.AllExtras{
 			BtcExtra: &tokens.BtcExtraArgs{},

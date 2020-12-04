@@ -1,13 +1,12 @@
-package ltc
+package block
 
 import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 var (
-	cfgMinRelayFee       int64  = 400
+	cfgMinRelayFee       int64  = 3000 // BTC才400
 	cfgMinRelayFeePerKb  int64  = 2000
 	cfgMaxRelayFeePerKb  int64  = 500000
 	cfgPlusFeePercentage uint64 = 0
@@ -20,14 +19,14 @@ var (
 	cfgUtxoAggregateToAddress string
 )
 
-// Init init ltc extra
+// Init init btc extra
 func Init(btcExtra *tokens.BtcExtraConfig) {
-	if btc.BridgeInstance == nil {
+	if BridgeInstance == nil {
 		return
 	}
 
 	if btcExtra == nil {
-		log.Fatal("Ltc bridge must config 'BtcExtra'")
+		log.Fatal("Block bridge must config 'BtcExtra'")
 	}
 
 	initFromPublicKey()
@@ -37,18 +36,18 @@ func Init(btcExtra *tokens.BtcExtraConfig) {
 
 func initFromPublicKey() {
 	if len(tokens.GetTokenPairsConfig()) != 1 {
-		log.Fatalf("Ltc bridge does not support multiple tokens")
+		log.Fatalf("Block bridge does not support multiple tokens")
 	}
 
 	pairCfg, exist := tokens.GetTokenPairsConfig()[PairID]
 	if !exist {
-		log.Fatalf("Ltc bridge must have pairID %v", PairID)
+		log.Fatalf("Block bridge must have pairID %v", PairID)
 	}
 
 	cfgFromPublicKey = pairCfg.SrcToken.DcrmPubkey
-	_, err := btc.BridgeInstance.GetCompressedPublicKey(cfgFromPublicKey, true)
+	_, err := BridgeInstance.GetCompressedPublicKey(cfgFromPublicKey, true)
 	if err != nil {
-		log.Fatal("wrong ltc dcrm public key", "err", err)
+		log.Fatal("wrong block dcrm public key", "err", err)
 	}
 }
 
@@ -56,7 +55,7 @@ func initRelayFee(btcExtra *tokens.BtcExtraConfig) {
 	if btcExtra.MinRelayFee > 0 {
 		cfgMinRelayFee = btcExtra.MinRelayFee
 		maxMinRelayFee, _ := newAmount(0.001)
-		minRelayFee := ltcAmountType(cfgMinRelayFee)
+		minRelayFee := btcAmountType(cfgMinRelayFee)
 		if minRelayFee > maxMinRelayFee {
 			log.Fatal("BtcMinRelayFee is too large", "value", minRelayFee, "max", maxMinRelayFee)
 		}
@@ -88,7 +87,7 @@ func initRelayFee(btcExtra *tokens.BtcExtraConfig) {
 		log.Fatal("MinRelayFeePerKb is larger than MaxRelayFeePerKb", "min", cfgMinRelayFeePerKb, "max", cfgMaxRelayFeePerKb)
 	}
 
-	log.Info("Init Btc extra", "MinRelayFee", cfgMinRelayFee, "MinRelayFeePerKb", cfgMinRelayFeePerKb, "MaxRelayFeePerKb", cfgMaxRelayFeePerKb, "PlusFeePercentage", cfgPlusFeePercentage)
+	log.Info("Init Block extra", "MinRelayFee", cfgMinRelayFee, "MinRelayFeePerKb", cfgMinRelayFeePerKb, "MaxRelayFeePerKb", cfgMaxRelayFeePerKb, "PlusFeePercentage", cfgPlusFeePercentage)
 }
 
 func initAggregate(btcExtra *tokens.BtcExtraConfig) {
@@ -101,9 +100,9 @@ func initAggregate(btcExtra *tokens.BtcExtraConfig) {
 	}
 
 	cfgUtxoAggregateToAddress = btcExtra.UtxoAggregateToAddress
-	if !btc.BridgeInstance.IsValidAddress(cfgUtxoAggregateToAddress) {
+	if !BridgeInstance.IsValidAddress(cfgUtxoAggregateToAddress) {
 		log.Fatal("wrong utxo aggregate to address", "toAddress", cfgUtxoAggregateToAddress)
 	}
 
-	log.Info("Init Btc extra", "UtxoAggregateMinCount", cfgUtxoAggregateMinCount, "UtxoAggregateMinValue", cfgUtxoAggregateMinValue, "UtxoAggregateToAddress", cfgUtxoAggregateToAddress)
+	log.Info("Init Block extra", "UtxoAggregateMinCount", cfgUtxoAggregateMinCount, "UtxoAggregateMinValue", cfgUtxoAggregateMinValue, "UtxoAggregateToAddress", cfgUtxoAggregateToAddress)
 }

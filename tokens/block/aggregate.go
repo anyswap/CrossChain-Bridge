@@ -1,4 +1,4 @@
-package ltc
+package block
 
 import (
 	"time"

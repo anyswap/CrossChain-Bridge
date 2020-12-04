@@ -37,6 +37,26 @@ type ChainConfig struct {
 // GatewayConfig struct
 type GatewayConfig struct {
 	APIAddress []string
+	Extras     *GatewayExtras
+}
+
+// GatewayExtras struct
+type GatewayExtras struct {
+	BlockExtra *BlockExtraArgs
+}
+
+// BlockExtraArgs struct
+type BlockExtraArgs struct {
+	CoreAPIs         []BlocknetCoreAPIArgs
+	UTXOAPIAddresses []string
+}
+
+// BlocknetCoreAPIArgs struct
+type BlocknetCoreAPIArgs struct {
+	APIAddress  string
+	RPCUser     string
+	RPCPassword string
+	DisableTLS  bool
 }
 
 // TokenConfig struct

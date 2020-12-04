@@ -19,4 +19,5 @@ type BridgeInterface interface {
 	AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (string, error)
 	FindUtxos(addr string) ([]*electrs.ElectUtxo, error)
 	StartSwapHistoryScanJob()
+	ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool
 }

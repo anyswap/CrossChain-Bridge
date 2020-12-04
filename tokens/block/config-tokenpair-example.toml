@@ -1,0 +1,66 @@
+PairID = "BLOCK"
+
+# source token config
+[SrcToken]
+# ID must be ERC20 if source token is erc20 token
+ID = "BLOCK"
+Name = "BlockNet"
+Symbol = "BLOCK"
+Decimals = 8
+Description = "BlockNet"
+# if ID is ERC20, this is the erc20 token's contract address
+ContractAddress = ""
+# deposit to this address to make swap
+DepositAddress = "BpeGP9ooFTGSsdcysmMMgbRCqYQgpjrCsE"
+# withdraw from this address
+DcrmAddress = "BpeGP9ooFTGSsdcysmMMgbRCqYQgpjrCsE"
+# dcrm address public key
+DcrmPubkey = "045c8648793e4867af465691685000ae841dccab0b011283139d2eae454b569d5789f01632e13a75a5aad8480140e895dd671cae3639f935750bea7ae4b5a2512e"
+# maximum deposit value
+MaximumSwap = 1000.0
+# minimum deposit value
+MinimumSwap = 0.00001
+# calced deposit fee = deposit value * this rate (when in [min, max] deposit fee range)
+SwapFeeRate = 0.001
+# maximum deposit fee, if calced deposit fee is larger than this fee, then use this value as deposit fee
+MaximumSwapFee = 0.01
+# minimum deposit fee, if calced deposit fee is smaller than this fee, then use this value as deposit fee
+MinimumSwapFee = 0.00001
+# plus this percentage of gas price to make tx more easier to be mined in source chain
+# corresponding to send asset on source chain (eg. BTC) for withdrawing
+PlusGasPricePercentage = 15 # plus 15% gas price
+# if deposit value is larger than this value then need more verify strategy
+BigValueThreshold = 5.0
+# disable deposit function if this flag is true
+DisableSwap = false
+
+# dest token config
+[DestToken]
+ID = "anyBLOCK"
+Name = "BlockNet coin"
+Symbol = "anyBLOCK"
+Decimals = 8
+Description = "cross chain bridge BLOCK with anyBLOCK"
+# mapping erc20 token address
+ContractAddress = "0xe1b02a6255ac84485cc5df2c457acedcb59fd536"
+# mapping erc20 token creator
+DcrmAddress = "0xbF0A46d3700E23a98F38079cE217742c92Bb66bC"
+# dcrm address public key
+DcrmPubkey = "045c8648793e4867af465691685000ae841dccab0b011283139d2eae454b569d5789f01632e13a75a5aad8480140e895dd671cae3639f935750bea7ae4b5a2512e"
+# maximum withdraw value
+MaximumSwap = 100.0
+# minimum withdraw value
+MinimumSwap = 0.00001
+# calced withdraw fee = withdraw value * this rate (when in [min, max] withdraw fee range)
+SwapFeeRate = 0.001
+# maximum withdraw fee, if calced withdraw fee is larger than this fee, then use this value as withdraw fee
+MaximumSwapFee = 0.01
+# minimum withdraw fee, if calced withdraw fee is smaller than this fee, then use this value as withdraw fee
+MinimumSwapFee = 0.00001
+# plus this percentage of gas price to make tx more easier to be mined in dest chain
+# corresponding to send mapping token on dest chain (eg. mBTC) for depositing
+PlusGasPricePercentage = 1 # plus 1% gas price
+# if withdraw value is larger than this value then need more verify strategy
+BigValueThreshold = 50.0
+# disable withdraw function if this flag is true
+DisableSwap = false

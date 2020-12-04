@@ -66,7 +66,7 @@ func findUtxosAndAggregate(addr string) {
 		aggAddrs = append(aggAddrs, addr)
 		aggUtxos = append(aggUtxos, utxo)
 
-		if btc.ShouldAggregate(len(aggUtxos), aggSumVal) {
+		if btc.BridgeInstance.ShouldAggregate(len(aggUtxos), aggSumVal) {
 			aggregate()
 		}
 	}

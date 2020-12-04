@@ -12,7 +12,7 @@ var b *Bridge
 func init() {
 	b = NewCrossChainBridge(true)
 	b.ChainConfig = &tokens.ChainConfig{
-		BlockChain: "Bitcoin",
+		BlockChain: "Litecoin",
 		NetID:      netMainnet,
 	}
 	b.GatewayConfig = &tokens.GatewayConfig{

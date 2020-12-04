@@ -1,4 +1,4 @@
-package btc
+package block
 
 import (
 	"encoding/hex"

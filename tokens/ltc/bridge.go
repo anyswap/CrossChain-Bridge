@@ -21,7 +21,7 @@ var PairID = "ltc"
 
 // Bridge ltc bridge
 type Bridge struct {
-	*btc.Bridge
+	*tokens.CrossChainBridgeBase
 }
 
 var instance *Bridge
@@ -32,7 +32,7 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 		log.Fatalf("ltc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
 	btc.PairID = PairID
-	instance = &Bridge{btc.NewCrossChainBridge(isSrc)}
+	instance = &Bridge{tokens.NewCrossChainBridgeBase(isSrc)}
 	btc.BridgeInstance = instance
 	return instance
 }

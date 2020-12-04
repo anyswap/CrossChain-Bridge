@@ -1,4 +1,4 @@
-package btc
+package block
 
 import (
 	"bytes"
@@ -230,7 +230,6 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	}
 	jsondata, _ := json.Marshal(args)
 	msgContext := []string{string(jsondata)}
-	log.Info("=========="+b.ChainConfig.BlockChain+" DcrmSignTransaction start"+" ==========", "msgContext", msgContext)
 	rpcAddr, keyID, err := dcrm.DoSign(cfgFromPublicKey, msgHash, msgContext)
 	if err != nil {
 		return nil, err
