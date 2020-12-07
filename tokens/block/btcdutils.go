@@ -245,10 +245,8 @@ func (b *Bridge) SignWithECDSA(privKey *ecdsa.PrivateKey, msgHash []byte) (rsv s
 
 // NewTxIn new txin
 func (b *Bridge) NewTxIn(txid string, vout uint32, pkScript []byte) (*wire.TxIn, error) {
-	fmt.Println(txid)
 	txHash, err := chainhash.NewHashFromStr(txid)
 	if err != nil {
-		fmt.Printf("NewTxIn: %v\n\n", err.Error())
 		return nil, err
 	}
 	prevOutPoint := wire.NewOutPoint(txHash, vout)

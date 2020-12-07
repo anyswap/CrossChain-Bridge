@@ -1,8 +1,6 @@
 package ltc
 
 import (
-	"fmt"
-
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -17,7 +15,6 @@ func (b *Bridge) VerifyP2shTransaction(pairID, txHash, bindAddress string, allow
 }
 
 func (b *Bridge) verifyP2shSwapinTx(pairID, txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	fmt.Println("verifyP2shSwapinTx")
 	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
 		return nil, tokens.ErrUnknownPairID

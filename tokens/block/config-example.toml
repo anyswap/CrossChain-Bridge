@@ -31,7 +31,7 @@ ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 # minimum relay fee of tx (much greater than BTC!!!)
 MinRelayFee = 3000
 # relay fee per kilobytes
-MinRelayFeePerKb = 2000
+MinRelayFeePerKb = 10000
 # maximum relay fee per kilobytes
 MaxRelayFeePerKb = 500000
 # plus percentage of estimate fee to speed tx packing
