@@ -13,6 +13,8 @@ import (
 
 const (
 	netMainnet = "mainnet"
+	netKotti   = "kotti"
+	netMordor  = "mordor"
 )
 
 // Bridge etc bridge inherit from eth bridge
@@ -57,20 +59,28 @@ func (b *Bridge) VerifyChainID() {
 		time.Sleep(3 * time.Second)
 	}
 
-	/*panicMismatchChainID := func() {
+	panicMismatchChainID := func() {
 		log.Fatalf("gateway chainID %v is not %v", chainID, b.ChainConfig.NetID)
-	}*/
+	}
 
-	chainID = big.NewInt(61) // chain id
-	/*switch chainID {
+	switch networkID {
 	case netMainnet:
-		if chainID.Uint64() != 61 {
+		if chainID.Uint64() != 1 {
 			panicMismatchChainID()
 		}
-	case netCustom:
+		chainID = big.NewInt(61)
+	case netKotti:
+		if chainID.Uint64() != 6 {
+			panicMismatchChainID()
+		}
+	case netMordor:
+		if chainID.Uint64() != 7 {
+			panicMismatchChainID()
+		}
+		chainID = big.NewInt(63)
 	default:
 		log.Fatalf("unsupported etc network %v", networkID)
-	}*/
+	}
 
 	b.Signer = types.MakeSigner("EIP155", chainID)
 
