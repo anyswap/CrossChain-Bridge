@@ -26,10 +26,10 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return ltc.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "BLOCK"):
 		return block.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "ETHCLASSIC"):
+		return etc.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "ETHEREUM"):
 		return eth.NewCrossChainBridge(isSrc)
-	case strings.HasPrefix(blockChainIden, "ETHEREUMCLASSIC"):
-		return etc.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
 	default:
