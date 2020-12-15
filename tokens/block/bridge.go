@@ -7,7 +7,6 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 // Bridge block bridge inherit from btc bridge
@@ -20,7 +19,10 @@ var PairID = "block"
 
 // NewCrossChainBridge new fsn bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	btc.PairID = PairID
+	if !isSrc {
+		log.Fatalf("block::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
+	}
+	tokens.BtcLikePairID = PairID
 	instance := &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
 	return instance
 }

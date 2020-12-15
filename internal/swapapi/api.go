@@ -9,7 +9,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 	"github.com/btcsuite/btcd/txscript"
 	rpcjson "github.com/gorilla/rpc/v2/json2"
 )
@@ -291,7 +290,7 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 		return nil, tokens.ErrP2shNotSupport
 	}
 	txidstr := *txid
-	pairID := btc.PairID
+	pairID := tokens.BtcLikePairID
 	if swap, _ := mongodb.FindSwapin(txidstr, pairID, *bindAddr); swap != nil {
 		return nil, mongodb.ErrItemIsDup
 	}

@@ -171,7 +171,7 @@ func (scanner *btcSwapScanner) initBridge() {
 		Confirmations: &scanner.stableHeight,
 	}
 	pairConfig := &tokens.TokenPairConfig{
-		PairID: btc.PairID,
+		PairID: tokens.BtcLikePairID,
 		SrcToken: &tokens.TokenConfig{
 			ID:             "BTC",
 			Name:           "BTC",
@@ -181,7 +181,7 @@ func (scanner *btcSwapScanner) initBridge() {
 		},
 	}
 	pairsConfig := make(map[string]*tokens.TokenPairConfig)
-	pairsConfig[btc.PairID] = pairConfig
+	pairsConfig[tokens.BtcLikePairID] = pairConfig
 	tokens.SetTokenPairsConfig(pairsConfig, false)
 	tokens.SrcBridge = scanner.bridge
 	tokens.DstBridge = eth.NewCrossChainBridge(false)
@@ -345,10 +345,10 @@ func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 		if memoErr != nil {
 			return
 		}
-		log.Info("post swapin register", "txid", txid, "pairid", btc.PairID, "bind", bindAddress)
+		log.Info("post swapin register", "txid", txid, "pairid", tokens.BtcLikePairID, "bind", bindAddress)
 		args := map[string]interface{}{
 			"txid":   txid,
-			"pairid": btc.PairID,
+			"pairid": tokens.BtcLikePairID,
 		}
 		var result interface{}
 		for i := 0; i < scanner.rpcRetryCount; i++ {

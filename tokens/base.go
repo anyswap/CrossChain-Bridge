@@ -24,6 +24,7 @@ var (
 
 	IsDcrmDisabled     bool
 	IsSrcBridgeBtcLike bool
+	BtcLikePairID      string
 )
 
 // CrossChainBridgeBase base bridge

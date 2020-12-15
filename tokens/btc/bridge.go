@@ -29,6 +29,7 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	if !isSrc {
 		log.Fatalf("btc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
+	tokens.BtcLikePairID = PairID
 	instance := &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
 	instance.SetInherit(instance)
 	return instance
