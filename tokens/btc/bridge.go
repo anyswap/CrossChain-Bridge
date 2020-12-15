@@ -30,7 +30,6 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 		log.Fatalf("btc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
 	instance := &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
-	BridgeInstance = instance
 	instance.SetInherit(instance)
 	return instance
 }

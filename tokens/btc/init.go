@@ -21,10 +21,6 @@ var (
 
 // Init init btc extra
 func Init(btcExtra *tokens.BtcExtraConfig) {
-	if BridgeInstance == nil {
-		return
-	}
-
 	if btcExtra == nil {
 		log.Fatal("Btc bridge must config 'BtcExtra'")
 	}
@@ -45,7 +41,7 @@ func initFromPublicKey() {
 	}
 
 	cfgFromPublicKey = pairCfg.SrcToken.DcrmPubkey
-	_, err := BridgeInstance.GetCompressedPublicKey(cfgFromPublicKey, true)
+	_, err := tokens.SrcBridge.(tokens.CompressedPublicKeyGetter).GetCompressedPublicKey(cfgFromPublicKey, true)
 	if err != nil {
 		log.Fatal("wrong btc dcrm public key", "err", err)
 	}
@@ -100,7 +96,7 @@ func initAggregate(btcExtra *tokens.BtcExtraConfig) {
 	}
 
 	cfgUtxoAggregateToAddress = btcExtra.UtxoAggregateToAddress
-	if !BridgeInstance.IsValidAddress(cfgUtxoAggregateToAddress) {
+	if !tokens.SrcBridge.IsValidAddress(cfgUtxoAggregateToAddress) {
 		log.Fatal("wrong utxo aggregate to address", "toAddress", cfgUtxoAggregateToAddress)
 	}
 

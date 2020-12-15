@@ -7,7 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
 var (
@@ -133,7 +133,7 @@ func (b *Bridge) VerifyMbtcContractAddress(contract string) (err error) {
 
 // InitExtCodeParts init extended code parts
 func InitExtCodeParts() {
-	InitExtCodePartsWithFlag(isMbtcSwapout())
+	InitExtCodePartsWithFlag(tokens.IsSrcBridgeBtcLike)
 }
 
 // InitExtCodePartsWithFlag init extended code parts with flag
@@ -145,10 +145,6 @@ func InitExtCodePartsWithFlag(isMbtc bool) {
 		ExtCodeParts = mETHExtCodeParts
 	}
 	log.Info("init extented code parts", "isMBTC", isMbtc)
-}
-
-func isMbtcSwapout() bool {
-	return btc.BridgeInstance != nil
 }
 
 func getSwapinFuncHash() []byte {

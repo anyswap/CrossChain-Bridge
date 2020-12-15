@@ -21,10 +21,13 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 	blockChainIden := strings.ToUpper(id)
 	switch {
 	case strings.HasPrefix(blockChainIden, "BITCOIN"):
+		tokens.IsSrcBridgeBtcLike = true
 		return btc.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "LITECOIN"):
+		tokens.IsSrcBridgeBtcLike = true
 		return ltc.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "BLOCK"):
+		tokens.IsSrcBridgeBtcLike = true
 		return block.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "ETHCLASSIC"):
 		return etc.NewCrossChainBridge(isSrc)
@@ -66,14 +69,16 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.IsDcrmDisabled = cfg.Dcrm.Disable
 	tokens.LoadTokenPairsConfig(true)
 
-	BlockChain := strings.ToUpper(srcChain.BlockChain)
-	switch BlockChain {
-	case "BITCOIN":
-		btc.Init(cfg.BtcExtra)
-	case "LITECOIN":
-		ltc.Init(cfg.BtcExtra)
-	case "BLOCK":
-		block.Init(cfg.BtcExtra)
+	if tokens.IsSrcBridgeBtcLike {
+		BlockChain := strings.ToUpper(srcChain.BlockChain)
+		switch BlockChain {
+		case "BITCOIN":
+			btc.Init(cfg.BtcExtra)
+		case "LITECOIN":
+			ltc.Init(cfg.BtcExtra)
+		case "BLOCK":
+			block.Init(cfg.BtcExtra)
+		}
 	}
 
 	dcrm.Init(cfg.Dcrm, isServer)

@@ -22,8 +22,6 @@ var PairID = "block"
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	btc.PairID = PairID
 	instance := &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
-	BridgeInstance = instance
-	btc.BridgeInstance = BridgeInstance
 	return instance
 }
 

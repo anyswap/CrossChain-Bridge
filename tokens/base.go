@@ -22,7 +22,8 @@ var (
 	SrcLatestBlockHeight uint64
 	DstLatestBlockHeight uint64
 
-	IsDcrmDisabled bool
+	IsDcrmDisabled     bool
+	IsSrcBridgeBtcLike bool
 )
 
 // CrossChainBridgeBase base bridge
