@@ -65,7 +65,9 @@ func acceptSign() {
 				errInitiatorMismatch,
 				errWrongMsgContext,
 				tokens.ErrUnknownPairID,
-				tokens.ErrNoBtcBridge,
+				tokens.ErrP2shNotSupport,
+				tokens.ErrBip32NotSupport,
+				tokens.ErrAggregateNotSupport,
 				tokens.ErrTxNotStable,
 				tokens.ErrTxNotFound:
 				logWorkerTrace("acceptSwap", "ignore sign", "keyID", keyID, "err", err)

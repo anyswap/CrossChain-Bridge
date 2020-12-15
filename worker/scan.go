@@ -2,21 +2,24 @@ package worker
 
 import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 // StartScanJob scan job
 func StartScanJob(isServer bool) {
 	if tokens.SrcBridge.GetChainConfig().EnableScan {
-		go tokens.SrcBridge.StartChainTransactionScanJob()
-		go tokens.SrcBridge.StartPoolTransactionScanJob()
-		if btc.BridgeInstance != nil {
-			go btc.BridgeInstance.StartSwapHistoryScanJob()
+		if scanChainSupport, ok := tokens.SrcBridge.(tokens.ScanChainSupport); ok {
+			go scanChainSupport.StartChainTransactionScanJob()
+			go scanChainSupport.StartPoolTransactionScanJob()
+		}
+		if scanHistorySupport, ok := tokens.SrcBridge.(tokens.ScanHistorySupport); ok {
+			go scanHistorySupport.StartSwapHistoryScanJob()
 		}
 	}
 
 	if tokens.DstBridge.GetChainConfig().EnableScan {
-		go tokens.DstBridge.StartChainTransactionScanJob()
-		go tokens.DstBridge.StartPoolTransactionScanJob()
+		if scanChainSupport, ok := tokens.DstBridge.(tokens.ScanChainSupport); ok {
+			go scanChainSupport.StartChainTransactionScanJob()
+			go scanChainSupport.StartPoolTransactionScanJob()
+		}
 	}
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 // MatchTx struct
@@ -129,10 +128,11 @@ func markSwapResultFailed(txid, pairID, bind string, isSwapin bool) (err error) 
 func verifySwapTransaction(bridge tokens.CrossChainBridge, pairID, txid, bind string, swapTxType tokens.SwapTxType) (swapInfo *tokens.TxSwapInfo, err error) {
 	switch swapTxType {
 	case tokens.P2shSwapinTx:
-		if btc.BridgeInstance == nil {
-			return nil, tokens.ErrNoBtcBridge
+		p2shSupport, ok := bridge.(tokens.P2shSupport)
+		if !ok {
+			return nil, tokens.ErrP2shNotSupport
 		}
-		swapInfo, err = btc.BridgeInstance.VerifyP2shTransaction(pairID, txid, bind, false)
+		swapInfo, err = p2shSupport.VerifyP2shTransaction(pairID, txid, bind, false)
 	default:
 		swapInfo, err = bridge.VerifyTransaction(pairID, txid, false)
 	}

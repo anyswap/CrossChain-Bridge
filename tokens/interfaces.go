@@ -15,11 +15,13 @@ var (
 	ErrWrongCountOfMsgHashes         = errors.New("wrong count of msg hashed")
 	ErrWrongRawTx                    = errors.New("wrong raw tx")
 	ErrWrongExtraArgs                = errors.New("wrong extra args")
-	ErrNoBtcBridge                   = errors.New("no btc bridge exist")
 	ErrWrongSwapinTxType             = errors.New("wrong swapin tx type")
 	ErrBuildSwapTxInWrongEndpoint    = errors.New("build swap in/out tx in wrong endpoint")
 	ErrTxBeforeInitialHeight         = errors.New("transaction before initial block height")
 	ErrAddressIsInBlacklist          = errors.New("address is in black list")
+	ErrP2shNotSupport                = errors.New("p2sh not support")
+	ErrBip32NotSupport               = errors.New("bip32 not support")
+	ErrAggregateNotSupport           = errors.New("aggregate not support")
 
 	ErrTodo = errors.New("developing: TODO")
 
@@ -81,10 +83,6 @@ type CrossChainBridge interface {
 	// address validating
 	IsValidAddress(address string) bool
 
-	// Bip32 suppport
-	GetBip32InputCode(address string) (string, error)
-	PublicKeyToAddress(hexPubkey string) (string, error)
-
 	// query and verify transaction
 	GetTransaction(txHash string) (interface{}, error)
 	GetTransactionStatus(txHash string) *TxStatus
@@ -100,19 +98,40 @@ type CrossChainBridge interface {
 	// query latest block number
 	GetLatestBlockNumber() (uint64, error)
 	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
+}
 
-	// scan transaction job
+// ScanChainSupport interface
+type ScanChainSupport interface {
 	StartChainTransactionScanJob()
 	StartPoolTransactionScanJob()
+}
 
-	// query coin or token balance
-	GetBalance(accountAddress string) (*big.Int, error)
-	GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error)
-	GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error)
+// ScanHistorySupport interface
+type ScanHistorySupport interface {
+	StartSwapHistoryScanJob()
+}
 
-	// aggregate job
+// AggregateSupport interface
+type AggregateSupport interface {
 	StartAggregateJob()
 	VerifyAggregateMsgHash(msgHash []string, args *BuildTxArgs) error
+}
+
+// P2shSupport interface
+type P2shSupport interface {
+	GetP2shAddress(bindAddr string) (p2shAddress string, redeemScript []byte, err error)
+	VerifyP2shTransaction(pairID, txHash, bindAddress string, allowUnstable bool) (*TxSwapInfo, error)
+}
+
+// Bip32Support interface
+type Bip32Support interface {
+	GetBip32InputCode(address string) (string, error)
+	PublicKeyToAddress(hexPubkey string) (string, error)
+}
+
+// CompressedPublicKeyGetter interface
+type CompressedPublicKeyGetter interface {
+	GetCompressedPublicKey(fromPublicKey string, needVerify bool) (cPkData []byte, err error)
 }
 
 // NonceSetter interface (for eth-like)
@@ -121,4 +140,11 @@ type NonceSetter interface {
 	SetNonce(pairID string, value uint64)
 	AdjustNonce(pairID string, value uint64) (nonce uint64)
 	IncreaseNonce(pairID string, value uint64)
+}
+
+// BalanceGetter interface
+type BalanceGetter interface {
+	GetBalance(accountAddress string) (*big.Int, error)
+	GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error)
+	GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error)
 }

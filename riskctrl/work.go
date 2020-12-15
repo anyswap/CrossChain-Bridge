@@ -238,11 +238,12 @@ func getDepositBalance() *big.Int {
 		depositBalance *big.Int
 		err            error
 	)
+	srcBalanceGetter, _ := srcBridge.(tokens.BalanceGetter)
 	for {
 		if srcTokenAddress != "" {
-			depositBalance, err = srcBridge.GetTokenBalance(tokenType, srcTokenAddress, depositAddress)
+			depositBalance, err = srcBalanceGetter.GetTokenBalance(tokenType, srcTokenAddress, depositAddress)
 		} else {
-			depositBalance, err = srcBridge.GetBalance(depositAddress)
+			depositBalance, err = srcBalanceGetter.GetBalance(depositAddress)
 		}
 		if err == nil {
 			log.Info("get deposit address balance success", "token", srcTokenAddress, "depositAddress", depositAddress, "depositBalance", depositBalance)
@@ -259,11 +260,12 @@ func getWithdrawBalance() *big.Int {
 		withdrawBalance *big.Int
 		err             error
 	)
+	srcBalanceGetter, _ := srcBridge.(tokens.BalanceGetter)
 	for {
 		if srcTokenAddress != "" {
-			withdrawBalance, err = srcBridge.GetTokenBalance(tokenType, srcTokenAddress, withdrawAddress)
+			withdrawBalance, err = srcBalanceGetter.GetTokenBalance(tokenType, srcTokenAddress, withdrawAddress)
 		} else {
-			withdrawBalance, err = srcBridge.GetBalance(withdrawAddress)
+			withdrawBalance, err = srcBalanceGetter.GetBalance(withdrawAddress)
 		}
 		if err == nil {
 			log.Info("get withdraw address balance success", "token", srcTokenAddress, "withdrawAddress", withdrawAddress, "withdrawBalance", withdrawBalance)
@@ -280,8 +282,9 @@ func getTotalSupply() *big.Int {
 		totalSupply *big.Int
 		err         error
 	)
+	dstBalanceGetter, _ := dstBridge.(tokens.BalanceGetter)
 	for {
-		totalSupply, err = dstBridge.GetTokenSupply(tokenType, dstTokenAddress)
+		totalSupply, err = dstBalanceGetter.GetTokenSupply(tokenType, dstTokenAddress)
 		if err == nil {
 			log.Info("get total supply success", "token", dstTokenAddress, "totalSupply", totalSupply)
 			break

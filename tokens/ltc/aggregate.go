@@ -4,25 +4,25 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
 const (
 	redeemAggregateP2SHInputSize = 198
-	//utxoPageLimit                = 100
-	//aggInterval                  = 10 * time.Minute
+	utxoPageLimit                = 100
+	aggInterval                  = 10 * time.Minute
 )
 
-/*var (
+var (
 	aggSumVal uint64
 	aggAddrs  []string
 	aggUtxos  []*electrs.ElectUtxo
 	aggOffset int
-)*/
+)
 
 // StartAggregateJob aggregate job
-/*
 func (b *Bridge) StartAggregateJob() {
 	for loop := 1; ; loop++ {
 		log.Info("[aggregate] start aggregate job", "loop", loop)
@@ -31,9 +31,7 @@ func (b *Bridge) StartAggregateJob() {
 		time.Sleep(aggInterval)
 	}
 }
-*/
 
-/*
 func (b *Bridge) doAggregateJob() {
 	aggOffset = 0
 	for {
@@ -52,9 +50,7 @@ func (b *Bridge) doAggregateJob() {
 		aggOffset += utxoPageLimit
 	}
 }
-*/
 
-/*
 func (b *Bridge) findUtxosAndAggregate(addr string) {
 	findUtxos, _ := b.FindUtxos(addr)
 	for _, utxo := range findUtxos {
@@ -75,9 +71,7 @@ func (b *Bridge) findUtxosAndAggregate(addr string) {
 		}
 	}
 }
-*/
 
-/*
 func isUtxoExist(utxo *electrs.ElectUtxo) bool {
 	for _, item := range aggUtxos {
 		if *item.Txid == *utxo.Txid && *item.Vout == *utxo.Vout {
@@ -86,9 +80,7 @@ func isUtxoExist(utxo *electrs.ElectUtxo) bool {
 	}
 	return false
 }
-*/
 
-/*
 func (b *Bridge) aggregate() {
 	txHash, err := b.AggregateUtxos(aggAddrs, aggUtxos)
 	if err != nil {
@@ -100,10 +92,8 @@ func (b *Bridge) aggregate() {
 	aggAddrs = nil
 	aggUtxos = nil
 }
-*/
 
-// ShouldAggregate should aggregate
-func (b *Bridge) ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
+func shouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
 	if aggUtxoCount >= cfgUtxoAggregateMinCount {
 		return true
 	}
@@ -154,7 +144,7 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 	} else {
 		maxRetryDcrmSignCount := 5
 		for i := 0; i < maxRetryDcrmSignCount; i++ {
-			signedTx, txHash, err = b.DcrmSignTransaction(authoredTx, args.GetExtraArgs())
+			signedTx, txHash, err = b.DcrmSignTransaction(authoredTx, args)
 			if err == nil {
 				break
 			}

@@ -228,7 +228,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	if extra == nil {
 		return nil, tokens.ErrWrongExtraArgs
 	}
-	jsondata, _ := json.Marshal(args)
+	jsondata, _ := json.Marshal(args.GetExtraArgs())
 	msgContext := []string{string(jsondata)}
 	rpcAddr, keyID, err := dcrm.DoSign(cfgFromPublicKey, msgHash, msgContext)
 	if err != nil {

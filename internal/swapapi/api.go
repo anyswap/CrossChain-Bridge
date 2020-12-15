@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	errNotBtcBridge      = newRPCError(-32096, "bridge is not btc")
 	errTokenPairNotExist = newRPCError(-32095, "token pair not exist")
 	errSwapCannotRetry   = newRPCError(-32094, "swap can not retry")
 	errForbidOperation   = newRPCError(-32093, "forbid operation")
@@ -255,10 +254,11 @@ func GetP2shAddressInfo(p2shAddress string) (*tokens.P2shAddressInfo, error) {
 }
 
 func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddressInfo, error) {
-	if btc.BridgeInstance == nil {
-		return nil, errNotBtcBridge
+	p2shSupport, ok := tokens.SrcBridge.(tokens.P2shSupport)
+	if !ok {
+		return nil, tokens.ErrP2shNotSupport
 	}
-	p2shAddr, redeemScript, err := btc.BridgeInstance.GetP2shAddress(bindAddress)
+	p2shAddr, redeemScript, err := p2shSupport.GetP2shAddress(bindAddress)
 	if err != nil {
 		return nil, newRPCInternalError(err)
 	}
@@ -286,15 +286,16 @@ func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddres
 // P2shSwapin api
 func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	log.Debug("[api] receive P2shSwapin", "txid", *txid, "bindAddress", *bindAddr)
-	if btc.BridgeInstance == nil {
-		return nil, errNotBtcBridge
+	p2shSupport, ok := tokens.SrcBridge.(tokens.P2shSupport)
+	if !ok {
+		return nil, tokens.ErrP2shNotSupport
 	}
 	txidstr := *txid
 	pairID := btc.PairID
 	if swap, _ := mongodb.FindSwapin(txidstr, pairID, *bindAddr); swap != nil {
 		return nil, mongodb.ErrItemIsDup
 	}
-	swapInfo, err := btc.BridgeInstance.VerifyP2shTransaction(pairID, txidstr, *bindAddr, true)
+	swapInfo, err := p2shSupport.VerifyP2shTransaction(pairID, txidstr, *bindAddr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32099, "verify p2sh swapin failed! "+err.Error())
 	}
@@ -327,13 +328,13 @@ func GetLatestScanInfo(isSrc bool) (*LatestScanInfo, error) {
 
 // RegisterAddress register address
 func RegisterAddress(address, pairID string) (result *RegisteredAddress, err error) {
+	if _, ok := tokens.SrcBridge.(tokens.P2shSupport); ok {
+		// use RegisterP2shAddress instead
+		return nil, errForbidOperation
+	}
 	pairCfg := tokens.GetTokenPairConfig(pairID)
 	if pairCfg == nil {
 		return nil, errTokenPairNotExist
-	}
-	if btc.BridgeInstance != nil {
-		// use RegisterP2shAddress instead
-		return nil, errForbidOperation
 	}
 
 	var rootPubkey string
