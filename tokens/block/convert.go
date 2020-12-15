@@ -25,7 +25,7 @@ func ConvertTx(tx *btcjson.TxRawResult) *electrs.ElectTx {
 		Status:   TxStatus(tx),
 	}
 	*etx.Version = uint32(tx.Version)
-	*etx.Locktime = uint32(tx.LockTime)
+	*etx.Locktime = tx.LockTime
 	*etx.Size = uint32(tx.Size)
 	*etx.Weight = uint32(tx.Weight)
 	for _, vin := range tx.Vin {
@@ -116,6 +116,7 @@ func ConvertBlock(blk *btcjson.GetBlockVerboseResult) *electrs.ElectBlock {
 }
 
 // ConvertVin converts btcjson vin to elect vin
+// nolint:gocritic // pass by value
 func ConvertVin(vin btcjson.Vin) *electrs.ElectTxin {
 	evin := &electrs.ElectTxin{
 		Txid:         &vin.Txid,
@@ -134,6 +135,7 @@ func ConvertVin(vin btcjson.Vin) *electrs.ElectTxin {
 }
 
 // ConvertVout converts btcjson vout to elect vout
+// nolint:gocritic // pass by value
 func ConvertVout(vout btcjson.Vout) *electrs.ElectTxOut {
 	evout := &electrs.ElectTxOut{
 		Scriptpubkey:        &vout.ScriptPubKey.Hex,

@@ -8,18 +8,6 @@ import (
 	"strings"
 	"time"
 
-	/*
-		"github.com/blocknetdx/btcd/btcec"
-		"github.com/blocknetdx/btcd/chaincfg"
-		"github.com/blocknetdx/btcd/chaincfg/chainhash"
-		"github.com/blocknetdx/btcd/txscript"
-		"github.com/blocknetdx/btcd/wire"
-
-		btcsuitechaincfg "github.com/btcsuite/btcd/chaincfg"
-		btcsuitehash "github.com/btcsuite/btcd/chaincfg/chainhash"
-		btcsuitewire "github.com/btcsuite/btcd/wire"
-	*/
-
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -27,19 +15,6 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 )
-
-/*
-func convertToBTCSuite(origin, result interface{}) {
-	bz, err := json.Marshal(origin)
-	if err != nil {
-		panic("invalid origin")
-	}
-	err = json.Unmarshal(bz, &result)
-	if err != nil {
-		panic("error unmarshaling to btcsuite")
-	}
-}
-*/
 
 var bigOne = big.NewInt(1)
 
@@ -135,8 +110,6 @@ func (b *Bridge) GetChainParams() *chaincfg.Params {
 	default:
 		chainParams = &MainNetParams
 	}
-	//result := &btcsuitechaincfg.Params{}
-	//convertToBTCSuite(chainParams, result)
 	return chainParams
 }
 
@@ -251,16 +224,12 @@ func (b *Bridge) NewTxIn(txid string, vout uint32, pkScript []byte) (*wire.TxIn,
 	}
 	prevOutPoint := wire.NewOutPoint(txHash, vout)
 	txin := wire.NewTxIn(prevOutPoint, pkScript, nil)
-	//result := &btcsuitewire.TxIn{}
-	//convertToBTCSuite(txin, result)
 	return txin, nil
 }
 
 // NewTxOut new txout
 func (b *Bridge) NewTxOut(amount int64, pkScript []byte) *wire.TxOut {
 	txout := wire.NewTxOut(amount, pkScript)
-	//result := &btcsuitewire.TxOut{}
-	//convertToBTCSuite(txout, result)
 	return txout
 }
 

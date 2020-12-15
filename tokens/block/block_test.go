@@ -15,6 +15,7 @@ import (
 
 var b *Bridge
 
+// nolint:gochecknoinits // allow in testing
 func init() {
 	b = NewCrossChainBridge(true)
 
@@ -63,7 +64,7 @@ func TestNewAddressPubKeyHash(t *testing.T) {
 	realaddr := "BXcz95EZfLBREpQrMDsKFnMJSaUYNRyhHU"
 
 	if addr.String() != realaddr {
-		err := fmt.Errorf("Block address error, got %s, should be: %s", addr.String(), realaddr)
+		err := fmt.Errorf("block address error, got %s, should be: %s", addr.String(), realaddr)
 		checkError(t, err)
 	}
 }

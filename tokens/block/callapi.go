@@ -15,8 +15,6 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 )
 
-//var utxoTimeout = 100
-
 // CoreClient extends btcd rpcclient
 type CoreClient struct {
 	*rpcclient.Client
@@ -163,7 +161,7 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 
 	currentHeight, err := b.GetLatestBlockNumber()
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	errs := make([]error, 0)
@@ -174,11 +172,9 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 
 		reqdata := fmt.Sprintf(`{ "version": 2.0, "id": "lalala", "method": "getutxos", "params": [ "BLOCK", "[\"%s\"]" ] }`, addr)
 		err0 := callCloudchains(url, reqdata, &res)
-		//err0 := primaryclient.RPCPostWithTimeoutAndID(&res, utxoTimeout, cli.NextID(), url, "getutxos", "BLOCK", `[\"BmCQZdXFUhGvDZkFNyy9fshkGnoPzNnTnY\"]`)
 
 		if err0 == nil {
 			for _, cutxo := range res.Utxos {
-
 				value := uint64(cutxo.Value * 1e8)
 
 				status := &electrs.ElectTxStatus{
@@ -212,12 +208,12 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 				utxos = append(utxos, utxo)
 			}
 			sort.Sort(electrs.SortableElectUtxoSlice(utxos))
-			return
+			return utxos, err
 		}
 		errs = append(errs, err0)
 	}
 	err = fmt.Errorf("%+v", errs)
-	return
+	return utxos, err
 }
 
 // callCloudchains
@@ -233,6 +229,7 @@ func callCloudchains(url, reqdata string, result interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	bodyText, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
@@ -365,8 +362,8 @@ func (b *Bridge) GetBlockTxids(blockHash string) (txids []string, err error) {
 	cli := b.GetClient()
 	errs := make([]error, 0)
 	for _, ccli := range cli.CClients {
-		hash, err := chainhash.NewHashFromStr(blockHash)
-		if err != nil {
+		hash, errf := chainhash.NewHashFromStr(blockHash)
+		if errf != nil {
 			continue
 		}
 		block, err0 := ccli.GetBlockVerbose(hash)
@@ -435,7 +432,6 @@ func (b *Bridge) GetBlockTransactions(blockHash string, startIndex uint32) (etxs
 
 // EstimateFeePerKb impl
 func (b *Bridge) EstimateFeePerKb(blocks int) (fee int64, err error) {
-	//EstimateFee
 	cli := b.GetClient()
 	errs := make([]error, 0)
 	for _, ccli := range cli.CClients {

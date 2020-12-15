@@ -35,6 +35,7 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 }
 
 // VerifyChainConfig verify chain config
+// nolint:goconst // use string literal
 func (b *Bridge) VerifyChainConfig() {
 	chainCfg := b.ChainConfig
 	networkID := strings.ToLower(chainCfg.NetID)
