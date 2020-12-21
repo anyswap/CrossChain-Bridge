@@ -157,7 +157,7 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 	}
 	if extra.Gas == nil {
 		extra.Gas = new(uint64)
-		*extra.Gas = defGasLimit
+		*extra.Gas = b.getDefaultGasLimit(args.PairID)
 	}
 	return extra, nil
 }
@@ -182,6 +182,17 @@ func (b *Bridge) getErc20Balance(erc20Addr, account string) (balance *big.Int, e
 		time.Sleep(retryRPCInterval)
 	}
 	return nil, err
+}
+
+func (b *Bridge) getDefaultGasLimit(pairID string) (gasLimit uint64) {
+	tokenCfg := b.GetTokenConfig(pairID)
+	if tokenCfg != nil {
+		gasLimit = tokenCfg.DefaultGasLimit
+	}
+	if gasLimit == 0 {
+		gasLimit = defGasLimit
+	}
+	return gasLimit
 }
 
 func (b *Bridge) getGasPrice() (price *big.Int, err error) {

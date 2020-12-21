@@ -107,8 +107,12 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	switch args.Identifier {
 	case params.GetIdentifier():
 	case tokens.AggregateIdentifier:
+		aggSupport, ok := tokens.SrcBridge.(tokens.AggregateSupport)
+		if !ok {
+			return tokens.ErrAggregateNotSupport
+		}
 		logWorker("acceptSwap", "verifySignInfo of aggregate", "msgHash", msgHash, "msgContext", msgContext)
-		return tokens.SrcBridge.VerifyAggregateMsgHash(msgHash, &args)
+		return aggSupport.VerifyAggregateMsgHash(msgHash, &args)
 	default:
 		return errIdentifierMismatch
 	}

@@ -182,6 +182,11 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 		if err != nil {
 			return err
 		}
+		if tokenPair.UseBip32 {
+			if _, ok := SrcBridge.(Bip32Support); !ok {
+				return ErrBip32NotSupport
+			}
+		}
 	}
 	if nonContractSrcCount > 1 {
 		return fmt.Errorf("only support one non-contract token swapin")

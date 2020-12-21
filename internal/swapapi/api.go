@@ -359,7 +359,11 @@ func RegisterAddress(address, pairID string) (result *RegisteredAddress, err err
 }
 
 func registerBip32Address(rootPubkey, address string) error {
-	inputCode, err := tokens.SrcBridge.GetBip32InputCode(address)
+	bip32Bridge, ok := tokens.SrcBridge.(tokens.Bip32Support)
+	if !ok {
+		return tokens.ErrBip32NotSupport
+	}
+	inputCode, err := bip32Bridge.GetBip32InputCode(address)
 	if err != nil {
 		return err
 	}
@@ -367,7 +371,7 @@ func registerBip32Address(rootPubkey, address string) error {
 	if err != nil {
 		return err
 	}
-	childAddress, err := tokens.SrcBridge.PublicKeyToAddress(childPubkey)
+	childAddress, err := bip32Bridge.PublicKeyToAddress(childPubkey)
 	if err != nil {
 		return err
 	}

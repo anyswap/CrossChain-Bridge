@@ -39,5 +39,7 @@ func StartWork(isServer bool) {
 	go StartStableJob()
 	time.Sleep(interval)
 
-	go tokens.SrcBridge.StartAggregateJob()
+	if aggSupport, ok := tokens.SrcBridge.(tokens.AggregateSupport); ok {
+		go aggSupport.StartAggregateJob()
+	}
 }
