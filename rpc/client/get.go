@@ -23,12 +23,12 @@ func RPCGetRequest(result interface{}, url string, params, headers map[string]st
 	if err != nil {
 		return fmt.Errorf("GET request error: %v (url: %v, params: %v)", err, url, params)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("error response status: %v (url: %v)", resp.StatusCode, url)
 	}
 
-	defer resp.Body.Close()
 	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
 	if err != nil {
