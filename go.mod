@@ -26,6 +26,7 @@ require (
 	github.com/ltcsuite/ltcwallet/wallet/txrules v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.0.0
 	github.com/pborman/uuid v1.2.1
+	github.com/shawn-cx-li/ripple v0.0.0-20190815023741-d6663628e11e
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1
