@@ -216,6 +216,7 @@ func (args *BuildTxArgs) GetTxNonce() uint64 {
 type AllExtras struct {
 	BtcExtra *BtcExtraArgs `json:"btcExtra,omitempty"`
 	EthExtra *EthExtraArgs `json:"ethExtra,omitempty"`
+	XrpExtra *XrpExtraArgs `json:"xrpExtra,omitempty"`
 }
 
 // EthExtraArgs struct
@@ -223,6 +224,13 @@ type EthExtraArgs struct {
 	Gas      *uint64  `json:"gas,omitempty"`
 	GasPrice *big.Int `json:"gasPrice,omitempty"`
 	Nonce    *uint64  `json:"nonce,omitempty"`
+}
+
+// XrpExtraArgs struct
+type XrpExtraArgs struct {
+	FromPublic string  `json:fromPublic,omitempty`
+	Sequence   *uint32 `json:sequence,omitempty`
+	Fee        *int64  `json:fee,omitempty`
 }
 
 // BtcOutPoint struct

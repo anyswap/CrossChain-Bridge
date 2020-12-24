@@ -1,7 +1,10 @@
 package xrp
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"math/big"
+	"net/http"
 	"strings"
 	"time"
 
@@ -14,8 +17,7 @@ type Bridge struct {
 	*tokens.CrossChainBridgeBase
 }
 
-// PairID unique btc pair ID
-var PairID = "xrp"
+var pairID = "xrp"
 
 // NewCrossChainBridge new fsn bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
@@ -65,6 +67,11 @@ func (b *Bridge) InitLatestBlockNumber() {
 	}
 }
 
+var (
+	rpcRetryTimes    = 3
+	rpcRetryInterval = 1 * time.Second
+)
+
 // GetLatestBlockNumber gets latest block number
 func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
 	return 0, nil
@@ -113,4 +120,40 @@ func (b *Bridge) GetTokenBalance(tokenType, tokenAddress, accountAddress string)
 // GetTokenSupply not supported
 func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error) {
 	return nil, nil
+}
+
+// GetAccount returns account
+func (b *Bridge) GetAccount(address string) (acct Account, err error) {
+	for i := 0; i < rpcRetryTimes; i++ {
+		for _, apiAddress := range b.GetGatewayConfig().APIAddress {
+			acct, err = b.getAccount(address, apiAddress)
+			if err != nil {
+				continue
+			}
+			return
+		}
+		time.Sleep(rpcRetryInterval)
+	}
+	return
+}
+
+func (b *Bridge) getAccount(address string, apiAddress string) (Account, error) {
+	reader := strings.NewReader("{\"method\":\"account_info\",\"params\":[{\"account\":\"" + address + "\"}]}")
+	request, err := http.NewRequest("POST", apiAddress, reader)
+	if err != nil {
+		return Account{}, err
+	}
+	client := &http.Client{}
+	resp, err := client.Do(request)
+	if err != nil {
+		return Account{}, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	acctResp := new(AccountResp)
+	err = json.Unmarshal(body, acctResp)
+	if err != nil {
+		return Account{}, err
+	}
+	return acctResp.Result.Account_data, nil
 }
