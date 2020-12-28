@@ -1,27 +1,29 @@
 package xrp
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"math/big"
-	"net/http"
 	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/rubblelabs/ripple/data"
+	"github.com/rubblelabs/ripple/websockets"
 )
 
 // Bridge block bridge inherit from btc bridge
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
+	Remotes []*websockets.Remote
 }
 
 var pairID = "xrp"
 
-// NewCrossChainBridge new fsn bridge
+// NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	return nil
+	return &Bridge{
+		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
+	}
 }
 
 // SetChainAndGateway set chain and gateway config
@@ -29,6 +31,23 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
 	b.VerifyChainConfig()
 	b.InitLatestBlockNumber()
+	b.InitRemotes()
+}
+
+// InitRemotes set ripple remotes
+func (b *Bridge) InitRemotes() {
+	for _, r := range b.Remotes {
+		r.Close()
+	}
+	remotes := make([]*websockets.Remote, 0)
+	for _, apiAddress := range b.GetGatewayConfig().APIAddress {
+		remote, err := websockets.NewRemote(apiAddress)
+		if err != nil {
+			log.Warn("Cannot connect to ripple", "error", err)
+		}
+		remotes = append(remotes, remote)
+	}
+	b.Remotes = remotes
 }
 
 // VerifyChainConfig verify chain config
@@ -73,43 +92,131 @@ var (
 )
 
 // GetLatestBlockNumber gets latest block number
-func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
-	return 0, nil
-}
-
-// GetTransaction impl
-func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
-	return nil, nil
-}
-
-// GetTransactionStatus impl
-func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
-	return nil
+// For ripple, GetLatestBlockNumber returns current ledger version
+func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {
+	for i := 0; i < rpcRetryTimes; i++ {
+		for _, r := range b.Remotes {
+			resp, err1 := r.Ledger("validated", false)
+			if err1 != nil || resp == nil {
+				err = err1
+				continue
+			}
+			num = uint64(resp.Ledger.LedgerSequence)
+			return
+		}
+		time.Sleep(rpcRetryInterval)
+	}
+	return
 }
 
 //GetLatestBlockNumberOf gets latest block number from single api
+// For ripple, GetLatestBlockNumberOf returns current ledger version
 func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
-	return 0, nil
+	r, err := websockets.NewRemote(apiAddress)
+	if err != nil {
+		return 0, err
+	}
+	defer r.Close()
+	resp, err := r.Ledger("validated", false)
+	if err != nil || resp == nil {
+		return 0, err
+	}
+	return uint64(resp.Ledger.LedgerSequence), nil
+}
+
+// GetTransaction impl
+func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
+	txhash256, err := data.NewHash256(txHash)
+	if err != nil {
+		return
+	}
+	for i := 0; i < rpcRetryTimes; i++ {
+		for _, r := range b.Remotes {
+			resp, err1 := r.Tx(*txhash256)
+			if err1 != nil || resp == nil {
+				err = err1
+				continue
+			}
+			tx = resp
+			return
+		}
+		time.Sleep(rpcRetryInterval)
+	}
+	return
+}
+
+// GetTransactionStatus impl
+func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
+	tx, err := b.GetTransaction(txHash)
+	if err != nil {
+		return nil
+	}
+	rippleTx, ok := tx.(*websockets.TxResult)
+	if !ok {
+		// unexpected
+		log.Warn("ripple tx type assertion error")
+		return
+	}
+	status.Receipt = rippleTx
+	inledger := rippleTx.LedgerSequence
+	status.BlockHeight = uint64(inledger)
+	if latest := rippleTx.Transaction.GetBase().LastLedgerSequence; latest != nil {
+		status.Confirmations = uint64(*latest - inledger)
+	}
+	return
 }
 
 // GetBlockHash gets block hash
-func (b *Bridge) GetBlockHash(num uint64) (string, error) {
-	return "", nil
+func (b *Bridge) GetBlockHash(num uint64) (hash string, err error) {
+	for i := 0; i < rpcRetryTimes; i++ {
+		for _, r := range b.Remotes {
+			resp, err1 := r.Ledger(num, false)
+			if err1 != nil || resp == nil {
+				err = err1
+				continue
+			}
+			hash = resp.Ledger.Hash.String()
+			return
+		}
+		time.Sleep(rpcRetryInterval)
+	}
+	return
 }
 
 // GetBlockTxids gets glock txids
-func (b *Bridge) GetBlockTxids(blk string) ([]string, error) {
-	return nil, nil
+func (b *Bridge) GetBlockTxids(num uint64) (txs []string, err error) {
+	txs = make([]string, 0)
+	for i := 0; i < rpcRetryTimes; i++ {
+		for _, r := range b.Remotes {
+			resp, err1 := r.Ledger(num, true)
+			if err1 != nil || resp == nil {
+				err = err1
+				continue
+			}
+			for _, tx := range resp.Ledger.Transactions {
+				txs = append(txs, tx.GetBase().Hash.String())
+			}
+			return
+		}
+		time.Sleep(rpcRetryInterval)
+	}
+	return
 }
 
-// GetPoolTxidList gets pool txs
+// GetPoolTxidList not supported
 func (b *Bridge) GetPoolTxidList() ([]string, error) {
 	return nil, nil
 }
 
 // GetBalance gets balance
 func (b *Bridge) GetBalance(accountAddress string) (*big.Int, error) {
-	return nil, nil
+	acct, err := b.GetAccount(accountAddress)
+	if err != nil {
+		log.Warn("Get balance failed")
+		return nil, err
+	}
+	bal := big.NewInt(int64(acct.AccountData.Balance.Float() * 1000000))
+	return bal, nil
 }
 
 // GetTokenBalance not supported
@@ -123,11 +230,15 @@ func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error
 }
 
 // GetAccount returns account
-func (b *Bridge) GetAccount(address string) (acct Account, err error) {
+func (b *Bridge) GetAccount(address string) (acct *websockets.AccountInfoResult, err error) {
+	account, err := data.NewAccountFromAddress(address)
+	if err != nil {
+		return
+	}
 	for i := 0; i < rpcRetryTimes; i++ {
-		for _, apiAddress := range b.GetGatewayConfig().APIAddress {
-			acct, err = b.getAccount(address, apiAddress)
-			if err != nil {
+		for _, r := range b.Remotes {
+			acct, err = r.AccountInfo(*account)
+			if err != nil || acct == nil {
 				continue
 			}
 			return
@@ -135,25 +246,4 @@ func (b *Bridge) GetAccount(address string) (acct Account, err error) {
 		time.Sleep(rpcRetryInterval)
 	}
 	return
-}
-
-func (b *Bridge) getAccount(address string, apiAddress string) (Account, error) {
-	reader := strings.NewReader("{\"method\":\"account_info\",\"params\":[{\"account\":\"" + address + "\"}]}")
-	request, err := http.NewRequest("POST", apiAddress, reader)
-	if err != nil {
-		return Account{}, err
-	}
-	client := &http.Client{}
-	resp, err := client.Do(request)
-	if err != nil {
-		return Account{}, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	acctResp := new(AccountResp)
-	err = json.Unmarshal(body, acctResp)
-	if err != nil {
-		return Account{}, err
-	}
-	return acctResp.Result.Account_data, nil
 }

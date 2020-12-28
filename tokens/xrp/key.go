@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"math/big"
 
-	"github.com/shawn-cx-li/ripple/crypto"
+	"github.com/rubblelabs/ripple/crypto"
 )
 
 const (

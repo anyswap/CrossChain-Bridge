@@ -3,22 +3,8 @@ package xrp
 import (
 	"strings"
 
-	"github.com/shawn-cx-li/ripple/data"
+	"github.com/rubblelabs/ripple/data"
 )
-
-//
-type Account_info_Res struct {
-	Account_data Account
-}
-
-type Account struct {
-	Balance  string
-	Sequence uint32
-}
-
-type AccountResp struct {
-	Result Account_info_Res
-}
 
 func parseAccount(s string) *data.Account {
 	account, err := data.NewAccountFromAddress(s)

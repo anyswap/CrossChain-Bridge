@@ -9,8 +9,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/shawn-cx-li/ripple/crypto"
-	"github.com/shawn-cx-li/ripple/data"
+	"github.com/rubblelabs/ripple/crypto"
+	"github.com/rubblelabs/ripple/data"
 )
 
 var (
@@ -69,7 +69,13 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		args.Identifier = params.GetIdentifier()
 	}
 
-	// TODO check balance
+	bal, err := b.GetBalance(from)
+	if err != nil {
+		log.Warn("Get from address balance error", "error", err)
+	}
+	if bal.Cmp(amount) < 1 {
+		return nil, fmt.Errorf("Insufficient xrp balance")
+	}
 
 	rawtx, _, err := b.BuildUnsignedTransaction(from, pubkey, to, amount, sequence, fee)
 	return rawtx, err
@@ -118,7 +124,10 @@ func (b *Bridge) getSeq(address string) (uint32, error) {
 	if err != nil {
 		return 0, fmt.Errorf("cannot get account, %v", err)
 	}
-	return account.Sequence, nil
+	if seq := account.AccountData.Sequence; seq != nil {
+		return *seq, nil
+	}
+	return 0, nil // unexpected
 }
 
 func newUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32, dest string, amt string, fee int64, path string, nodirect bool, partial bool, limit bool) (data.Transaction, data.Hash256, []byte) {

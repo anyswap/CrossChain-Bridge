@@ -74,9 +74,9 @@ func (b *Bridge) StartChainTransactionScanJob() {
 				h++
 				continue
 			}
-			txids, err := b.GetBlockTxids(blockHash)
+			txids, err := b.GetBlockTxids(h)
 			if err != nil {
-				log.Error(errorSubject, "height", h, "blockHash", blockHash, "err", err)
+				log.Error(errorSubject, "height", h, "blockHash", blockHash, "ledger index", h, "err", err)
 				time.Sleep(retryIntervalInScanJob)
 				continue
 			}

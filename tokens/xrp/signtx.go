@@ -16,7 +16,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/shawn-cx-li/ripple/data"
+	"github.com/rubblelabs/ripple/data"
 )
 
 const (
