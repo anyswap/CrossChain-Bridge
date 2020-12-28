@@ -73,7 +73,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	if err != nil {
 		log.Warn("Get from address balance error", "error", err)
 	}
-	if bal.Cmp(amount) < 1 {
+	remain := new(big.Int).Sub(bal, amount)
+	if remain.Cmp(big.NewInt(20000000)) < 1 {
 		return nil, fmt.Errorf("Insufficient xrp balance")
 	}
 
