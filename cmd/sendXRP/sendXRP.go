@@ -59,7 +59,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tx, _, _ := xrp.NewUnsignedPaymentTransaction(key, &keyseq, txseq, to, amount, 10, "0x6D263DE8b5f755Ae0F0Bc87a5359836f18276E8C", "", false, false, false)
+	tx, _, _ := xrp.NewUnsignedPaymentTransaction(key, &keyseq, txseq, to, amount, 10, memo, "", false, false, false)
 
 	/*privData := key.Private(&keyseq)
 	priv, _ := btcec.PrivKeyFromBytes(btcec.S256(), privData)

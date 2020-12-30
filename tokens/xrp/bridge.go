@@ -21,6 +21,7 @@ var pairID = "xrp"
 
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
+	tokens.IsSwapoutToStringAddress = true
 	return &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
 	}

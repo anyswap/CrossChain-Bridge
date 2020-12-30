@@ -28,6 +28,7 @@ var instance *Bridge
 
 // NewCrossChainBridge new ltc bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
+	tokens.IsSwapoutToStringAddress = true
 	if !isSrc {
 		log.Fatalf("ltc::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
