@@ -241,6 +241,7 @@ func (b *Bridge) GetAccount(address string) (acct *websockets.AccountInfoResult,
 		for _, r := range b.Remotes {
 			acct, err = r.AccountInfo(*account)
 			if err != nil || acct == nil {
+				log.Warn("Try getting account failed", "error", err)
 				continue
 			}
 			return

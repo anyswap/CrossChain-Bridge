@@ -101,7 +101,7 @@ func (b *Bridge) checkStable(txHash string) bool {
 func GetBindAddressFromMemos(tx data.Transaction) (bind string, ok bool) {
 	for _, memo := range tx.GetBase().Memos {
 		if strings.EqualFold(memo.Memo.MemoType.String(), "BIND") {
-			bind = memo.Memo.MemoData.String()
+			bind = memo.Memo.MemoData.String() // hex string
 			if tokens.DstBridge.IsValidAddress(bind) {
 				ok = true
 				return

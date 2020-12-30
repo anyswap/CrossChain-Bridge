@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	defaultFee int64 = 1
+	defaultFee int64 = 10
 )
 
 // BuildRawTransaction build raw tx
@@ -97,7 +97,7 @@ func (b *Bridge) swapoutDefaultArgs() *tokens.XrpExtraArgs {
 
 	dcrmAddr := token.DcrmAddress
 
-	seq, err := b.getSeq(dcrmAddr)
+	seq, err := b.GetSeq(dcrmAddr)
 	if err != nil {
 		log.Warn("Get sequence error when setting default xrp args", "error", err)
 	}
@@ -111,16 +111,18 @@ func (b *Bridge) BuildUnsignedTransaction(fromAddress, fromPublicKey, toAddress 
 	pub, err := hex.DecodeString(fromPublicKey)
 	xrpPubKey := ImportPublicKey(pub)
 	amt := amount.String()
-	txseq, err := b.getSeq(fromAddress)
+	txseq, err := b.GetSeq(fromAddress)
 	if err != nil {
 		return nil, nil, err
 	}
-	transaction, hash, _ := newUnsignedPaymentTransaction(xrpPubKey, nil, txseq, toAddress, amt, fee, "", false, false, false)
+	memo := ""
+	transaction, hash, _ := NewUnsignedPaymentTransaction(xrpPubKey, nil, txseq, toAddress, amt, fee, memo, "", false, false, false)
 	digests = append(digests, hash.String())
 	return
 }
 
-func (b *Bridge) getSeq(address string) (uint32, error) {
+// GetSeq returns account tx sequence
+func (b *Bridge) GetSeq(address string) (uint32, error) {
 	account, err := b.GetAccount(address)
 	if err != nil {
 		return 0, fmt.Errorf("cannot get account, %v", err)
@@ -131,7 +133,15 @@ func (b *Bridge) getSeq(address string) (uint32, error) {
 	return 0, nil // unexpected
 }
 
-func newUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32, dest string, amt string, fee int64, path string, nodirect bool, partial bool, limit bool) (data.Transaction, data.Hash256, []byte) {
+// NewUnsignedPaymentTransaction build xrp payment tx
+// Partial and limit must be false
+func NewUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32, dest string, amt string, fee int64, memo string, path string, nodirect bool, partial bool, limit bool) (data.Transaction, data.Hash256, []byte) {
+	if partial == true {
+		log.Warn("Building tx with partial")
+	}
+	if limit == true {
+		log.Warn("Building tx with limit")
+	}
 
 	destination, amount := parseAccount(dest), parseAmount(amt)
 	payment := &data.Payment{
@@ -139,6 +149,19 @@ func newUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32,
 		Amount:      *amount,
 	}
 	payment.TransactionType = data.PAYMENT
+
+	if memo != "" {
+		memoStr := new(data.Memo)
+		memoStr.Memo.MemoType = []byte("BIND")
+		var memodata []byte
+		if b, err := hex.DecodeString(memo); err != nil {
+			memodata = []byte(memo)
+		} else {
+			memodata = b
+		}
+		memoStr.Memo.MemoData = memodata
+		payment.Memos = append(payment.Memos, *memoStr)
+	}
 
 	if path != "" {
 		payment.Paths = parsePaths(path)
@@ -170,8 +193,10 @@ func newUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32,
 	copy(payment.GetPublicKey().Bytes(), key.Public(keyseq))
 	hash, msg, err := data.SigningHash(payment)
 	if err != nil {
+		log.Warn("Generate ripple tx signing hash error", "error", err)
 		return nil, data.Hash256{}, nil
 	}
+	log.Info("Build unsigned tx success", "signing hash", hash.String(), "blob", fmt.Sprintf("%X", msg))
 
 	return payment, hash, msg
 }

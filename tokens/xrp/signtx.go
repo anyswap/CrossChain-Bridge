@@ -16,6 +16,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/btcsuite/btcd/btcec"
+	rcrypto "github.com/rubblelabs/ripple/crypto"
 	"github.com/rubblelabs/ripple/data"
 )
 
@@ -122,13 +123,55 @@ func (b *Bridge) SignTransaction(rawTx interface{}, pairID string) (signedTx int
 
 // SignTransactionWithPrivateKey sign tx with ECDSA private key
 func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa.PrivateKey) (signTx interface{}, txHash string, err error) {
+	// TODO
 	return nil, "", nil
+}
+
+// SignTransactionWithRippleKey sign tx with ripple key
+func (b *Bridge) SignTransactionWithRippleKey(rawTx interface{}, key rcrypto.Key, keyseq *uint32) (signTx interface{}, txHash string, err error) {
+	tx, ok := rawTx.(*data.Payment)
+	if !ok {
+		return nil, "", fmt.Errorf("Sign transaction type assertion error")
+	}
+
+	hash1, msg, err := data.SigningHash(tx)
+	if err != nil {
+		return nil, "", err
+	}
+	log.Info("Prepare to sign", "signing hash", hash1.String(), "blob", fmt.Sprintf("%X", msg))
+
+	hash := fmt.Sprintf("%v", hash1)
+
+	hashBytes, err := hex.DecodeString(hash)
+	if err != nil {
+		// Unexpected
+		return nil, "", fmt.Errorf("Malformed tx hash, %v", err)
+	}
+
+	sig, err := rcrypto.Sign(key.Private(keyseq), hashBytes, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("Sign hash error: %v", err)
+	}
+
+	signature, err := btcec.ParseSignature(sig, btcec.S256())
+
+	rx := fmt.Sprintf("%X", signature.R)
+	rx = make64(rx)
+	sx := fmt.Sprintf("%X", signature.S)
+	sx = make64(sx)
+	rsv := rx + sx + "00"
+
+	stx, err := b.MakeSignedTransaction([]string{rsv}, tx)
+	if err != nil {
+		return nil, "", err
+	}
+	return stx, tx.Hash.String(), nil
 }
 
 // MakeSignedTransaction make signed transaction
 func (b *Bridge) MakeSignedTransaction(rsv []string, transaction interface{}) (signedTransaction interface{}, err error) {
 	sig := rsvToSig(rsv[0])
-	tx, ok := transaction.(data.Transaction)
+	tx, ok := transaction.(*data.Payment)
 	if !ok {
 		return nil, fmt.Errorf("Type assertion error, transaction is not a payment")
 	}
@@ -136,7 +179,7 @@ func (b *Bridge) MakeSignedTransaction(rsv []string, transaction interface{}) (s
 	return
 }
 
-func makeSignedTx(tx data.Transaction, sig []byte) data.Transaction {
+func makeSignedTx(tx *data.Payment, sig []byte) data.Transaction {
 	*tx.GetSignature() = data.VariableLength(sig)
 	hash, _, err := data.Raw(tx)
 	if err != nil {
@@ -158,4 +201,11 @@ func rsvToSig(rsv string) []byte {
 		S: s,
 	}
 	return signature.Serialize()
+}
+
+func make64(str string) string {
+	for l := len(str); l < 64; l++ {
+		str = "0" + str
+	}
+	return str
 }
