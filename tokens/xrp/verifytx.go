@@ -44,7 +44,6 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash
-	fmt.Printf("\n\nlalalalalala\ntxHash:\n%+v\nlalalalalala\n\n", txHash)
 
 	token := b.GetTokenConfig(pairID)
 	if token == nil {
@@ -61,7 +60,6 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, tokens.ErrTxNotFound
 	}
 
-	fmt.Printf("\n\nlalalalalala\ntx:\n%+v\nlalalalalala\n\n", tx)
 	txres, ok := tx.(*websockets.TxResult)
 	if !ok {
 		// unexpected
@@ -108,7 +106,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	if !allowUnstable {
 		log.Debug("verify swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
-	return nil, nil
+	return swapInfo, nil
 }
 
 func (b *Bridge) checkStable(txHash string) bool {
