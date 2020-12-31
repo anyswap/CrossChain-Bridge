@@ -108,7 +108,7 @@ func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {
 	for i := 0; i < rpcRetryTimes; i++ {
 		for _, r := range b.Remotes {
 			fmt.Printf("\nTry get latest block number, remote: %+v\n\n", r)
-			resp, err1 := r.Ledger("validated", false)
+			resp, err1 := r.Ledger(nil, false)
 			if err1 != nil || resp == nil {
 				err = err1
 				continue
@@ -160,21 +160,31 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 
 // GetTransactionStatus impl
 func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
+	status = new(tokens.TxStatus)
 	tx, err := b.GetTransaction(txHash)
 	if err != nil {
 		return nil
 	}
-	rippleTx, ok := tx.(*websockets.TxResult)
+
+	txres, ok := tx.(*websockets.TxResult)
 	if !ok {
 		// unexpected
-		log.Warn("ripple tx type assertion error")
+		log.Warn("Unexpected: tx type is not data.TxResult")
 		return
 	}
-	status.Receipt = rippleTx
-	inledger := rippleTx.LedgerSequence
+
+	// Check tx status
+	if txres.TransactionWithMetaData.MetaData.TransactionResult != 0 {
+		log.Warn("Ripple tx status is not success", "result", txres.TransactionWithMetaData.MetaData.TransactionResult)
+		return
+	}
+
+	status.Receipt = txres
+	inledger := txres.LedgerSequence
 	status.BlockHeight = uint64(inledger)
-	if latest := rippleTx.Transaction.GetBase().LastLedgerSequence; latest != nil {
-		status.Confirmations = uint64(*latest - inledger)
+
+	if latest, err := b.GetLatestBlockNumber(); err == nil {
+		status.Confirmations = latest - uint64(inledger)
 	}
 	return
 }

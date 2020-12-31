@@ -63,7 +63,9 @@ func main() {
 	txhash := sendXRP()
 	time.Sleep(time.Second * 5)
 	checkTx(txhash)
+	checkStatus(txhash)
 	//checkTx("707EB888A528EEE20615585DB82535E5A8F54E6446A400940FD8F9B3C643CD37")
+	//checkStatus("FFE78C8707031799A8EEFA526D670511DF16EB19C911B700ABB625F8D0C46EEE")
 }
 
 func sendXRP() string {
@@ -132,5 +134,12 @@ func checkTx(txHash string) bool {
 	log.Printf("Bind address: %v\n", bind)
 
 	log.Println("Tx success!")
+	return true
+}
+
+func checkStatus(txHash string) bool {
+	status := b.GetTransactionStatus(txHash)
+	fmt.Printf("%+v\n", status)
+
 	return true
 }
