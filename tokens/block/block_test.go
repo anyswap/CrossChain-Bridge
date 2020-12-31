@@ -176,7 +176,7 @@ func TestPostTransaction(t *testing.T) {
 		return b.GetPayToAddrScript(changeAddress)
 	}
 
-	relayFeePerKb, _ := b.getRelayFeePerKb()
+	relayFeePerKb := b.getRelayFeePerKb()
 	t.Logf("relayFeePerKb: %+v\n", relayFeePerKb)
 
 	authoredTx, err = b.NewUnsignedTransaction(txOuts, btcAmountType(relayFeePerKb), inputSource, changeSource, true)

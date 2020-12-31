@@ -113,10 +113,7 @@ func (b *Bridge) ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
 
 // AggregateUtxos aggregate uxtos
 func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (string, error) {
-	relayFee, err := b.getRelayFeePerKb()
-	if err != nil {
-		return "", err
-	}
+	relayFee := b.getRelayFeePerKb()
 
 	authoredTx, err := b.BuildAggregateTransaction(relayFee, addrs, utxos)
 	if err != nil {
