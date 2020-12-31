@@ -63,6 +63,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	scanSubject := fmt.Sprintf("[scanchain] scanned %v block", chainName)
 	for {
 		latest := tools.LoopGetLatestBlockNumber(b)
+		log.Info("Scan chain", "latest block number", latest)
 		for h := stable + 1; h <= latest; {
 			blockHash, err := b.GetBlockHash(h)
 			if err != nil {
@@ -74,12 +75,14 @@ func (b *Bridge) StartChainTransactionScanJob() {
 				h++
 				continue
 			}
+			log.Info("Scan chain, get block hash", "", blockHash)
 			txids, err := b.GetBlockTxids(h)
 			if err != nil {
 				log.Error(errorSubject, "height", h, "blockHash", blockHash, "ledger index", h, "err", err)
 				time.Sleep(retryIntervalInScanJob)
 				continue
 			}
+			log.Info("Scan chain, get tx ids", "", txids)
 			for _, txid := range txids {
 				b.processTransaction(txid)
 			}

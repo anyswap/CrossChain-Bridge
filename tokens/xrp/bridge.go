@@ -1,7 +1,6 @@
 package xrp
 
 import (
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -107,7 +106,6 @@ var (
 func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {
 	for i := 0; i < rpcRetryTimes; i++ {
 		for _, r := range b.Remotes {
-			fmt.Printf("\nTry get latest block number, remote: %+v\n\n", r)
 			resp, err1 := r.Ledger(nil, false)
 			if err1 != nil || resp == nil {
 				err = err1
