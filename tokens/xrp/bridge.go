@@ -129,7 +129,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 		return 0, err
 	}
 	defer r.Close()
-	resp, err := r.Ledger("validated", false)
+	resp, err := r.Ledger(nil, false)
 	if err != nil || resp == nil {
 		return 0, err
 	}
@@ -179,7 +179,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 		return
 	}
 
-	status.Receipt = txres
+	status.Receipt = nil
 	inledger := txres.LedgerSequence
 	status.BlockHeight = uint64(inledger)
 
