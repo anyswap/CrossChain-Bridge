@@ -37,19 +37,25 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 
 // InitRemotes set ripple remotes
 func (b *Bridge) InitRemotes() {
+	log.Info("XRP init remotes")
 	for _, r := range b.Remotes {
-		r.Close()
+		if r != nil {
+			r.Close()
+		}
 	}
-	remotes := make([]*websockets.Remote, 0)
+	b.Remotes = make([]*websockets.Remote, 0)
 	for _, apiAddress := range b.GetGatewayConfig().APIAddress {
 		remote, err := websockets.NewRemote(apiAddress)
 		if err != nil || remote == nil {
-			log.Warn("Cannot connect to ripple", "error", err)
+			log.Warn("Cannot connect to ripple", "address", apiAddress, "error", err)
+			continue
 		}
 		log.Info("Connected to remote api", "", apiAddress)
-		remotes = append(remotes, remote)
+		b.Remotes = append(b.Remotes, remote)
 	}
-	b.Remotes = remotes
+	if len(b.Remotes) < 1 {
+		log.Error("No available remote api")
+	}
 }
 
 // VerifyChainConfig verify chain config
