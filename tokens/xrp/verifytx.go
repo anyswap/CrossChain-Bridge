@@ -9,6 +9,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/rubblelabs/ripple/data"
+	"github.com/rubblelabs/ripple/websockets"
 )
 
 // VerifyMsgHash verify msg hash
@@ -54,19 +55,30 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, tokens.ErrTxNotFound
 	}
 
-	xrpTx, ok := tx.(data.Transaction)
-	if !ok || xrpTx.GetTransactionType() != data.PAYMENT {
-		return swapInfo, fmt.Errorf("Not a payment transaction")
+	txres, ok := tx.(*websockets.TxResult)
+	if !ok {
+		// unexpected
+		return swapInfo, fmt.Errorf("Unexpected: tx type is not data.TxResult")
 	}
 
-	payment := tx.(data.Payment)
+	// Check tx status
+	if txres.TransactionWithMetaData.MetaData.TransactionResult != 0 {
+		log.Printf("Tx result: %v", txres.TransactionWithMetaData.MetaData.TransactionResult)
+		return swapInfo, fmt.Errorf("Ripple tx status is not success")
+	}
+
+	payment, ok := txres.TransactionWithMetaData.Transaction.(*data.Payment)
+	if !ok || payment.GetTransactionType() != data.PAYMENT {
+		log.Printf("Not a payment transaction")
+		return swapInfo, fmt.Errorf("Not a payment transaction")
+	}
 
 	txRecipient := payment.Destination.String()
 	if !common.IsEqualIgnoreCase(txRecipient, token.DepositAddress) {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
-	bind, ok := GetBindAddressFromMemos(xrpTx)
+	bind, ok := GetBindAddressFromMemos(payment)
 	if !ok {
 		log.Debug("wrong memoa", "memos", payment.Memos)
 		return swapInfo, tokens.ErrTxWithWrongReceiver
@@ -100,12 +112,19 @@ func (b *Bridge) checkStable(txHash string) bool {
 // GetBindAddressFromMemos get bind address
 func GetBindAddressFromMemos(tx data.Transaction) (bind string, ok bool) {
 	for _, memo := range tx.GetBase().Memos {
-		if strings.EqualFold(memo.Memo.MemoType.String(), "BIND") {
-			bind = memo.Memo.MemoData.String() // hex string
+		if strings.EqualFold(string(memo.Memo.MemoType), "BIND") {
+			bind = string(memo.Memo.MemoData) // hex string
 			if tokens.DstBridge.IsValidAddress(bind) {
 				ok = true
 				return
 			}
+			bind2 := fmt.Sprintf("%X", memo.Memo.MemoType)
+			if tokens.DstBridge.IsValidAddress(bind2) {
+				bind = bind2
+				ok = true
+				return
+			}
+			log.Warn("Bind address is not a valid destination address", "bind ascii", bind, "bind hex", bind2)
 		}
 	}
 	return "", false

@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/xrp"
+	"github.com/rubblelabs/ripple/data"
 	"github.com/rubblelabs/ripple/websockets"
 )
 
@@ -18,6 +22,7 @@ var (
 	amount     string
 	apiAddress string
 	net        string
+	b          *xrp.Bridge
 )
 
 func init() {
@@ -29,8 +34,9 @@ func init() {
 	flag.StringVar(&net, "net", "testnet", "network")
 }
 
-func main() {
-	b := xrp.NewCrossChainBridge(true)
+func initBridge() func() {
+	tokens.DstBridge = eth.NewCrossChainBridge(false)
+	b = xrp.NewCrossChainBridge(true)
 
 	flag.Parse()
 	switch strings.ToLower(net) {
@@ -47,9 +53,20 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(apiAddress)
-	defer remote.Close()
 	b.Remotes = append(b.Remotes, remote)
+	return remote.Close
+}
 
+func main() {
+	close := initBridge()
+	defer close()
+	txhash := sendXRP()
+	time.Sleep(time.Second * 5)
+	checkTx(txhash)
+	//checkTx("707EB888A528EEE20615585DB82535E5A8F54E6446A400940FD8F9B3C643CD37")
+}
+
+func sendXRP() string {
 	key := xrp.ImportKeyFromSeed(seed, "ecdsa")
 	keyseq := uint32(keyseq)
 
@@ -79,4 +96,41 @@ func main() {
 		log.Fatal(fmt.Errorf("Send transaction failed, %v", err))
 	}
 	fmt.Printf("Submited tx: %v\n", txhash)
+	return txhash
+}
+
+func checkTx(txHash string) bool {
+	tx, err := b.GetTransaction(txHash)
+	if err != nil {
+		log.Printf("Get tx failed, %v", err)
+		return false
+	}
+
+	txres, ok := tx.(*websockets.TxResult)
+	if !ok {
+		// unexpected
+		log.Printf("Tx res type error")
+		return false
+	}
+
+	if txres.TransactionWithMetaData.MetaData.TransactionResult != 0 {
+		log.Printf("Tx result: %v", txres.TransactionWithMetaData.MetaData.TransactionResult)
+		return false
+	}
+
+	payment, ok := txres.TransactionWithMetaData.Transaction.(*data.Payment)
+	if !ok || payment.GetTransactionType() != data.PAYMENT {
+		log.Printf("Not a payment transaction")
+		return false
+	}
+
+	bind, ok := xrp.GetBindAddressFromMemos(payment)
+	if !ok {
+		log.Printf("Get bind address failed")
+		return false
+	}
+	log.Printf("Bind address: %v\n", bind)
+
+	log.Println("Tx success!")
+	return true
 }
