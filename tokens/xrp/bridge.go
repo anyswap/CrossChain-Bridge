@@ -43,9 +43,10 @@ func (b *Bridge) InitRemotes() {
 	remotes := make([]*websockets.Remote, 0)
 	for _, apiAddress := range b.GetGatewayConfig().APIAddress {
 		remote, err := websockets.NewRemote(apiAddress)
-		if err != nil {
+		if err != nil || remote == nil {
 			log.Warn("Cannot connect to ripple", "error", err)
 		}
+		log.Info("Connected to remote api", "", apiAddress)
 		remotes = append(remotes, remote)
 	}
 	b.Remotes = remotes
