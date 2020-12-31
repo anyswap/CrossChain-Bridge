@@ -16,15 +16,20 @@ import (
 func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) {
 	tx, ok := rawTx.(data.Transaction)
 	if !ok {
-		return fmt.Errorf("Type assertion error, tx is not xrp transaction")
+		return fmt.Errorf("Ripple tx type error")
 	}
+	rebuildMsgHash, _, err := data.SigningHash(tx)
+	if err != nil {
+		return fmt.Errorf("Rebuild ripple tx msg error, %v", err)
+	}
+
 	if len(msgHash) < 1 {
 		return fmt.Errorf("Must provide msg hash")
 	}
-	if strings.EqualFold(tx.GetHash().String(), msgHash[0]) {
+	if strings.EqualFold(rebuildMsgHash.String(), msgHash[0]) {
 		return nil
 	}
-	return fmt.Errorf("Msg hash not match, recover: %v, claiming: %v", tx.GetHash().String(), msgHash[0])
+	return fmt.Errorf("Msg hash not match, recover: %v, claiming: %v", rebuildMsgHash.String(), msgHash[0])
 }
 
 // VerifyTransaction impl
