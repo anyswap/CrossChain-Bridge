@@ -146,6 +146,7 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 		for _, r := range b.Remotes {
 			resp, err1 := r.Tx(*txhash256)
 			if err1 != nil || resp == nil {
+				log.Warn("Try get transaction failed", "error", err1)
 				err = err1
 				continue
 			}
