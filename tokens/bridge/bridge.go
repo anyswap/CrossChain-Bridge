@@ -14,6 +14,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
+	"github.com/anyswap/CrossChain-Bridge/tokens/zol"
 )
 
 // NewCrossChainBridge new bridge according to chain name
@@ -32,6 +33,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return eth.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "ZEROLIMIT"):
+		return zol.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
 		return nil
@@ -74,6 +77,8 @@ func InitCrossChainBridge(isServer bool) {
 		ltc.Init(cfg.BtcExtra)
 	case "BLOCK":
 		block.Init(cfg.BtcExtra)
+	case "ZEROLIMIT":
+		zol.Init(cfg.BtcExtra)
 	}
 
 	dcrm.Init(cfg.Dcrm, isServer)
