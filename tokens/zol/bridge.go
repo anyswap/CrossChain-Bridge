@@ -15,7 +15,7 @@ const (
 	netCustom   = "custom"
 )
 
-// PairID unique btc pair ID
+// PairID unique zol pair ID
 var PairID = "zol"
 
 // Bridge btc bridge
