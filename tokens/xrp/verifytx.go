@@ -85,7 +85,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 
 	bind, ok := GetBindAddressFromMemos(payment)
 	if !ok {
-		log.Debug("wrong memoa", "memos", payment.Memos)
+		log.Debug("wrong memos", "memos", payment.Memos)
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
@@ -117,20 +117,19 @@ func (b *Bridge) checkStable(txHash string) bool {
 // GetBindAddressFromMemos get bind address
 func GetBindAddressFromMemos(tx data.Transaction) (bind string, ok bool) {
 	for _, memo := range tx.GetBase().Memos {
-		if strings.EqualFold(string(memo.Memo.MemoType), "BIND") {
-			bind = string(memo.Memo.MemoData) // hex string
-			if tokens.DstBridge.IsValidAddress(bind) {
-				ok = true
-				return
-			}
-			bind2 := fmt.Sprintf("%X", memo.Memo.MemoType)
-			if tokens.DstBridge.IsValidAddress(bind2) {
-				bind = bind2
-				ok = true
-				return
-			}
-			log.Warn("Bind address is not a valid destination address", "bind ascii", bind, "bind hex", bind2)
+		bindStr := string(memo.Memo.MemoData) // hex string
+		if tokens.DstBridge.IsValidAddress(bindStr) {
+			bind = bindStr
+			ok = true
+			return
 		}
+		bindBytes := fmt.Sprintf("%X", memo.Memo.MemoType) // bytes
+		if tokens.DstBridge.IsValidAddress(bindBytes) {
+			bind = bindBytes
+			ok = true
+			return
+		}
+		log.Warn("Bind address is not a valid destination address", "bind ascii", bindStr, "bind hex", bindBytes)
 	}
 	return "", false
 }
