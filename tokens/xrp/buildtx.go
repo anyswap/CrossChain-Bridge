@@ -102,7 +102,13 @@ func (b *Bridge) swapoutDefaultArgs() *tokens.XrpExtraArgs {
 		log.Warn("Get sequence error when setting default xrp args", "error", err)
 	}
 	*args.Sequence = seq
-	*args.Fee = defaultFee
+	addPercent := token.PlusGasPricePercentage
+	if addPercent > 0 {
+		*args.Fee = *args.Fee * (int64(100 + addPercent)) / 100
+	}
+	if *args.Fee < defaultFee {
+		*args.Fee = defaultFee
+	}
 	return args
 }
 
