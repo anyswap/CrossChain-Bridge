@@ -155,7 +155,7 @@ func Swapin(txid, pairID *string) (*PostResult, error) {
 	txidstr := *txid
 	pairIDStr := *pairID
 	swapInfo, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr, true)
-	log.Infof("333333\ninternal Swapin\n333333", "swapinfo", swapinfo, "error", err)
+	log.Infof("333333\ninternal Swapin\n333333", "swapinfo", swapInfo, "error", err)
 	err = addSwapToDatabase(txidstr, tokens.SwapinTx, swapInfo, err)
 	if err != nil {
 		return nil, err
