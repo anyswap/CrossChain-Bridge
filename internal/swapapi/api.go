@@ -150,14 +150,17 @@ func GetSwapoutHistory(address, pairID string, offset, limit int) ([]*SwapInfo, 
 
 // Swapin api
 func Swapin(txid, pairID *string) (*PostResult, error) {
+	log.Infof("222222\ninternal Swapin\n222222")
 	log.Debug("[api] receive Swapin", "txid", *txid, "pairID", *pairID)
 	txidstr := *txid
 	pairIDStr := *pairID
 	swapInfo, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr, true)
+	log.Infof("333333\ninternal Swapin\n333333", "swapinfo", swapinfo, "error", err)
 	err = addSwapToDatabase(txidstr, tokens.SwapinTx, swapInfo, err)
 	if err != nil {
 		return nil, err
 	}
+	log.Infof("444444\ninternal Swapin\n444444", "error", err)
 	return &SuccessPostResult, nil
 }
 
