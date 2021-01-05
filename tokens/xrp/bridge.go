@@ -119,6 +119,7 @@ func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {
 			resp, err1 := r.Ledger(nil, false)
 			if err1 != nil || resp == nil {
 				err = err1
+				log.Warn("Try get latest block number failed", "error", err1)
 				_, refreshErr := refreshRemote(r, url)
 				if refreshErr != nil {
 					log.Warn("Connect to remote error", "error", refreshErr)
@@ -212,6 +213,7 @@ func (b *Bridge) GetBlockHash(num uint64) (hash string, err error) {
 			resp, err1 := r.Ledger(num, false)
 			if err1 != nil || resp == nil {
 				err = err1
+				log.Warn("Try get block hash failed", "error", err1)
 				_, refreshErr := refreshRemote(r, url)
 				if refreshErr != nil {
 					log.Warn("Connect to remote error", "error", refreshErr)
@@ -234,6 +236,7 @@ func (b *Bridge) GetBlockTxids(num uint64) (txs []string, err error) {
 			resp, err1 := r.Ledger(num, true)
 			if err1 != nil || resp == nil {
 				err = err1
+				log.Warn("Try get block tx ids failed", "error", err1)
 				_, refreshErr := refreshRemote(r, url)
 				if refreshErr != nil {
 					log.Warn("Connect to remote error", "error", refreshErr)
