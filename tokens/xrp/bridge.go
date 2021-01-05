@@ -1,7 +1,6 @@
 package xrp
 
 import (
-	"flag"
 	"math/big"
 	"strings"
 	"time"
@@ -15,7 +14,7 @@ import (
 // Bridge block bridge inherit from btc bridge
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
-	Remotes []*websockets.Remote
+	Remotes map[string]*websockets.Remote
 }
 
 var pairID = "xrp"
@@ -38,14 +37,13 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 
 // InitRemotes set ripple remotes
 func (b *Bridge) InitRemotes() {
-	flag.Parse()
 	log.Info("XRP init remotes")
 	for _, r := range b.Remotes {
 		if r != nil {
 			r.Close()
 		}
 	}
-	b.Remotes = make([]*websockets.Remote, 0)
+	b.Remotes = make(map[string]*websockets.Remote)
 	for _, apiAddress := range b.GetGatewayConfig().APIAddress {
 		remote, err := websockets.NewRemote(apiAddress)
 		if err != nil || remote == nil {
@@ -53,11 +51,20 @@ func (b *Bridge) InitRemotes() {
 			continue
 		}
 		log.Info("Connected to remote api", "", apiAddress)
-		b.Remotes = append(b.Remotes, remote)
+		b.Remotes[apiAddress] = remote
 	}
 	if len(b.Remotes) < 1 {
 		log.Error("No available remote api")
 	}
+}
+
+func refreshRemote(r *websockets.Remote, apiAddress string) (*websockets.Remote, error) {
+	var err error
+	r, err = websockets.NewRemote(apiAddress)
+	if err != nil {
+		return r, err
+	}
+	return r, nil
 }
 
 // VerifyChainConfig verify chain config
@@ -107,10 +114,14 @@ var (
 // For ripple, GetLatestBlockNumber returns current ledger version
 func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {
 	for i := 0; i < rpcRetryTimes; i++ {
-		for _, r := range b.Remotes {
+		for url, r := range b.Remotes {
 			resp, err1 := r.Ledger(nil, false)
 			if err1 != nil || resp == nil {
 				err = err1
+				_, refreshErr := refreshRemote(r, url)
+				if refreshErr != nil {
+					log.Warn("Connect to remote error", "error", refreshErr)
+				}
 				continue
 			}
 			num = uint64(resp.Ledger.LedgerSequence)
@@ -143,11 +154,15 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 		return
 	}
 	for i := 0; i < rpcRetryTimes; i++ {
-		for _, r := range b.Remotes {
+		for url, r := range b.Remotes {
 			resp, err1 := r.Tx(*txhash256)
 			if err1 != nil || resp == nil {
 				log.Warn("Try get transaction failed", "error", err1)
 				err = err1
+				_, refreshErr := refreshRemote(r, url)
+				if refreshErr != nil {
+					log.Warn("Connect to remote error", "error", refreshErr)
+				}
 				continue
 			}
 			tx = resp
@@ -192,10 +207,14 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 // GetBlockHash gets block hash
 func (b *Bridge) GetBlockHash(num uint64) (hash string, err error) {
 	for i := 0; i < rpcRetryTimes; i++ {
-		for _, r := range b.Remotes {
+		for url, r := range b.Remotes {
 			resp, err1 := r.Ledger(num, false)
 			if err1 != nil || resp == nil {
 				err = err1
+				_, refreshErr := refreshRemote(r, url)
+				if refreshErr != nil {
+					log.Warn("Connect to remote error", "error", refreshErr)
+				}
 				continue
 			}
 			hash = resp.Ledger.Hash.String()
@@ -210,10 +229,14 @@ func (b *Bridge) GetBlockHash(num uint64) (hash string, err error) {
 func (b *Bridge) GetBlockTxids(num uint64) (txs []string, err error) {
 	txs = make([]string, 0)
 	for i := 0; i < rpcRetryTimes; i++ {
-		for _, r := range b.Remotes {
+		for url, r := range b.Remotes {
 			resp, err1 := r.Ledger(num, true)
 			if err1 != nil || resp == nil {
 				err = err1
+				_, refreshErr := refreshRemote(r, url)
+				if refreshErr != nil {
+					log.Warn("Connect to remote error", "error", refreshErr)
+				}
 				continue
 			}
 			for _, tx := range resp.Ledger.Transactions {
@@ -259,10 +282,14 @@ func (b *Bridge) GetAccount(address string) (acct *websockets.AccountInfoResult,
 		return
 	}
 	for i := 0; i < rpcRetryTimes; i++ {
-		for _, r := range b.Remotes {
+		for url, r := range b.Remotes {
 			acct, err = r.AccountInfo(*account)
 			if err != nil || acct == nil {
 				log.Warn("Try getting account failed", "error", err)
+				_, refreshErr := refreshRemote(r, url)
+				if refreshErr != nil {
+					log.Warn("Connect to remote error", "error", refreshErr)
+				}
 				continue
 			}
 			return

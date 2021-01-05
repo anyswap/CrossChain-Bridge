@@ -53,7 +53,7 @@ func initBridge() func() {
 		log.Fatal(err)
 	}
 	fmt.Println(apiAddress)
-	b.Remotes = append(b.Remotes, remote)
+	b.Remotes[apiAddress] = remote
 	return remote.Close
 }
 
