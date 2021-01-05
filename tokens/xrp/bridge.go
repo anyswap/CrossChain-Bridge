@@ -1,6 +1,7 @@
 package xrp
 
 import (
+	"flag"
 	"math/big"
 	"strings"
 	"time"
@@ -37,6 +38,7 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 
 // InitRemotes set ripple remotes
 func (b *Bridge) InitRemotes() {
+	flag.Parse()
 	log.Info("XRP init remotes")
 	for _, r := range b.Remotes {
 		if r != nil {
