@@ -24,6 +24,7 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	tokens.IsSwapoutToStringAddress = true
 	return &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
+		Remotes:              make(map[string]*websockets.Remote),
 	}
 }
 
