@@ -59,13 +59,11 @@ func (b *Bridge) InitRemotes() {
 	}
 }
 
-func refreshRemote(r *websockets.Remote, apiAddress string) (*websockets.Remote, error) {
-	var err error
+func (b *Bridge) refreshRemote(apiAddress string) (r *websockets.Remote, err error) {
 	r, err = websockets.NewRemote(apiAddress)
-	if err != nil {
-		return r, err
-	}
-	return r, nil
+	//r, err = websockets.NewRemote("wss://s2.ripple.com:443")
+	b.Remotes[apiAddress] = r
+	return
 }
 
 // VerifyChainConfig verify chain config
@@ -120,7 +118,7 @@ func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {
 			if err1 != nil || resp == nil {
 				err = err1
 				log.Warn("Try get latest block number failed", "error", err1)
-				_, refreshErr := refreshRemote(r, url)
+				_, refreshErr := b.refreshRemote(url)
 				if refreshErr != nil {
 					log.Warn("Connect to remote error", "error", refreshErr)
 				}
@@ -137,11 +135,7 @@ func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {
 //GetLatestBlockNumberOf gets latest block number from single api
 // For ripple, GetLatestBlockNumberOf returns current ledger version
 func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
-	r, err := websockets.NewRemote(apiAddress)
-	if err != nil {
-		return 0, err
-	}
-	defer r.Close()
+	r := b.Remotes[apiAddress]
 	resp, err := r.Ledger(nil, false)
 	if err != nil || resp == nil {
 		return 0, err
@@ -158,12 +152,18 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 	for i := 0; i < rpcRetryTimes; i++ {
 		for url, r := range b.Remotes {
 			resp, err1 := r.Tx(*txhash256)
+			/*randNum := rand.New(rand.NewSource(time.Now().Unix())).Int()
+			if randNum%3 == 0 {
+				err1 = fmt.Errorf("Simulate error: Connection closed")
+			}*/
 			if err1 != nil || resp == nil {
 				log.Warn("Try get transaction failed", "error", err1)
 				err = err1
-				_, refreshErr := refreshRemote(r, url)
-				if refreshErr != nil {
-					log.Warn("Connect to remote error", "error", refreshErr)
+				if err.Error() == "Client Error -1 Connection Closed" || err.Error() == "Simulate error: Connection closed" {
+					_, refreshErr := b.refreshRemote(url)
+					if refreshErr != nil {
+						log.Warn("Connect to remote error", "error", refreshErr)
+					}
 				}
 				continue
 			}
@@ -214,7 +214,7 @@ func (b *Bridge) GetBlockHash(num uint64) (hash string, err error) {
 			if err1 != nil || resp == nil {
 				err = err1
 				log.Warn("Try get block hash failed", "error", err1)
-				_, refreshErr := refreshRemote(r, url)
+				_, refreshErr := b.refreshRemote(url)
 				if refreshErr != nil {
 					log.Warn("Connect to remote error", "error", refreshErr)
 				}
@@ -237,7 +237,7 @@ func (b *Bridge) GetBlockTxids(num uint64) (txs []string, err error) {
 			if err1 != nil || resp == nil {
 				err = err1
 				log.Warn("Try get block tx ids failed", "error", err1)
-				_, refreshErr := refreshRemote(r, url)
+				_, refreshErr := b.refreshRemote(url)
 				if refreshErr != nil {
 					log.Warn("Connect to remote error", "error", refreshErr)
 				}
@@ -290,7 +290,7 @@ func (b *Bridge) GetAccount(address string) (acct *websockets.AccountInfoResult,
 			acct, err = r.AccountInfo(*account)
 			if err != nil || acct == nil {
 				log.Warn("Try getting account failed", "error", err)
-				_, refreshErr := refreshRemote(r, url)
+				_, refreshErr := b.refreshRemote(url)
 				if refreshErr != nil {
 					log.Warn("Connect to remote error", "error", refreshErr)
 				}

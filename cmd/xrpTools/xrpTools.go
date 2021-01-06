@@ -7,8 +7,10 @@ import (
 	"strings"
 	"time"
 
+	elog "github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
+	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 	"github.com/anyswap/CrossChain-Bridge/tokens/xrp"
 	"github.com/rubblelabs/ripple/data"
 	"github.com/rubblelabs/ripple/websockets"
@@ -60,12 +62,13 @@ func initBridge() func() {
 func main() {
 	close := initBridge()
 	defer close()
-	txhash := sendXRP()
+	/*txhash := sendXRP()
 	time.Sleep(time.Second * 5)
 	checkTx(txhash)
-	checkStatus(txhash)
+	checkStatus(txhash)*/
 	//checkTx("707EB888A528EEE20615585DB82535E5A8F54E6446A400940FD8F9B3C643CD37")
 	//checkStatus("FFE78C8707031799A8EEFA526D670511DF16EB19C911B700ABB625F8D0C46EEE")
+	scanTx()
 }
 
 func sendXRP() string {
@@ -142,4 +145,46 @@ func checkStatus(txHash string) bool {
 	fmt.Printf("%+v\n", status)
 
 	return true
+}
+
+func scanTx() {
+	start := uint64(13794220)
+	stable := start
+	confirmations := uint64(0)
+	errorSubject := "[scanchain] get XRP block failed"
+	scanSubject := "[scanchain] scanned XRP block"
+	for {
+		latest := tools.LoopGetLatestBlockNumber(b)
+		elog.Info("Scan chain", "latest block number", latest)
+		for h := stable + 1; h <= latest; {
+			blockHash, err := b.GetBlockHash(h)
+			if err != nil {
+				elog.Error(errorSubject, "height", h, "err", err)
+				time.Sleep(time.Second * 3)
+				continue
+			}
+			elog.Info("Scan chain, get block hash", "", blockHash)
+			txids, err := b.GetBlockTxids(h)
+			if err != nil {
+				elog.Error(errorSubject, "height", h, "blockHash", blockHash, "ledger index", h, "err", err)
+				time.Sleep(time.Second * 3)
+				continue
+			}
+			elog.Info("Scan chain, get tx ids", "", txids)
+			for _, txid := range txids {
+				elog.Info("Check transaction", "txid", txid)
+				tx, err := b.GetTransaction(txid)
+				if err != nil {
+					elog.Warn("Check transaction failed", "error", err)
+				}
+				elog.Info("Check transaction success", "tx", tx)
+			}
+			elog.Info(scanSubject, "blockHash", blockHash, "height", h, "txs", len(txids))
+			h++
+		}
+		if stable+confirmations < latest {
+			stable = latest - confirmations
+		}
+		time.Sleep(time.Second * 3)
+	}
 }
