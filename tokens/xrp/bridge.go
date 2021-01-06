@@ -61,8 +61,11 @@ func (b *Bridge) InitRemotes() {
 
 func (b *Bridge) refreshRemote(apiAddress string) (r *websockets.Remote, err error) {
 	r, err = websockets.NewRemote(apiAddress)
+	//r, err = websockets.NewRemote("wss://wrong.domain:443")
 	//r, err = websockets.NewRemote("wss://s2.ripple.com:443")
-	b.Remotes[apiAddress] = r
+	if r != nil {
+		b.Remotes[apiAddress] = r
+	}
 	return
 }
 
