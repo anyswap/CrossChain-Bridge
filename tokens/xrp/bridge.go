@@ -118,9 +118,13 @@ func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {
 			if err1 != nil || resp == nil {
 				err = err1
 				log.Warn("Try get latest block number failed", "error", err1)
-				_, refreshErr := b.refreshRemote(url)
-				if refreshErr != nil {
-					log.Warn("Connect to remote error", "error", refreshErr)
+				if err.Error() == "Client Error -1 Connection Closed" || err.Error() == "Simulate error: Connection closed" {
+					go func() {
+						_, refreshErr := b.refreshRemote(url)
+						if refreshErr != nil {
+							log.Warn("Connect to remote error", "error", refreshErr)
+						}
+					}()
 				}
 				continue
 			}
@@ -160,10 +164,12 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 				log.Warn("Try get transaction failed", "error", err1)
 				err = err1
 				if err.Error() == "Client Error -1 Connection Closed" || err.Error() == "Simulate error: Connection closed" {
-					_, refreshErr := b.refreshRemote(url)
-					if refreshErr != nil {
-						log.Warn("Connect to remote error", "error", refreshErr)
-					}
+					go func() {
+						_, refreshErr := b.refreshRemote(url)
+						if refreshErr != nil {
+							log.Warn("Connect to remote error", "error", refreshErr)
+						}
+					}()
 				}
 				continue
 			}
@@ -214,9 +220,13 @@ func (b *Bridge) GetBlockHash(num uint64) (hash string, err error) {
 			if err1 != nil || resp == nil {
 				err = err1
 				log.Warn("Try get block hash failed", "error", err1)
-				_, refreshErr := b.refreshRemote(url)
-				if refreshErr != nil {
-					log.Warn("Connect to remote error", "error", refreshErr)
+				if err.Error() == "Client Error -1 Connection Closed" || err.Error() == "Simulate error: Connection closed" {
+					go func() {
+						_, refreshErr := b.refreshRemote(url)
+						if refreshErr != nil {
+							log.Warn("Connect to remote error", "error", refreshErr)
+						}
+					}()
 				}
 				continue
 			}
@@ -237,9 +247,13 @@ func (b *Bridge) GetBlockTxids(num uint64) (txs []string, err error) {
 			if err1 != nil || resp == nil {
 				err = err1
 				log.Warn("Try get block tx ids failed", "error", err1)
-				_, refreshErr := b.refreshRemote(url)
-				if refreshErr != nil {
-					log.Warn("Connect to remote error", "error", refreshErr)
+				if err.Error() == "Client Error -1 Connection Closed" || err.Error() == "Simulate error: Connection closed" {
+					go func() {
+						_, refreshErr := b.refreshRemote(url)
+						if refreshErr != nil {
+							log.Warn("Connect to remote error", "error", refreshErr)
+						}
+					}()
 				}
 				continue
 			}
@@ -289,10 +303,13 @@ func (b *Bridge) GetAccount(address string) (acct *websockets.AccountInfoResult,
 		for url, r := range b.Remotes {
 			acct, err = r.AccountInfo(*account)
 			if err != nil || acct == nil {
-				log.Warn("Try getting account failed", "error", err)
-				_, refreshErr := b.refreshRemote(url)
-				if refreshErr != nil {
-					log.Warn("Connect to remote error", "error", refreshErr)
+				if err.Error() == "Client Error -1 Connection Closed" || err.Error() == "Simulate error: Connection closed" {
+					go func() {
+						_, refreshErr := b.refreshRemote(url)
+						if refreshErr != nil {
+							log.Warn("Connect to remote error", "error", refreshErr)
+						}
+					}()
 				}
 				continue
 			}
