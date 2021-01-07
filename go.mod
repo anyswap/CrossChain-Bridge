@@ -32,6 +32,7 @@ require (
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.0.0
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/pborman/uuid v1.2.1
+	github.com/rubblelabs/ripple v0.0.0-20201117074841-9986319d8580
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1

@@ -114,8 +114,13 @@ func initApp() {
 func initBridge() {
 	tokens.DstBridge = eth.NewCrossChainBridge(false)
 	b = xrp.NewCrossChainBridge(true)
-
-	b.Remotes[apiAddress] = &websockets.Remote{}
+	b.Remotes = make(map[string]*websockets.Remote)
+	remote, err := websockets.NewRemote(apiAddress)
+	if err != nil || remote == nil {
+		log.Fatal("Cannot connect to ripple")
+	}
+	log.Printf("Connected to remote api %v\n", apiAddress)
+	b.Remotes[apiAddress] = remote
 }
 
 func xrptools(ctx *cli.Context) error {
