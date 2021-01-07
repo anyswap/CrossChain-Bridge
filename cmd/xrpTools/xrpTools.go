@@ -115,12 +115,7 @@ func initBridge() {
 	tokens.DstBridge = eth.NewCrossChainBridge(false)
 	b = xrp.NewCrossChainBridge(true)
 
-	remote, err := websockets.NewRemote(apiAddress)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(apiAddress)
-	b.Remotes[apiAddress] = remote
+	b.Remotes[apiAddress] = &websockets.Remote{}
 }
 
 func xrptools(ctx *cli.Context) error {
