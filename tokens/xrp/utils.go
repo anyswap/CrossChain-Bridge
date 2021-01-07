@@ -3,7 +3,7 @@ package xrp
 import (
 	"strings"
 
-	"github.com/rubblelabs/ripple/data"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/data"
 )
 
 func parseAccount(s string) *data.Account {

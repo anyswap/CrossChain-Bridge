@@ -9,8 +9,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/rubblelabs/ripple/crypto"
-	"github.com/rubblelabs/ripple/data"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/crypto"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/data"
 )
 
 var (

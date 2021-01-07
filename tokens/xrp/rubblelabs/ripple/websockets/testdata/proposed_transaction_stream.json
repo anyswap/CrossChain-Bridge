@@ -1,0 +1,27 @@
+{
+    "engine_result": "tesSUCCESS",
+    "engine_result_code": 0,
+    "engine_result_message": "The transaction was applied.",
+    "ledger_current_index": 10790917,
+    "status": "proposed",
+    "transaction": {
+        "Account": "rHsZHqa5oMQNL5hFm4kfLd47aEMYjPstpg",
+        "Fee": "11000",
+        "Flags": 0,
+        "OfferSequence": 10379905,
+        "Sequence": 10379931,
+        "SigningPubKey": "025718736160FA6632F48EA4354A35AB0340F8D7DC7083799B9C57C3E937D71851",
+        "TakerGets": "28865168964",
+        "TakerPays": {
+            "currency": "CNY",
+            "issuer": "razqQKzJRdB4UxFPWf5NEpEG3WMkmwgcXA",
+            "value": "4285.465077979"
+        },
+        "TransactionType": "OfferCreate",
+        "TxnSignature": "30440220572BCA1D98177F3A7082B4A77EBAA4D5977237CE0591678CFECEC8D3C0457FB802200E400395F505F07F7DCBE46F74D0D5CAFCD12D6078F5FD98DE1D72D85B887DC1",
+        "hash": "2E55F1B9A147B647F6699FD877CA2AEC5A7A0A22A6F2D609DB6DABC445EF9862",
+        "owner_funds": "80652819347"
+    },
+    "type": "transaction",
+    "validated": false
+}

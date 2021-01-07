@@ -7,8 +7,8 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/rubblelabs/ripple/data"
-	"github.com/rubblelabs/ripple/websockets"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/data"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/websockets"
 )
 
 // Bridge block bridge inherit from btc bridge

@@ -9,7 +9,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/xrp"
-	"github.com/rubblelabs/ripple/websockets"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/websockets"
 	"github.com/urfave/cli/v2"
 )
 

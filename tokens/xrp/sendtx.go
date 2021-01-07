@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/rubblelabs/ripple/data"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/data"
 )
 
 // SendTransaction send signed tx

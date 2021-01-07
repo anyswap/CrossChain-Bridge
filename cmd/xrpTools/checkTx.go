@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/anyswap/CrossChain-Bridge/tokens/xrp"
-	"github.com/rubblelabs/ripple/data"
-	"github.com/rubblelabs/ripple/websockets"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/data"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/websockets"
 )
 
 func checkTx(txHash string) bool {

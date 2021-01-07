@@ -1,0 +1,22 @@
+{
+   "status" : "success",
+   "type" : "response",
+   "result" : {
+      "ledger_current_index" : 7636529,
+      "account_data" : {
+         "TransferRate" : 1002000000,
+         "LedgerEntryType" : "AccountRoot",
+         "Flags" : 131072,
+         "PreviousTxnID" : "B737C6C9F46FD87E9FA78201E60E3B34CBAD1EA325099D687FA155EE0766870A",
+         "OwnerCount" : 0,
+         "EmailHash" : "5B33B93C7FFE384D53450FC666BB11FB",
+         "Domain" : "6269747374616D702E6E6574",
+         "Account" : "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+         "index" : "B7D526FDDF9E3B3F95C3DC97C353065B0482302500BBB8051A5C090B596C6133",
+         "urlgravatar" : "http://www.gravatar.com/avatar/5b33b93c7ffe384d53450fc666bb11fb",
+         "PreviousTxnLgrSeq" : 7636481,
+         "Balance" : "10321199422233",
+         "Sequence" : 546
+      }
+   }
+}

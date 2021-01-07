@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"math/big"
 
-	"github.com/rubblelabs/ripple/crypto"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/crypto"
 )
 
 const (
