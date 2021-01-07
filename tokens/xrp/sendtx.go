@@ -9,6 +9,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/data"
+	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/websockets"
 )
 
 // SendTransaction send signed tx
@@ -29,7 +30,12 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 	fmt.Printf("\nres:\n%v\n", res)
 	return*/
 	for i := 0; i < rpcRetryTimes; i++ {
-		for _, r := range b.Remotes {
+		for url := range b.Remotes {
+			r, err0 := websockets.NewRemote(url)
+			if err0 != nil {
+				log.Warn("Cannot connect to remote", "error", err)
+				continue
+			}
 			resp, err1 := r.Submit(tx)
 			if err1 != nil || resp == nil {
 				log.Warn("Try sending transaction failed", "error", err)
