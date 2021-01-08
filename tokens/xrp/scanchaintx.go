@@ -72,6 +72,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 				continue
 			}
 			if scannedBlocks.IsBlockScanned(blockHash) {
+				fmt.Printf("\n\n==========\nscanned block:\n%v\n==========\n\n", blockHash)
 				h++
 				continue
 			}

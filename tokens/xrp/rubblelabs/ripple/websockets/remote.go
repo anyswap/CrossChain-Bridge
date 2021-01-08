@@ -118,6 +118,11 @@ func (r *Remote) run() {
 			pending[id] = command
 
 		case in, ok := <-inbound:
+			/*src := rand.NewSource(int64(time.Now().Nanosecond()))
+			randnum := rand.New(src).Int()
+			if randnum%3 == 0 {
+				ok = false
+			}*/
 			if !ok {
 				log.Errorln("Connection closed by server")
 				return
