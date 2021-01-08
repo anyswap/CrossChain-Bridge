@@ -46,12 +46,14 @@ func (b *Bridge) getStartAndLatestHeight() (start, latest uint64) {
 
 // StartChainTransactionScanJob scan job
 func (b *Bridge) StartChainTransactionScanJob() {
+	log.Info("====== StartChainTransactionScanJob ======")
 	go b.StartPoolTransactionScanJob()
 
 	chainName := b.ChainConfig.BlockChain
 	log.Infof("[scanchain] start %v scan chain job", chainName)
 
 	start, latest := b.getStartAndLatestHeight()
+	log.Info("====== 111111 ======", "start", start, "latest", latest)
 	_ = tools.UpdateLatestScanInfo(b.IsSrc, start)
 	log.Infof("[scanchain] start %v scan chain loop from %v latest=%v", chainName, start, latest)
 
@@ -59,21 +61,25 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	confirmations := *chainCfg.Confirmations
 
 	stable := start
+	log.Info("====== 222222 ======", "stable", stable)
 	errorSubject := fmt.Sprintf("[scanchain] get %v block failed", chainName)
 	scanSubject := fmt.Sprintf("[scanchain] scanned %v block", chainName)
 	for {
+		log.Info("====== 333333 ======")
 		latest := tools.LoopGetLatestBlockNumber(b)
+		log.Info("====== 444444 ======", "latest", latest)
 		log.Info("Scan chain", "latest block number", latest)
 		for h := stable + 1; h <= latest; {
+			log.Info("====== 555555 ======", "h", h)
 			blockHash, err := b.GetBlockHash(h)
 			if err != nil {
 				log.Error(errorSubject, "height", h, "err", err)
 				time.Sleep(retryIntervalInScanJob)
+				log.Info("====== 666666 ======")
 				continue
 			}
 			if scannedBlocks.IsBlockScanned(blockHash) {
-				fmt.Printf("\n\n==========\nscanned block:\n%v\n==========\n\n", blockHash)
-				h++
+				log.Info("====== 777777 ======", "blockhash", blockHash)
 				continue
 			}
 			log.Info("Scan chain, get block hash", "", blockHash)
