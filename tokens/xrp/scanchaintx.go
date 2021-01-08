@@ -23,11 +23,7 @@ func (b *Bridge) getStartAndLatestHeight() (start, latest uint64) {
 	confirmations := *chainCfg.Confirmations
 	initialHeight := *chainCfg.InitialHeight
 
-	//latest = tools.LoopGetLatestBlockNumber(b)
-	latest, err := b.GetLatestBlockNumber()
-	if err != nil {
-		latest = 0
-	}
+	latest = tools.LoopGetLatestBlockNumber(b)
 
 	switch {
 	case startHeight != 0:
@@ -70,11 +66,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	scanSubject := fmt.Sprintf("[scanchain] scanned %v block", chainName)
 	for {
 		log.Info("====== 333333 ======")
-		//latest := tools.LoopGetLatestBlockNumber(b)
-		latest, err := b.GetLatestBlockNumber()
-		if err != nil {
-			latest = 0
-		}
+		latest := tools.LoopGetLatestBlockNumber(b)
 		log.Info("====== 444444 ======", "latest", latest)
 		log.Info("Scan chain", "latest block number", latest)
 		for h := stable + 1; h <= latest; {
