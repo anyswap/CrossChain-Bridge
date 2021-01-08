@@ -61,7 +61,7 @@ var (
 	startScanFlag = &cli.Uint64Flag{
 		Name:  "startscan",
 		Usage: "start scan",
-		Value: uint64(13794220),
+		Value: uint64(13880345),
 	}
 
 	sendXRPCommand = &cli.Command{
