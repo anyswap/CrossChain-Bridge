@@ -21,6 +21,8 @@ func initArgsScan(ctx *cli.Context) {
 			apiAddress = "wss://s2.ripple.com:443/"
 		case "testnet", "test":
 			apiAddress = "wss://s.altnet.rippletest.net:443/"
+		case "devnet", "dev":
+			apiAddress = "wss://s.devnet.rippletest.net:443/"
 		default:
 			log.Fatal(fmt.Errorf("unknown network: %v", net))
 		}
