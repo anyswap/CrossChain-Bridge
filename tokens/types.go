@@ -32,6 +32,7 @@ type ChainConfig struct {
 	Confirmations *uint64
 	InitialHeight *uint64
 	EnableScan    bool
+	ScanReceipt   bool
 }
 
 // GatewayConfig struct

@@ -55,6 +55,8 @@ Confirmations = 0 # suggest >= 6 for Mainnet
 InitialHeight = 0
 # whether enable scan blocks and register swaps
 EnableScan = false
+# whether scan transaction receipt logs
+ScanReceipt = false
 
 # source blockchain gateway config
 [SrcGateway]
@@ -70,6 +72,8 @@ Confirmations = 0 # suggest >= 30 for Mainnet
 InitialHeight = 0
 # whether enable scan blocks and register swaps
 EnableScan = false
+# whether scan transaction receipt logs
+ScanReceipt = false
 
 # dest blockchain gateway config
 [DestGateway]
