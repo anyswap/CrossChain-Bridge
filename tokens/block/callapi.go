@@ -337,14 +337,18 @@ func (b *Bridge) PostTransaction(txHex string) (txHash string, err error) {
 	cli := b.GetClient()
 	//# defer cli.Closer()
 	errs := make([]error, 0)
+	var success bool
 	for _, ccli := range cli.CClients {
 		msgtx := DecodeTxHex(txHex, 0, false)
 		hash, err0 := ccli.SendRawTransaction(msgtx, true)
-		if err0 == nil {
+		if err0 == nil && !success {
+			success = true
 			txHash = hash.String()
-			return
 		}
 		errs = append(errs, err0)
+	}
+	if success {
+		return txHash, nil
 	}
 	err = fmt.Errorf("%+v", errs)
 	return

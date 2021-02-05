@@ -193,12 +193,16 @@ func (b *Bridge) SendSignedTransaction(tx *types.Transaction) error {
 	hexData := common.ToHex(data)
 	gateway := b.GatewayConfig
 	var result interface{}
+	var success bool
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress
 		err = client.RPCPost(&result, url, "eth_sendRawTransaction", hexData)
 		if err == nil {
-			return nil
+			success = true
 		}
+	}
+	if success {
+		return nil
 	}
 	return err
 }

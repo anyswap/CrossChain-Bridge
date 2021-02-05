@@ -136,14 +136,18 @@ func GetOutspend(b tokens.CrossChainBridge, txHash string, vout uint32) (*ElectO
 // PostTransaction call post to /tx
 func PostTransaction(b tokens.CrossChainBridge, txHex string) (txHash string, err error) {
 	gateway := b.GetGatewayConfig()
+	var success bool
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress + "/tx"
-		txHash, err = client.RPCRawPost(url, txHex)
-		if err == nil {
-			return txHash, nil
+		hash0, err0 := client.RPCRawPost(url, txHex)
+		if err0 == nil && !success {
+			success = true
+			txHash = hash0
+		} else if err0 != nil {
+			err = err0
 		}
 	}
-	return "", err
+	return txHash, err
 }
 
 // GetBlockHash call /block-height/{height}
