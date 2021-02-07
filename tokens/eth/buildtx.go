@@ -18,6 +18,8 @@ var (
 	retryRPCInterval = 1 * time.Second
 
 	defReserveGasFee = big.NewInt(1e16) // 0.01 ETH
+
+	latestGasPrice *big.Int
 )
 
 // BuildRawTransaction build raw tx
@@ -152,15 +154,9 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 			return nil, err
 		}
 		if args.SwapType != tokens.NoSwapType {
-			pairID := args.PairID
-			tokenCfg := b.GetTokenConfig(pairID)
-			if tokenCfg == nil {
-				return nil, tokens.ErrUnknownPairID
-			}
-			addPercent := tokenCfg.PlusGasPricePercentage
-			if addPercent > 0 {
-				extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
-				extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
+			err = b.adjustSwapGasPrice(args.PairID, extra)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -197,6 +193,32 @@ func (b *Bridge) getGasPrice() (price *big.Int, err error) {
 		time.Sleep(retryRPCInterval)
 	}
 	return nil, err
+}
+
+func (b *Bridge) adjustSwapGasPrice(pairID string, extra *tokens.EthExtraArgs) error {
+	tokenCfg := b.GetTokenConfig(pairID)
+	if tokenCfg == nil {
+		return tokens.ErrUnknownPairID
+	}
+	addPercent := tokenCfg.PlusGasPricePercentage
+	if addPercent > 0 {
+		extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
+		extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
+	}
+	maxGasPriceFluctPercent := b.ChainConfig.MaxGasPriceFluctPercent
+	if maxGasPriceFluctPercent > 0 {
+		if latestGasPrice != nil {
+			maxFluct := new(big.Int).Set(latestGasPrice)
+			maxFluct.Mul(maxFluct, new(big.Int).SetUint64(maxGasPriceFluctPercent))
+			maxFluct.Div(maxFluct, big.NewInt(100))
+			minGasPrice := new(big.Int).Sub(latestGasPrice, maxFluct)
+			if extra.GasPrice.Cmp(minGasPrice) < 0 {
+				extra.GasPrice = minGasPrice
+			}
+		}
+		latestGasPrice = extra.GasPrice
+	}
+	return nil
 }
 
 func (b *Bridge) getAccountNonce(pairID, from string, swapType tokens.SwapType) (nonceptr *uint64, err error) {

@@ -33,6 +33,8 @@ type ChainConfig struct {
 	InitialHeight *uint64
 	EnableScan    bool
 	ScanReceipt   bool `json:",omitempty"`
+
+	MaxGasPriceFluctPercent uint64 `json:",omitempty"`
 }
 
 // GatewayConfig struct

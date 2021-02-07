@@ -21,33 +21,37 @@ const (
 	retryGetSignStatusInterval = 10 * time.Second
 )
 
-func (b *Bridge) verifyTransactionWithArgs(tx *types.Transaction, args *tokens.BuildTxArgs) error {
+func (b *Bridge) verifyTransactionWithArgs(rawTx interface{}, args *tokens.BuildTxArgs) (*types.Transaction, error) {
+	tx, ok := rawTx.(*types.Transaction)
+	if !ok {
+		return nil, errors.New("wrong raw tx param")
+	}
 	if tx.To() == nil || *tx.To() == (common.Address{}) {
-		return fmt.Errorf("[sign] verify tx receiver failed")
+		return nil, fmt.Errorf("[sign] verify tx receiver failed")
 	}
 	tokenCfg := b.GetTokenConfig(args.PairID)
 	if tokenCfg == nil {
-		return fmt.Errorf("[sign] verify tx with unknown pairID '%v'", args.PairID)
+		return nil, fmt.Errorf("[sign] verify tx with unknown pairID '%v'", args.PairID)
 	}
 	checkReceiver := tokenCfg.ContractAddress
 	if args.SwapType == tokens.SwapoutType && !tokenCfg.IsErc20() {
 		checkReceiver = args.Bind
 	}
 	if !strings.EqualFold(tx.To().String(), checkReceiver) {
-		return fmt.Errorf("[sign] verify tx receiver failed")
+		return nil, fmt.Errorf("[sign] verify tx receiver failed")
 	}
-	return nil
+	return tx, nil
 }
 
 // DcrmSignTransaction dcrm sign raw tx
 func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signTx interface{}, txHash string, err error) {
-	tx, ok := rawTx.(*types.Transaction)
-	if !ok {
-		return nil, "", errors.New("wrong raw tx param")
-	}
-	err = b.verifyTransactionWithArgs(tx, args)
+	tx, err := b.verifyTransactionWithArgs(rawTx, args)
 	if err != nil {
 		return nil, "", err
+	}
+	gasPrice, err := b.getGasPrice()
+	if err == nil && args.Extra.EthExtra.GasPrice.Cmp(gasPrice) < 0 {
+		args.Extra.EthExtra.GasPrice = gasPrice
 	}
 	signer := b.Signer
 	msgHash := signer.Hash(tx)
