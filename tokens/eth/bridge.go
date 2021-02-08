@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
@@ -103,7 +104,7 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
 	if tokenCfg.IsDelegateContract {
-		return nil
+		return b.verifyDelegateContract(tokenCfg)
 	}
 
 	err = b.verifyDecimals(tokenCfg)
@@ -116,6 +117,22 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
 		return err
 	}
 
+	return nil
+}
+
+func (b *Bridge) verifyDelegateContract(tokenCfg *tokens.TokenConfig) error {
+	if tokenCfg.DelegateToken == "" {
+		return nil
+	}
+	// keccak256 'proxyToken()' is '0x4faaefae'
+	res, err := b.CallContract(tokenCfg.ContractAddress, common.FromHex("0x4faaefae"), "latest")
+	if err != nil {
+		return err
+	}
+	proxyToken := common.HexToAddress(res)
+	if common.HexToAddress(tokenCfg.DelegateToken) != proxyToken {
+		return fmt.Errorf("mismatch 'DelegateToken', has %v, want %v", tokenCfg.DelegateToken, proxyToken.String())
+	}
 	return nil
 }
 

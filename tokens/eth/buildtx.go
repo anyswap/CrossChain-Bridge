@@ -262,7 +262,28 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 		return tokens.ErrUnknownPairID
 	}
 	args.To = token.ContractAddress // to
-	return nil
+
+	if !token.IsDelegateContract {
+		return nil
+	}
+
+	var balance *big.Int
+	var err error
+	for i := 0; i < retryRPCCount; i++ {
+		if token.DelegateToken != "" {
+			balance, err = b.GetErc20Balance(token.DelegateToken, token.ContractAddress)
+		} else {
+			balance, err = b.GetBalance(token.ContractAddress)
+		}
+		if err == nil {
+			break
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	if err == nil && balance.Cmp(amount) < 0 {
+		return errors.New("not enough balance to swapin")
+	}
+	return err
 }
 
 func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) {

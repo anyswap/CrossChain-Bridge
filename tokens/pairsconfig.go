@@ -177,6 +177,9 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 		if err != nil {
 			return err
 		}
+		if *tokenPair.SrcToken.Decimals != *tokenPair.DestToken.Decimals {
+			return fmt.Errorf("decimals of pair are not equal, src %v, dest %v", *tokenPair.SrcToken.Decimals, *tokenPair.DestToken.Decimals)
+		}
 	}
 	if nonContractSrcCount > 1 {
 		return fmt.Errorf("only support one non-contract token swapin")

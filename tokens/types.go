@@ -83,6 +83,7 @@ type TokenConfig struct {
 	PlusGasPricePercentage uint64 `json:",omitempty"`
 	DisableSwap            bool
 	IsDelegateContract     bool
+	DelegateToken          string `json:",omitempty"`
 
 	DefaultGasLimit uint64 `json:",omitempty"`
 
@@ -321,6 +322,14 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	}
 	if isSrc && c.IsProxyErc20() && c.ContractCodeHash == "" {
 		return errors.New("token must config 'ContractCodeHash' for ProxyERC20 in source chain")
+	}
+	if c.IsDelegateContract {
+		if c.ContractAddress == "" {
+			return errors.New("token must config 'ContractAddress' if 'IsDelegateContract' is true")
+		}
+		if c.DelegateToken != "" && !common.IsHexAddress(c.DelegateToken) {
+			return errors.New("wrong 'DelegateToken' address")
+		}
 	}
 	// calc value and store
 	c.CalcAndStoreValue()
