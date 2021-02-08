@@ -82,6 +82,7 @@ type TokenConfig struct {
 	MinimumSwapFee         *float64
 	PlusGasPricePercentage uint64 `json:",omitempty"`
 	DisableSwap            bool
+	IsDelegateContract     bool
 
 	DefaultGasLimit uint64 `json:",omitempty"`
 

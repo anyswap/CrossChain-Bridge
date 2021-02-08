@@ -102,6 +102,9 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
 	if b.IsSrc && !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
+	if tokenCfg.IsDelegateContract {
+		return nil
+	}
 
 	err = b.verifyDecimals(tokenCfg)
 	if err != nil {
