@@ -14,7 +14,8 @@ const (
 
 // common variables
 var (
-	AggregateIdentifier = "aggregate"
+	AggregateIdentifier   = "aggregate"
+	ReplaceSwapIdentifier = "replaceswap"
 
 	SrcBridge CrossChainBridge
 	DstBridge CrossChainBridge

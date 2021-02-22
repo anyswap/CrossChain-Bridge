@@ -332,6 +332,9 @@ func updateSwapResult(collection *mgo.Collection, txid, pairID, bind string, ite
 	if items.SwapTx != "" {
 		updates["swaptx"] = items.SwapTx
 	}
+	if len(items.OldSwapTxs) != 0 {
+		updates["oldswaptxs"] = items.OldSwapTxs
+	}
 	if items.SwapHeight != 0 {
 		updates["swapheight"] = items.SwapHeight
 	}

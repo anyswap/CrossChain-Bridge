@@ -54,6 +54,8 @@ func doCall(args *admin.CallArgs, result *string) error {
 		return reverify(args, result)
 	case "reswap":
 		return reswap(args, result)
+	case "replaceswap":
+		return replaceswap(args, result)
 	case "manual":
 		return manual(args, result)
 	case "setnonce":
@@ -225,6 +227,32 @@ func reswap(args *admin.CallArgs, result *string) (err error) {
 		err = mongodb.Reswapin(txid, pairID, bind, forceOpt)
 	case swapoutOp:
 		err = mongodb.Reswapout(txid, pairID, bind, forceOpt)
+	default:
+		return fmt.Errorf("unknown operation '%v'", operation)
+	}
+	if err != nil {
+		return err
+	}
+	*result = successReuslt
+	return nil
+}
+
+func replaceswap(args *admin.CallArgs, result *string) (err error) {
+	if len(args.Params) != 5 {
+		err = fmt.Errorf("wrong number of params, have %v want 5", len(args.Params))
+		return
+	}
+	operation := args.Params[0]
+	txid := args.Params[1]
+	pairID := args.Params[2]
+	bind := args.Params[3]
+	gasPrice := args.Params[4]
+
+	switch operation {
+	case swapinOp:
+		err = worker.ReplaceSwapin(txid, pairID, bind, gasPrice)
+	case swapoutOp:
+		err = worker.ReplaceSwapout(txid, pairID, bind, gasPrice)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}

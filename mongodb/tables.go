@@ -41,6 +41,7 @@ type MgoSwapResult struct {
 	Bind       string     `bson:"bind"`
 	Value      string     `bson:"value"`
 	SwapTx     string     `bson:"swaptx"`
+	OldSwapTxs []string   `bson:"oldswaptxs"`
 	SwapHeight uint64     `bson:"swapheight"`
 	SwapTime   uint64     `bson:"swaptime"`
 	SwapValue  string     `bson:"swapvalue"`
@@ -54,6 +55,7 @@ type MgoSwapResult struct {
 // SwapResultUpdateItems swap update items
 type SwapResultUpdateItems struct {
 	SwapTx     string
+	OldSwapTxs []string
 	SwapHeight uint64
 	SwapTime   uint64
 	SwapValue  string
