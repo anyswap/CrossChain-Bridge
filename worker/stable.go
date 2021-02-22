@@ -85,13 +85,23 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	return processSwapStable(swap, false)
 }
 
+func getSwapTxStatus(resBridge tokens.CrossChainBridge, swap *mongodb.MgoSwapResult) *tokens.TxStatus {
+	txStatus := resBridge.GetTransactionStatus(swap.SwapTx)
+	if txStatus == nil || txStatus.BlockHeight == 0 {
+		for _, oldSwapTx := range swap.OldSwapTxs {
+			txStatus = resBridge.GetTransactionStatus(oldSwapTx)
+			if txStatus != nil && txStatus.BlockHeight > 0 {
+				swap.SwapTx = oldSwapTx
+				break
+			}
+		}
+	}
+	return txStatus
+}
+
 func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
-	swapTxID := swap.SwapTx
-
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)
-	swapType := getSwapType(isSwapin)
-
-	txStatus := resBridge.GetTransactionStatus(swapTxID)
+	txStatus := getSwapTxStatus(resBridge, swap)
 	if txStatus == nil || txStatus.BlockHeight == 0 {
 		return nil
 	}
@@ -117,7 +127,7 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	matchTx := &MatchTx{
 		SwapHeight: txStatus.BlockHeight,
 		SwapTime:   txStatus.BlockTime,
-		SwapType:   swapType,
+		SwapType:   getSwapType(isSwapin),
 	}
 	return updateSwapResult(swap.TxID, swap.PairID, swap.Bind, matchTx)
 }
