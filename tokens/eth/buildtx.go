@@ -17,8 +17,6 @@ var (
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
 
-	defPlusGasPricePercentage uint64 = 15 // 15%
-
 	defReserveGasFee = big.NewInt(1e16) // 0.01 ETH
 )
 
@@ -100,7 +98,12 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 	if value != nil && value.Sign() > 0 {
 		needValue = value
 	}
-	needValue = new(big.Int).Add(needValue, defReserveGasFee)
+	if args.SwapType != tokens.NoSwapType {
+		needValue = new(big.Int).Add(needValue, defReserveGasFee)
+	} else {
+		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
+		needValue = new(big.Int).Add(needValue, gasFee)
+	}
 	if balance.Cmp(needValue) < 0 {
 		return nil, errors.New("not enough coin balance")
 	}
@@ -123,12 +126,13 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 		if err != nil {
 			return nil, err
 		}
-		addPercent := b.TokenConfig.PlusGasPricePercentage
-		if addPercent == 0 {
-			addPercent = defPlusGasPricePercentage
+		if args.SwapType != tokens.NoSwapType {
+			addPercent := b.TokenConfig.PlusGasPricePercentage
+			if addPercent > 0 {
+				extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
+				extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
+			}
 		}
-		extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
-		extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
 	}
 	if extra.Nonce == nil {
 		extra.Nonce, err = b.getAccountNonce(args.From, args.SwapType)
