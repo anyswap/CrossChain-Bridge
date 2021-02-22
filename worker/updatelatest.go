@@ -55,41 +55,32 @@ func adjustGatewayOrder() {
 	for {
 		time.Sleep(adjustGatewayOrderInterval)
 		logWorker("adjustGatewayOrder", "adjust gateway api adddress order")
-		adjustSrcGatewayOrder()
-		adjustDstGatewayOrder()
+		adjustGatewayOrderImpl(true)
+		adjustGatewayOrderImpl(false)
 	}
 }
 
-func adjustSrcGatewayOrder() {
+func adjustGatewayOrderImpl(isSrc bool) {
 	// use block number as weight
 	var weightedAPIs tools.WeightedStringSlice
-
-	gateway := tokens.SrcBridge.GetGatewayConfig()
-	if len(gateway.APIAddress) < 2 {
+	var bridge tokens.CrossChainBridge
+	if isSrc {
+		bridge = tokens.SrcBridge
+	} else {
+		bridge = tokens.DstBridge
+	}
+	gateway := bridge.GetGatewayConfig()
+	length := len(gateway.APIAddress)
+	if length < 2 {
 		return
 	}
-	for _, apiAddress := range gateway.APIAddress {
-		height, _ := tokens.SrcBridge.GetLatestBlockNumberOf(apiAddress)
-		weightedAPIs = weightedAPIs.Add(apiAddress, height)
+	for i := length; i > 0; i-- { // query in reverse order
+		apiAddress := gateway.APIAddress[i-1]
+		height, _ := bridge.GetLatestBlockNumberOf(apiAddress)
+		weightedAPIs = weightedAPIs.Add(apiAddress, height+uint64((length-i)*10))
 	}
 
 	weightedAPIs = weightedAPIs.Sort()
 	gateway.APIAddress = weightedAPIs.GetStrings()
-}
-
-func adjustDstGatewayOrder() {
-	// use block number as weight
-	var weightedAPIs tools.WeightedStringSlice
-
-	gateway := tokens.DstBridge.GetGatewayConfig()
-	if len(gateway.APIAddress) < 2 {
-		return
-	}
-	for _, apiAddress := range gateway.APIAddress {
-		height, _ := tokens.DstBridge.GetLatestBlockNumberOf(apiAddress)
-		weightedAPIs = weightedAPIs.Add(apiAddress, height)
-	}
-
-	weightedAPIs = weightedAPIs.Sort()
-	gateway.APIAddress = weightedAPIs.GetStrings()
+	logWorkerTrace("gateway", "adjustGatewayOrder", "isSrc", isSrc, "result", gateway.APIAddress)
 }
