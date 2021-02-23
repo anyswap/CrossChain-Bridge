@@ -9,10 +9,24 @@ import (
 )
 
 // IsValidAddress check address
-func (b *Bridge) IsValidAddress(address string) bool {}
+func (b *Bridge) IsValidAddress(address string) bool {
+	if _, err := sdk.AccAddressFromBech32(address); err != nil {
+		return false
+	}
+	return true
+}
+
+func (b *Bridge) EqualAddress(address1, address2 string) bool {
+	acc1, err1 := sdk.AccAddressFromBech32(address1)
+	acc2, err2 := sdk.AccAddressFromBech32(address2)
+	if err1 == nil && err2 == nil {
+		return acc1.Equals(acc2)
+	}
+	return false
+}
 
 // PublicKeyToAddress returns cosmos public key address
-func (b *Bridge) PublicKeyToAddress(pubKeyHex string) (address string, err error){
+func (b *Bridge) PublicKeyToAddress(pubKeyHex string) (address string, err error) {
 	pubKeyHex = strings.TrimPrefix(pubKeyHex, "0x")
 	bb, err := hex.DecodeString(pubKeyHex)
 	if err != nil {

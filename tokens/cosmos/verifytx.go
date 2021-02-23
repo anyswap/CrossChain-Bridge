@@ -2,80 +2,24 @@ package cosmos
 
 import (
 	"encoding/hex"
-	"regexp"
+	"errors"
 	"strings"
 
-	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
-	"github.com/btcsuite/btcwallet/wallet/txauthor"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
-
-var (
-	regexMemo = regexp.MustCompile(`^OP_RETURN OP_PUSHBYTES_\d* `)
-)
-
-// GetTransaction impl
-func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
-	return b.GetTransactionByHash(txHash)
-}
-
-// GetTransactionStatus impl
-func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
-	txStatus := &tokens.TxStatus{}
-	electStatus, err := b.GetElectTransactionStatus(txHash)
-	if err != nil {
-		log.Trace(b.ChainConfig.BlockChain+" Bridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
-		return txStatus
-	}
-	if !*electStatus.Confirmed {
-		return txStatus
-	}
-	if electStatus.BlockHash != nil {
-		txStatus.BlockHash = *electStatus.BlockHash
-	}
-	if electStatus.BlockTime != nil {
-		txStatus.BlockTime = *electStatus.BlockTime
-	}
-	if electStatus.BlockHeight != nil {
-		txStatus.BlockHeight = *electStatus.BlockHeight
-		latest, err := b.GetLatestBlockNumber()
-		if err != nil {
-			log.Debug(b.ChainConfig.BlockChain+" Bridge::GetLatestBlockNumber fail", "err", err)
-			return txStatus
-		}
-		if latest > txStatus.BlockHeight {
-			txStatus.Confirmations = latest - txStatus.BlockHeight
-		}
-	}
-	return txStatus
-}
 
 // VerifyMsgHash verify msg hash
 func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) {
-	authoredTx, ok := rawTx.(*txauthor.AuthoredTx)
+	// TODO
+	stdmsg, ok := rawTx.(authtypes.StdSignMsg)
 	if !ok {
-		return tokens.ErrWrongRawTx
+		return 
 	}
-	for i, preScript := range authoredTx.PrevScripts {
-		sigScript := preScript
-		if b.IsPayToScriptHash(sigScript) {
-			sigScript, err = b.getRedeemScriptByOutputScrpit(preScript)
-			if err != nil {
-				return err
-			}
-		}
-		sigHash, err := b.CalcSignatureHash(sigScript, authoredTx.Tx, i)
-		if err != nil {
-			return err
-		}
-		if hex.EncodeToString(sigHash) != msgHash[i] {
-			log.Trace("message hash mismatch", "index", i, "want", msgHash[i], "have", hex.EncodeToString(sigHash))
-			return tokens.ErrMsgHashMismatch
-		}
-	}
-	return nil
+	return nil, errors.New("raw tx type assertion error")
 }
 
 // VerifyTransaction impl
@@ -94,126 +38,117 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash
+	swapInfo.TxTo = "" // cosmos tx does not have this field
 	if !allowUnstable && !b.checkStable(txHash) {
 		return swapInfo, tokens.ErrTxNotStable
 	}
-	tx, err := b.GetTransactionByHash(txHash)
+	// sdk.Tx
+	tx, err := b.GetTransaction(txHash)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
-	txStatus := tx.Status
-	if txStatus.BlockHeight != nil {
-		swapInfo.Height = *txStatus.BlockHeight // Height
-	} else if *tx.Locktime != 0 {
-		// tx with locktime should be on chain, prvent DDOS attack
-		return swapInfo, tokens.ErrTxNotStable
+	cosmostx, ok := tx.(sdk.Tx)
+	if !ok {
+		log.Debug("[verifySwapin] cosmos tx type assertion error")
+		return swapInfo, fmt.Errorf("Cosmos tx type assertion error")
 	}
-	if txStatus.BlockTime != nil {
-		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
-	}
-	depositAddress := tokenCfg.DepositAddress
-	value, memoScript, rightReceiver := b.GetReceivedValue(tx.Vout, depositAddress, p2pkhType)
-	if !rightReceiver {
-		return swapInfo, tokens.ErrTxWithWrongReceiver
-	}
-	bindAddress, bindOk := GetBindAddressFromMemoScipt(memoScript)
 
-	swapInfo.To = depositAddress                      // To
-	swapInfo.Value = common.BigFromUint64(value)      // Value
-	swapInfo.Bind = bindAddress                       // Bind
-	swapInfo.From = getTxFrom(tx.Vin, depositAddress) // From
-
-	err = b.checkSwapinInfo(swapInfo)
-	if err != nil {
+	// get bind address from memo
+	bindaddress, ok := b.GetBindAddressFromMemo(cosmostx)
+	if !ok {
+		return swapInfo, fmt.Errorf("Cannot get bind address")
+	}
+	if err := b.checkSwapinBindAddress(bindaddress); err != nil {
 		return swapInfo, err
 	}
-	if !bindOk {
-		log.Debug("wrong memo", "memo", memoScript)
-		return swapInfo, tokens.ErrTxWithWrongMemo
+
+	// aggregate msgs in tx
+	// check every msg
+	// if type is bank/send or bank/multisend
+	// and To address equals deposit address
+	// add to swapinfo
+	depositAddress := tokenCfg.DepositAddress
+	msgs := cosmostx.GetMsgs()
+	depositamount := big.NewInt(0)
+	for _, msg :=  range msgs {
+		msgtype := msg.Type()
+		msgamount := big.NewInt(0) // deposit amount in one msg
+		if msgtype == banktypes.TypeMsgSend {
+			// MsgSend
+			msgsend, ok := msg.(banktypes.MsgSend)
+			if !ok {
+				continue
+			}
+			if b.EqualAddress(msgsend.ToAddress, depositAddress) {
+				msgamount = b.getAmountFromCoins(msgsend.Amount)
+			}
+		} else is msgtype == banktypes.TypeMsgMultiSend {
+			// MsgMultisend
+			msgmultisend, ok := msg.(banktypes.MsgSend)
+			if !ok {
+				continue
+			}
+			for _, output := range msgmultisend.Outputs {
+				if b.EqualAddress(output.Address, depositAddress){
+					msgamount = new(big.Int).Add(msgamount, b.getAmountFromCoins(output.Coins))
+				}
+			}
+		} else {
+			continue
+		}
+		if err := msg.ValidateBasic(); err != nil {
+			continue
+		}
+
+		if b.EqualAddress(to, depositAddress) {
+			// add to tx deposit amount
+			depositamount = new(big.Int).Add(depositamount, msgamount)
+		}
 	}
 
-	if !allowUnstable {
-		log.Debug("verify swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
-	}
+	swapInfo.To = depositAddress
+	swapInfo.Value = depositamount
+	swapInfo.Bind = bindaddress
+	swapInfo.From = bindaddress
 	return swapInfo, nil
 }
 
-func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
-	if swapInfo.From == swapInfo.To {
-		return tokens.ErrTxWithWrongSender
+func (b *Bridge) GetBindAddressFromMemo(tx sdk.Tx) (address string, ok bool) {
+	if txWithMemo, ok := (tx).(sdk.TxWithMemo); ok {
+		address := txWithMemo.Memo()
+		ok = b.IsValidAddress(memo)
+		return address, ok
+	} else {
+		return "", false
 	}
-	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
-		return tokens.ErrTxWithWrongValue
+}
+
+func (b *Bridge) getAmountFromCoins(coins sdk.Coins) *big.Int {
+	amount := big.NewInt(0)
+	for _, coin := range coins {
+		if strings.EqualFold(coin.Denom, b.TheCoin.Denom) {
+			amount = new(big.Int).Add(amount, coin.Amount.BigInt())
+		}
 	}
-	if !tokens.DstBridge.IsValidAddress(swapInfo.Bind) {
-		log.Debug("wrong bind address in swapin", "bind", swapInfo.Bind)
+	return amount
+}
+
+func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
+	if !tokens.DstBridge.IsValidAddress(bindAddr) {
+		log.Warn("wrong bind address in swapin", "bind", bindAddr)
 		return tokens.ErrTxWithWrongMemo
 	}
+	if !tools.IsAddressRegistered(bindAddr) {
+		return tokens.ErrTxSenderNotRegistered
+	}
+	isContract, err := b.IsContractAddress(bindAddr)
+	if err != nil {
+		log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)
+		return tokens.ErrRPCQueryError
+	}
+	if isContract {
+		return tokens.ErrBindAddrIsContract
+	}
 	return nil
-}
-
-func (b *Bridge) checkStable(txHash string) bool {
-	txStatus := b.GetTransactionStatus(txHash)
-	confirmations := *b.GetChainConfig().Confirmations
-	return txStatus.BlockHeight > 0 && txStatus.Confirmations >= confirmations
-}
-
-// GetReceivedValue get received value
-func (b *Bridge) GetReceivedValue(vout []*electrs.ElectTxOut, receiver, pubkeyType string) (value uint64, memoScript string, rightReceiver bool) {
-	for _, output := range vout {
-		switch *output.ScriptpubkeyType {
-		case opReturnType:
-			memoScript = *output.ScriptpubkeyAsm
-			continue
-		case pubkeyType:
-			if output.ScriptpubkeyAddress == nil || *output.ScriptpubkeyAddress != receiver {
-				continue
-			}
-			rightReceiver = true
-			value += *output.Value
-		}
-	}
-	return value, memoScript, rightReceiver
-}
-
-// return priorityAddress if has it in Vin
-// return the first address in Vin if has no priorityAddress
-func getTxFrom(vin []*electrs.ElectTxin, priorityAddress string) string {
-	from := ""
-	for _, input := range vin {
-		if input != nil &&
-			input.Prevout != nil &&
-			input.Prevout.ScriptpubkeyAddress != nil {
-			if *input.Prevout.ScriptpubkeyAddress == priorityAddress {
-				return priorityAddress
-			}
-			if from == "" {
-				from = *input.Prevout.ScriptpubkeyAddress
-			}
-		}
-	}
-	return from
-}
-
-// GetBindAddressFromMemoScipt get bind address
-func GetBindAddressFromMemoScipt(memoScript string) (bind string, ok bool) {
-	parts := regexMemo.Split(memoScript, -1)
-	if len(parts) != 2 {
-		return "", false
-	}
-	memoHex := strings.TrimSpace(parts[1])
-	memo := common.FromHex(memoHex)
-	memoStr := string(memo)
-	if memoStr == tokens.AggregateMemo {
-		return "", false
-	}
-	if len(memo) <= len(tokens.LockMemoPrefix) {
-		return "", false
-	}
-	if !strings.HasPrefix(memoStr, tokens.LockMemoPrefix) {
-		return "", false
-	}
-	bind = string(memo[len(tokens.LockMemoPrefix):])
-	return bind, true
 }

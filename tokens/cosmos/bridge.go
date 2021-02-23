@@ -7,39 +7,86 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
+var ChainIDs map[string]bool
 
 // PairID unique cosmos pair ID
 var PairID = "cosmos"
 
+// SupportedCoins save cosmos coins
+var SupportedCoins map[string]CosmosCoin
+
+var TheCoin CosmosCoin
+
+type CosmosCoin struct {
+	Denom string,
+	Decimal uint8,
+}
+
+// Init init after verify
+func (b *Bridge) Init() {
+	b.InitChains()
+	b.InitCoins()
+	b.InitLatestBlockNumber()
+}
+
+// InitChains init chains
+func InitChains() {
+	ChainIDs["cosmos-hub4"] = true
+}
+
+// InitCoins init coins
+func  (b *Bridge) InitCoins() {
+	SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
+}
+
 // Bridge btc bridge
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
+	*eth.NonceSetterBase
 }
 
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	return &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
+		NonceSetterBase:      eth.NewNonceSetterBase(),
 	}
 }
 
 // SetChainAndGateway set chain and gateway config
 func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
+	b.Init()
 	b.InitLatestBlockNumber()
+	symbol := strings.ToUpper(tokenCfg.Symbol)
+	TheCoin = SupportedCoins[symbol]
+	b.VerifyChainID()
+}
+
+// VerifyChainID verify chain id
+func (b *Bridge) VerifyChainID() {
+	chainID := strings.ToLower(b.ChainConfig.NetID)
+	if ChainIDs[chainID] == false {
+		log.Fatalf("unsupported cosmos network: %v", b.ChainConfig.NetID)
+	}
 }
 
 // VerifyTokenConfig verify token config
 func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
-	if !b.IsP2pkhAddress(tokenCfg.DcrmAddress) {
-		return fmt.Errorf("invalid dcrm address (not p2pkh): %v", tokenCfg.DcrmAddress)
-	}
 	if !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
-	if strings.EqualFold(tokenCfg.Symbol, "BTC") && *tokenCfg.Decimals != 8 {
-		return fmt.Errorf("invalid decimals for BTC: want 8 but have %v", *tokenCfg.Decimals)
+	symbol := strings.ToUpper(tokenCfg.Symbol)
+	if coin, ok := SupportedCoins[symbol]; ok {
+		if coin.Decimal != *tokenCfg.Decimals {
+			return fmt.Errorf("invalid decimals for %v: want %v but have %v",  symbol, coin.Decimal, *tokenCfg.Decimals)
+		}
+	} else {
+		return fmt.Errorf("Unsupported cosmos coin type")
 	}
 	return nil
 }
