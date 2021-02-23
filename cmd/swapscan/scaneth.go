@@ -32,6 +32,11 @@ var (
 		Usage: "scan transaction receipt",
 	}
 
+	isProxyFlag = &cli.BoolFlag{
+		Name:  "isProxy",
+		Usage: "is proxy contract",
+	}
+
 	scanEthCommand = &cli.Command{
 		Action:    scanEth,
 		Name:      "scaneth",
@@ -53,6 +58,7 @@ scan swap on eth
 			utils.JobsFlag,
 			isSwapoutType2Flag,
 			scanReceiptFlag,
+			isProxyFlag,
 		},
 	}
 
@@ -72,6 +78,7 @@ type ethSwapScanner struct {
 	jobCount         uint64
 	isSwapoutType2   bool
 	scanReceipt      bool
+	isProxy          bool
 
 	client *ethclient.Client
 	ctx    context.Context
@@ -101,6 +108,7 @@ func scanEth(ctx *cli.Context) error {
 	scanner.jobCount = ctx.Uint64(utils.JobsFlag.Name)
 	scanner.isSwapoutType2 = ctx.Bool(isSwapoutType2Flag.Name)
 	scanner.scanReceipt = ctx.Bool(scanReceiptFlag.Name)
+	scanner.isProxy = ctx.Bool(isProxyFlag.Name)
 
 	switch strings.ToLower(scanner.swapType) {
 	case "swapin":
@@ -119,6 +127,7 @@ func scanEth(ctx *cli.Context) error {
 		"tokenAddress", scanner.tokenAddresses,
 		"pairID", scanner.pairIDs,
 		"scanReceipt", scanner.scanReceipt,
+		"isProxy", scanner.isProxy,
 		"start", scanner.startHeight,
 		"end", scanner.endHeight,
 		"stable", scanner.stableHeight,
@@ -212,15 +221,15 @@ func (scanner *ethSwapScanner) init() {
 		}
 		if scanner.isSwapin {
 			err = eth.VerifyErc20ContractCode(code)
-			if err != nil {
-				log.Warn("verify erc20 code failed. please ensure it's proxy contract of erc20", "contract", tokenAddr, "err", err)
-				err = nil // do not exit
-			}
 		} else {
 			err = eth.VerifySwapContractCode(code)
 		}
 		if err != nil {
-			log.Fatalf("wrong contract address '%v', %v", tokenAddr, err)
+			if scanner.isProxy {
+				log.Warn("verify contract code failed. please ensure it's proxy contract", "contract", tokenAddr, "err", err)
+			} else {
+				log.Fatalf("wrong contract address '%v', %v", tokenAddr, err)
+			}
 		}
 	}
 }
