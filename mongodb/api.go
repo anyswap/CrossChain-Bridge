@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -415,6 +416,9 @@ func findSwapResults(collection *mgo.Collection, address, pairID string, offset,
 	}
 
 	if address != "" && address != allAddresses {
+		if common.IsHexAddress(address) {
+			address = strings.ToLower(address)
+		}
 		queries = append(queries, bson.M{"from": address})
 	}
 
