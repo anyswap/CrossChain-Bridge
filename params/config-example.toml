@@ -57,6 +57,12 @@ InitialHeight = 0
 EnableScan = false
 # whether scan transaction receipt logs
 ScanReceipt = false
+# max gas price fluct percent
+MaxGasPriceFluctPercent = 10
+# wait time to replace swapout match tx
+WaitTimeToReplace = 900
+# max replace swap count
+MaxReplaceCount = 20
 
 # source blockchain gateway config
 [SrcGateway]
@@ -74,6 +80,12 @@ InitialHeight = 0
 EnableScan = false
 # whether scan transaction receipt logs
 ScanReceipt = false
+# max gas price fluct percent
+MaxGasPriceFluctPercent = 10
+# wait time to replace swapin match tx
+WaitTimeToReplace = 900
+# max replace swap count
+MaxReplaceCount = 20
 
 # dest blockchain gateway config
 [DestGateway]
