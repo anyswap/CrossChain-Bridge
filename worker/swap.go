@@ -321,13 +321,27 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 
 	swapTxNonce := args.GetTxNonce()
 
+	var existsInOld bool
+	var oldSwapTxs []string
+	for _, oldSwapTx := range res.OldSwapTxs {
+		if oldSwapTx == txHash {
+			existsInOld = true
+			break
+		}
+	}
+	if !existsInOld {
+		oldSwapTxs = res.OldSwapTxs
+		oldSwapTxs = append(oldSwapTxs, txHash)
+	}
+
 	// update database before sending transaction
 	addSwapHistory(txid, bind, originValue, txHash, swapTxNonce, isSwapin)
 	matchTx := &MatchTx{
-		SwapTx:    txHash,
-		SwapValue: tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
-		SwapType:  swapType,
-		SwapNonce: swapTxNonce,
+		SwapTx:     txHash,
+		OldSwapTxs: oldSwapTxs,
+		SwapValue:  tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
+		SwapType:   swapType,
+		SwapNonce:  swapTxNonce,
 	}
 	err = updateSwapResult(txid, pairID, bind, matchTx)
 	if err != nil {

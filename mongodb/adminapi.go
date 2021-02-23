@@ -190,7 +190,7 @@ func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, forceO
 		log.Warn("get account nonce failed", "address", tokenCfg.DcrmAddress)
 		time.Sleep(time.Second)
 	}
-	if nonce < res.SwapNonce {
+	if nonce <= res.SwapNonce {
 		return errors.New("can not retry swap with lower nonce")
 	}
 	return nil
