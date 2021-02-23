@@ -3,6 +3,7 @@ package rpcapi
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/admin"
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -131,7 +132,7 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 	}
 	operation := args.Params[0]
 	direction := args.Params[1]
-	pairID := args.Params[2]
+	pairIDs := args.Params[2]
 
 	var newDisableFlag bool
 	switch operation {
@@ -157,23 +158,37 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 		return fmt.Errorf("unknown direction '%v'", direction)
 	}
 
-	if isDeposit {
-		tokenCfg := tokens.GetTokenConfig(pairID, true)
-		if tokenCfg == nil {
-			return fmt.Errorf("pairID %v is not configed", pairID)
-		}
-		tokenCfg.DisableSwap = newDisableFlag
+	var pairIDSlice []string
+	if strings.EqualFold(pairIDs, "all") {
+		pairIDSlice = tokens.GetAllPairIDs()
+	} else {
+		pairIDSlice = strings.Split(pairIDs, ",")
 	}
 
-	if isWithdraw {
-		tokenCfg := tokens.GetTokenConfig(pairID, false)
-		if tokenCfg == nil {
-			return fmt.Errorf("pairID %v is not configed", pairID)
+	var successPairs, failedPairs string
+	for _, pairID := range pairIDSlice {
+		pairCfg := tokens.GetTokenPairConfig(pairID)
+		if pairCfg == nil {
+			failedPairs += " " + pairID
+			continue
 		}
-		tokenCfg.DisableSwap = newDisableFlag
+		if isDeposit {
+			pairCfg.SrcToken.DisableSwap = newDisableFlag
+		}
+
+		if isWithdraw {
+			pairCfg.DestToken.DisableSwap = newDisableFlag
+		}
+
+		successPairs += " " + pairID
 	}
 
-	*result = successReuslt
+	resultStr := "success: " + successPairs
+	if failedPairs != "" {
+		resultStr += ", failed: " + failedPairs
+	}
+
+	*result = resultStr
 	return nil
 }
 
