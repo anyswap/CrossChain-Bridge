@@ -35,6 +35,8 @@ type ChainConfig struct {
 	ScanReceipt   bool `json:",omitempty"`
 
 	MaxGasPriceFluctPercent uint64 `json:",omitempty"`
+	WaitTimeToReplace       int64  // seconds
+	MaxReplaceCount         int
 }
 
 // GatewayConfig struct

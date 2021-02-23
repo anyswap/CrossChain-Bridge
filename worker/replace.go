@@ -1,12 +1,15 @@
 package worker
 
 import (
+	"fmt"
+
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
 var (
-	waitTimeToReplace = int64(600) // seconds
+	defWaitTimeToReplace = int64(900) // seconds
+	defMaxReplaceCount   = 20
 )
 
 // StartReplaceJob replace job
@@ -70,15 +73,36 @@ func findSwapoutsToReplace() ([]*mongodb.MgoSwapResult, error) {
 }
 
 func processSwapinReplace(swap *mongodb.MgoSwapResult) error {
-	if getSepTimeInFind(waitTimeToReplace) < swap.Timestamp {
-		return nil
-	}
-	return ReplaceSwapin(swap.TxID, swap.PairID, swap.Bind, "")
+	return processReplaceSwap(swap, true)
 }
 
 func processSwapoutReplace(swap *mongodb.MgoSwapResult) error {
+	return processReplaceSwap(swap, false)
+}
+
+func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) error {
+	var chainCfg *tokens.ChainConfig
+	if isSwapin {
+		chainCfg = tokens.DstBridge.GetChainConfig()
+	} else {
+		chainCfg = tokens.SrcBridge.GetChainConfig()
+	}
+	waitTimeToReplace := chainCfg.WaitTimeToReplace
+	maxReplaceCount := chainCfg.MaxReplaceCount
+	if waitTimeToReplace == 0 {
+		waitTimeToReplace = defWaitTimeToReplace
+	}
+	if maxReplaceCount == 0 {
+		maxReplaceCount = defMaxReplaceCount
+	}
+	if len(swap.OldSwapTxs) > maxReplaceCount {
+		return fmt.Errorf("replace swap too many times (> %v)", maxReplaceCount)
+	}
 	if getSepTimeInFind(waitTimeToReplace) < swap.Timestamp {
 		return nil
+	}
+	if isSwapin {
+		return ReplaceSwapin(swap.TxID, swap.PairID, swap.Bind, "")
 	}
 	return ReplaceSwapout(swap.TxID, swap.PairID, swap.Bind, "")
 }
