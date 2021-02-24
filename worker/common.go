@@ -161,7 +161,7 @@ func dcrmSignTransaction(bridge tokens.CrossChainBridge, rawTx interface{}, args
 	return signedTx, txHash, nil
 }
 
-func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin bool) (err error) {
+func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin, isReplace bool) (err error) {
 	var (
 		txHash              string
 		retrySendTxCount    = 3
@@ -184,8 +184,10 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
 		return err
 	}
-	if nonceSetter, ok := bridge.(tokens.NonceSetter); ok {
-		nonceSetter.IncreaseNonce(pairID, 1)
+	if !isReplace {
+		if nonceSetter, ok := bridge.(tokens.NonceSetter); ok {
+			nonceSetter.IncreaseNonce(pairID, 1)
+		}
 	}
 	return nil
 }

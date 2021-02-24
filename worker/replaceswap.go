@@ -123,7 +123,7 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) error {
 		return err
 	}
 
-	err = sendSignedTransaction(bridge, signedTx, txid, pairID, bind, isSwapin)
+	err = sendSignedTransaction(bridge, signedTx, txid, pairID, bind, isSwapin, true)
 	if err != nil {
 		return err
 	}

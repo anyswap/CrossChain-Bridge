@@ -355,7 +355,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	return sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
+	return sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin, false)
 }
 
 type swapInfo struct {
