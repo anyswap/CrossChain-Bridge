@@ -14,7 +14,7 @@ var (
 		Action:    replaceswap,
 		Name:      "replaceswap",
 		Usage:     "admin replace swap",
-		ArgsUsage: "<swapin|swapout> <txid> <pairID> <bind> <gasPrice>",
+		ArgsUsage: "<swapin|swapout> <txid> <pairID> <bind> [gasPrice]",
 		Description: `
 admin replace swap with higher gas price
 `,
@@ -25,10 +25,10 @@ admin replace swap with higher gas price
 func replaceswap(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
 	method := "replaceswap"
-	if ctx.NArg() != 5 {
+	if !(ctx.NArg() == 4 || ctx.NArg() == 5) {
 		_ = cli.ShowCommandHelp(ctx, method)
 		fmt.Println()
-		return fmt.Errorf("invalid arguments: %q", ctx.Args())
+		return fmt.Errorf("invalid number arguments: %q", ctx.Args())
 	}
 
 	err := prepare(ctx)
@@ -40,14 +40,17 @@ func replaceswap(ctx *cli.Context) error {
 	txid := ctx.Args().Get(1)
 	pairID := ctx.Args().Get(2)
 	bind := ctx.Args().Get(3)
-	gasPriceStr := ctx.Args().Get(4)
 
-	gasPrice, ok := new(big.Int).SetString(gasPriceStr, 0)
-	if !ok {
-		return fmt.Errorf("wrong gas price: %v", gasPriceStr)
-	}
-	if gasPrice.Cmp(big.NewInt(1e13)) > 0 {
-		return fmt.Errorf("gas price is too large (> 10000 gwei): %v", gasPriceStr)
+	var gasPriceStr string
+	if ctx.NArg() > 4 {
+		gasPriceStr = ctx.Args().Get(4)
+		gasPrice, ok := new(big.Int).SetString(gasPriceStr, 0)
+		if !ok {
+			return fmt.Errorf("wrong gas price: %v", gasPriceStr)
+		}
+		if gasPrice.Cmp(big.NewInt(1e13)) > 0 {
+			return fmt.Errorf("gas price is too large (> 10000 gwei): %v", gasPriceStr)
+		}
 	}
 
 	switch operation {
