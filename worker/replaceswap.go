@@ -39,7 +39,7 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 		return nil, nil, errors.New("swaptx with block height")
 	}
 	bridge := tokens.GetCrossChainBridge(!isSwapin)
-	txStat := bridge.GetTransactionStatus(res.SwapTx)
+	txStat := getSwapTxStatus(bridge, res)
 	if txStat != nil && txStat.BlockHeight > 0 {
 		return nil, nil, errors.New("swaptx exist in chain")
 	}
@@ -123,13 +123,8 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) error {
 		return err
 	}
 
-	err = sendSignedTransaction(bridge, signedTx, txid, pairID, bind, isSwapin, true)
-	if err != nil {
-		return err
-	}
-
 	replaceSwapResult(res, txHash, isSwapin)
-	return nil
+	return sendSignedTransaction(bridge, signedTx, txid, pairID, bind, isSwapin, true)
 }
 
 func replaceSwapResult(swapResult *mongodb.MgoSwapResult, txHash string, isSwapin bool) {
