@@ -14,12 +14,20 @@ import (
 
 // VerifyMsgHash verify msg hash
 func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) {
-	// TODO
-	stdmsg, ok := rawTx.(authtypes.StdSignMsg)
+	tx, ok := rawTx.(StdSignContent)
 	if !ok {
-		return 
+		return errors.New("raw tx type assertion error") 
 	}
-	return nil, errors.New("raw tx type assertion error")
+	msgs  := tx.Msgs
+
+	fee = tx.Fee
+
+	signBytes := authtypes.StdSignBytes(tx.ChainID, tx.AccountNumber, tx.Sequence, fee, msgs, tx.Memo)
+	txHash := fmt.Sprintf("%X", tmhash.Sum(signBytes))
+	if strings.EqualFold(txHash, msgHash[0]) == true {
+		return nil
+	}
+	return errors.New("msg hash not match")
 }
 
 // VerifyTransaction impl

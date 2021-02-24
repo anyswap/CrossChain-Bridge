@@ -70,7 +70,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
-	stdmsg := authtypes.StdSignMsg{
+	rawTx = StdSignContent{
 		ChainID: b.ChainConfig.NetID,
 		AccountNumber: accountNumber,
 		Sequence: *seq,
@@ -78,7 +78,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		Msgs: []sdk.Msg{sendmsg},
 		Memo: memo,
 	}
-	return nil, nil
+	return
 }
 
 func (b *Bridge) getSequence(pairID, from string, swapType tokens.SwapType) (*uint64, error) {

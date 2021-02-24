@@ -1,6 +1,8 @@
 package cosmos
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/big"
 	"net/url"
 
@@ -8,7 +10,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
-	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
@@ -207,8 +208,8 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 	return 0, nil
 }
 
-// GetBlockByNumber
-func (b *Bridge) GetBlockByNumber(number *big.Int) (ctypes.ResultBlock, error) {
+// SearchTxs searches tx in range of blocks
+func (b *Bridge) SearchTxs(start, end *big.Int) ([]string, error) {
 	// TODO
-	return ctypes.ResultBlock{}, nil
+	return nil, nil
 }

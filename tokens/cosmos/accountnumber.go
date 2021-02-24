@@ -1,5 +1,6 @@
 package cosmos
 
+// account number is associated with account on a cosmos state
 var accountNumberCached map[string]uint64
 
 func (b *Bridge) GetAccountNumberCached(address string) (uint64, error) {
