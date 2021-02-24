@@ -149,6 +149,7 @@ func replaceSwapResult(swapResult *mongodb.MgoSwapResult, txHash string, isSwapi
 		oldSwapTxs = append(oldSwapTxs, txHash)
 	}
 	updates := &mongodb.SwapResultUpdateItems{
+		Status:     mongodb.KeepStatus,
 		SwapTx:     txHash,
 		OldSwapTxs: oldSwapTxs,
 		Timestamp:  now(),

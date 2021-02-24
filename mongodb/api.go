@@ -327,8 +327,10 @@ func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
 func updateSwapResult(collection *mgo.Collection, txid, pairID, bind string, items *SwapResultUpdateItems) error {
 	pairID = strings.ToLower(pairID)
 	updates := bson.M{
-		"status":    items.Status,
 		"timestamp": items.Timestamp,
+	}
+	if items.Status != KeepStatus {
+		updates["status"] = items.Status
 	}
 	if items.SwapTx != "" {
 		updates["swaptx"] = items.SwapTx
