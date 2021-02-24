@@ -67,7 +67,7 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 		Status:    mongodb.MatchTxNotStable,
 		Timestamp: now(),
 	}
-	if mtx.SwapTx != "" {
+	if mtx.SwapHeight == 0 {
 		updates.SwapTx = mtx.SwapTx
 		updates.OldSwapTxs = mtx.OldSwapTxs
 		updates.SwapValue = mtx.SwapValue
@@ -77,6 +77,9 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 	} else {
 		updates.SwapHeight = mtx.SwapHeight
 		updates.SwapTime = mtx.SwapTime
+		if mtx.SwapTx != "" {
+			updates.SwapTx = mtx.SwapTx
+		}
 	}
 	switch mtx.SwapType {
 	case tokens.SwapinType:

@@ -161,8 +161,8 @@ func replaceSwapResult(swapResult *mongodb.MgoSwapResult, txHash string, isSwapi
 		err = mongodb.UpdateSwapoutResult(txid, pairID, bind, updates)
 	}
 	if err != nil {
-		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash)
+		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "nonce", swapResult.SwapNonce)
 	} else {
-		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash)
+		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "nonce", swapResult.SwapNonce)
 	}
 }
