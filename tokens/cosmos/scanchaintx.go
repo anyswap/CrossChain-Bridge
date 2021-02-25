@@ -96,6 +96,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 				break
 			}
 			blockRange := fmt.Sprintf("%v-%v", start, end)
+			log.Debug("cosmos scan loop", "range", blockRange)
 			if scannedRange.IsBlockScanned(blockRange) {
 				h = end + 1
 				continue

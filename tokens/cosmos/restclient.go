@@ -33,13 +33,13 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, getBalanceError e
 		client := resty.New()
 		resp, err := client.R().Get(fmt.Sprintf("%vbank/balances/%v", endpoint, account))
 		if err != nil || resp.StatusCode() != 200 {
-			getBalanceError = fmt.Errorf("Cannot connect to resp endpoint")
+			log.Warn("cosmos rest request error", "request error", err)
 			continue
 		}
 		var balances sdk.Coins
 		err = json.Unmarshal(resp.Body(), &balances)
 		if err != nil {
-			getBalanceError = fmt.Errorf("Unmarshal balance responce error")
+			log.Warn("cosmos rest request error", "unmarshal error", getBalanceError)
 			continue
 		}
 		for _, bal := range balances {
@@ -71,13 +71,13 @@ func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (b
 		client := resty.New()
 		resp, err := client.R().Get(fmt.Sprintf("%vbank/balances/%v", endpoint, accountAddress))
 		if err != nil || resp.StatusCode() != 200 {
-			getBalanceError = fmt.Errorf("Cannot connect to resp endpoint")
+			log.Warn("cosmos rest request error", "error", err)
 			continue
 		}
 		var balances sdk.Coins
 		err = json.Unmarshal(resp.Body(), &balances)
 		if err != nil {
-			getBalanceError = fmt.Errorf("Unmarshal balance responce error")
+			log.Warn("cosmos rest request error", "unmarshal error", getBalanceError)
 			continue
 		}
 		for _, bal := range balances {
@@ -110,12 +110,13 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, getTxError error
 
 		resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, txHash))
 		if err != nil || resp.StatusCode() != 200 {
-			getTxError = fmt.Errorf("Cannot connect to resp endpoint")
+			log.Warn("cosmos rest request error", "request error", err)
 			continue
 		}
 		var txResult sdk.TxResponse
 		err = json.Unmarshal(resp.Body(), &txResult)
 		if err != nil {
+			log.Warn("cosmos rest request error", "unmarshal error", err)
 			return nil, err
 		}
 		tx = txResult.Tx
@@ -149,12 +150,14 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, txHash))
 		if err != nil || resp.StatusCode() != 200 {
+			log.Warn("cosmos rest request error", "request error", err)
 			continue
 		}
 
 		var txResult sdk.TxResponse
 		err = json.Unmarshal(resp.Body(), &txResult)
 		if err != nil {
+			log.Warn("cosmos rest request error", "unmarshal error", err)
 			return
 		}
 		tx := txResult.Tx
@@ -184,13 +187,13 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, getLatestError error) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
 		if err != nil || resp.StatusCode() != 200 {
-			getLatestError = fmt.Errorf("Cannot connect to resp endpoint")
+			log.Warn("cosmos rest request error", "request error", err)
 			continue
 		}
 		var blockRes ctypes.ResultBlock
 		err = json.Unmarshal(resp.Body(), &blockRes)
 		if err != nil {
-			getLatestError = fmt.Errorf("Unmarshal block response error")
+			log.Warn("cosmos rest request error", "unmarshal error", err)
 			continue
 		}
 		height = uint64(blockRes.Block.Header.Height)
@@ -210,13 +213,14 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
 	if err != nil || resp.StatusCode() != 200 {
 		getLatestError := fmt.Errorf("Cannot connect to resp endpoint")
+		log.Warn("cosmos rest request error", "request error", getLatestError)
 		return 0, getLatestError
 	}
 	var blockRes ctypes.ResultBlock
 	err = json.Unmarshal(resp.Body(), &blockRes)
 	if err != nil {
-		getLatestError := fmt.Errorf("Unmarshal block response error")
-		return 0, getLatestError
+		log.Warn("cosmos rest request error", "unmarshal error", err)
+		return 0, err
 	}
 	height := uint64(blockRes.Block.Header.Height)
 	return height, nil
@@ -234,11 +238,13 @@ func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
 		if err != nil || resp.StatusCode() != 200 {
+			log.Warn("cosmos rest request error", "request error", err)
 			continue
 		}
 		var accountRes authtypes.BaseAccount
 		err = json.Unmarshal(resp.Body(), &accountRes)
 		if err != nil {
+			log.Warn("cosmos rest request error", "unmarshal error", err)
 			continue
 		}
 		accountNumber := accountRes.AccountNumber
@@ -259,11 +265,13 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
 		if err != nil || resp.StatusCode() != 200 {
+			log.Warn("cosmos rest request error", "request error", err)
 			continue
 		}
 		var accountRes authtypes.BaseAccount
 		err = json.Unmarshal(resp.Body(), &accountRes)
 		if err != nil {
+			log.Warn("cosmos rest request error", "unmarshal error", err)
 			continue
 		}
 		seq := accountRes.Sequence
@@ -290,12 +298,13 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]string, error) {
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
+				log.Warn("cosmos rest request error", "request error", err)
 				continue
 			}
 			var res sdk.SearchTxsResult
 			err = json.Unmarshal(resp.Body(), &res)
 			if err != nil {
-				log.Warn("Search txs error", "start", start, "end", end, "page", page)
+				log.Warn("Search txs unmarshal error", "start", start, "end", end, "page", page)
 				continue
 			}
 			pageTotal = res.PageTotal
@@ -329,11 +338,13 @@ func (b *Bridge) BroadcastTx(tx authtypes.StdTx) error {
 			SetBody(data).
 			Post(endpoint)
 		if err != nil || resp.StatusCode() != 200 {
+			log.Warn("cosmos rest request error", "request error", err)
 			continue
 		}
 		var res ctypes.ResultBroadcastTxCommit
 		err = json.Unmarshal(resp.Body(), res)
 		if err != nil {
+			log.Warn("cosmos rest request error", "unmarshal error", err)
 			continue
 		}
 		log.Debug("Send tx success", "res", res)

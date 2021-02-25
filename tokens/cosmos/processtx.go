@@ -5,7 +5,6 @@ import (
 )
 
 func (b *Bridge) processTransaction(txdata string) {
-	// GetTransaction
 	// txstring is protobyte bytes of Tx
 	if b.IsSrc {
 		b.processSwapin(txdata)

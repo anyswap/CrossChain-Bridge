@@ -11,15 +11,14 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 	"github.com/urfave/cli/v2"
 )
 
 var (
-
 	scanLtcCommand = &cli.Command{
 		Action:    scanLtc,
 		Name:      "scanltc",
