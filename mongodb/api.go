@@ -375,6 +375,7 @@ func updateSwapResultStatus(collection *mgo.Collection, txid, pairID, bind strin
 	} else if status == MatchTxEmpty {
 		updates["memo"] = ""
 		updates["swaptx"] = ""
+		updates["oldswaptxs"] = nil
 		updates["swapheight"] = 0
 		updates["swaptime"] = 0
 	}

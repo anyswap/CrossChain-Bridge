@@ -123,11 +123,14 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) error {
 		return err
 	}
 
-	replaceSwapResult(res, txHash, isSwapin)
+	err = replaceSwapResult(res, txHash, isSwapin)
+	if err != nil {
+		return err
+	}
 	return sendSignedTransaction(bridge, signedTx, txid, pairID, bind, isSwapin, true)
 }
 
-func replaceSwapResult(swapResult *mongodb.MgoSwapResult, txHash string, isSwapin bool) {
+func replaceSwapResult(swapResult *mongodb.MgoSwapResult, txHash string, isSwapin bool) (err error) {
 	txid := swapResult.TxID
 	pairID := swapResult.PairID
 	bind := swapResult.Bind
@@ -143,20 +146,11 @@ func replaceSwapResult(swapResult *mongodb.MgoSwapResult, txHash string, isSwapi
 		oldSwapTxs = swapResult.OldSwapTxs
 		oldSwapTxs = append(oldSwapTxs, txHash)
 	}
-	updates := &mongodb.SwapResultUpdateItems{
-		Status:     mongodb.KeepStatus,
-		OldSwapTxs: oldSwapTxs,
-		Timestamp:  now(),
-	}
-	var err error
-	if isSwapin {
-		err = mongodb.UpdateSwapinResult(txid, pairID, bind, updates)
-	} else {
-		err = mongodb.UpdateSwapoutResult(txid, pairID, bind, updates)
-	}
+	err = updateOldSwapTxs(txid, pairID, bind, oldSwapTxs, isSwapin)
 	if err != nil {
 		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "nonce", swapResult.SwapNonce)
 	} else {
 		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "nonce", swapResult.SwapNonce)
 	}
+	return err
 }

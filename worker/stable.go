@@ -94,11 +94,7 @@ func isTxOnChain(bridge tokens.CrossChainBridge, txStatus *tokens.TxStatus) bool
 	if !ok {
 		return true
 	}
-	if txStatus.Receipt == nil {
-		return false
-	}
-	receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-	return ok && *receipt.Status == 1
+	return txStatus.Receipt != nil
 }
 
 func getSwapTxStatus(resBridge tokens.CrossChainBridge, swap *mongodb.MgoSwapResult) *tokens.TxStatus {
