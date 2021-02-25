@@ -13,7 +13,7 @@ type Bridge struct {
 	*cosmos.Bridge
 }
 
-func initSDK() {
+func InitSDK() {
 	config := sdk.GetConfig()
 	config.SetCoinType(core.CoinType)
 	config.SetFullFundraiserPath(core.FullFundraiserPath)
@@ -28,7 +28,7 @@ var PairID = "TERRA"
 // Init init after verify
 func (b *Bridge) Init() {
 	cosmos.PairID = PairID
-	initSDK()
+	InitSDK()
 	b.InitCoins()
 	b.Bridge.InitLatestBlockNumber()
 	cosmos.GetFeeAmount = TerraGetFeeAmount
