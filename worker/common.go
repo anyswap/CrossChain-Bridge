@@ -105,6 +105,24 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 	return err
 }
 
+func updateSwapTx(txid, pairID, bind, swapTx string, isSwapin bool) (err error) {
+	updates := &mongodb.SwapResultUpdateItems{
+		SwapTx:    swapTx,
+		Timestamp: now(),
+	}
+	if isSwapin {
+		err = mongodb.UpdateSwapinResult(txid, pairID, bind, updates)
+	} else {
+		err = mongodb.UpdateSwapoutResult(txid, pairID, bind, updates)
+	}
+	if err != nil {
+		logWorkerError("update", "updateSwapTx", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swapTx)
+	} else {
+		logWorker("update", "updateSwapTx", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swapTx)
+	}
+	return err
+}
+
 func markSwapResultStable(txid, pairID, bind string, isSwapin bool) (err error) {
 	status := mongodb.MatchTxStable
 	timestamp := now()

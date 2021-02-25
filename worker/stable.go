@@ -85,13 +85,17 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	return processSwapStable(swap, false)
 }
 
-func isTxOnChain(txStatus *tokens.TxStatus) bool {
+func isTxOnChain(bridge tokens.CrossChainBridge, txStatus *tokens.TxStatus) bool {
 	if txStatus == nil || txStatus.BlockHeight == 0 {
 		return false
 	}
 	// only consider eth like tx
-	if txStatus.Receipt == nil {
+	_, ok := bridge.(tokens.NonceSetter)
+	if !ok {
 		return true
+	}
+	if txStatus.Receipt == nil {
+		return false
 	}
 	receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
 	return ok && *receipt.Status == 1
@@ -99,14 +103,17 @@ func isTxOnChain(txStatus *tokens.TxStatus) bool {
 
 func getSwapTxStatus(resBridge tokens.CrossChainBridge, swap *mongodb.MgoSwapResult) *tokens.TxStatus {
 	txStatus := resBridge.GetTransactionStatus(swap.SwapTx)
-	if isTxOnChain(txStatus) {
+	if isTxOnChain(resBridge, txStatus) {
 		return txStatus
 	}
 	for _, oldSwapTx := range swap.OldSwapTxs {
-		txStatus = resBridge.GetTransactionStatus(oldSwapTx)
-		if isTxOnChain(txStatus) {
+		if swap.SwapTx == oldSwapTx {
+			continue
+		}
+		txStatus2 := resBridge.GetTransactionStatus(oldSwapTx)
+		if isTxOnChain(resBridge, txStatus2) {
 			swap.SwapTx = oldSwapTx
-			return txStatus
+			return txStatus2
 		}
 	}
 	return txStatus
@@ -123,6 +130,9 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	if swap.SwapHeight != 0 {
 		if txStatus.Confirmations < *resBridge.GetChainConfig().Confirmations {
 			return nil
+		}
+		if swap.SwapTx != oldSwapTx {
+			_ = updateSwapTx(swap.TxID, swap.PairID, swap.Bind, swap.SwapTx, isSwapin)
 		}
 		if txStatus.Receipt != nil {
 			receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
