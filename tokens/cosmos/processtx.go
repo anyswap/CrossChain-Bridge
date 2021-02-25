@@ -1,11 +1,6 @@
 package cosmos
 
 import (
-	"fmt"
-
-	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
@@ -19,7 +14,7 @@ func (b *Bridge) processTransaction(txdata string) {
 	}
 }
 
-func (b *Bridge) processSwapin(txdata string) {
-	swapInfos, errs := verifySwapinTx(PairID, txdata)
-	tools.RegisterSwapin(swapInfo.Hash, swapInfos, errs)
+func (b *Bridge) processSwapin(txid string) {
+	swapInfos, errs := b.verifySwapinTx(PairID, txid, true)
+	tools.RegisterSwapin(txid, swapInfos, errs)
 }

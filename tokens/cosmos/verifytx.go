@@ -1,29 +1,27 @@
 package cosmos
 
 import (
-	"encoding/hex"
 	"errors"
+	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 // VerifyMsgHash verify msg hash
 func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) {
 	tx, ok := rawTx.(StdSignContent)
 	if !ok {
-		return errors.New("raw tx type assertion error") 
+		return errors.New("raw tx type assertion error")
 	}
-	msgs  := tx.Msgs
 
-	fee = tx.Fee
-
-	signBytes := authtypes.StdSignBytes(tx.ChainID, tx.AccountNumber, tx.Sequence, fee, msgs, tx.Memo)
-	txHash := fmt.Sprintf("%X", tmhash.Sum(signBytes))
+	txHash := tx.Hash()
 	if strings.EqualFold(txHash, msgHash[0]) == true {
 		return nil
 	}
@@ -35,40 +33,47 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	if !b.IsSrc {
 		return nil, tokens.ErrBridgeDestinationNotSupported
 	}
-	return b.verifySwapinTx(pairID, txHash, allowUnstable)
+	swapInfos, errs := b.verifySwapinTx(pairID, txHash, allowUnstable)
+	if len(errs) == 0 {
+		return swapInfos[0], nil
+	}
+	return nil, fmt.Errorf("%+v", errs)
 }
 
-func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
 	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
-		return nil, tokens.ErrUnknownPairID
+		return nil, []error{tokens.ErrUnknownPairID}
 	}
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash
-	swapInfo.TxTo = "" // cosmos tx does not have this field
-	if !allowUnstable && !b.checkStable(txHash) {
-		return swapInfo, tokens.ErrTxNotStable
-	}
+	swapInfo.TxTo = ""       // cosmos tx does not have this field
+	/*if !allowUnstable && !b.checkStable(txHash) {
+		errs = []error{tokens.ErrTxNotStable}
+		return swapInfos, errs
+	}*/
 	// sdk.Tx
 	tx, err := b.GetTransaction(txHash)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
-		return swapInfo, tokens.ErrTxNotFound
+		errs = []error{tokens.ErrTxNotStable}
+		return swapInfos, errs
 	}
 	cosmostx, ok := tx.(sdk.Tx)
 	if !ok {
 		log.Debug("[verifySwapin] cosmos tx type assertion error")
-		return swapInfo, fmt.Errorf("Cosmos tx type assertion error")
+		return swapInfos, []error{fmt.Errorf("Cosmos tx type assertion error")}
 	}
 
 	// get bind address from memo
 	bindaddress, ok := b.GetBindAddressFromMemo(cosmostx)
 	if !ok {
-		return swapInfo, fmt.Errorf("Cannot get bind address")
+		return swapInfos, []error{fmt.Errorf("Cannot get bind address")}
 	}
 	if err := b.checkSwapinBindAddress(bindaddress); err != nil {
-		return swapInfo, err
+		errs = []error{err}
+		return swapInfos, errs
 	}
 
 	// aggregate msgs in tx
@@ -79,26 +84,26 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 	depositAddress := tokenCfg.DepositAddress
 	msgs := cosmostx.GetMsgs()
 	depositamount := big.NewInt(0)
-	for _, msg :=  range msgs {
+	for _, msg := range msgs {
 		msgtype := msg.Type()
 		msgamount := big.NewInt(0) // deposit amount in one msg
-		if msgtype == banktypes.TypeMsgSend {
+		if msgtype == TypeMsgSend {
 			// MsgSend
-			msgsend, ok := msg.(banktypes.MsgSend)
+			msgsend, ok := msg.(MsgSend)
 			if !ok {
 				continue
 			}
-			if b.EqualAddress(msgsend.ToAddress, depositAddress) {
+			if b.EqualAddress(msgsend.ToAddress.String(), depositAddress) {
 				msgamount = b.getAmountFromCoins(msgsend.Amount)
 			}
-		} else is msgtype == banktypes.TypeMsgMultiSend {
+		} else if msgtype == TypeMsgMultiSend {
 			// MsgMultisend
-			msgmultisend, ok := msg.(banktypes.MsgSend)
+			msgmultisend, ok := msg.(MsgMultiSend)
 			if !ok {
 				continue
 			}
 			for _, output := range msgmultisend.Outputs {
-				if b.EqualAddress(output.Address, depositAddress){
+				if b.EqualAddress(output.Address.String(), depositAddress) {
 					msgamount = new(big.Int).Add(msgamount, b.getAmountFromCoins(output.Coins))
 				}
 			}
@@ -109,24 +114,25 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 			continue
 		}
 
-		if b.EqualAddress(to, depositAddress) {
-			// add to tx deposit amount
-			depositamount = new(big.Int).Add(depositamount, msgamount)
-		}
+		depositamount = new(big.Int).Add(depositamount, msgamount)
 	}
 
 	swapInfo.To = depositAddress
 	swapInfo.Value = depositamount
 	swapInfo.Bind = bindaddress
 	swapInfo.From = bindaddress
-	return swapInfo, nil
+	swapInfos = []*tokens.TxSwapInfo{swapInfo}
+	return swapInfos, nil
 }
 
 func (b *Bridge) GetBindAddressFromMemo(tx sdk.Tx) (address string, ok bool) {
-	if txWithMemo, ok := (tx).(sdk.TxWithMemo); ok {
-		address := txWithMemo.Memo()
-		ok = b.IsValidAddress(memo)
-		return address, ok
+	authtx, ok := tx.(authtypes.StdTx)
+	if !ok {
+		return "", false
+	}
+	memo := authtx.Memo
+	if ok = b.IsValidAddress(memo); ok {
+		return memo, ok
 	} else {
 		return "", false
 	}
@@ -135,7 +141,7 @@ func (b *Bridge) GetBindAddressFromMemo(tx sdk.Tx) (address string, ok bool) {
 func (b *Bridge) getAmountFromCoins(coins sdk.Coins) *big.Int {
 	amount := big.NewInt(0)
 	for _, coin := range coins {
-		if strings.EqualFold(coin.Denom, b.TheCoin.Denom) {
+		if strings.EqualFold(coin.Denom, TheCoin.Denom) {
 			amount = new(big.Int).Add(amount, coin.Amount.BigInt())
 		}
 	}
@@ -149,14 +155,6 @@ func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
 	}
 	if !tools.IsAddressRegistered(bindAddr) {
 		return tokens.ErrTxSenderNotRegistered
-	}
-	isContract, err := b.IsContractAddress(bindAddr)
-	if err != nil {
-		log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)
-		return tokens.ErrRPCQueryError
-	}
-	if isContract {
-		return tokens.ErrBindAddrIsContract
 	}
 	return nil
 }

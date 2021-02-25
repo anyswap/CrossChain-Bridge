@@ -36,7 +36,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.7.0
 	github.com/tebeka/strftime v0.1.5 // indirect
-	github.com/tendermint/tendermint v0.34.7
+	github.com/tendermint/tendermint v0.33.9
 	github.com/terra-project/core v0.4.2
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
@@ -44,3 +44,7 @@ require (
 )
 
 replace github.com/gogo/protobuf v1.3.3 => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+
+replace github.com/tendermint/tendermin => github.com/tendermint/tendermint v0.33.9
+
+replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.39.2 // indirect

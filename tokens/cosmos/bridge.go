@@ -8,7 +8,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var ChainIDs map[string]bool
@@ -22,8 +21,8 @@ var SupportedCoins map[string]CosmosCoin
 var TheCoin CosmosCoin
 
 type CosmosCoin struct {
-	Denom string,
-	Decimal uint8,
+	Denom   string
+	Decimal uint8
 }
 
 // Init init after verify
@@ -34,13 +33,16 @@ func (b *Bridge) Init() {
 }
 
 // InitChains init chains
-func InitChains() {
+func (b *Bridge) InitChains() {
 	ChainIDs["cosmos-hub4"] = true
 }
 
 // InitCoins init coins
-func  (b *Bridge) InitCoins() {
+func (b *Bridge) InitCoins() {
 	SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
+	tokenCfg := b.GetTokenConfig(PairID)
+	symbol := strings.ToUpper(tokenCfg.Symbol)
+	TheCoin = SupportedCoins[symbol]
 }
 
 // Bridge btc bridge
@@ -62,8 +64,6 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
 	b.Init()
 	b.InitLatestBlockNumber()
-	symbol := strings.ToUpper(tokenCfg.Symbol)
-	TheCoin = SupportedCoins[symbol]
 	b.VerifyChainID()
 }
 
@@ -83,7 +83,7 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	symbol := strings.ToUpper(tokenCfg.Symbol)
 	if coin, ok := SupportedCoins[symbol]; ok {
 		if coin.Decimal != *tokenCfg.Decimals {
-			return fmt.Errorf("invalid decimals for %v: want %v but have %v",  symbol, coin.Decimal, *tokenCfg.Decimals)
+			return fmt.Errorf("invalid decimals for %v: want %v but have %v", symbol, coin.Decimal, *tokenCfg.Decimals)
 		}
 	} else {
 		return fmt.Errorf("Unsupported cosmos coin type")

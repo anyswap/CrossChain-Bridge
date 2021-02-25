@@ -2,6 +2,7 @@ package cosmos
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,13 +14,10 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
-	"github.com/anyswap/CrossChain-Bridge/types"
 
 	"github.com/btcsuite/btcd/btcec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
-	"github.com/tendermint/tendermint/crypto/tmhash"
 )
 
 const (
@@ -28,25 +26,32 @@ const (
 )
 
 func (b *Bridge) verifyTransactionWithArgs(tx StdSignContent, args *tokens.BuildTxArgs) error {
-	if tx.To() == nil || *tx.To() == (common.Address{}) {
-		return fmt.Errorf("[sign] verify tx receiver failed")
-	}
 	tokenCfg := b.GetTokenConfig(args.PairID)
-	if tokenCfg == nil {
-		return fmt.Errorf("[sign] verify tx with unknown pairID '%v'", args.PairID)
+	if len(tx.Msgs) != 1 {
+		return errors.New("wrong msgs length")
 	}
-	checkReceiver := tokenCfg.ContractAddress
-	if args.SwapType == tokens.SwapoutType && !tokenCfg.IsErc20() {
-		checkReceiver = args.Bind
+	msg, ok := tx.Msgs[0].(MsgSend)
+	if !ok {
+		return errors.New("msg types error")
 	}
-	if !strings.EqualFold(tx.To().String(), checkReceiver) {
-		return fmt.Errorf("[sign] verify tx receiver failed")
+	if strings.EqualFold(args.From, msg.FromAddress.String()) == false || strings.EqualFold(msg.FromAddress.String(), tokenCfg.DcrmAddress) == false {
+		return errors.New("wrong from address")
+	}
+	if strings.EqualFold(args.To, msg.ToAddress.String()) == false || b.IsValidAddress(args.To) == false {
+		return errors.New("wrong to address")
+	}
+	if len(msg.Amount) != 1 {
+		return errors.New("wrong amount length")
+	}
+	amount := msg.Amount[0]
+	if amount.Denom != TheCoin.Denom || amount.Amount.BigInt().Cmp(args.Value) != 0 {
+		return errors.New("wrong amount")
 	}
 	return nil
 }
 
 // DcrmSignTransaction dcrm sign raw tx
-func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signTx interface{}, txHash string, err error) {
+func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
 	tx, ok := rawTx.(StdSignContent)
 	if !ok {
 		return nil, "", errors.New("wrong raw tx param")
@@ -55,15 +60,14 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	if err != nil {
 		return nil, "", err
 	}
-	signBytes := authtypes.StdSignBytes(tx.ChainID, tx.AccountNumber, tx.Sequence, fee, msgs, tx.Memo)
-	msgHash := fmt.Sprintf("%X", tmhash.Sum(signBytes))
+	msgHash := tx.Hash()
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
-	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), msgHash.String(), msgContext)
+	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), msgHash, msgContext)
 	if err != nil {
 		return nil, "", err
 	}
-	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash.String(), "txid", args.SwapID)
+	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
 	time.Sleep(retryGetSignStatusInterval)
 
 	var rsv string
@@ -115,61 +119,53 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	copy(arr[:], cpub[:33])
 	pubkey := secp256k1.PubKeySecp256k1(arr)
 
-	sender, err := b.PublicKeyToAddress(pubHex)
-	if err != nil {
-		return nil, "", errors.New("wrong dcrm public key")
-	}
-
-	b, err := hex.DecodeString(rsv)
+	rsvb, err := hex.DecodeString(rsv)
 	if err != nil {
 		return
 	}
-	var signature []byte
-	if len(b) == 65 {
-		sig = b[:64]
+	var signatureBytes []byte
+	if len(rsvb) == 65 {
+		signatureBytes = rsvb[:64]
 	}
 	stdsig := authtypes.StdSignature{
 		PubKey:    pubkey,
-		Signature: signature,
+		Signature: signatureBytes,
 	}
-	signedTx = authtypes.StdTx{
-		Msgs:       tx.Msgs,
-		Fee:        tx.Fee,
-		Signatures: []authtypes.StdSignature{stdsig},
-		Memo:       tx.Memo,
+	signedTx = HashableStdTx{
+		StdSignContent: tx,
+		Signatures:     []authtypes.StdSignature{stdsig},
 	}
 
-	pairID := args.PairID
-	token := b.GetTokenConfig(pairID)
-	if b.EqualAddress(sender.token.DcrmAddress) == false {
-		log.Error("DcrmSignTransaction verify sender failed", "have", sender, "want", token.DcrmAddress)
-		return nil, "", errors.New("wrong sender address")
+	if pubkey.VerifyBytes(tx.SignBytes(), signatureBytes) == false {
+		log.Error("Dcrm sign verify error")
+		return nil, "", errors.New("wrong signature")
 	}
+
 	txHash = msgHash
-	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", signedTx.Nonce())
+	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", signedTx.(HashableStdTx).Sequence)
 	return signedTx, txHash, err
 }
 
 // SignTransaction sign tx with pairID
-func (b *Bridge) SignTransaction(rawTx interface{}, pairID string) (signTx interface{}, txHash string, err error) {
+func (b *Bridge) SignTransaction(rawTx interface{}, pairID string) (signedTx interface{}, txHash string, err error) {
 	privKey := b.GetTokenConfig(pairID).GetDcrmAddressPrivateKey()
 	return b.SignTransactionWithPrivateKey(rawTx, privKey)
 }
 
 // SignTransactionWithPrivateKey sign tx with ECDSA private key
-func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa.PrivateKey) (signTx interface{}, txHash string, err error) {
+func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa.PrivateKey) (signedTx interface{}, txHash string, err error) {
 	// rawTx is of type authtypes.StdSignDoc
 	tx, ok := rawTx.(StdSignContent)
 	if !ok {
 		return nil, "", errors.New("wrong raw tx param")
 	}
 
-	msgs := tx.Msgs
-	fee = tx.Fee
+	signBytes := tx.SignBytes()
 
-	signBytes := authtypes.StdSignBytes(tx.ChainID, tx.AccountNumber, tx.Sequence, fee, msgs, tx.Memo)
-
-	priv := secp256k1.PrivKey(btcec.PrivKey(*privKey).Serialize())
+	var privBytes [32]byte
+	btcecpriv := btcec.PrivateKey(*privKey)
+	copy(privBytes[:], btcecpriv.Serialize()[:33])
+	priv := secp256k1.PrivKeySecp256k1(privBytes)
 	signature, err := priv.Sign(signBytes)
 	if err != nil {
 		return nil, "", err
@@ -177,24 +173,17 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 
 	pub := priv.PubKey()
 
-	signedTx, err := types.SignTx(tx, b.Signer, privKey)
-	if err != nil {
-		return nil, "", fmt.Errorf("sign tx failed, %v", err)
-	}
-
 	stdsig := authtypes.StdSignature{
 		PubKey:    pub,
 		Signature: signature,
 	}
 
-	signTx = authtypes.StdTx{
-		Msgs:       msgs,
-		Fee:        fee,
-		Signatures: []authtypes.StdSignature{stdsig},
-		Memo:       tx.Memo,
+	signedTx = HashableStdTx{
+		StdSignContent: tx,
+		Signatures:     []authtypes.StdSignature{stdsig},
 	}
 
-	txHash = fmt.Sprintf("%X", tmhash.Sum(signBytes))
+	txHash = signedTx.(HashableStdTx).Hash()
 
 	return
 }

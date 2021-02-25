@@ -3,21 +3,19 @@ package cosmos
 import (
 	"errors"
 	"fmt"
-	"math/big"
-	"time"
+	"strings"
 
-	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
-var defaultSwapoutGas uint64 = 300000
+var DefaultSwapoutGas uint64 = 300000
 
 var GetFeeAmount = func() authtypes.StdFee {
 	// TODO
-	return sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
+	feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
+	return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 }
 
 // BuildRawTransaction build raw tx
@@ -31,7 +29,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		memo     = args.Memo
 	)
 	tokenCfg = b.GetTokenConfig(pairID)
-	if token == nil {
+	if tokenCfg == nil {
 		return nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
 	}
 
@@ -39,7 +37,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	case tokens.SwapinType:
 		return nil, tokens.ErrSwapTypeNotSupported
 	case tokens.SwapoutType:
-		from = token.DcrmAddress                                          // from
+		from = tokenCfg.DcrmAddress                                       // from
 		amount = tokens.CalcSwappedValue(pairID, args.OriginValue, false) // amount
 		memo = tokens.UnlockMemoPrefix + args.SwapID
 	}
@@ -58,12 +56,14 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, errors.New("To address does not refer to a cosmos account")
 	}
 	sendcoin := sdk.Coin{TheCoin.Denom, sdk.NewIntFromBigInt(amount)}
-	sendmsg := banktypes.NewMsgSend(fromAcc, toAcc, sendcoin)
+	sendmsg := NewMsgSend(fromAcc, toAcc, sdk.Coins{sendcoin})
 
-	feeAmount := b.GetFeeAmount()
-	fee := authtypes.NewStdFee(defaultSwapoutGas)
+	fee := GetFeeAmount()
 
-	accountNumber := b.GetAccountNumberCached(from)
+	accountNumber, err := b.GetAccountNumberCached(from)
+	if err != nil {
+		return nil, err
+	}
 
 	seq, err := b.getSequence(args.PairID, from, args.SwapType)
 	if err != nil {
@@ -71,19 +71,19 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	}
 
 	rawTx = StdSignContent{
-		ChainID: b.ChainConfig.NetID,
+		ChainID:       b.ChainConfig.NetID,
 		AccountNumber: accountNumber,
-		Sequence: *seq,
-		Fee: feeAmount
-		Msgs: []sdk.Msg{sendmsg},
-		Memo: memo,
+		Sequence:      *seq,
+		Fee:           fee,
+		Msgs:          []sdk.Msg{sendmsg},
+		Memo:          memo,
 	}
 	return
 }
 
 func (b *Bridge) getSequence(pairID, from string, swapType tokens.SwapType) (*uint64, error) {
 	var seq uint64
-	seq, err := b.GetPoolNonce
+	seq, err := b.GetPoolNonce(from, "pending")
 	if err != nil {
 		return nil, err
 	}
@@ -94,4 +94,25 @@ func (b *Bridge) getSequence(pairID, from string, swapType tokens.SwapType) (*ui
 		}
 	}
 	return &seq, nil
+}
+
+// AdjustNonce adjust account nonce (eth like chain)
+func (b *Bridge) AdjustNonce(pairID string, value uint64) (nonce uint64) {
+	tokenCfg := b.GetTokenConfig(pairID)
+	account := strings.ToLower(tokenCfg.DcrmAddress)
+	nonce = value
+	if b.IsSrcEndpoint() {
+		if b.SwapoutNonce[account] > value {
+			nonce = b.SwapoutNonce[account]
+		} else {
+			b.SwapoutNonce[account] = value
+		}
+	} else {
+		if b.SwapinNonce[account] > value {
+			nonce = b.SwapinNonce[account]
+		} else {
+			b.SwapinNonce[account] = value
+		}
+	}
+	return nonce
 }

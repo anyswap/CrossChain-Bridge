@@ -1,6 +1,8 @@
 package terra
 
 import (
+	"strings"
+
 	"github.com/anyswap/CrossChain-Bridge/tokens/cosmos"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -33,25 +35,39 @@ func (b *Bridge) Init() {
 }
 
 // InitChains init chains
-func InitChains() {
+func (b *Bridge) InitChains() {
 	cosmos.ChainIDs["columbus-4"] = true
 	cosmos.ChainIDs["tequila-0004"] = true
 }
 
 // InitCoins init coins
 func (b *Bridge) InitCoins() {
-	cosmos.Coins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
-	cosmos.Coins["USD"] = cosmos.CosmosCoin{"uusd", 6}
-	cosmos.Coins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
-	cosmos.Coins["SDR"] = cosmos.CosmosCoin{"usdr", 6}
-	cosmos.Coins["CNY"] = cosmos.CosmosCoin{"ucny", 6}
-	cosmos.Coins["JPY"] = cosmos.CosmosCoin{"ujpy", 6}
-	cosmos.Coins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
-	cosmos.Coins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
-	cosmos.Coins["UMNT"] = cosmos.CosmosCoin{"umnt", 6}
+	cosmos.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
+	cosmos.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
+	cosmos.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
+	cosmos.SupportedCoins["SDR"] = cosmos.CosmosCoin{"usdr", 6}
+	cosmos.SupportedCoins["CNY"] = cosmos.CosmosCoin{"ucny", 6}
+	cosmos.SupportedCoins["JPY"] = cosmos.CosmosCoin{"ujpy", 6}
+	cosmos.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
+	cosmos.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
+	cosmos.SupportedCoins["UMNT"] = cosmos.CosmosCoin{"umnt", 6}
+
+	tokenCfg := b.GetTokenConfig(PairID)
+	symbol := strings.ToUpper(tokenCfg.Symbol)
+	cosmos.TheCoin = cosmos.SupportedCoins[symbol]
 }
+
+// NewCrossChainBridge new bridge
+func NewCrossChainBridge(isSrc bool) *Bridge {
+	return &Bridge{
+		Bridge: cosmos.NewCrossChainBridge(isSrc),
+	}
+}
+
+var DefaultSwapoutGas uint64 = 300000
 
 var TerraGetFeeAmount = func() authtypes.StdFee {
 	// TODO
-	return sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(1000)}}
+	feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(1000)}}
+	return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 }

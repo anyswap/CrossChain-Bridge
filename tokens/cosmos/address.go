@@ -1,7 +1,8 @@
 package cosmos
 
 import (
-	"fmt"
+	"encoding/hex"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"

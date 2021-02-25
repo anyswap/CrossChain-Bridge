@@ -64,7 +64,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	}
 
 	stable := latest
-	errorSubject := fmt.Sprintf("[scanchain] get %v block failed", chainName)
+	//errorSubject := fmt.Sprintf("[scanchain] get %v block failed", chainName)
 	scanSubject := fmt.Sprintf("[scanchain] scanned %v block", chainName)
 
 	scannedRange := tools.NewCachedScannedBlocks(67)
@@ -86,28 +86,32 @@ func (b *Bridge) StartChainTransactionScanJob() {
 			stable = latest
 		}
 
-		for h := stable; h < latest {
-			start := h/100*100
+		for h := stable; h < latest; {
+			start := h / 100 * 100
 			end := start
-			if latest - start > 100 {
+			if latest-start > 100 {
 				end = start + 99
 			} else {
 				stable = end + 1
 				break
 			}
 			blockRange := fmt.Sprintf("%v-%v", start, end)
-			if scannedBlocks.IsBlockScanned(blockRange) {
+			if scannedRange.IsBlockScanned(blockRange) {
 				h = end + 1
 				continue
 			}
-			txs, err := b.SearchTxs(start, end)
+			txs, err := b.SearchTxs(big.NewInt(int64(start)), big.NewInt(int64(end)))
+			if err != nil {
+				log.Warn("Search txs in range error", "range", blockRange, "error", err)
+				continue
+			}
 			for _, tx := range txs {
 				b.processTransaction(tx)
 			}
-			scannedBlocks.CacheScannedBlock(blockRange, end)
+			scannedRange.CacheScannedBlock(blockRange, end)
 			log.Info(scanSubject, "blockRange", blockRange, "txs", len(txs))
 			h = end + 1
-			stable = end+1
+			stable = end + 1
 		}
 		if quickSyncFinish {
 			_ = tools.UpdateLatestScanInfo(b.IsSrc, stable)
@@ -155,16 +159,20 @@ func (b *Bridge) quickSyncRange(ctx context.Context, idx, start, end uint64, wg 
 	default:
 	}
 
-	for h := start; h < end {
+	for h := start; h < end; {
 		h2 := h
-		if end - h > 100 {
+		if end-h > 100 {
 			h2 = h + 100
-			
+
 			h = h2 + 1
 		} else {
 			h2 = end
 		}
-		txs, err := b.SearchTxs(h, h2)
+		txs, err := b.SearchTxs(big.NewInt(int64(h)), big.NewInt(int64(h2)))
+		if err != nil {
+			log.Warn("Search txs in range error", "range", fmt.Sprintf("%v-%v", h, h2), "error", err)
+			continue
+		}
 		for _, tx := range txs {
 			b.processTransaction(tx)
 		}
