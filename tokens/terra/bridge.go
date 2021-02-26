@@ -38,6 +38,7 @@ func (b *Bridge) Init() {
 func (b *Bridge) InitChains() {
 	cosmos.ChainIDs["columbus-4"] = true
 	cosmos.ChainIDs["tequila-0004"] = true
+	cosmos.ChainIDs["mytestnet"] = true
 }
 
 // InitCoins init coins

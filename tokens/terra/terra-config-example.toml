@@ -29,7 +29,7 @@ ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 # source chain config
 [SrcChain]
 BlockChain = "TERRA"
-NetID = "columbus-4"
+NetID = "mytestnet"
 # tx should be in chain with at least so many confirmations to be valid on source chain
 Confirmations = 0 # suggest >= 6 for Mainnet
 # only tx with block height >= this initial height should be considered valid on source chain
