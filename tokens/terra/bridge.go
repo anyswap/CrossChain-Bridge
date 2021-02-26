@@ -19,7 +19,7 @@ type Bridge struct {
 }
 
 func InitSDK() {
-	config := sdk.NewConfig()
+	config := sdk.GetConfig()
 	config.SetCoinType(core.CoinType)
 	config.SetFullFundraiserPath(core.FullFundraiserPath)
 	config.SetBech32PrefixForAccount(core.Bech32PrefixAccAddr, core.Bech32PrefixAccPub)
