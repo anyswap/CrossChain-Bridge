@@ -33,14 +33,85 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	if !b.IsSrc {
 		return nil, tokens.ErrBridgeDestinationNotSupported
 	}
-	swapInfos, errs := b.verifySwapinTx(pairID, txHash, allowUnstable)
+	swapInfos, errs := b.verifySwapinTxWithHash(pairID, txHash, allowUnstable)
 	if len(errs) == 0 {
 		return swapInfos[0], nil
 	}
 	return nil, fmt.Errorf("%+v", errs)
 }
 
-func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
+func (b *Bridge) verifySwapinTx(pairID string, txresp sdk.TxResponse, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
+	tokenCfg := b.GetTokenConfig(pairID)
+	if tokenCfg == nil {
+		return nil, []error{tokens.ErrUnknownPairID}
+	}
+	swapInfo := &tokens.TxSwapInfo{}
+	swapInfo.PairID = pairID      // PairID
+	swapInfo.Hash = txresp.TxHash // Hash
+	swapInfo.TxTo = ""
+
+	cosmostx := txresp.Tx
+
+	// get bind address from memo
+	bindaddress, ok := b.GetBindAddressFromMemo(cosmostx)
+	if !ok {
+		return swapInfos, []error{fmt.Errorf("Cannot get bind address")}
+	}
+	if err := b.checkSwapinBindAddress(bindaddress); err != nil {
+		errs = []error{err}
+		return swapInfos, errs
+	}
+
+	// aggregate msgs in tx
+	// check every msg
+	// if type is bank/send or bank/multisend
+	// and To address equals deposit address
+	// add to swapinfo
+	depositAddress := tokenCfg.DepositAddress
+	msgs := cosmostx.GetMsgs()
+	depositamount := big.NewInt(0)
+	for _, msg := range msgs {
+		msgtype := msg.Type()
+		msgamount := big.NewInt(0) // deposit amount in one msg
+		if msgtype == TypeMsgSend {
+			// MsgSend
+			msgsend, ok := msg.(MsgSend)
+			if !ok {
+				continue
+			}
+			if b.EqualAddress(msgsend.ToAddress.String(), depositAddress) {
+				msgamount = b.getAmountFromCoins(msgsend.Amount)
+			}
+		} else if msgtype == TypeMsgMultiSend {
+			// MsgMultisend
+			msgmultisend, ok := msg.(MsgMultiSend)
+			if !ok {
+				continue
+			}
+			for _, output := range msgmultisend.Outputs {
+				if b.EqualAddress(output.Address.String(), depositAddress) {
+					msgamount = new(big.Int).Add(msgamount, b.getAmountFromCoins(output.Coins))
+				}
+			}
+		} else {
+			continue
+		}
+		if err := msg.ValidateBasic(); err != nil {
+			continue
+		}
+
+		depositamount = new(big.Int).Add(depositamount, msgamount)
+	}
+
+	swapInfo.To = depositAddress
+	swapInfo.Value = depositamount
+	swapInfo.Bind = bindaddress
+	swapInfo.From = bindaddress
+	swapInfos = []*tokens.TxSwapInfo{swapInfo}
+	return swapInfos, nil
+}
+
+func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
 	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
 		return nil, []error{tokens.ErrUnknownPairID}

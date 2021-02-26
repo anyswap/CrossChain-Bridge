@@ -280,8 +280,8 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 	return 0, nil
 }
 
-// SearchTxs searches tx in range of blocks
-func (b *Bridge) SearchTxs(start, end *big.Int) ([]string, error) {
+// SearchTxsHash searches tx in range of blocks
+func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 	txs := make([]string, 0)
 	var limit = 100
 	var page = 0
@@ -310,6 +310,44 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]string, error) {
 			pageTotal = res.PageTotal
 			for _, tx := range res.Txs {
 				txs = append(txs, tx.TxHash)
+			}
+			break
+		}
+		page = page + 1
+	}
+	return txs, nil
+}
+
+// SearchTxs searches tx in range of blocks
+func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
+	txs := make([]sdk.TxResponse, 0)
+	var limit = 100
+	var page = 0
+	var pageTotal = 1
+	endpoints := b.GatewayConfig.APIAddress
+	for page < pageTotal {
+		for _, endpoint := range endpoints {
+			endpointURL, err := url.Parse(endpoint)
+			if err != nil {
+				continue
+			}
+			endpoint = endpointURL.String()
+			client := resty.New()
+			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
+			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
+			if err != nil || resp.StatusCode() != 200 {
+				log.Warn("cosmos rest request error", "request error", err)
+				continue
+			}
+			var res sdk.SearchTxsResult
+			err = json.Unmarshal(resp.Body(), &res)
+			if err != nil {
+				log.Warn("Search txs unmarshal error", "start", start, "end", end, "page", page)
+				continue
+			}
+			pageTotal = res.PageTotal
+			for _, txresp := range res.Txs {
+				txs = append(txs, txresp)
 			}
 			break
 		}
