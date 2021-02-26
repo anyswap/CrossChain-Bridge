@@ -1,5 +1,5 @@
 # a short string to identify the bridge
-Identifier = "TERRA2ETH"
+Identifier = "COSMOS2ETH"
 
 # administrators who can do admin work like maintain blacklist etc.
 Admins = [
@@ -28,8 +28,8 @@ ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 
 # source chain config
 [SrcChain]
-BlockChain = "TERRA"
-NetID = "columbus-4"
+BlockChain = "COSMOS"
+NetID = "cosmos-hub4"
 # tx should be in chain with at least so many confirmations to be valid on source chain
 Confirmations = 0 # suggest >= 6 for Mainnet
 # only tx with block height >= this initial height should be considered valid on source chain
@@ -39,7 +39,7 @@ EnableScan = true
 
 # source blockchain gateway config
 [SrcGateway]
-APIAddress = ["http://5.189.139.168:2317"]
+APIAddress = [""]
 
 # dest chain config
 [DestChain]

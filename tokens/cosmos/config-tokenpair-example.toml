@@ -3,17 +3,17 @@ PairID = "TERRA"
 # source token config
 [SrcToken]
 # ID must be ERC20 if source token is erc20 token
-ID = "LUNA"
-Name = "Luna coin"
-Symbol = "LUNA"
-Decimals = 6
-Description = "Luna coin"
+ID = "ATOM"
+Name = "Atom coin"
+Symbol = "ATOM"
+Decimals = 9
+Description = "Atom coin"
 # if ID is ERC20, this is the erc20 token's contract address
 ContractAddress = ""
 # deposit to this address to make swap
-DepositAddress = "terra1qj05rkrpphd55dawh7qxxmd2c72g57j2r0nlp3"
+DepositAddress = "cosmos1qj05rkrpphd55dawh7qxxmd2c72g57j29tflr3"
 # withdraw from this address
-DcrmAddress = "terra1qj05rkrpphd55dawh7qxxmd2c72g57j2r0nlp3"
+DcrmAddress = "cosmos1qj05rkrpphd55dawh7qxxmd2c72g57j29tflr3"
 # dcrm address public key
 DcrmPubkey = "045c8648793e4867af465691685000ae841dccab0b011283139d2eae454b569d5789f01632e13a75a5aad8480140e895dd671cae3639f935750bea7ae4b5a2512e"
 # maximum deposit value
@@ -36,10 +36,10 @@ DisableSwap = false
 
 # dest token config
 [DestToken]
-ID = "anyLUNA"
-Name = "ANY LUNA"
-Symbol = "anyLUNA"
-Decimals = 6
+ID = "anyATOM"
+Name = "ANY ATOM"
+Symbol = "anyATOM"
+Decimals = 9
 Description = ""
 # mapping erc20 token address
 ContractAddress = ""
