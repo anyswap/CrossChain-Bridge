@@ -37,22 +37,6 @@ func (b *Bridge) BeforeConfig() {
 	InitSDK()
 	cosmos.GetFeeAmount = TerraGetFeeAmount
 	b.InitChains()
-}
-
-func (b *Bridge) AfterConfig() {
-	b.InitCoins()
-	b.Bridge.InitLatestBlockNumber()
-}
-
-// InitChains init chains
-func (b *Bridge) InitChains() {
-	cosmos.ChainIDs["columbus-4"] = true
-	cosmos.ChainIDs["tequila-0004"] = true
-	cosmos.ChainIDs["mytestnet"] = true
-}
-
-// InitCoins init coins
-func (b *Bridge) InitCoins() {
 	cosmos.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
 	cosmos.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
 	cosmos.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
@@ -62,10 +46,20 @@ func (b *Bridge) InitCoins() {
 	cosmos.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
 	cosmos.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
 	cosmos.SupportedCoins["UMNT"] = cosmos.CosmosCoin{"umnt", 6}
+}
 
+func (b *Bridge) AfterConfig() {
+	b.Bridge.InitLatestBlockNumber()
 	tokenCfg := b.GetTokenConfig(PairID)
 	symbol := strings.ToUpper(tokenCfg.Symbol)
 	cosmos.TheCoin = cosmos.SupportedCoins[symbol]
+}
+
+// InitChains init chains
+func (b *Bridge) InitChains() {
+	cosmos.ChainIDs["columbus-4"] = true
+	cosmos.ChainIDs["tequila-0004"] = true
+	cosmos.ChainIDs["mytestnet"] = true
 }
 
 // NewCrossChainBridge new bridge

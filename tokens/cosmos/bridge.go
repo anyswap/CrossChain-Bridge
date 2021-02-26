@@ -23,10 +23,13 @@ func (b *Bridge) BeforeConfig() {
 	cyptes.RegisterAmino(CDC)
 	sdk.RegisterCodec(CDC)
 	b.InitChains()
+	SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
 }
 
 func (b *Bridge) AfterConfig() {
-	b.InitCoins()
+	tokenCfg := b.GetTokenConfig(PairID)
+	symbol := strings.ToUpper(tokenCfg.Symbol)
+	TheCoin = SupportedCoins[symbol]
 }
 
 // PairID unique cosmos pair ID
@@ -45,14 +48,6 @@ type CosmosCoin struct {
 // InitChains init chains
 func (b *Bridge) InitChains() {
 	ChainIDs["cosmos-hub4"] = true
-}
-
-// InitCoins init coins
-func (b *Bridge) InitCoins() {
-	SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
-	tokenCfg := b.GetTokenConfig(PairID)
-	symbol := strings.ToUpper(tokenCfg.Symbol)
-	TheCoin = SupportedCoins[symbol]
 }
 
 // Bridge btc bridge
