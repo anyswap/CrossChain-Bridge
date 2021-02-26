@@ -95,7 +95,7 @@ func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error
 	return nil, fmt.Errorf("Cosmos bridges does not support this method")
 }
 
-func (b *Bridge) GetTransaction(txHash string) (tx interface{}, getTxError error) {
+func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -116,12 +116,16 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, getTxError error
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTransaction")
 			return nil, err
 		}
+		if txResult.Code != 0 {
+			return nil, fmt.Errorf("tx status error: %+v", txResult)
+		}
 		tx = txResult.Tx
 		err = tx.(sdk.Tx).ValidateBasic()
 		if err != nil {
 			return nil, err
+		} else {
+			return tx, err
 		}
-		return
 	}
 	return
 }
@@ -308,6 +312,9 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			}
 			pageTotal = res.PageTotal
 			for _, tx := range res.Txs {
+				if tx.Code != 0 {
+					continue
+				}
 				txs = append(txs, tx.TxHash)
 			}
 			break
@@ -340,6 +347,9 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			}
 			pageTotal = res.PageTotal
 			for _, tx := range res.Txs {
+				if tx.Code != 0 {
+					continue
+				}
 				txs = append(txs, tx.TxHash)
 			}
 			break
@@ -380,6 +390,9 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			}
 			pageTotal = res.PageTotal
 			for _, txresp := range res.Txs {
+				if txresp.Code != 0 {
+					continue
+				}
 				txs = append(txs, txresp)
 			}
 			break
@@ -412,6 +425,9 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			}
 			pageTotal = res.PageTotal
 			for _, txresp := range res.Txs {
+				if txresp.Code != 0 {
+					continue
+				}
 				txs = append(txs, txresp)
 			}
 			break
