@@ -287,6 +287,40 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 	var page = 0
 	var pageTotal = 1
 	endpoints := b.GatewayConfig.APIAddress
+
+	// search send
+	for page < pageTotal {
+		for _, endpoint := range endpoints {
+			endpointURL, err := url.Parse(endpoint)
+			if err != nil {
+				continue
+			}
+			endpoint = endpointURL.String()
+			client := resty.New()
+			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
+			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
+			if err != nil || resp.StatusCode() != 200 {
+				log.Warn("cosmos rest request error", "request error", err)
+				continue
+			}
+			var res sdk.SearchTxsResult
+			err = json.Unmarshal(resp.Body(), &res)
+			if err != nil {
+				log.Warn("Search txs unmarshal error", "start", start, "end", end, "page", page)
+				continue
+			}
+			pageTotal = res.PageTotal
+			for _, tx := range res.Txs {
+				txs = append(txs, tx.TxHash)
+			}
+			break
+		}
+		page = page + 1
+	}
+
+	// search multisend
+	page = 0
+	pageTotal = 1
 	for page < pageTotal {
 		for _, endpoint := range endpoints {
 			endpointURL, err := url.Parse(endpoint)
@@ -322,6 +356,8 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 	txs := make([]sdk.TxResponse, 0)
 	var limit = 100
+
+	// search send
 	var page = 0
 	var pageTotal = 1
 	endpoints := b.GatewayConfig.APIAddress
@@ -334,6 +370,38 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			endpoint = endpointURL.String()
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
+			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
+			if err != nil || resp.StatusCode() != 200 {
+				log.Warn("cosmos rest request error", "request error", err)
+				continue
+			}
+			var res sdk.SearchTxsResult
+			err = json.Unmarshal(resp.Body(), &res)
+			if err != nil {
+				log.Warn("Search txs unmarshal error", "start", start, "end", end, "page", page)
+				continue
+			}
+			pageTotal = res.PageTotal
+			for _, txresp := range res.Txs {
+				txs = append(txs, txresp)
+			}
+			break
+		}
+		page = page + 1
+	}
+
+	// search multisend
+	page = 0
+	pageTotal = 1
+	for page < pageTotal {
+		for _, endpoint := range endpoints {
+			endpointURL, err := url.Parse(endpoint)
+			if err != nil {
+				continue
+			}
+			endpoint = endpointURL.String()
+			client := resty.New()
+			params := fmt.Sprintf("?message.action=multisend&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "request error", err)
