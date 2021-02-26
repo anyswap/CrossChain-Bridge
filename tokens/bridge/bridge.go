@@ -63,6 +63,12 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge = NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
 
+	BlockChain := strings.ToUpper(srcChain.BlockChain)
+	switch BlockChain {
+	case "COSMOS", "TERRA":
+		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).BeforeConfig()
+	}
+
 	tokens.SrcBridge.SetChainAndGateway(srcChain, srcGateway)
 	log.Info("Init bridge source", "source", srcID, "gateway", srcGateway)
 
@@ -72,7 +78,6 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.IsDcrmDisabled = cfg.Dcrm.Disable
 	tokens.LoadTokenPairsConfig(true)
 
-	BlockChain := strings.ToUpper(srcChain.BlockChain)
 	switch BlockChain {
 	case "BITCOIN":
 		btc.Init(cfg.BtcExtra)
@@ -80,6 +85,8 @@ func InitCrossChainBridge(isServer bool) {
 		ltc.Init(cfg.BtcExtra)
 	case "BLOCK":
 		block.Init(cfg.BtcExtra)
+	case "COSMOS", "TERRA":
+		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).AfterConfig()
 	}
 
 	dcrm.Init(cfg.Dcrm, isServer)

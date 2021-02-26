@@ -36,6 +36,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.7.0
 	github.com/tebeka/strftime v0.1.5 // indirect
+	github.com/tendermint/go-amino v0.15.1
 	github.com/tendermint/tendermint v0.33.9
 	github.com/terra-project/core v0.4.2
 	github.com/urfave/cli/v2 v2.3.0

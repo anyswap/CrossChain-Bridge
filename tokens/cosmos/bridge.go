@@ -8,28 +8,38 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	cyptes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-var ChainIDs map[string]bool
+var ChainIDs = make(map[string]bool)
+
+type CosmosBridgeInterface interface {
+	BeforeConfig()
+	AfterConfig()
+}
+
+func (b *Bridge) BeforeConfig() {
+	cyptes.RegisterAmino(CDC)
+	sdk.RegisterCodec(CDC)
+	b.InitChains()
+}
+
+func (b *Bridge) AfterConfig() {
+	b.InitCoins()
+}
 
 // PairID unique cosmos pair ID
 var PairID = "cosmos"
 
 // SupportedCoins save cosmos coins
-var SupportedCoins map[string]CosmosCoin
+var SupportedCoins = make(map[string]CosmosCoin)
 
 var TheCoin CosmosCoin
 
 type CosmosCoin struct {
 	Denom   string
 	Decimal uint8
-}
-
-// Init init after verify
-func (b *Bridge) Init() {
-	b.InitChains()
-	b.InitCoins()
-	b.InitLatestBlockNumber()
 }
 
 // InitChains init chains
@@ -62,7 +72,6 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 // SetChainAndGateway set chain and gateway config
 func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
-	b.Init()
 	b.InitLatestBlockNumber()
 	b.VerifyChainID()
 }
