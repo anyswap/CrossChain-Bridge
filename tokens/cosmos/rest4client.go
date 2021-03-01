@@ -3,16 +3,11 @@ package cosmos
 import (
 	"math/big"
 
-	//sdk "github.com/cosmos/cosmos-sdk/types"
 	legacysdk "github.com/cosmos/cosmos-sdk/types"
 	legacyauthtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
-
-func toLegacyTxResponse(txresp interface{}) legacysdk.TxResponse {
-	return legacysdk.TxResponse{}
-}
 
 func (b *Bridge) getBalance4(account string) (balance *big.Int, err error) {
 	return nil, nil

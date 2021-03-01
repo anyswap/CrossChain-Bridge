@@ -9,7 +9,7 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.0.0
 	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.0.0
-	github.com/cosmos/cosmos-sdk v0.41.3
+	github.com/cosmos/cosmos-sdk v0.39.2
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9
 	github.com/fsnotify/fsnotify v1.4.9
@@ -36,7 +36,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.7.0
 	github.com/tebeka/strftime v0.1.5 // indirect
-	github.com/tendermint/go-amino v0.15.1
+	github.com/tendermint/go-amino v0.16.0
 	github.com/tendermint/tendermint v0.33.9
 	github.com/terra-project/core v0.4.2
 	github.com/urfave/cli/v2 v2.3.0
