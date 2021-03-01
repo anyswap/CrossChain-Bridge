@@ -133,7 +133,7 @@ func (b *Bridge) VerifyMbtcContractAddress(contract string) (err error) {
 
 // InitExtCodeParts init extended code parts
 func InitExtCodeParts() {
-	InitExtCodePartsWithFlag(isMbtcSwapout())
+	InitExtCodePartsWithFlag(tokens.IsSwapoutToStringAddress)
 }
 
 // InitExtCodePartsWithFlag init extended code parts with flag

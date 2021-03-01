@@ -46,6 +46,8 @@ func (b *Bridge) BeforeConfig() {
 	cosmos.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
 	cosmos.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
 	cosmos.SupportedCoins["UMNT"] = cosmos.CosmosCoin{"umnt", 6}
+	cosmos.RestVersion = cosmos.Rest3
+	tokens.IsSwapoutToStringAddress = true
 }
 
 func (b *Bridge) AfterConfig() {

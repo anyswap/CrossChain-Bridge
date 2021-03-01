@@ -24,6 +24,7 @@ func (b *Bridge) BeforeConfig() {
 	sdk.RegisterCodec(CDC)
 	b.InitChains()
 	SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
+	tokens.IsSwapoutToStringAddress = true
 }
 
 func (b *Bridge) AfterConfig() {

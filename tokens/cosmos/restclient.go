@@ -19,7 +19,28 @@ import (
 
 var CDC = amino.NewCodec()
 
+type Version int
+
+var (
+	Rest3 Version = 3
+	Rest4 Version = 4
+)
+
+var RestVersion Version = 4
+
 func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
+	switch RestVersion {
+	case Rest3:
+		return b.getBalance3(account)
+	case Rest4:
+		return b.getBalance4(account)
+	default:
+		return b.getBalance3(account)
+	}
+	return nil, nil
+}
+
+func (b *Bridge) getBalance3(account string) (balance *big.Int, err error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -54,6 +75,18 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 }
 
 func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (balance *big.Int, err error) {
+	switch RestVersion {
+	case Rest3:
+		return b.getTokenBalance3(tokenType, tokenName, accountAddress)
+	case Rest4:
+		return b.getTokenBalance4(tokenType, tokenName, accountAddress)
+	default:
+		return b.getTokenBalance3(tokenType, tokenName, accountAddress)
+	}
+	return nil, nil
+}
+
+func (b *Bridge) getTokenBalance3(tokenType, tokenName, accountAddress string) (balance *big.Int, err error) {
 	coin, ok := SupportedCoins[tokenName]
 	if !ok {
 		return nil, fmt.Errorf("Unsupported coin: %v", tokenName)
@@ -96,6 +129,18 @@ func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error
 }
 
 func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
+	switch RestVersion {
+	case Rest3:
+		return b.getTransaction3(txHash)
+	case Rest4:
+		return b.getTransaction4(txHash)
+	default:
+		return b.getTransaction3(txHash)
+	}
+	return nil, nil
+}
+
+func (b *Bridge) getTransaction3(txHash string) (tx interface{}, err error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -133,6 +178,18 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 const TimeFormat = time.RFC3339Nano
 
 func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
+	switch RestVersion {
+	case Rest3:
+		return b.getTransactionStatus3(txHash)
+	case Rest4:
+		return b.getTransactionStatus4(txHash)
+	default:
+		return b.getTransactionStatus3(txHash)
+	}
+	return nil
+}
+
+func (b *Bridge) getTransactionStatus3(txHash string) (status *tokens.TxStatus) {
 	status = &tokens.TxStatus{
 		// Receipt
 		//Confirmations
@@ -176,7 +233,19 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 	return
 }
 
-func (b *Bridge) GetLatestBlockNumber() (height uint64, getLatestError error) {
+func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
+	switch RestVersion {
+	case Rest3:
+		return b.getLatestBlockNumber3()
+	case Rest4:
+		return b.getLatestBlockNumber4()
+	default:
+		return b.getLatestBlockNumber3()
+	}
+	return 0, nil
+}
+
+func (b *Bridge) getLatestBlockNumber3() (height uint64, err error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -199,12 +268,24 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, getLatestError error) {
 			continue
 		}
 		height = uint64(blockRes.Block.Header.Height)
-		return
+		return height, nil
 	}
 	return
 }
 
 func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
+	switch RestVersion {
+	case Rest3:
+		return b.getLatestBlockNumberOf3(apiAddress)
+	case Rest4:
+		return b.getLatestBlockNumberOf4(apiAddress)
+	default:
+		return b.getLatestBlockNumberOf3(apiAddress)
+	}
+	return 0, nil
+}
+
+func (b *Bridge) getLatestBlockNumberOf3(apiAddress string) (uint64, error) {
 	endpointURL, err := url.Parse(apiAddress)
 	if err != nil {
 		return 0, err
@@ -228,6 +309,18 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 }
 
 func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
+	switch RestVersion {
+	case Rest3:
+		return b.getAccountNumber3(address)
+	case Rest4:
+		return b.getAccountNumber4(address)
+	default:
+		return b.getAccountNumber3(address)
+	}
+	return 0, nil
+}
+
+func (b *Bridge) getAccountNumber3(address string) (uint64, error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -255,6 +348,18 @@ func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 }
 
 func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
+	switch RestVersion {
+	case Rest3:
+		return b.getPoolNonce3(address, height)
+	case Rest4:
+		return b.getPoolNonce4(address, height)
+	default:
+		return b.getPoolNonce3(address, height)
+	}
+	return 0, nil
+}
+
+func (b *Bridge) getPoolNonce3(address, height string) (uint64, error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -361,6 +466,18 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 
 // SearchTxs searches tx in range of blocks
 func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
+	switch RestVersion {
+	case Rest3:
+		return b.searchTxs3(start, end)
+	case Rest4:
+		return b.searchTxs4(start, end)
+	default:
+		return b.searchTxs3(start, end)
+	}
+	return nil, nil
+}
+
+func (b *Bridge) searchTxs3(start, end *big.Int) ([]sdk.TxResponse, error) {
 	txs := make([]sdk.TxResponse, 0)
 	var limit = 100
 
@@ -438,6 +555,18 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 }
 
 func (b *Bridge) BroadcastTx(tx authtypes.StdTx) error {
+	switch RestVersion {
+	case Rest3:
+		return b.broadcastTx3(tx)
+	case Rest4:
+		return b.broadcastTx4(tx)
+	default:
+		return b.broadcastTx3(tx)
+	}
+	return nil
+}
+
+func (b *Bridge) broadcastTx3(tx authtypes.StdTx) error {
 	bz, err := json.Marshal(tx)
 	if err != nil {
 		return err

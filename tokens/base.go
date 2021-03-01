@@ -23,6 +23,8 @@ var (
 	DstLatestBlockHeight uint64
 
 	IsDcrmDisabled bool
+
+	IsSwapoutToStringAddress bool = false
 )
 
 // CrossChainBridgeBase base bridge
