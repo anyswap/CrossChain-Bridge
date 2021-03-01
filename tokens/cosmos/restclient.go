@@ -19,28 +19,7 @@ import (
 
 var CDC = amino.NewCodec()
 
-type Version int
-
-var (
-	Rest3 Version = 3
-	Rest4 Version = 4
-)
-
-var RestVersion Version = 4
-
 func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
-	switch RestVersion {
-	case Rest3:
-		return b.getBalance3(account)
-	case Rest4:
-		return b.getBalance4(account)
-	default:
-		return b.getBalance3(account)
-	}
-	return nil, nil
-}
-
-func (b *Bridge) getBalance3(account string) (balance *big.Int, err error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -57,7 +36,7 @@ func (b *Bridge) getBalance3(account string) (balance *big.Int, err error) {
 		var balances sdk.Coins
 		err = CDC.UnmarshalJSON(resp.Body(), &balances)
 		if err != nil {
-			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetBalance")
+			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetBalance", "resp", string(resp.Body()))
 			continue
 		}
 		for _, bal := range balances {
@@ -75,18 +54,6 @@ func (b *Bridge) getBalance3(account string) (balance *big.Int, err error) {
 }
 
 func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (balance *big.Int, err error) {
-	switch RestVersion {
-	case Rest3:
-		return b.getTokenBalance3(tokenType, tokenName, accountAddress)
-	case Rest4:
-		return b.getTokenBalance4(tokenType, tokenName, accountAddress)
-	default:
-		return b.getTokenBalance3(tokenType, tokenName, accountAddress)
-	}
-	return nil, nil
-}
-
-func (b *Bridge) getTokenBalance3(tokenType, tokenName, accountAddress string) (balance *big.Int, err error) {
 	coin, ok := SupportedCoins[tokenName]
 	if !ok {
 		return nil, fmt.Errorf("Unsupported coin: %v", tokenName)
@@ -107,7 +74,7 @@ func (b *Bridge) getTokenBalance3(tokenType, tokenName, accountAddress string) (
 		var balances sdk.Coins
 		err = CDC.UnmarshalJSON(resp.Body(), &balances)
 		if err != nil {
-			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTokenBalance")
+			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTokenBalance", "resp", string(resp.Body()))
 			continue
 		}
 		for _, bal := range balances {
@@ -129,18 +96,6 @@ func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error
 }
 
 func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
-	switch RestVersion {
-	case Rest3:
-		return b.getTransaction3(txHash)
-	case Rest4:
-		return b.getTransaction4(txHash)
-	default:
-		return b.getTransaction3(txHash)
-	}
-	return nil, nil
-}
-
-func (b *Bridge) getTransaction3(txHash string) (tx interface{}, err error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -158,7 +113,7 @@ func (b *Bridge) getTransaction3(txHash string) (tx interface{}, err error) {
 		var txResult sdk.TxResponse
 		err = CDC.UnmarshalJSON(resp.Body(), &txResult)
 		if err != nil {
-			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTransaction")
+			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTransaction", "resp", string(resp.Body()))
 			return nil, err
 		}
 		if txResult.Code != 0 {
@@ -178,18 +133,6 @@ func (b *Bridge) getTransaction3(txHash string) (tx interface{}, err error) {
 const TimeFormat = time.RFC3339Nano
 
 func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
-	switch RestVersion {
-	case Rest3:
-		return b.getTransactionStatus3(txHash)
-	case Rest4:
-		return b.getTransactionStatus4(txHash)
-	default:
-		return b.getTransactionStatus3(txHash)
-	}
-	return nil
-}
-
-func (b *Bridge) getTransactionStatus3(txHash string) (status *tokens.TxStatus) {
 	status = &tokens.TxStatus{
 		// Receipt
 		//Confirmations
@@ -215,13 +158,18 @@ func (b *Bridge) getTransactionStatus3(txHash string) (status *tokens.TxStatus) 
 		var txResult sdk.TxResponse
 		err = CDC.UnmarshalJSON(resp.Body(), &txResult)
 		if err != nil {
-			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTransactionStatus")
+			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTransactionStatus", "resp", string(resp.Body()))
 			return
 		}
 		tx := txResult.Tx
 		err = tx.ValidateBasic()
 		if err != nil {
 			return
+		}
+		if txResult.Code != 0 {
+			status.Confirmations = 0
+		} else {
+			status.Confirmations = 1
 		}
 		status.BlockHeight = uint64(txResult.Height)
 		t, err := time.Parse(TimeFormat, txResult.Timestamp)
@@ -234,18 +182,6 @@ func (b *Bridge) getTransactionStatus3(txHash string) (status *tokens.TxStatus) 
 }
 
 func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
-	switch RestVersion {
-	case Rest3:
-		return b.getLatestBlockNumber3()
-	case Rest4:
-		return b.getLatestBlockNumber4()
-	default:
-		return b.getLatestBlockNumber3()
-	}
-	return 0, nil
-}
-
-func (b *Bridge) getLatestBlockNumber3() (height uint64, err error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -263,8 +199,7 @@ func (b *Bridge) getLatestBlockNumber3() (height uint64, err error) {
 		var blockRes ctypes.ResultBlock
 		err = CDC.UnmarshalJSON(resp.Body(), &blockRes)
 		if err != nil {
-			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetLatestBlockNumber")
-			fmt.Printf("\n\n%+v\n\n", string(resp.Body()))
+			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetLatestBlockNumber", "resp", string(resp.Body()))
 			continue
 		}
 		height = uint64(blockRes.Block.Header.Height)
@@ -274,18 +209,6 @@ func (b *Bridge) getLatestBlockNumber3() (height uint64, err error) {
 }
 
 func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
-	switch RestVersion {
-	case Rest3:
-		return b.getLatestBlockNumberOf3(apiAddress)
-	case Rest4:
-		return b.getLatestBlockNumberOf4(apiAddress)
-	default:
-		return b.getLatestBlockNumberOf3(apiAddress)
-	}
-	return 0, nil
-}
-
-func (b *Bridge) getLatestBlockNumberOf3(apiAddress string) (uint64, error) {
 	endpointURL, err := url.Parse(apiAddress)
 	if err != nil {
 		return 0, err
@@ -301,7 +224,7 @@ func (b *Bridge) getLatestBlockNumberOf3(apiAddress string) (uint64, error) {
 	var blockRes ctypes.ResultBlock
 	err = CDC.UnmarshalJSON(resp.Body(), &blockRes)
 	if err != nil {
-		log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetLatestBlockNumberOf")
+		log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetLatestBlockNumberOf", "resp", string(resp.Body()))
 		return 0, err
 	}
 	height := uint64(blockRes.Block.Header.Height)
@@ -309,18 +232,6 @@ func (b *Bridge) getLatestBlockNumberOf3(apiAddress string) (uint64, error) {
 }
 
 func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
-	switch RestVersion {
-	case Rest3:
-		return b.getAccountNumber3(address)
-	case Rest4:
-		return b.getAccountNumber4(address)
-	default:
-		return b.getAccountNumber3(address)
-	}
-	return 0, nil
-}
-
-func (b *Bridge) getAccountNumber3(address string) (uint64, error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -348,18 +259,6 @@ func (b *Bridge) getAccountNumber3(address string) (uint64, error) {
 }
 
 func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
-	switch RestVersion {
-	case Rest3:
-		return b.getPoolNonce3(address, height)
-	case Rest4:
-		return b.getPoolNonce4(address, height)
-	default:
-		return b.getPoolNonce3(address, height)
-	}
-	return 0, nil
-}
-
-func (b *Bridge) getPoolNonce3(address, height string) (uint64, error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -466,18 +365,6 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 
 // SearchTxs searches tx in range of blocks
 func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
-	switch RestVersion {
-	case Rest3:
-		return b.searchTxs3(start, end)
-	case Rest4:
-		return b.searchTxs4(start, end)
-	default:
-		return b.searchTxs3(start, end)
-	}
-	return nil, nil
-}
-
-func (b *Bridge) searchTxs3(start, end *big.Int) ([]sdk.TxResponse, error) {
 	txs := make([]sdk.TxResponse, 0)
 	var limit = 100
 
@@ -555,18 +442,6 @@ func (b *Bridge) searchTxs3(start, end *big.Int) ([]sdk.TxResponse, error) {
 }
 
 func (b *Bridge) BroadcastTx(tx authtypes.StdTx) error {
-	switch RestVersion {
-	case Rest3:
-		return b.broadcastTx3(tx)
-	case Rest4:
-		return b.broadcastTx4(tx)
-	default:
-		return b.broadcastTx3(tx)
-	}
-	return nil
-}
-
-func (b *Bridge) broadcastTx3(tx authtypes.StdTx) error {
 	bz, err := json.Marshal(tx)
 	if err != nil {
 		return err
