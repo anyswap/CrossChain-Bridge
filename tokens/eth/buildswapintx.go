@@ -2,8 +2,6 @@ package eth
 
 import (
 	"errors"
-	"math/big"
-	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -13,6 +11,10 @@ import (
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
 func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 	pairID := args.PairID
+	token := b.GetTokenConfig(pairID)
+	if token == nil {
+		return tokens.ErrUnknownPairID
+	}
 	funcHash := getSwapinFuncHash()
 	txHash := common.HexToHash(args.SwapID)
 	address := common.HexToAddress(args.Bind)
@@ -25,31 +27,10 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 	input := PackDataWithFuncHash(funcHash, txHash, address, amount)
 	args.Input = &input // input
 
-	token := b.GetTokenConfig(pairID)
-	if token == nil {
-		return tokens.ErrUnknownPairID
-	}
 	args.To = token.ContractAddress // to
 
 	if !token.IsDelegateContract {
 		return nil
 	}
-
-	var balance *big.Int
-	var err error
-	for i := 0; i < retryRPCCount; i++ {
-		if token.DelegateToken != "" {
-			balance, err = b.GetErc20Balance(token.DelegateToken, token.ContractAddress)
-		} else {
-			balance, err = b.GetBalance(token.ContractAddress)
-		}
-		if err == nil {
-			break
-		}
-		time.Sleep(retryRPCInterval)
-	}
-	if err == nil && balance.Cmp(amount) < 0 {
-		return errors.New("not enough balance to swapin")
-	}
-	return err
+	return b.checkBalance(token.DelegateToken, token.ContractAddress, amount)
 }

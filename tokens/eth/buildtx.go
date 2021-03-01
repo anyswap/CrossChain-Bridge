@@ -1,7 +1,6 @@
 package eth
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -101,18 +100,6 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		args.Identifier = params.GetIdentifier()
 	}
 
-	var balance *big.Int
-	for i := 0; i < retryRPCCount; i++ {
-		balance, err = b.GetBalance(args.From)
-		if err == nil {
-			break
-		}
-		time.Sleep(retryRPCInterval)
-	}
-	if err != nil {
-		log.Warn("get balance error", "from", args.From, "err", err)
-		return nil, fmt.Errorf("get balance error: %v", err)
-	}
 	needValue := big.NewInt(0)
 	if value != nil && value.Sign() > 0 {
 		needValue = value
@@ -123,8 +110,9 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
 	}
-	if balance.Cmp(needValue) < 0 {
-		return nil, errors.New("not enough coin balance")
+	err = b.checkBalance("", args.From, needValue)
+	if err != nil {
+		return nil, err
 	}
 
 	rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)
@@ -240,4 +228,24 @@ func (b *Bridge) getAccountNonce(pairID, from string, swapType tokens.SwapType) 
 		}
 	}
 	return &nonce, nil
+}
+
+func (b *Bridge) checkBalance(token, account string, amount *big.Int) (err error) {
+	var balance *big.Int
+	for i := 0; i < retryRPCCount; i++ {
+		if token != "" {
+			balance, err = b.GetErc20Balance(token, account)
+		} else {
+			balance, err = b.GetBalance(account)
+		}
+		if err == nil {
+			break
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	if err == nil && balance.Cmp(amount) < 0 {
+		return fmt.Errorf("not enough %v balance. %v < %v", token, balance, amount)
+	}
+	log.Warn("get balance error", "token", token, "account", account, "err", err)
+	return err
 }
