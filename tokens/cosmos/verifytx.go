@@ -246,6 +246,7 @@ func (b *Bridge) GetBindAddressFromMemo(tx sdk.Tx) (address string, ok bool) {
 	dstBridge := tokens.DstBridge
 	if ok = dstBridge.IsValidAddress(memo); ok {
 		log.Warn("GetBindAddressFromMemo: memo is not a valid address", "memo", memo)
+		memo = strings.ToLower(memo)
 		return memo, ok
 	} else {
 		return "", false
