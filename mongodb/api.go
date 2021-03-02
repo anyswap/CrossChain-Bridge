@@ -424,7 +424,11 @@ func findSwapResults(collection *mgo.Collection, address, pairID string, offset,
 	default:
 		q = collection.Find(bson.M{"$and": queries})
 	}
-	q = q.Skip(offset).Limit(limit)
+	if limit >= 0 {
+		q = q.Skip(offset).Limit(limit)
+	} else {
+		q = q.Sort("-timestamp").Skip(offset).Limit(-limit)
+	}
 	err := q.All(&result)
 	if err != nil {
 		return nil, mgoError(err)
