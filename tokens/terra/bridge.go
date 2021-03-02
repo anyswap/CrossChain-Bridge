@@ -34,6 +34,7 @@ func InitSDK() {
 func (b *Bridge) BeforeConfig() {
 	cyptes.RegisterAmino(cosmos.CDC)
 	sdk.RegisterCodec(cosmos.CDC)
+	cosmos.CDC.RegisterConcrete(authtypes.StdTx{}, "core/StdTx", nil)
 	InitSDK()
 	cosmos.ChainIDs["columbus-4"] = true
 	cosmos.ChainIDs["tequila-0004"] = true
