@@ -104,11 +104,11 @@ func GetSwapout(txid *string) (*SwapInfo, error) {
 func processHistoryLimit(limit int) int {
 	switch {
 	case limit == 0:
-		limit = 20
+		limit = 20 // default
 	case limit > 100:
 		limit = 100
-	case limit < 0:
-		limit = 1
+	case limit < -100:
+		limit = -100
 	}
 	return limit
 }

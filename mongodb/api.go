@@ -345,9 +345,14 @@ func findSwapResults(collection *mgo.Collection, address string, offset, limit i
 	result := make([]*MgoSwapResult, 0, 20)
 	var q *mgo.Query
 	if address == "all" {
-		q = collection.Find(nil).Skip(offset).Limit(limit)
+		q = collection.Find(nil)
 	} else {
-		q = collection.Find(bson.M{"from": address}).Skip(offset).Limit(limit)
+		q = collection.Find(bson.M{"from": address})
+	}
+	if limit >= 0 {
+		q = q.Skip(offset).Limit(limit)
+	} else {
+		q = q.Sort("-timestamp").Skip(offset).Limit(-limit)
 	}
 	err := q.All(&result)
 	if err != nil {
