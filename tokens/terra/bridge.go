@@ -28,10 +28,7 @@ func InitSDK() {
 	config.Seal()
 }
 
-var PairID = "TERRA"
-
 func (b *Bridge) BeforeConfig() {
-	cosmos.PairID = PairID
 	cyptes.RegisterAmino(cosmos.CDC)
 	sdk.RegisterCodec(cosmos.CDC)
 	InitSDK()
@@ -46,14 +43,12 @@ func (b *Bridge) BeforeConfig() {
 	cosmos.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
 	cosmos.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
 	cosmos.SupportedCoins["UMNT"] = cosmos.CosmosCoin{"umnt", 6}
+	cosmos.MainCoin = cosmos.SupportedCoins["LUNA"]
 	tokens.IsSwapoutToStringAddress = true
 }
 
 func (b *Bridge) AfterConfig() {
 	b.Bridge.InitLatestBlockNumber()
-	tokenCfg := b.GetTokenConfig(PairID)
-	symbol := strings.ToUpper(tokenCfg.Symbol)
-	cosmos.TheCoin = cosmos.SupportedCoins[symbol]
 }
 
 // InitChains init chains

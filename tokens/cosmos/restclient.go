@@ -40,7 +40,7 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 			continue
 		}
 		for _, bal := range balances {
-			if bal.Denom != TheCoin.Denom {
+			if bal.Denom != MainCoin.Denom {
 				continue
 			}
 			balance = bal.Amount.BigInt()

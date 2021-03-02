@@ -3,7 +3,6 @@ package cosmos
 import (
 	"errors"
 	"fmt"
-	"math/big"
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -40,16 +39,8 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	return nil, fmt.Errorf("%+v", errs)
 }
 
-func (b *Bridge) verifySwapinTx(pairID string, txresp sdk.TxResponse, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
-	tokenCfg := b.GetTokenConfig(pairID)
-	if tokenCfg == nil {
-		return nil, []error{tokens.ErrUnknownPairID}
-	}
-	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID      // PairID
-	swapInfo.Hash = txresp.TxHash // Hash
-	swapInfo.TxTo = ""
-
+func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
+	swapInfos = make([]*tokens.TxSwapInfo, 0)
 	cosmostx := txresp.Tx
 
 	// get bind address from memo
@@ -62,26 +53,43 @@ func (b *Bridge) verifySwapinTx(pairID string, txresp sdk.TxResponse, allowUnsta
 		return swapInfos, errs
 	}
 
-	// aggregate msgs in tx
 	// check every msg
 	// if type is bank/send or bank/multisend
-	// and To address equals deposit address
 	// add to swapinfo
-	depositAddress := tokenCfg.DepositAddress
 	msgs := cosmostx.GetMsgs()
-	depositamount := big.NewInt(0)
 	for _, msg := range msgs {
+		if err := msg.ValidateBasic(); err != nil {
+			continue
+		}
 		msgtype := msg.Type()
-		msgamount := big.NewInt(0) // deposit amount in one msg
 		if msgtype == TypeMsgSend {
 			// MsgSend
 			msgsend, ok := msg.(MsgSend)
 			if !ok {
 				continue
 			}
-			if b.EqualAddress(msgsend.ToAddress.String(), depositAddress) {
-				msgamount = b.getAmountFromCoins(msgsend.Amount)
+
+			for _, coin := range msgsend.Amount {
+				pairID, err := b.getPairID(coin)
+				if err != nil {
+					continue
+				}
+				tokenCfg := b.GetTokenConfig(pairID)
+				if tokenCfg == nil {
+					continue
+				}
+				if b.EqualAddress(msgsend.ToAddress.String(), tokenCfg.DepositAddress) == false {
+					continue
+				}
+				swapInfo := &tokens.TxSwapInfo{}
+				swapInfo.PairID = pairID
+				swapInfo.To = tokenCfg.DepositAddress
+				swapInfo.Bind = bindaddress
+				swapInfo.From = bindaddress
+				swapInfo.Value = coin.Amount.BigInt()
+				swapInfos = append(swapInfos, swapInfo)
 			}
+
 		} else if msgtype == TypeMsgMultiSend {
 			// MsgMultisend
 			msgmultisend, ok := msg.(MsgMultiSend)
@@ -89,53 +97,58 @@ func (b *Bridge) verifySwapinTx(pairID string, txresp sdk.TxResponse, allowUnsta
 				continue
 			}
 			for _, output := range msgmultisend.Outputs {
-				if b.EqualAddress(output.Address.String(), depositAddress) {
-					msgamount = new(big.Int).Add(msgamount, b.getAmountFromCoins(output.Coins))
+				for _, coin := range output.Coins {
+					pairID, err := b.getPairID(coin)
+					if err != nil {
+						continue
+					}
+					tokenCfg := b.GetTokenConfig(pairID)
+					if tokenCfg == nil {
+						continue
+					}
+					if b.EqualAddress(output.Address.String(), tokenCfg.DepositAddress) == false {
+						continue
+					}
+					swapInfo := &tokens.TxSwapInfo{}
+					swapInfo.PairID = pairID
+					swapInfo.To = tokenCfg.DepositAddress
+					swapInfo.Bind = bindaddress
+					swapInfo.From = bindaddress
+					swapInfo.Value = coin.Amount.BigInt()
+					swapInfos = append(swapInfos, swapInfo)
 				}
 			}
 		} else {
 			continue
 		}
-		if err := msg.ValidateBasic(); err != nil {
-			continue
-		}
-
-		depositamount = new(big.Int).Add(depositamount, msgamount)
 	}
-
-	swapInfo.To = depositAddress
-	swapInfo.Value = depositamount
-	swapInfo.Bind = bindaddress
-	swapInfo.From = bindaddress
-	swapInfos = []*tokens.TxSwapInfo{swapInfo}
 	return swapInfos, nil
 }
 
-func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
-	tokenCfg := b.GetTokenConfig(pairID)
-	if tokenCfg == nil {
-		return nil, []error{tokens.ErrUnknownPairID}
+var NotSupportedCoinErr = errors.New("coin not supported")
+
+func (b *Bridge) getPairID(coin sdk.Coin) (string, error) {
+	for k, v := range SupportedCoins {
+		if strings.EqualFold(v.Denom, coin.Denom) {
+			return strings.ToLower(k), nil
+		}
 	}
-	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID // PairID
-	swapInfo.Hash = txHash   // Hash
-	swapInfo.TxTo = ""       // cosmos tx does not have this field
-	/*if !allowUnstable && !b.checkStable(txHash) {
-		errs = []error{tokens.ErrTxNotStable}
-		return swapInfos, errs
-	}*/
-	// sdk.Tx
+	return "", NotSupportedCoinErr
+}
+
+func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
 	tx, err := b.GetTransaction(txHash)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		errs = []error{tokens.ErrTxNotStable}
-		return swapInfos, errs
+		return nil, errs
 	}
 	cosmostx, ok := tx.(sdk.Tx)
 	if !ok {
-		log.Debug("[verifySwapin] cosmos tx type assertion error")
-		return swapInfos, []error{fmt.Errorf("Cosmos tx type assertion error")}
+		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::Transacton is of wrong type", "tx", txHash)
+		return nil, []error{errors.New("Tx is of wrong type")}
 	}
+	swapInfos = make([]*tokens.TxSwapInfo, 0)
 
 	// get bind address from memo
 	bindaddress, ok := b.GetBindAddressFromMemo(cosmostx)
@@ -147,26 +160,43 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 		return swapInfos, errs
 	}
 
-	// aggregate msgs in tx
 	// check every msg
 	// if type is bank/send or bank/multisend
-	// and To address equals deposit address
 	// add to swapinfo
-	depositAddress := tokenCfg.DepositAddress
 	msgs := cosmostx.GetMsgs()
-	depositamount := big.NewInt(0)
 	for _, msg := range msgs {
+		if err := msg.ValidateBasic(); err != nil {
+			continue
+		}
 		msgtype := msg.Type()
-		msgamount := big.NewInt(0) // deposit amount in one msg
 		if msgtype == TypeMsgSend {
 			// MsgSend
 			msgsend, ok := msg.(MsgSend)
 			if !ok {
 				continue
 			}
-			if b.EqualAddress(msgsend.ToAddress.String(), depositAddress) {
-				msgamount = b.getAmountFromCoins(msgsend.Amount)
+
+			for _, coin := range msgsend.Amount {
+				pairID, err := b.getPairID(coin)
+				if err != nil {
+					continue
+				}
+				tokenCfg := b.GetTokenConfig(pairID)
+				if tokenCfg == nil {
+					continue
+				}
+				if b.EqualAddress(msgsend.ToAddress.String(), tokenCfg.DepositAddress) == false {
+					continue
+				}
+				swapInfo := &tokens.TxSwapInfo{}
+				swapInfo.PairID = pairID
+				swapInfo.To = tokenCfg.DepositAddress
+				swapInfo.Bind = bindaddress
+				swapInfo.From = bindaddress
+				swapInfo.Value = coin.Amount.BigInt()
+				swapInfos = append(swapInfos, swapInfo)
 			}
+
 		} else if msgtype == TypeMsgMultiSend {
 			// MsgMultisend
 			msgmultisend, ok := msg.(MsgMultiSend)
@@ -174,25 +204,31 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 				continue
 			}
 			for _, output := range msgmultisend.Outputs {
-				if b.EqualAddress(output.Address.String(), depositAddress) {
-					msgamount = new(big.Int).Add(msgamount, b.getAmountFromCoins(output.Coins))
+				for _, coin := range output.Coins {
+					pairID, err := b.getPairID(coin)
+					if err != nil {
+						continue
+					}
+					tokenCfg := b.GetTokenConfig(pairID)
+					if tokenCfg == nil {
+						continue
+					}
+					if b.EqualAddress(output.Address.String(), tokenCfg.DepositAddress) == false {
+						continue
+					}
+					swapInfo := &tokens.TxSwapInfo{}
+					swapInfo.PairID = pairID
+					swapInfo.To = tokenCfg.DepositAddress
+					swapInfo.Bind = bindaddress
+					swapInfo.From = bindaddress
+					swapInfo.Value = coin.Amount.BigInt()
+					swapInfos = append(swapInfos, swapInfo)
 				}
 			}
 		} else {
 			continue
 		}
-		if err := msg.ValidateBasic(); err != nil {
-			continue
-		}
-
-		depositamount = new(big.Int).Add(depositamount, msgamount)
 	}
-
-	swapInfo.To = depositAddress
-	swapInfo.Value = depositamount
-	swapInfo.Bind = bindaddress
-	swapInfo.From = bindaddress
-	swapInfos = []*tokens.TxSwapInfo{swapInfo}
 	return swapInfos, nil
 }
 
@@ -207,16 +243,6 @@ func (b *Bridge) GetBindAddressFromMemo(tx sdk.Tx) (address string, ok bool) {
 	} else {
 		return "", false
 	}
-}
-
-func (b *Bridge) getAmountFromCoins(coins sdk.Coins) *big.Int {
-	amount := big.NewInt(0)
-	for _, coin := range coins {
-		if strings.EqualFold(coin.Denom, TheCoin.Denom) {
-			amount = new(big.Int).Add(amount, coin.Amount.BigInt())
-		}
-	}
-	return amount
 }
 
 func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {

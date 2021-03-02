@@ -14,7 +14,7 @@ func (b *Bridge) processTransaction(tx sdk.TxResponse) {
 }
 
 func (b *Bridge) processSwapin(tx sdk.TxResponse) {
-	swapInfos, errs := b.verifySwapinTx(PairID, tx, true)
+	swapInfos, errs := b.verifySwapinTx(tx, true)
 	txid := tx.TxHash
 	tools.RegisterSwapin(txid, swapInfos, errs)
 }

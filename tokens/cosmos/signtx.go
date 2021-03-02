@@ -44,7 +44,11 @@ func (b *Bridge) verifyTransactionWithArgs(tx StdSignContent, args *tokens.Build
 		return errors.New("wrong amount length")
 	}
 	amount := msg.Amount[0]
-	if amount.Denom != TheCoin.Denom || amount.Amount.BigInt().Cmp(args.Value) != 0 {
+	checkPairID, err := b.getPairID(amount)
+	if err != nil || checkPairID != args.PairID {
+		return errors.New("wrong coin type")
+	}
+	if amount.Amount.BigInt().Cmp(args.Value) != 0 {
 		return errors.New("wrong amount")
 	}
 	return nil

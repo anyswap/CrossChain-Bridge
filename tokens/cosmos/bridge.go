@@ -24,22 +24,19 @@ func (b *Bridge) BeforeConfig() {
 	sdk.RegisterCodec(CDC)
 	b.InitChains()
 	SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
+	MainCoin = SupportedCoins["ATOM"]
 	tokens.IsSwapoutToStringAddress = true
 }
 
 func (b *Bridge) AfterConfig() {
-	tokenCfg := b.GetTokenConfig(PairID)
-	symbol := strings.ToUpper(tokenCfg.Symbol)
-	TheCoin = SupportedCoins[symbol]
+	b.InitLatestBlockNumber()
 }
 
-// PairID unique cosmos pair ID
-var PairID = "cosmos"
+// MainCoin is the gas coin
+var MainCoin CosmosCoin
 
 // SupportedCoins save cosmos coins
 var SupportedCoins = make(map[string]CosmosCoin)
-
-var TheCoin CosmosCoin
 
 type CosmosCoin struct {
 	Denom   string
