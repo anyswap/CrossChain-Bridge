@@ -19,6 +19,11 @@ import (
 
 var CDC = amino.NewCodec()
 
+// TimeFormat is cosmos time format
+const TimeFormat = time.RFC3339Nano
+
+// GetBalance gets main token balance
+// call  rest api"/bank/balances/"
 func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
@@ -53,6 +58,8 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 	return
 }
 
+// GetTokenBalance gets balance for given token
+// call  rest api"/bank/balances/"
 func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (balance *big.Int, err error) {
 	coin, ok := SupportedCoins[tokenName]
 	if !ok {
@@ -91,10 +98,13 @@ func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (b
 	return
 }
 
+// GetTokenSupply not supported
 func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error) {
 	return nil, fmt.Errorf("Cosmos bridges does not support this method")
 }
 
+// GetTransaction gets tx by hash, returns sdk.Tx
+// call rest api "/txs/{txhash}"
 func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
@@ -130,8 +140,8 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 	return
 }
 
-const TimeFormat = time.RFC3339Nano
-
+// GetTransactionStatus returns tx status
+// call rest api "/txs/{txhash}"
 func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 	status = &tokens.TxStatus{
 		// Receipt
@@ -181,6 +191,8 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 	return
 }
 
+// GetLatestBlockNumber returns current block height
+// call rest api "/blocks/latest"
 func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
@@ -208,6 +220,8 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 	return
 }
 
+// GetLatestBlockNumberOf returns current block height of given node
+// call rest api "/blocks/latest"
 func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	endpointURL, err := url.Parse(apiAddress)
 	if err != nil {
@@ -231,6 +245,8 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	return height, nil
 }
 
+// GetAccountNumber gets account number, a series number of account on a cosmos state
+// call rest api "/auth/accounts/"
 func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
@@ -258,6 +274,8 @@ func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 	return 0, nil
 }
 
+// GetPoolNonce gets account sequence
+// call rest api "/auth/accounts/"
 func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
@@ -286,6 +304,7 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 }
 
 // SearchTxsHash searches tx in range of blocks
+// call rest api "/txs?..."
 func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 	txs := make([]string, 0)
 	var limit = 100
@@ -303,7 +322,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			endpoint = endpointURL.String()
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
-			resp, err := client.R().Get(fmt.Sprintf("%v/txs/%v", endpoint, params))
+			resp, err := client.R().Get(fmt.Sprintf("%v/txs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "request error", err, "func", "SearchTxsHash")
 				continue
@@ -364,6 +383,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 }
 
 // SearchTxs searches tx in range of blocks
+// call rest api "/txs?..."
 func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 	txs := make([]sdk.TxResponse, 0)
 	var limit = 100
@@ -441,6 +461,9 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 	return txs, nil
 }
 
+// BroadcastTx broadcast tx
+// post "txs" to rest api
+// mode: block
 func (b *Bridge) BroadcastTx(tx authtypes.StdTx) error {
 	bz, err := json.Marshal(tx)
 	if err != nil {

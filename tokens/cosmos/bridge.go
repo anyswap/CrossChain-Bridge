@@ -9,43 +9,45 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	cyptes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-var ChainIDs = make(map[string]bool)
+var (
+	// ChainIDs saves supported chain ids
+	ChainIDs = make(map[string]bool)
+	// MainCoin is the gas coin
+	MainCoin CosmosCoin
+	// SupportedCoins save cosmos coins
+	SupportedCoins = make(map[string]CosmosCoin)
+)
 
+// CosmosBridgeInterface interface
 type CosmosBridgeInterface interface {
 	BeforeConfig()
 	AfterConfig()
 }
 
+// BeforeConfig run before loading bridge and token config
 func (b *Bridge) BeforeConfig() {
 	cyptes.RegisterAmino(CDC)
 	sdk.RegisterCodec(CDC)
-	b.InitChains()
+	ChainIDs["cosmos-hub4"] = true
 	SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
 	MainCoin = SupportedCoins["ATOM"]
 	tokens.IsSwapoutToStringAddress = true
 }
 
+// AfterConfig run after loading bridge and token config
 func (b *Bridge) AfterConfig() {
+	GetFeeAmount = b.FeeGetter()
 	b.InitLatestBlockNumber()
 }
 
-// MainCoin is the gas coin
-var MainCoin CosmosCoin
-
-// SupportedCoins save cosmos coins
-var SupportedCoins = make(map[string]CosmosCoin)
-
+// CosmosCoin struct
 type CosmosCoin struct {
 	Denom   string
 	Decimal uint8
-}
-
-// InitChains init chains
-func (b *Bridge) InitChains() {
-	ChainIDs["cosmos-hub4"] = true
 }
 
 // Bridge btc bridge
@@ -109,5 +111,20 @@ func (b *Bridge) InitLatestBlockNumber() {
 		log.Error("get latst block number failed.", "BlockChain", chainCfg.BlockChain, "NetID", chainCfg.NetID, "err", err)
 		log.Println("retry query gateway", gatewayCfg.APIAddress)
 		time.Sleep(3 * time.Second)
+	}
+}
+
+// DefaultSwapoutGas is default cosmos tx gas
+var DefaultSwapoutGas uint64 = 300000
+
+// GetFeeAmount returns StdFee
+var GetFeeAmount func() authtypes.StdFee
+
+// FeeGetter returns a cosmos fee getter
+func (b *Bridge) FeeGetter() func() authtypes.StdFee {
+	return func() authtypes.StdFee {
+		// TODO
+		feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
+		return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 	}
 }

@@ -14,10 +14,12 @@ import (
 	core "github.com/terra-project/core/types"
 )
 
+// Bridge struct
 type Bridge struct {
 	*cosmos.Bridge
 }
 
+// InitSDK init cosmos sdk
 func InitSDK() {
 	config := sdk.GetConfig()
 	config.SetCoinType(core.CoinType)
@@ -28,12 +30,14 @@ func InitSDK() {
 	config.Seal()
 }
 
+// BeforeConfig run before loading bridge and token config
 func (b *Bridge) BeforeConfig() {
 	cyptes.RegisterAmino(cosmos.CDC)
 	sdk.RegisterCodec(cosmos.CDC)
 	InitSDK()
-	cosmos.GetFeeAmount = TerraGetFeeAmount
-	b.InitChains()
+	cosmos.ChainIDs["columbus-4"] = true
+	cosmos.ChainIDs["tequila-0004"] = true
+	cosmos.ChainIDs["mytestnet"] = true
 	cosmos.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
 	cosmos.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
 	cosmos.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
@@ -47,15 +51,10 @@ func (b *Bridge) BeforeConfig() {
 	tokens.IsSwapoutToStringAddress = true
 }
 
+// AfterConfig run after loading bridge and token config
 func (b *Bridge) AfterConfig() {
+	cosmos.GetFeeAmount = b.FeeGetter()
 	b.Bridge.InitLatestBlockNumber()
-}
-
-// InitChains init chains
-func (b *Bridge) InitChains() {
-	cosmos.ChainIDs["columbus-4"] = true
-	cosmos.ChainIDs["tequila-0004"] = true
-	cosmos.ChainIDs["mytestnet"] = true
 }
 
 // NewCrossChainBridge new bridge
@@ -115,10 +114,14 @@ func (b *Bridge) InitLatestBlockNumber() {
 	}
 }
 
+// DefaultSwapoutGas is terra default gas
 var DefaultSwapoutGas uint64 = 300000
 
-var TerraGetFeeAmount = func() authtypes.StdFee {
-	// TODO
-	feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(1000)}}
-	return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
+// FeeGetter returns terra fee getter
+func (b *Bridge) FeeGetter() func() authtypes.StdFee {
+	return func() authtypes.StdFee {
+		// TODO
+		feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(1000)}}
+		return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
+	}
 }

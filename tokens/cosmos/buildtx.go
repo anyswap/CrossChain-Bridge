@@ -7,16 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
-
-var DefaultSwapoutGas uint64 = 300000
-
-var GetFeeAmount = func() authtypes.StdFee {
-	// TODO
-	feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
-	return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
-}
 
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {

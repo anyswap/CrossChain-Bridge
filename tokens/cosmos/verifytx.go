@@ -54,7 +54,7 @@ func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swap
 	}
 
 	// check every msg
-	// if type is bank/send or bank/multisend
+	// if type is bank/send or bank/multisend, check every coin in every output
 	// add to swapinfo
 	msgs := cosmostx.GetMsgs()
 	for _, msg := range msgs {
@@ -125,8 +125,11 @@ func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swap
 	return swapInfos, nil
 }
 
+// NotSupportedCoinErr is an error
 var NotSupportedCoinErr = errors.New("coin not supported")
 
+// getPairID returns pairID corresponding to given coin
+// returns error when coin type not supported
 func (b *Bridge) getPairID(coin sdk.Coin) (string, error) {
 	for k, v := range SupportedCoins {
 		if strings.EqualFold(v.Denom, coin.Denom) {
@@ -161,7 +164,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 	}
 
 	// check every msg
-	// if type is bank/send or bank/multisend
+	// if type is bank/send or bank/multisend, check every coin in every output
 	// add to swapinfo
 	msgs := cosmostx.GetMsgs()
 	for _, msg := range msgs {
@@ -232,6 +235,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 	return swapInfos, nil
 }
 
+// GetBindAddressFromMemo get tx memo from an sdk.Tx
 func (b *Bridge) GetBindAddressFromMemo(tx sdk.Tx) (address string, ok bool) {
 	authtx, ok := tx.(authtypes.StdTx)
 	if !ok {
