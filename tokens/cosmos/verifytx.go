@@ -239,10 +239,13 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 func (b *Bridge) GetBindAddressFromMemo(tx sdk.Tx) (address string, ok bool) {
 	authtx, ok := tx.(authtypes.StdTx)
 	if !ok {
+		log.Warn("GetBindAddressFromMemo: Tx is not auth StdTx", "Tx", tx)
 		return "", false
 	}
 	memo := authtx.Memo
-	if ok = b.IsValidAddress(memo); ok {
+	dstBridge := tokens.DstBridge
+	if ok = dstBridge.IsValidAddress(memo); ok {
+		log.Warn("GetBindAddressFromMemo: memo is not a valid address", "memo", memo)
 		return memo, ok
 	} else {
 		return "", false
