@@ -32,6 +32,7 @@ type CosmosBridgeInterface interface {
 func (b *Bridge) BeforeConfig() {
 	cyptes.RegisterAmino(CDC)
 	sdk.RegisterCodec(CDC)
+	RegisterCodec(CDC)
 	ChainIDs["cosmos-hub4"] = true
 	SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
 	MainCoin = SupportedCoins["ATOM"]
