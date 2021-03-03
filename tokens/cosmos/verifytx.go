@@ -3,6 +3,7 @@ package cosmos
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -41,6 +42,7 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 
 func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
 	swapInfos = make([]*tokens.TxSwapInfo, 0)
+	swapInfoMap := make(map[string][]*tokens.TxSwapInfo)
 	cosmostx := txresp.Tx
 
 	// get bind address from memo
@@ -86,8 +88,12 @@ func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swap
 				swapInfo.To = tokenCfg.DepositAddress
 				swapInfo.Bind = bindaddress
 				swapInfo.From = bindaddress
+				//swapInfo.TxId = strings.ToLower(txHash)
 				swapInfo.Value = coin.Amount.BigInt()
-				swapInfos = append(swapInfos, swapInfo)
+				if swapInfoMap[pairID] == nil {
+					swapInfoMap[pairID] = make([]*tokens.TxSwapInfo, 0)
+				}
+				swapInfoMap[pairID] = append(swapInfoMap[pairID], swapInfo)
 			}
 
 		} else if msgtype == TypeMsgMultiSend {
@@ -114,14 +120,36 @@ func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swap
 					swapInfo.To = tokenCfg.DepositAddress
 					swapInfo.Bind = bindaddress
 					swapInfo.From = bindaddress
+					// swapInfo.TxId = strings.ToLower(txHash)
 					swapInfo.Value = coin.Amount.BigInt()
-					swapInfos = append(swapInfos, swapInfo)
+					if swapInfoMap[pairID] == nil {
+						swapInfoMap[pairID] = make([]*tokens.TxSwapInfo, 0)
+					}
+					swapInfoMap[pairID] = append(swapInfoMap[pairID], swapInfo)
 				}
 			}
 		} else {
 			continue
 		}
 	}
+
+	// aggregate by pairID
+	for k, v := range swapInfoMap {
+		if len(v) < 1 {
+			continue
+		}
+		aggSwapInfo := &tokens.TxSwapInfo{}
+		aggSwapInfo.PairID = k
+		aggSwapInfo.To = v[0].To
+		aggSwapInfo.Bind = v[0].Bind
+		// aggSwapInfo.TxId = v[0].TxId
+		aggSwapInfo.Value = big.NewInt(0)
+		for _, swapInfo := range v {
+			aggSwapInfo.Value = new(big.Int).Add(aggSwapInfo.Value, swapInfo.Value)
+		}
+		swapInfos = append(swapInfos, aggSwapInfo)
+	}
+
 	return swapInfos, nil
 }
 
@@ -152,6 +180,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 		return nil, []error{errors.New("Tx is of wrong type")}
 	}
 	swapInfos = make([]*tokens.TxSwapInfo, 0)
+	swapInfoMap := make(map[string][]*tokens.TxSwapInfo)
 
 	// get bind address from memo
 	bindaddress, ok := b.GetBindAddressFromMemo(cosmostx)
@@ -197,7 +226,11 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 				swapInfo.Bind = bindaddress
 				swapInfo.From = bindaddress
 				swapInfo.Value = coin.Amount.BigInt()
-				swapInfos = append(swapInfos, swapInfo)
+				// swapInfo.TxId = strings.ToLower(txHash)
+				if swapInfoMap[pairID] == nil {
+					swapInfoMap[pairID] = make([]*tokens.TxSwapInfo, 0)
+				}
+				swapInfoMap[pairID] = append(swapInfoMap[pairID], swapInfo)
 			}
 
 		} else if msgtype == TypeMsgMultiSend {
@@ -225,13 +258,35 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 					swapInfo.Bind = bindaddress
 					swapInfo.From = bindaddress
 					swapInfo.Value = coin.Amount.BigInt()
-					swapInfos = append(swapInfos, swapInfo)
+					// swapInfo.TxId = strings.ToLower(txHash)
+					if swapInfoMap[pairID] == nil {
+						swapInfoMap[pairID] = make([]*tokens.TxSwapInfo, 0)
+					}
+					swapInfoMap[pairID] = append(swapInfoMap[pairID], swapInfo)
 				}
 			}
 		} else {
 			continue
 		}
 	}
+
+	// aggregate by pairID
+	for k, v := range swapInfoMap {
+		if len(v) < 1 {
+			continue
+		}
+		aggSwapInfo := &tokens.TxSwapInfo{}
+		aggSwapInfo.PairID = k
+		aggSwapInfo.To = v[0].To
+		aggSwapInfo.Bind = v[0].Bind
+		// aggSwapInfo.TxId = v[0].TxId
+		aggSwapInfo.Value = big.NewInt(0)
+		for _, swapInfo := range v {
+			aggSwapInfo.Value = new(big.Int).Add(aggSwapInfo.Value, swapInfo.Value)
+		}
+		swapInfos = append(swapInfos, aggSwapInfo)
+	}
+
 	return swapInfos, nil
 }
 
