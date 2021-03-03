@@ -151,14 +151,7 @@ func GetSwapoutHistory(address, pairID string, offset, limit int) ([]*SwapInfo, 
 // Swapin api
 func Swapin(txid, pairID *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapin", "txid", *txid, "pairID", *pairID)
-	txidstr := *txid
-	pairIDStr := *pairID
-	swapInfo, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr, true)
-	err = addSwapToDatabase(txidstr, tokens.SwapinTx, swapInfo, err)
-	if err != nil {
-		return nil, err
-	}
-	return &SuccessPostResult, nil
+	return swap(txid, pairID, true)
 }
 
 // RetrySwapin api
@@ -191,10 +184,27 @@ func RetrySwapin(txid, pairID *string) (*PostResult, error) {
 // Swapout api
 func Swapout(txid, pairID *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapout", "txid", *txid, "pairID", *pairID)
+	return swap(txid, pairID, false)
+}
+
+func swap(txid, pairID *string, isSwapin bool) (*PostResult, error) {
 	txidstr := *txid
 	pairIDStr := *pairID
-	swapInfo, err := tokens.DstBridge.VerifyTransaction(pairIDStr, txidstr, true)
-	err = addSwapToDatabase(txidstr, tokens.SwapoutTx, swapInfo, err)
+	bridge := tokens.GetCrossChainBridge(isSwapin)
+	swapInfo, err := bridge.VerifyTransaction(pairIDStr, txidstr, true)
+	if err != nil {
+		txStat := bridge.GetTransactionStatus(txidstr)
+		if txStat != nil && txStat.BlockHeight > 0 {
+			swapInfo, err = bridge.VerifyTransaction(pairIDStr, txidstr, false)
+		}
+	}
+	var txType tokens.SwapTxType
+	if isSwapin {
+		txType = tokens.SwapinTx
+	} else {
+		txType = tokens.SwapoutTx
+	}
+	err = addSwapToDatabase(txidstr, txType, swapInfo, err)
 	if err != nil {
 		return nil, err
 	}
