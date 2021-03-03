@@ -43,6 +43,7 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
 	swapInfos = make([]*tokens.TxSwapInfo, 0)
 	swapInfoMap := make(map[string][]*tokens.TxSwapInfo)
+	txid := strings.ToLower(txresp.TxHash)
 	cosmostx := txresp.Tx
 
 	// get bind address from memo
@@ -88,7 +89,6 @@ func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swap
 				swapInfo.To = tokenCfg.DepositAddress
 				swapInfo.Bind = bindaddress
 				swapInfo.From = bindaddress
-				//swapInfo.TxId = strings.ToLower(txHash)
 				swapInfo.Value = coin.Amount.BigInt()
 				if swapInfoMap[pairID] == nil {
 					swapInfoMap[pairID] = make([]*tokens.TxSwapInfo, 0)
@@ -120,7 +120,6 @@ func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swap
 					swapInfo.To = tokenCfg.DepositAddress
 					swapInfo.Bind = bindaddress
 					swapInfo.From = bindaddress
-					// swapInfo.TxId = strings.ToLower(txHash)
 					swapInfo.Value = coin.Amount.BigInt()
 					if swapInfoMap[pairID] == nil {
 						swapInfoMap[pairID] = make([]*tokens.TxSwapInfo, 0)
@@ -142,7 +141,7 @@ func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swap
 		aggSwapInfo.PairID = k
 		aggSwapInfo.To = v[0].To
 		aggSwapInfo.Bind = v[0].Bind
-		// aggSwapInfo.TxId = v[0].TxId
+		aggSwapInfo.Hash = txid
 		aggSwapInfo.Value = big.NewInt(0)
 		for _, swapInfo := range v {
 			aggSwapInfo.Value = new(big.Int).Add(aggSwapInfo.Value, swapInfo.Value)
@@ -168,6 +167,7 @@ func (b *Bridge) getPairID(coin sdk.Coin) (string, error) {
 }
 
 func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
+	txid := strings.ToLower(txHash)
 	tx, err := b.GetTransaction(txHash)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
@@ -277,6 +277,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 		}
 		aggSwapInfo := &tokens.TxSwapInfo{}
 		aggSwapInfo.PairID = k
+		aggSwapInfo.Hash = txid
 		aggSwapInfo.To = v[0].To
 		aggSwapInfo.Bind = v[0].Bind
 		// aggSwapInfo.TxId = v[0].TxId
