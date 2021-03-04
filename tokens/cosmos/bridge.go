@@ -16,10 +16,6 @@ import (
 var (
 	// ChainIDs saves supported chain ids
 	ChainIDs = make(map[string]bool)
-	// MainCoin is the gas coin
-	MainCoin CosmosCoin
-	// SupportedCoins save cosmos coins
-	SupportedCoins = make(map[string]CosmosCoin)
 )
 
 // CosmosBridgeInterface interface
@@ -34,8 +30,7 @@ func (b *Bridge) BeforeConfig() {
 	sdk.RegisterCodec(CDC)
 	RegisterCodec(CDC)
 	ChainIDs["cosmos-hub4"] = true
-	SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
-	MainCoin = SupportedCoins["ATOM"]
+	// SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
 	tokens.IsSwapoutToStringAddress = true
 }
 
@@ -43,6 +38,33 @@ func (b *Bridge) BeforeConfig() {
 func (b *Bridge) AfterConfig() {
 	GetFeeAmount = b.FeeGetter()
 	b.InitLatestBlockNumber()
+	b.LoadCoins()
+	if atom, ok := b.SupportedCoins["ATOM"]; ok == false || atom.Denom != "uatom" || atom.Decimal != 9 {
+		log.Fatalf("Cosmos bridge must have Atom token config")
+	}
+	b.MainCoin = b.SupportedCoins["ATOM"]
+	log.Info("Cosmos bridge init success", "coins", b.SupportedCoins)
+}
+
+// LoadCoins read and check token pairs config
+func (b *Bridge) LoadCoins() {
+	pairs := tokens.GetTokenPairsConfig()
+	for _, tokenCfg := range pairs {
+		name := tokenCfg.SrcToken.Name
+		unit := tokenCfg.SrcToken.Unit
+		decimal := *(tokenCfg.SrcToken.Decimals)
+		b.SupportedCoins[name] = CosmosCoin{unit, decimal}
+	}
+}
+
+// GetCoin returns supported coin by name
+func (b *Bridge) GetCoin(name string) (CosmosCoin, bool) {
+	coin, ok := b.SupportedCoins[name]
+	if !ok {
+		b.LoadCoins()
+	}
+	coin, ok = b.SupportedCoins[name]
+	return coin, ok
 }
 
 // CosmosCoin struct
@@ -55,6 +77,10 @@ type CosmosCoin struct {
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
 	*eth.NonceSetterBase
+	// MainCoin is the gas coin
+	MainCoin CosmosCoin
+	// SupportedCoins save cosmos coins
+	SupportedCoins map[string]CosmosCoin
 }
 
 // NewCrossChainBridge new bridge
@@ -62,6 +88,7 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	return &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
 		NonceSetterBase:      eth.NewNonceSetterBase(),
+		SupportedCoins:       make(map[string]CosmosCoin),
 	}
 }
 
@@ -84,14 +111,6 @@ func (b *Bridge) VerifyChainID() {
 func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
-	}
-	symbol := strings.ToUpper(tokenCfg.Symbol)
-	if coin, ok := SupportedCoins[symbol]; ok {
-		if coin.Decimal != *tokenCfg.Decimals {
-			return fmt.Errorf("invalid decimals for %v: want %v but have %v", symbol, coin.Decimal, *tokenCfg.Decimals)
-		}
-	} else {
-		return fmt.Errorf("Unsupported cosmos coin type")
 	}
 	return nil
 }

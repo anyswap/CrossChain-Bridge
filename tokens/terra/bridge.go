@@ -40,17 +40,15 @@ func (b *Bridge) BeforeConfig() {
 	InitSDK()
 	cosmos.ChainIDs["columbus-4"] = true
 	cosmos.ChainIDs["tequila-0004"] = true
-	cosmos.ChainIDs["mytestnet"] = true
-	cosmos.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
-	cosmos.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
-	cosmos.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
-	cosmos.SupportedCoins["SDR"] = cosmos.CosmosCoin{"usdr", 6}
-	cosmos.SupportedCoins["CNY"] = cosmos.CosmosCoin{"ucny", 6}
-	cosmos.SupportedCoins["JPY"] = cosmos.CosmosCoin{"ujpy", 6}
-	cosmos.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
-	cosmos.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
-	cosmos.SupportedCoins["UMNT"] = cosmos.CosmosCoin{"umnt", 6}
-	cosmos.MainCoin = cosmos.SupportedCoins["LUNA"]
+	/*b.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
+	b.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
+	b.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
+	b.SupportedCoins["SDR"] = cosmos.CosmosCoin{"usdr", 6}
+	b.SupportedCoins["CNY"] = cosmos.CosmosCoin{"ucny", 6}
+	b.SupportedCoins["JPY"] = cosmos.CosmosCoin{"ujpy", 6}
+	b.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
+	b.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
+	b.SupportedCoins["UMNT"] = cosmos.CosmosCoin{"umnt", 6}*/
 	tokens.IsSwapoutToStringAddress = true
 }
 
@@ -58,6 +56,12 @@ func (b *Bridge) BeforeConfig() {
 func (b *Bridge) AfterConfig() {
 	cosmos.GetFeeAmount = b.FeeGetter()
 	b.Bridge.InitLatestBlockNumber()
+	b.LoadCoins()
+	if luna, ok := b.SupportedCoins["LUNA"]; ok == false || luna.Denom != "uluna" || luna.Decimal != 6 {
+		log.Fatalf("Terra bridge must have Luna token config")
+	}
+	b.MainCoin = b.SupportedCoins["LUNA"]
+	log.Info("Terra bridge init success", "coins", b.SupportedCoins)
 }
 
 // NewCrossChainBridge new bridge
@@ -86,14 +90,6 @@ func (b *Bridge) VerifyChainID() {
 func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
-	}
-	symbol := strings.ToUpper(tokenCfg.Symbol)
-	if coin, ok := cosmos.SupportedCoins[symbol]; ok {
-		if coin.Decimal != *tokenCfg.Decimals {
-			return fmt.Errorf("invalid decimals for %v: want %v but have %v", symbol, coin.Decimal, *tokenCfg.Decimals)
-		}
-	} else {
-		return fmt.Errorf("Unsupported cosmos coin type")
 	}
 	return nil
 }

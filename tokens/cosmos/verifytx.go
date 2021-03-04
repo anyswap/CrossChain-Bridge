@@ -158,7 +158,14 @@ var NotSupportedCoinErr = errors.New("coin not supported")
 // getPairID returns pairID corresponding to given coin
 // returns error when coin type not supported
 func (b *Bridge) getPairID(coin sdk.Coin) (string, error) {
-	for k, v := range SupportedCoins {
+	for k, v := range b.SupportedCoins {
+		if strings.EqualFold(v.Denom, coin.Denom) {
+			return strings.ToLower(k), nil
+		}
+	}
+	// if not exists, reload coins and find it
+	b.LoadCoins()
+	for k, v := range b.SupportedCoins {
 		if strings.EqualFold(v.Denom, coin.Denom) {
 			return strings.ToLower(k), nil
 		}

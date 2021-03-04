@@ -45,7 +45,7 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 			continue
 		}
 		for _, bal := range balances {
-			if bal.Denom != MainCoin.Denom {
+			if bal.Denom != b.MainCoin.Denom {
 				continue
 			}
 			balance = bal.Amount.BigInt()
@@ -61,7 +61,7 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 // GetTokenBalance gets balance for given token
 // call  rest api"/bank/balances/"
 func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (balance *big.Int, err error) {
-	coin, ok := SupportedCoins[tokenName]
+	coin, ok := b.GetCoin(tokenName)
 	if !ok {
 		return nil, fmt.Errorf("Unsupported coin: %v", tokenName)
 	}

@@ -94,6 +94,8 @@ type TokenConfig struct {
 	maxSwapFee       *big.Int
 	minSwapFee       *big.Int
 	bigValThreshhold *big.Int
+
+	Unit string // Cosmos coin unit denom
 }
 
 // IsErc20 return if token is erc20
