@@ -33,7 +33,7 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 		}
 		endpoint = endpointURL.String()
 		client := resty.New()
-		resp, err := client.R().Get(fmt.Sprintf("%v/bank/balances/%v", endpoint, account))
+		resp, err := client.R().Get(fmt.Sprintf("%vbank/balances/%v", endpoint, account))
 		if err != nil || resp.StatusCode() != 200 {
 			log.Warn("cosmos rest request error", "request error", err, "func", "GetBalance")
 			continue
@@ -73,7 +73,7 @@ func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (b
 		}
 		endpoint = endpointURL.String()
 		client := resty.New()
-		resp, err := client.R().Get(fmt.Sprintf("%v/bank/balances/%v", endpoint, accountAddress))
+		resp, err := client.R().Get(fmt.Sprintf("%vbank/balances/%v", endpoint, accountAddress))
 		if err != nil || resp.StatusCode() != 200 {
 			log.Warn("cosmos rest request error", "error", err, "func", "GetTokenBalance")
 			continue
@@ -115,7 +115,7 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 		endpoint = endpointURL.String()
 		client := resty.New()
 
-		resp, err := client.R().Get(fmt.Sprintf("%v/txs/%v", endpoint, txHash))
+		resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, txHash))
 		if err != nil || resp.StatusCode() != 200 {
 			log.Warn("cosmos rest request error", "request error", err, "func", "GetTransaction")
 			continue
@@ -159,7 +159,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 		endpoint = endpointURL.String()
 		client := resty.New()
 
-		resp, err := client.R().Get(fmt.Sprintf("%v/txs/%v", endpoint, txHash))
+		resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, txHash))
 		if err != nil || resp.StatusCode() != 200 {
 			log.Warn("cosmos rest request error", "request error", err, "func", "GetTransactionStatus")
 			continue
@@ -203,7 +203,7 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 		endpoint = endpointURL.String()
 		client := resty.New()
 
-		resp, err := client.R().Get(fmt.Sprintf("%v/blocks/latest", endpoint))
+		resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
 		if err != nil || resp.StatusCode() != 200 {
 			log.Warn("cosmos rest request error", "request error", err, "func", "GetLatestBlockNumber")
 			continue
@@ -230,7 +230,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	endpoint := endpointURL.String()
 	client := resty.New()
 
-	resp, err := client.R().Get(fmt.Sprintf("%v/blocks/latest", endpoint))
+	resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
 	if err != nil || resp.StatusCode() != 200 {
 		log.Warn("cosmos rest request error", "request error", err, "func", "GetLatestBlockNumberOf")
 		return 0, err
@@ -257,7 +257,7 @@ func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 		endpoint = endpointURL.String()
 		client := resty.New()
 
-		resp, err := client.R().Get(fmt.Sprintf("%v/auth/accounts/%v", endpoint, address))
+		resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
 		if err != nil || resp.StatusCode() != 200 {
 			log.Warn("cosmos rest request error", "request error", err, "func", "GetAccountNumber")
 			continue
@@ -286,7 +286,7 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 		endpoint = endpointURL.String()
 		client := resty.New()
 
-		resp, err := client.R().Get(fmt.Sprintf("%v/auth/accounts/%v", endpoint, address))
+		resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
 		if err != nil || resp.StatusCode() != 200 {
 			log.Warn("cosmos rest request error", "request error", err, "func", "GetPoolNonce")
 			continue
@@ -322,7 +322,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			endpoint = endpointURL.String()
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
-			resp, err := client.R().Get(fmt.Sprintf("%v/txs%v", endpoint, params))
+			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "request error", err, "func", "SearchTxsHash")
 				continue
@@ -357,7 +357,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			endpoint = endpointURL.String()
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
-			resp, err := client.R().Get(fmt.Sprintf("%v/txs/%v", endpoint, params))
+			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "request error", err, "func", "SearchTxsHash")
 				continue
@@ -401,7 +401,7 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			endpoint = endpointURL.String()
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
-			resp, err := client.R().Get(fmt.Sprintf("%v/txs/%v", endpoint, params))
+			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "request error", err, "func", "SearchTxs")
 				continue

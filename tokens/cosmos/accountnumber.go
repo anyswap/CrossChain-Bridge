@@ -4,6 +4,9 @@ package cosmos
 var accountNumberCached map[string]uint64
 
 func (b *Bridge) GetAccountNumberCached(address string) (uint64, error) {
+	if accountNumberCached == nil {
+		accountNumberCached = make(map[string]uint64)
+	}
 	if num, ok := accountNumberCached[address]; ok {
 		return num, nil
 	} else {
