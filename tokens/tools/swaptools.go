@@ -55,7 +55,6 @@ func RegisterSwapout(txid string, swapInfos []*tokens.TxSwapInfo, verifyErrors [
 }
 
 func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, verifyErrors []error) {
-	log.Info("registerSwap", "txid", txid, "swapInfos", swapInfos)
 	if len(swapInfos) != len(verifyErrors) {
 		log.Error("registerSwap with not equal number of swap infos and verify errors")
 		return

@@ -57,8 +57,9 @@ func (b *Bridge) AfterConfig() {
 	cosmos.GetFeeAmount = b.FeeGetter()
 	b.Bridge.InitLatestBlockNumber()
 	b.LoadCoins()
-	log.Println("111111, after load coins", "coins", b.SupportedCoins)
+	log.Info("111111", "coins", b.SupportedCoins)
 	if luna, ok := b.SupportedCoins["LUNA"]; ok == false || luna.Denom != "uluna" || luna.Decimal != 6 {
+		log.Info("222222", "luna", luna, "ok", ok, "check denom", (luna.Denom != "uluna"), "check decimal", luna.Decimal != 6)
 		log.Fatalf("Terra bridge must have Luna token config")
 	}
 	b.MainCoin = b.SupportedCoins["LUNA"]
