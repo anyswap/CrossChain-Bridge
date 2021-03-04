@@ -201,8 +201,11 @@ type BuildTxArgs struct {
 // GetExtraArgs get extra args
 func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 	return &BuildTxArgs{
-		SwapInfo: args.SwapInfo,
-		Extra:    args.Extra,
+		SwapInfo:    args.SwapInfo,
+		From:        args.From,
+		To:          args.To,
+		OriginValue: args.OriginValue,
+		Extra:       args.Extra,
 	}
 }
 

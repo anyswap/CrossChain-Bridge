@@ -34,11 +34,16 @@ func (b *Bridge) verifyTransactionWithArgs(tx StdSignContent, args *tokens.Build
 	if !ok {
 		return errors.New("msg types error")
 	}
-	if strings.EqualFold(args.From, msg.FromAddress.String()) == false || strings.EqualFold(msg.FromAddress.String(), tokenCfg.DcrmAddress) == false {
-		return errors.New("wrong from address")
-	}
-	if strings.EqualFold(args.To, msg.ToAddress.String()) == false || b.IsValidAddress(args.To) == false {
-		return errors.New("wrong to address")
+	switch {
+	case strings.EqualFold(args.From, msg.FromAddress.String()) == false:
+		return fmt.Errorf("[cosmos verify transaction with args] From address not match, args.From: %v, msg.FromAddress: %v", args.From, msg.FromAddress.String())
+	case strings.EqualFold(msg.FromAddress.String(), tokenCfg.DcrmAddress) == false:
+		return fmt.Errorf("[cosmos verify transaction with args] From address is not dcrm address, args.From: %v, dcrm address: %v", msg.FromAddress.String(), tokenCfg.DcrmAddress)
+	case b.IsValidAddress(args.To) == false:
+		return fmt.Errorf("[cosmos verify transaction with args] Invalid to address: %v", args.To)
+	case strings.EqualFold(args.To, msg.ToAddress.String()) == false:
+		return fmt.Errorf("[cosmos verify transaction with args] To address not match, args.To: %v, msg.ToAddress: %v", args.To, msg.ToAddress.String())
+	default:
 	}
 	if len(msg.Amount) != 1 {
 		return errors.New("wrong amount length")
@@ -46,10 +51,10 @@ func (b *Bridge) verifyTransactionWithArgs(tx StdSignContent, args *tokens.Build
 	amount := msg.Amount[0]
 	checkPairID, err := b.getPairID(amount)
 	if err != nil || checkPairID != args.PairID {
-		return errors.New("wrong coin type")
+		return fmt.Errorf("[cosmos verify transaction with args] Token type not match, %v, %v", checkPairID, args.PairID)
 	}
-	if amount.Amount.BigInt().Cmp(args.Value) != 0 {
-		return errors.New("wrong amount")
+	if amount.Amount.BigInt().Cmp(args.OriginValue) >= 0 {
+		return fmt.Errorf("[cosmos verify transaction with args] Amount not match, %v, %v", amount.Amount.BigInt(), args.OriginValue)
 	}
 	return nil
 }
