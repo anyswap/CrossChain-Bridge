@@ -3,19 +3,29 @@ package cosmos
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
+	"net/http"
 	"net/url"
+	"strings"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/go-resty/resty/v2"
 	amino "github.com/tendermint/go-amino"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
+
+/*
+Rest api doc
+https://cosmos.network/rpc/v0.39.2
+https://lcd.terra.dev/swagger-ui/#/
+*/
 
 var CDC = amino.NewCodec()
 
@@ -35,7 +45,7 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 		client := resty.New()
 		resp, err := client.R().Get(fmt.Sprintf("%vbank/balances/%v", endpoint, account))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "request error", err, "func", "GetBalance")
+			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetBalance")
 			continue
 		}
 		var balances sdk.Coins
@@ -75,7 +85,7 @@ func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (b
 		client := resty.New()
 		resp, err := client.R().Get(fmt.Sprintf("%vbank/balances/%v", endpoint, accountAddress))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "error", err, "func", "GetTokenBalance")
+			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "error", err, "func", "GetTokenBalance")
 			continue
 		}
 		var balances sdk.Coins
@@ -117,7 +127,7 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, txHash))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "request error", err, "func", "GetTransaction")
+			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetTransaction")
 			continue
 		}
 		var txResult sdk.TxResponse
@@ -161,7 +171,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, txHash))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "request error", err, "func", "GetTransactionStatus")
+			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetTransactionStatus")
 			continue
 		}
 
@@ -205,7 +215,7 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "request error", err, "func", "GetLatestBlockNumber")
+			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetLatestBlockNumber")
 			continue
 		}
 		var blockRes ctypes.ResultBlock
@@ -232,7 +242,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 
 	resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
 	if err != nil || resp.StatusCode() != 200 {
-		log.Warn("cosmos rest request error", "request error", err, "func", "GetLatestBlockNumberOf")
+		log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetLatestBlockNumberOf")
 		return 0, err
 	}
 	var blockRes ctypes.ResultBlock
@@ -259,11 +269,27 @@ func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "request error", err, "func", "GetAccountNumber")
+			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetAccountNumber")
+			continue
+		}
+		tempStruct := make(map[string]interface{})
+		err = json.Unmarshal(resp.Body(), &tempStruct)
+		if err != nil {
+			log.Warn("Marshal resp error", "err", err)
+			continue
+		}
+		result, ok := tempStruct["result"]
+		if !ok {
+			log.Warn("Get result error")
+			continue
+		}
+		bz, err := json.Marshal(result)
+		if err != nil {
+			log.Warn("Marshal result error", "err", err)
 			continue
 		}
 		var accountRes authtypes.BaseAccount
-		err = CDC.UnmarshalJSON(resp.Body(), &accountRes)
+		err = CDC.UnmarshalJSON(bz, &accountRes)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetAccountNumber")
 			continue
@@ -288,11 +314,27 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "request error", err, "func", "GetPoolNonce")
+			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetPoolNonce")
+			continue
+		}
+		tempStruct := make(map[string]interface{})
+		err = json.Unmarshal(resp.Body(), &tempStruct)
+		if err != nil {
+			log.Warn("Marshal resp error", "err", err)
+			continue
+		}
+		result, ok := tempStruct["result"]
+		if !ok {
+			log.Warn("Get result error")
+			continue
+		}
+		bz, err := json.Marshal(result)
+		if err != nil {
+			log.Warn("Marshal result error", "err", err)
 			continue
 		}
 		var accountRes authtypes.BaseAccount
-		err = CDC.UnmarshalJSON(resp.Body(), &accountRes)
+		err = CDC.UnmarshalJSON(bz, &accountRes)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetPoolNonce")
 			continue
@@ -324,7 +366,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
-				log.Warn("cosmos rest request error", "request error", err, "func", "SearchTxsHash")
+				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxsHash")
 				continue
 			}
 			var res sdk.SearchTxsResult
@@ -359,7 +401,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
-				log.Warn("cosmos rest request error", "request error", err, "func", "SearchTxsHash")
+				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxsHash")
 				continue
 			}
 			var res sdk.SearchTxsResult
@@ -403,7 +445,7 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
-				log.Warn("cosmos rest request error", "request error", err, "func", "SearchTxs")
+				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxs")
 				continue
 			}
 			var res sdk.SearchTxsResult
@@ -438,7 +480,7 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			params := fmt.Sprintf("?message.action=multisend&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%v/txs/%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
-				log.Warn("cosmos rest request error", "request error", err, "func", "SearchTxs")
+				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxs")
 				continue
 			}
 			var res sdk.SearchTxsResult
@@ -464,12 +506,37 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 // BroadcastTx broadcast tx
 // post "txs" to rest api
 // mode: block
-func (b *Bridge) BroadcastTx(tx authtypes.StdTx) error {
-	bz, err := json.Marshal(tx)
+func (b *Bridge) BroadcastTx(tx HashableStdTx) error {
+
+	stdtx := tx.ToStdTx()
+
+	bz, err := CDC.MarshalJSON(stdtx)
 	if err != nil {
 		return err
 	}
-	data := fmt.Sprintf(`{"tx":%v,"mode":"block"}`, string(bz))
+	// Take "value" from the json struct
+	tempStr := make(map[string]interface{})
+	err = json.Unmarshal(bz, &tempStr)
+	if err != nil {
+		return err
+	}
+	value, ok := tempStr["value"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("tx value error")
+	}
+	// repass account number and sequence
+	signatures, ok := value["signatures"].([]interface{})
+	if !ok || len(signatures) < 1 {
+		return fmt.Errorf("tx value not contain signature")
+	}
+	signatures[0].(map[string]interface{})["account_number"] = fmt.Sprintf("%v", tx.AccountNumber)
+	signatures[0].(map[string]interface{})["sequence"] = fmt.Sprintf("%v", tx.Sequence)
+	value["signatures"] = signatures
+	bz2, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("Remarshal, std tx error", "err", err)
+	}
+	data := fmt.Sprintf(`{"tx":%v,"mode":"block"}`, string(bz2))
 
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
@@ -478,17 +545,26 @@ func (b *Bridge) BroadcastTx(tx authtypes.StdTx) error {
 			continue
 		}
 		endpoint = endpointURL.String()
-		client := resty.New()
-		resp, err := client.R().
-			SetHeader("Content-Type", "application/json").
-			SetBody(data).
-			Post(endpoint)
-		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "request error", err, "func", "BroadcastTx")
+
+		client := &http.Client{}
+
+		req, err := http.NewRequest("POST", endpoint+"/txs", strings.NewReader(data))
+		if err != nil {
 			continue
 		}
+		req.Header.Set("accept", "application/json")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		if err != nil {
+			continue
+		}
+		bodyText, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			continue
+		}
+
 		var res ctypes.ResultBroadcastTxCommit
-		err = CDC.UnmarshalJSON(resp.Body(), res)
+		err = CDC.UnmarshalJSON([]byte(bodyText), res)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "BroadcastTx")
 			continue

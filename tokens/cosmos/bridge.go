@@ -29,6 +29,7 @@ func (b *Bridge) BeforeConfig() {
 	cyptes.RegisterAmino(CDC)
 	sdk.RegisterCodec(CDC)
 	RegisterCodec(CDC)
+	CDC.RegisterConcrete(&authtypes.BaseAccount{}, "cosmos-sdk/Account", nil)
 	ChainIDs["cosmos-hub4"] = true
 	// SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
 	tokens.IsSwapoutToStringAddress = true

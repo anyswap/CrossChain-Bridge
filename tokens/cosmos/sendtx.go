@@ -2,7 +2,6 @@ package cosmos
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 )
@@ -11,11 +10,10 @@ import (
 func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error) {
 	tx, ok := signedTx.(HashableStdTx)
 	if !ok {
-		fmt.Printf("signed tx is %+v\n", signedTx)
 		return "", errors.New("wrong signed transaction type")
 	}
 	txHash = tx.Hash()
-	err = b.BroadcastTx(tx.ToStdTx())
+	err = b.BroadcastTx(tx)
 	if err != nil {
 		log.Info("SendTransaction failed", "hash", txHash, "err", err)
 		return txHash, err

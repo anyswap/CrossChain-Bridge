@@ -7,7 +7,7 @@ func (b *Bridge) GetAccountNumberCached(address string) (uint64, error) {
 	if accountNumberCached == nil {
 		accountNumberCached = make(map[string]uint64)
 	}
-	if num, ok := accountNumberCached[address]; ok {
+	if num, ok := accountNumberCached[address]; ok && num > 0 {
 		return num, nil
 	} else {
 		num, err := b.GetAccountNumber(address)

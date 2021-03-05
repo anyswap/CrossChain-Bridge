@@ -39,10 +39,10 @@ func (b *Bridge) verifyTransactionWithArgs(tx StdSignContent, args *tokens.Build
 		return fmt.Errorf("[cosmos verify transaction with args] From address not match, args.From: %v, msg.FromAddress: %v", args.From, msg.FromAddress.String())
 	case strings.EqualFold(msg.FromAddress.String(), tokenCfg.DcrmAddress) == false:
 		return fmt.Errorf("[cosmos verify transaction with args] From address is not dcrm address, args.From: %v, dcrm address: %v", msg.FromAddress.String(), tokenCfg.DcrmAddress)
-	case b.IsValidAddress(args.To) == false:
-		return fmt.Errorf("[cosmos verify transaction with args] Invalid to address: %v", args.To)
-	case strings.EqualFold(args.To, msg.ToAddress.String()) == false:
-		return fmt.Errorf("[cosmos verify transaction with args] To address not match, args.To: %v, msg.ToAddress: %v", args.To, msg.ToAddress.String())
+	case b.IsValidAddress(args.Bind) == false:
+		return fmt.Errorf("[cosmos verify transaction with args] Invalid to address: %v", args.Bind)
+	case strings.EqualFold(args.Bind, msg.ToAddress.String()) == false:
+		return fmt.Errorf("[cosmos verify transaction with args] To address not match, args.To: %v, msg.ToAddress: %v", args.Bind, msg.ToAddress.String())
 	default:
 	}
 	if len(msg.Amount) != 1 {

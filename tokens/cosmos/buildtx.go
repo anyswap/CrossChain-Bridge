@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -15,10 +16,11 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		pairID   = args.PairID
 		tokenCfg = b.GetTokenConfig(pairID)
 		from     = args.From
-		to       = args.To
+		to       = args.Bind
 		amount   = args.Value
 		memo     = args.Memo
 	)
+	args.Identifier = params.GetIdentifier()
 	tokenCfg = b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
 		return nil, fmt.Errorf("swap pair '%v' is not configed", pairID)

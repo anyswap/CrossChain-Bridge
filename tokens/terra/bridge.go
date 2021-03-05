@@ -37,6 +37,7 @@ func (b *Bridge) BeforeConfig() {
 	cosmos.CDC.RegisterConcrete(cosmos.MsgSend{}, "bank/MsgSend", nil)
 	cosmos.CDC.RegisterConcrete(cosmos.MsgMultiSend{}, "bank/MsgMultiSend", nil)
 	cosmos.CDC.RegisterConcrete(authtypes.StdTx{}, "core/StdTx", nil)
+	cosmos.CDC.RegisterConcrete(&authtypes.BaseAccount{}, "core/Account", nil)
 	InitSDK()
 	cosmos.ChainIDs["columbus-4"] = true
 	cosmos.ChainIDs["tequila-0004"] = true
@@ -57,9 +58,8 @@ func (b *Bridge) AfterConfig() {
 	cosmos.GetFeeAmount = b.FeeGetter()
 	b.Bridge.InitLatestBlockNumber()
 	b.LoadCoins()
-	log.Info("111111", "coins", b.SupportedCoins)
 	if luna, ok := b.SupportedCoins["LUNA"]; ok == false || luna.Denom != "uluna" || luna.Decimal != 6 {
-		log.Info("222222", "luna", luna, "ok", ok, "check denom", (luna.Denom != "uluna"), "check decimal", luna.Decimal != 6)
+		log.Info("Terra init coins", "luna", luna, "ok", ok, "check denom", (luna.Denom != "uluna"), "check decimal", luna.Decimal != 6)
 		log.Fatalf("Terra bridge must have Luna token config")
 	}
 	b.MainCoin = b.SupportedCoins["LUNA"]
@@ -122,7 +122,7 @@ var DefaultSwapoutGas uint64 = 300000
 func (b *Bridge) FeeGetter() func() authtypes.StdFee {
 	return func() authtypes.StdFee {
 		// TODO
-		feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(1000)}}
+		feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(50000)}}
 		return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 	}
 }
