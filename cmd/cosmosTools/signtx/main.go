@@ -21,35 +21,37 @@ import (
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	ttypes "github.com/tendermint/tendermint/types"
-	//core "github.com/terra-project/core/types"
+	core "github.com/terra-project/core/types"
+	terraauth "github.com/terra-project/core/x/auth"
+	terrabank "github.com/terra-project/core/x/bank"
 )
 
 var CDC = amino.NewCodec()
 
 func init() {
-	/*config := sdk.GetConfig()
+	config := sdk.GetConfig()
 	config.SetCoinType(core.CoinType)
 	config.SetFullFundraiserPath(core.FullFundraiserPath)
 	config.SetBech32PrefixForAccount(core.Bech32PrefixAccAddr, core.Bech32PrefixAccPub)
 	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
 	config.SetBech32PrefixForConsensusNode(core.Bech32PrefixConsAddr, core.Bech32PrefixConsPub)
-	config.Seal()*/
+	config.Seal()
 
 	sdk.RegisterCodec(CDC)
 	ctypes.RegisterAmino(CDC)
 
 	//stargate-final
-	bank.RegisterCodec(CDC)
-	authtypes.RegisterCodec(CDC)
+	//bank.RegisterCodec(CDC)
+	//authtypes.RegisterCodec(CDC)
 
 	// tequila-0004
-	//CDC.RegisterConcrete(bank.MsgSend{}, "bank/MsgSend", nil)s
-	//CDC.RegisterConcrete(authtypes.StdTx{}, "core/StdTx", nil)
+	terrabank.RegisterCodec(CDC)
+	terraauth.RegisterCodec(CDC)
 }
 
-//var ChainID = "tequila-0004"
+var ChainID = "tequila-0004"
 
-var ChainID = "stargate-final"
+//var ChainID = "stargate-final"
 
 func genKeyX() {
 	priv := secp256k1.GenPrivKey()
@@ -103,44 +105,49 @@ stargate-final: 25361
 */
 
 func sendTx() {
-	//pubkeyHex := "046693b7612ccd92f0ec57e62aa51c72d7a978c4871c482cbf2a896575bf67ac3041b8b0ee98f5c1433115c99bdba8548939d1a7eb232ec6df00af1d8d749ec23d" // tequila-0004
-	pubkeyHex := "04bfd55e4900a1de682907642843d16fd189ccac0656fcebacd22b3e10eecc6a374344c33799bca2831ac0cef6c739558ce879bb99ef2864a533e1e50e4d9dad6b" // stargate-final
+	pubkeyHex := "046693b7612ccd92f0ec57e62aa51c72d7a978c4871c482cbf2a896575bf67ac3041b8b0ee98f5c1433115c99bdba8548939d1a7eb232ec6df00af1d8d749ec23d" // tequila-0004
+	//pubkeyHex := "04bfd55e4900a1de682907642843d16fd189ccac0656fcebacd22b3e10eecc6a374344c33799bca2831ac0cef6c739558ce879bb99ef2864a533e1e50e4d9dad6b" // stargate-final
 	addr, err := PublicKeyToAddress(pubkeyHex)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("address:\n%v\n", addr) // terra1wr965945fxexk68mxne5en56pr6la006p7764e
+	fmt.Printf("address:\n%v\n", addr)
+	// terra1wr965945fxexk68mxne5en56pr6la006p7764e
 	// cosmos1s88t76ev084c6d35fahkslqseep5szgeggr3q0
 	address, _ := sdk.AccAddressFromBech32(addr)
 
 	address2 := address
 
-	// accountNumber := uint64(29325) // tequila-0004
-	accountNumber := uint64(25361) // stargate-final
-	sequence := uint64(2)
+	accountNumber := uint64(29325) // tequila-0004
+	//accountNumber := uint64(25361) // stargate-final
+	sequence := uint64(0)
 
 	msgs := []sdk.Msg{
 		bank.MsgSend{
 			FromAddress: address,
 			ToAddress:   address2,
-			//Amount:      sdk.Coins{sdk.NewCoin("uluna", sdk.NewInt(100000))},
-			Amount: sdk.Coins{sdk.NewCoin("umuon", sdk.NewInt(10))},
+			Amount:      sdk.Coins{sdk.NewCoin("uluna", sdk.NewInt(100000))},
+			//Amount: sdk.Coins{sdk.NewCoin("umuon", sdk.NewInt(10))},
 		},
 	}
 	memo := ""
 
-	//feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(50000)}}
-	feeAmount := sdk.Coins{sdk.Coin{"umuon", sdk.NewInt(50000)}}
+	feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(50000)}}
+	//feeAmount := sdk.Coins{sdk.Coin{"umuon", sdk.NewInt(50000)}}
 	gas := uint64(300000)
 	fee := authtypes.NewStdFee(gas, feeAmount)
 
-	signBytes := authtypes.StdSignBytes(ChainID, accountNumber, sequence, fee, msgs, memo)
+	signBytes := StdSignBytes(ChainID, accountNumber, sequence, fee, msgs, memo)
+	signString := fmt.Sprintf("%s", signBytes)
+	signString = strings.Replace(signString, "cosmos-sdk", "bank", 1)
+	fmt.Printf("\nSign string:\n%v\n", signString)
+	signBytes = []byte(signString)
 	signHash := fmt.Sprintf("%X", tmhash.Sum(signBytes))
-	fmt.Printf("\nSign bytes hash:\n%v\n", signHash)
+	fmt.Printf("\nSign bytes hash:\n%s\n", signHash)
 
 	var privBytes [32]byte
-	//privBytes1, _ := hex.DecodeString("62625de7ed1d9ecaebb0dc8fe1425cfe994bb79c699c019d6b8c40f9e1ad8907") // tequila-0004
-	privBytes1, _ := hex.DecodeString("1a05233ffa885bf369b5ff1ec829114975243fc7dbdbaabdee0cb9e4185dd678") // stargate-final
+	privBytes1, _ := hex.DecodeString("62625de7ed1d9ecaebb0dc8fe1425cfe994bb79c699c019d6b8c40f9e1ad8907") // tequila-0004
+	//privBytes1, _ := hex.DecodeString("1a05233ffa885bf369b5ff1ec829114975243fc7dbdbaabdee0cb9e4185dd678") // stargate-final
 	copy(privBytes[:], privBytes1[:33])
 	priv := secp256k1.PrivKeySecp256k1(privBytes)
 	signature, err := priv.Sign(signBytes)
@@ -162,6 +169,7 @@ func sendTx() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("\ntxBytes:\n%X\n", txBytes)
 	txhash := ttypes.Tx(txBytes).Hash()
 	fmt.Printf("\nTxhash:\n%X\n", txhash)
 
@@ -199,8 +207,8 @@ func sendTx() {
 	// https://github.com/cosmos/cosmos-sdk/blob/v0.39.2/x/auth/client/rest/broadcast.go
 	fmt.Printf("\n====================\n")
 	client := &http.Client{}
-	//req, err := http.NewRequest("POST", "https://tequila-lcd.terra.dev/txs", strings.NewReader(data)) // tequila-0004
-	req, err := http.NewRequest("POST", "http://34.71.170.158:1317/txs", strings.NewReader(data)) // stargate-final
+	req, err := http.NewRequest("POST", "https://tequila-lcd.terra.dev/txs", strings.NewReader(data)) // tequila-0004
+	//req, err := http.NewRequest("POST", "http://34.71.170.158:1317/txs", strings.NewReader(data)) // stargate-final
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -280,4 +288,23 @@ func PublicKeyToAddress(pubKeyHex string) (address string, err error) {
 	}
 	address = accAddress.String()
 	return
+}
+
+func StdSignBytes(chainID string, accnum uint64, sequence uint64, fee authtypes.StdFee, msgs []sdk.Msg, memo string) []byte {
+	msgsBytes := make([]json.RawMessage, 0, len(msgs))
+	for _, msg := range msgs {
+		msgsBytes = append(msgsBytes, json.RawMessage(msg.GetSignBytes()))
+	}
+	bz, err := CDC.MarshalJSON(authtypes.StdSignDoc{
+		AccountNumber: accnum,
+		ChainID:       chainID,
+		Fee:           json.RawMessage(fee.Bytes()),
+		Memo:          memo,
+		Msgs:          msgsBytes,
+		Sequence:      sequence,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return sdk.MustSortJSON(bz)
 }
