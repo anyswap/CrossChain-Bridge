@@ -44,7 +44,7 @@ func (b *Bridge) AfterConfig() {
 
 	switch b.ChainConfig.NetID {
 	case "stargate-final":
-		if umuon, ok := b.SupportedCoins["MUON"]; ok == false || umuon.Denom != "umuon" || umuon.Decimal != 9 {
+		if umuon, ok := b.SupportedCoins["MUON"]; ok == false || umuon.Denom != "umuon" || umuon.Decimal != 6 {
 			log.Fatalf("Cosmos post-stargate bridge must have MUON token config")
 		}
 		b.MainCoin = b.SupportedCoins["MUON"]
