@@ -12,8 +12,7 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 	if !ok {
 		return "", errors.New("wrong signed transaction type")
 	}
-	txHash = tx.Hash()
-	err = b.BroadcastTx(tx)
+	txHash, err = b.BroadcastTx(tx)
 	if err != nil {
 		log.Info("SendTransaction failed", "hash", txHash, "err", err)
 		return txHash, err

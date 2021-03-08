@@ -29,7 +29,8 @@ func (tx StdSignContent) SignBytes() []byte {
 	return authtypes.StdSignBytes(tx.ChainID, tx.AccountNumber, tx.Sequence, tx.Fee, tx.Msgs, tx.Memo)
 }
 
-// Hash returns tx hash string
+// Hash returns tx sign bytes hash string
+// not the tx hash
 func (tx StdSignContent) Hash() string {
 	signBytes := authtypes.StdSignBytes(tx.ChainID, tx.AccountNumber, tx.Sequence, tx.Fee, tx.Msgs, tx.Memo)
 	txHash := fmt.Sprintf("%X", tmhash.Sum(signBytes))

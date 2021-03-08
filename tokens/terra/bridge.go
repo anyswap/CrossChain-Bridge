@@ -10,7 +10,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/cosmos"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	cyptes "github.com/tendermint/tendermint/rpc/core/types"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	core "github.com/terra-project/core/types"
 )
 
@@ -32,7 +32,7 @@ func InitSDK() {
 
 // BeforeConfig run before loading bridge and token config
 func (b *Bridge) BeforeConfig() {
-	cyptes.RegisterAmino(cosmos.CDC)
+	ctypes.RegisterAmino(cosmos.CDC)
 	sdk.RegisterCodec(cosmos.CDC)
 	cosmos.CDC.RegisterConcrete(cosmos.MsgSend{}, "bank/MsgSend", nil)
 	cosmos.CDC.RegisterConcrete(cosmos.MsgMultiSend{}, "bank/MsgMultiSend", nil)

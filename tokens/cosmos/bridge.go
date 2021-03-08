@@ -31,6 +31,7 @@ func (b *Bridge) BeforeConfig() {
 	RegisterCodec(CDC)
 	CDC.RegisterConcrete(&authtypes.BaseAccount{}, "cosmos-sdk/Account", nil)
 	ChainIDs["cosmos-hub4"] = true
+	ChainIDs["stargate-final"] = true
 	// SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
 	tokens.IsSwapoutToStringAddress = true
 }
@@ -40,10 +41,26 @@ func (b *Bridge) AfterConfig() {
 	GetFeeAmount = b.FeeGetter()
 	b.InitLatestBlockNumber()
 	b.LoadCoins()
-	if atom, ok := b.SupportedCoins["ATOM"]; ok == false || atom.Denom != "uatom" || atom.Decimal != 9 {
-		log.Fatalf("Cosmos bridge must have Atom token config")
+
+	switch b.ChainConfig.NetID {
+	case "stargate-final":
+		if umuon, ok := b.SupportedCoins["MUON"]; ok == false || umuon.Denom != "umuon" || umuon.Decimal != 9 {
+			log.Fatalf("Cosmos post-stargate bridge must have MUON token config")
+		}
+		b.MainCoin = b.SupportedCoins["MUON"]
+	case "cosmos-hub4":
+		if atom, ok := b.SupportedCoins["ATOM"]; ok == false || atom.Denom != "uatom" || atom.Decimal != 9 {
+			log.Fatalf("Cosmos pre-stargate bridge must have Atom token config")
+		}
+		b.MainCoin = b.SupportedCoins["ATOM"]
+	default:
+		if atom, ok := b.SupportedCoins["ATOM"]; ok == false || atom.Denom != "uatom" || atom.Decimal != 9 {
+			if umuon, ok := b.SupportedCoins["MUON"]; ok == false || umuon.Denom != "umuon" || umuon.Decimal != 9 {
+				log.Fatalf("Cosmos bridge must have one of Atom or Muon token config")
+			}
+		}
+		b.MainCoin = b.SupportedCoins["ATOM"]
 	}
-	b.MainCoin = b.SupportedCoins["ATOM"]
 	log.Info("Cosmos bridge init success", "coins", b.SupportedCoins)
 }
 
@@ -144,9 +161,21 @@ var GetFeeAmount func() authtypes.StdFee
 
 // FeeGetter returns a cosmos fee getter
 func (b *Bridge) FeeGetter() func() authtypes.StdFee {
-	return func() authtypes.StdFee {
-		// TODO
-		feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
-		return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
+	switch b.ChainConfig.NetID {
+	case "stargate-final":
+		return func() authtypes.StdFee {
+			feeAmount := sdk.Coins{sdk.Coin{"umuon", sdk.NewInt(3000)}}
+			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
+		}
+	case "cosmos-hub4":
+		return func() authtypes.StdFee {
+			feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
+			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
+		}
+	default:
+		return func() authtypes.StdFee {
+			feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
+			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
+		}
 	}
 }

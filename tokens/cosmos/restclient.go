@@ -506,35 +506,35 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 // BroadcastTx broadcast tx
 // post "txs" to rest api
 // mode: block
-func (b *Bridge) BroadcastTx(tx HashableStdTx) error {
-
+func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
+	txhash := ""
 	stdtx := tx.ToStdTx()
 
 	bz, err := CDC.MarshalJSON(stdtx)
 	if err != nil {
-		return err
+		return txhash, err
 	}
 	// Take "value" from the json struct
 	tempStr := make(map[string]interface{})
 	err = json.Unmarshal(bz, &tempStr)
 	if err != nil {
-		return err
+		return txhash, err
 	}
 	value, ok := tempStr["value"].(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("tx value error")
+		return txhash, fmt.Errorf("tx value error")
 	}
 	// repass account number and sequence
 	signatures, ok := value["signatures"].([]interface{})
 	if !ok || len(signatures) < 1 {
-		return fmt.Errorf("tx value not contain signature")
+		return txhash, fmt.Errorf("tx value not contain signature")
 	}
 	signatures[0].(map[string]interface{})["account_number"] = fmt.Sprintf("%v", tx.AccountNumber)
 	signatures[0].(map[string]interface{})["sequence"] = fmt.Sprintf("%v", tx.Sequence)
 	value["signatures"] = signatures
 	bz2, err := json.Marshal(value)
 	if err != nil {
-		return fmt.Errorf("Remarshal, std tx error", "err", err)
+		return txhash, fmt.Errorf("Remarshal, std tx error", "err", err)
 	}
 	data := fmt.Sprintf(`{"tx":%v,"mode":"block"}`, string(bz2))
 
@@ -569,7 +569,8 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) error {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "BroadcastTx")
 			continue
 		}
+		txhash = res.Hash.String()
 		log.Debug("Send tx success", "res", res)
 	}
-	return nil
+	return txhash, nil
 }
