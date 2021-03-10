@@ -10,6 +10,8 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.0.0
 	github.com/cosmos/cosmos-sdk v0.39.2
+	github.com/dfuse-io/binary v0.0.0-20201123150056-096380ef3e5d
+	github.com/dfuse-io/solana-go v0.2.0
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9
 	github.com/fsnotify/fsnotify v1.4.9

@@ -27,14 +27,14 @@ type HashableStdTx struct {
 
 // SignBytes returns sign bytes
 func (tx StdSignContent) SignBytes() []byte {
-	return authtypes.StdSignBytes(tx.ChainID, tx.AccountNumber, tx.Sequence, tx.Fee, tx.Msgs, tx.Memo)
+	signBytes := StdSignBytes(tx.ChainID, tx.AccountNumber, tx.Sequence, tx.Fee, tx.Msgs, tx.Memo)
+	return SignBytesModifier(signBytes) // ugly but works
 }
 
 // Hash returns tx sign bytes hash string
 // not the tx hash
 func (tx StdSignContent) Hash() string {
-	signBytes := StdSignBytes(tx.ChainID, tx.AccountNumber, tx.Sequence, tx.Fee, tx.Msgs, tx.Memo)
-	signBytes = SignBytesModifier(signBytes) // ugly but works
+	signBytes := tx.SignBytes()
 	txHash := fmt.Sprintf("%X", tmhash.Sum(signBytes))
 	return txHash
 }

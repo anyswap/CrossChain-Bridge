@@ -551,6 +551,8 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 	}
 	data := fmt.Sprintf(`{"tx":%v,"mode":"block"}`, string(bz2))
 
+	log.Info("Broadcast tx", "data", data)
+
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -561,7 +563,7 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 
 		client := &http.Client{}
 
-		req, err := http.NewRequest("POST", endpoint+"/txs", strings.NewReader(data))
+		req, err := http.NewRequest("POST", endpoint+"txs", strings.NewReader(data))
 		if err != nil {
 			continue
 		}
@@ -569,21 +571,31 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
+			resp.Body.Close()
 			continue
 		}
 		bodyText, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
 			continue
 		}
 
-		var res ctypes.ResultBroadcastTxCommit
-		err = CDC.UnmarshalJSON([]byte(bodyText), res)
+		log.Info("Broadcast tx", "resp", bodyText)
+
+		var res map[string]interface{}
+		err = json.Unmarshal([]byte(bodyText), &res)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "BroadcastTx")
 			continue
 		}
-		txhash = res.Hash.String()
-		log.Debug("Send tx success", "res", res)
+		height, ok1 := res["height"].(string)
+		txhash, ok2 := res["txhash"].(string)
+		if !ok1 || !ok2 || height == "0" {
+			log.Warn("Broadcast tx failed", "response", bodyText)
+			continue
+		}
+		log.Debug("Broadcast tx success", "txhash", txhash, "height", height)
+		return txhash, nil
 	}
 	return txhash, nil
 }
