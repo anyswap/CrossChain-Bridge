@@ -403,7 +403,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			endpoint = endpointURL.String()
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=multisend&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
-			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
+			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxsHash")
 				continue
@@ -451,7 +451,7 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			endpoint = endpointURL.String()
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
-			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
+			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxs")
 				continue
@@ -489,7 +489,7 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			endpoint = endpointURL.String()
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=multisend&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
-			resp, err := client.R().Get(fmt.Sprintf("%v/txs/%v", endpoint, params))
+			resp, err := client.R().Get(fmt.Sprintf("%v/txs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxs")
 				continue
