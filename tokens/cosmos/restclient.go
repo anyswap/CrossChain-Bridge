@@ -350,12 +350,12 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 	txs := make([]string, 0)
 	var limit = 100
-	var page = 0
+	var page = 1
 	var pageTotal = 1
 	endpoints := b.GatewayConfig.APIAddress
 
 	// search send
-	for page < pageTotal {
+	for page <= pageTotal {
 		log.Debug("Search send msgs", "start", start, "end", end, "limit", limit, "page", page, "pageTotal", pageTotal)
 		for _, endpoint := range endpoints {
 			endpointURL, err := url.Parse(endpoint)
@@ -391,9 +391,9 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 	}
 
 	// search multisend
-	page = 0
+	page = 1
 	pageTotal = 1
-	for page < pageTotal {
+	for page <= pageTotal {
 		log.Debug("Search multisend msgs", "start", start, "end", end, "limit", limit, "page", page, "pageTotal", pageTotal)
 		for _, endpoint := range endpoints {
 			endpointURL, err := url.Parse(endpoint)
@@ -438,10 +438,10 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 	var limit = 100
 
 	// search send
-	var page = 0
+	var page = 1
 	var pageTotal = 1
 	endpoints := b.GatewayConfig.APIAddress
-	for page < pageTotal {
+	for page <= pageTotal {
 		log.Debug("Search send msgs", "start", start, "end", end, "limit", limit, "page", page, "pageTotal", pageTotal)
 		for _, endpoint := range endpoints {
 			endpointURL, err := url.Parse(endpoint)
@@ -477,9 +477,9 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 	}
 
 	// search multisend
-	page = 0
+	page = 1
 	pageTotal = 1
-	for page < pageTotal {
+	for page <= pageTotal {
 		log.Debug("Search multisend msgs", "start", start, "end", end, "limit", limit, "page", page, "pageTotal", pageTotal)
 		for _, endpoint := range endpoints {
 			endpointURL, err := url.Parse(endpoint)
