@@ -87,10 +87,10 @@ func (b *Bridge) StartChainTransactionScanJob() {
 		}
 
 		for h := stable; h < latest; {
-			start := h / 100 * 100
+			start := h / 10 * 10
 			end := start
-			if latest-start > 100 {
-				end = start + 99
+			if latest-start > 10 {
+				end = start + 9
 			} else {
 				stable = end + 1
 				break

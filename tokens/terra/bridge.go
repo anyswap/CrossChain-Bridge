@@ -41,6 +41,7 @@ func (b *Bridge) BeforeConfig() {
 	InitSDK()
 	cosmos.ChainIDs["columbus-4"] = true
 	cosmos.ChainIDs["tequila-0004"] = true
+	cosmos.SignBytesModifier = TerraSignBytesModifier
 	/*b.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
 	b.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
 	b.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
@@ -125,4 +126,12 @@ func (b *Bridge) FeeGetter() func() authtypes.StdFee {
 		feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(50000)}}
 		return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 	}
+}
+
+// TerraSignBytesModifier is used to build terra special sign bytes
+var TerraSignBytesModifier = func(bz []byte) []byte {
+	signString := fmt.Sprintf("%s", bz)
+	signString = strings.Replace(signString, "cosmos-sdk/MsgSend", "bank/MsgSend", -1)
+	signString = strings.Replace(signString, "cosmos-sdk/MsgMultiSend", "bank/MsgMultiSend", -1)
+	return []byte(signString)
 }

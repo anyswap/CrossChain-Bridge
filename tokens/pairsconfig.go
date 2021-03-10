@@ -87,7 +87,6 @@ func GetAllPairIDs() []string {
 
 // FindTokenConfig find by (tx to) address
 func FindTokenConfig(address string, isSrc bool) (configs []*TokenConfig, pairIDs []string) {
-	log.Info("dddddd, FindTokenConfig", "address", address, "isSrc", isSrc, "tokenPairsConfig", tokenPairsConfig)
 	for _, pairCfg := range tokenPairsConfig {
 		var tokenCfg *TokenConfig
 		if isSrc {

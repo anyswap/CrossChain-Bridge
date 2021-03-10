@@ -350,12 +350,13 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 	txs := make([]string, 0)
 	var limit = 100
-	var page = 0
+	var page = 1
 	var pageTotal = 1
 	endpoints := b.GatewayConfig.APIAddress
 
 	// search send
-	for page < pageTotal {
+	for page <= pageTotal {
+		log.Debug("Search send msgs", "start", start, "end", end, "limit", limit, "page", page, "pageTotal", pageTotal)
 		for _, endpoint := range endpoints {
 			endpointURL, err := url.Parse(endpoint)
 			if err != nil {
@@ -376,8 +377,10 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 				continue
 			}
 			pageTotal = res.PageTotal
+			log.Debug("Txs containing Send msgs", "length", len(res.Txs))
 			for _, tx := range res.Txs {
 				if tx.Code != 0 {
+					log.Debug("discard failed tx")
 					continue
 				}
 				txs = append(txs, tx.TxHash)
@@ -388,9 +391,10 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 	}
 
 	// search multisend
-	page = 0
+	page = 1
 	pageTotal = 1
-	for page < pageTotal {
+	for page <= pageTotal {
+		log.Debug("Search multisend msgs", "start", start, "end", end, "limit", limit, "page", page, "pageTotal", pageTotal)
 		for _, endpoint := range endpoints {
 			endpointURL, err := url.Parse(endpoint)
 			if err != nil {
@@ -398,8 +402,8 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			}
 			endpoint = endpointURL.String()
 			client := resty.New()
-			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
-			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
+			params := fmt.Sprintf("?message.action=multisend&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
+			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxsHash")
 				continue
@@ -411,8 +415,10 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 				continue
 			}
 			pageTotal = res.PageTotal
+			log.Debug("Txs containing MultiSend msgs", "length", len(res.Txs))
 			for _, tx := range res.Txs {
 				if tx.Code != 0 {
+					log.Debug("discard failed tx")
 					continue
 				}
 				txs = append(txs, tx.TxHash)
@@ -421,6 +427,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 		}
 		page = page + 1
 	}
+	log.Debug("Search txs finish")
 	return txs, nil
 }
 
@@ -431,10 +438,11 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 	var limit = 100
 
 	// search send
-	var page = 0
+	var page = 1
 	var pageTotal = 1
 	endpoints := b.GatewayConfig.APIAddress
-	for page < pageTotal {
+	for page <= pageTotal {
+		log.Debug("Search send msgs", "start", start, "end", end, "limit", limit, "page", page, "pageTotal", pageTotal)
 		for _, endpoint := range endpoints {
 			endpointURL, err := url.Parse(endpoint)
 			if err != nil {
@@ -443,7 +451,7 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			endpoint = endpointURL.String()
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
-			resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, params))
+			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxs")
 				continue
@@ -455,8 +463,10 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 				continue
 			}
 			pageTotal = res.PageTotal
+			log.Debug("Txs containing Send msgs", "length", len(res.Txs))
 			for _, txresp := range res.Txs {
 				if txresp.Code != 0 {
+					log.Debug("discard failed tx")
 					continue
 				}
 				txs = append(txs, txresp)
@@ -467,9 +477,10 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 	}
 
 	// search multisend
-	page = 0
+	page = 1
 	pageTotal = 1
-	for page < pageTotal {
+	for page <= pageTotal {
+		log.Debug("Search multisend msgs", "start", start, "end", end, "limit", limit, "page", page, "pageTotal", pageTotal)
 		for _, endpoint := range endpoints {
 			endpointURL, err := url.Parse(endpoint)
 			if err != nil {
@@ -478,7 +489,7 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			endpoint = endpointURL.String()
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=multisend&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
-			resp, err := client.R().Get(fmt.Sprintf("%v/txs/%v", endpoint, params))
+			resp, err := client.R().Get(fmt.Sprintf("%v/txs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
 				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxs")
 				continue
@@ -490,8 +501,10 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 				continue
 			}
 			pageTotal = res.PageTotal
+			log.Debug("Txs containing MultiSend msgs", "length", len(res.Txs))
 			for _, txresp := range res.Txs {
 				if txresp.Code != 0 {
+					log.Debug("discard failed tx")
 					continue
 				}
 				txs = append(txs, txresp)
@@ -538,6 +551,8 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 	}
 	data := fmt.Sprintf(`{"tx":%v,"mode":"block"}`, string(bz2))
 
+	log.Info("Broadcast tx", "data", data)
+
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -548,7 +563,7 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 
 		client := &http.Client{}
 
-		req, err := http.NewRequest("POST", endpoint+"/txs", strings.NewReader(data))
+		req, err := http.NewRequest("POST", endpoint+"txs", strings.NewReader(data))
 		if err != nil {
 			continue
 		}
@@ -556,21 +571,32 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
+			resp.Body.Close()
 			continue
 		}
 		bodyText, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
 			continue
 		}
 
-		var res ctypes.ResultBroadcastTxCommit
-		err = CDC.UnmarshalJSON([]byte(bodyText), res)
+		log.Info("Broadcast tx", "resp", bodyText)
+
+		var res map[string]interface{}
+		err = json.Unmarshal([]byte(bodyText), &res)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "BroadcastTx")
 			continue
 		}
-		txhash = res.Hash.String()
-		log.Debug("Send tx success", "res", res)
+		height, ok1 := res["height"].(string)
+		restxhash, ok2 := res["txhash"].(string)
+		if !ok1 || !ok2 || height == "0" {
+			log.Warn("Broadcast tx failed", "response", bodyText)
+			continue
+		}
+		txhash = restxhash
+		log.Debug("Broadcast tx success", "txhash", restxhash, "height", height)
+		return txhash, nil
 	}
 	return txhash, nil
 }
