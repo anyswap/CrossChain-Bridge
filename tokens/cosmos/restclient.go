@@ -370,7 +370,6 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxsHash")
 				continue
 			}
-			log.Info("search send msgs", "res", string(resp.Body()))
 			var res sdk.SearchTxsResult
 			err = CDC.UnmarshalJSON(resp.Body(), &res)
 			if err != nil {
@@ -409,7 +408,6 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxsHash")
 				continue
 			}
-			log.Info("search multisend msgs", "res", string(resp.Body()))
 			var res sdk.SearchTxsResult
 			err = CDC.UnmarshalJSON(resp.Body(), &res)
 			if err != nil {
@@ -459,7 +457,6 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 				continue
 			}
 			var res sdk.SearchTxsResult
-			log.Info("search send msgs", "res", string(resp.Body()))
 			err = CDC.UnmarshalJSON(resp.Body(), &res)
 			if err != nil {
 				log.Warn("Search txs unmarshal error", "start", start, "end", end, "page", page, "func", "SearchTxs")
@@ -497,7 +494,6 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxs")
 				continue
 			}
-			log.Info("search multisend msgs", "res", string(resp.Body()))
 			var res sdk.SearchTxsResult
 			err = CDC.UnmarshalJSON(resp.Body(), &res)
 			if err != nil {
