@@ -589,12 +589,13 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 			continue
 		}
 		height, ok1 := res["height"].(string)
-		txhash, ok2 := res["txhash"].(string)
+		restxhash, ok2 := res["txhash"].(string)
 		if !ok1 || !ok2 || height == "0" {
 			log.Warn("Broadcast tx failed", "response", bodyText)
 			continue
 		}
-		log.Debug("Broadcast tx success", "txhash", txhash, "height", height)
+		txhash = restxhash
+		log.Debug("Broadcast tx success", "txhash", restxhash, "height", height)
 		return txhash, nil
 	}
 	return txhash, nil
