@@ -2,4 +2,7 @@ module github.com/gaozhengxin/CrossChain-Bridge/cmd/solanaTools
 
 go 1.15
 
-replace github.com/dfuse-io/solana-go => ./solana-go
+require (
+	github.com/dfuse-io/binary v0.0.0-20210216024852-4ae6830a495d
+	github.com/dfuse-io/solana-go v0.2.1-0.20210218144256-12dfaa0b1721
+)
