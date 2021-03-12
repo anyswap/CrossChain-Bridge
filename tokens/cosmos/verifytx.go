@@ -34,10 +34,14 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 		return nil, tokens.ErrBridgeDestinationNotSupported
 	}
 	swapInfos, errs := b.verifySwapinTxWithHash(pairID, txHash, allowUnstable)
-	if len(errs) == 0 {
-		return swapInfos[0], nil
+	// swapinfos have already aggregated
+	for i, swapInfo := range swapInfos {
+		if strings.EqualFold(swapInfo.PairID, pairID) {
+			return swapInfo, errs[i]
+		}
 	}
-	return nil, fmt.Errorf("%+v", errs)
+	log.Warn("No such swapInfo")
+	return nil, nil
 }
 
 func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
@@ -147,9 +151,10 @@ func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swap
 			aggSwapInfo.Value = new(big.Int).Add(aggSwapInfo.Value, swapInfo.Value)
 		}
 		swapInfos = append(swapInfos, aggSwapInfo)
+		errs = append(errs, nil)
 	}
 
-	return swapInfos, nil
+	return swapInfos, errs
 }
 
 // NotSupportedCoinErr is an error
@@ -233,7 +238,6 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 				swapInfo.Bind = bindaddress
 				swapInfo.From = bindaddress
 				swapInfo.Value = coin.Amount.BigInt()
-				// swapInfo.TxId = strings.ToLower(txHash)
 				if swapInfoMap[pairID] == nil {
 					swapInfoMap[pairID] = make([]*tokens.TxSwapInfo, 0)
 				}
@@ -265,7 +269,6 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 					swapInfo.Bind = bindaddress
 					swapInfo.From = bindaddress
 					swapInfo.Value = coin.Amount.BigInt()
-					// swapInfo.TxId = strings.ToLower(txHash)
 					if swapInfoMap[pairID] == nil {
 						swapInfoMap[pairID] = make([]*tokens.TxSwapInfo, 0)
 					}
@@ -293,9 +296,10 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 			aggSwapInfo.Value = new(big.Int).Add(aggSwapInfo.Value, swapInfo.Value)
 		}
 		swapInfos = append(swapInfos, aggSwapInfo)
+		errs = append(errs, nil)
 	}
 
-	return swapInfos, nil
+	return swapInfos, errs
 }
 
 // GetBindAddressFromMemo get tx memo from an sdk.Tx
@@ -308,10 +312,10 @@ func (b *Bridge) GetBindAddressFromMemo(tx sdk.Tx) (address string, ok bool) {
 	memo := authtx.Memo
 	dstBridge := tokens.DstBridge
 	if ok = dstBridge.IsValidAddress(memo); ok {
-		log.Warn("GetBindAddressFromMemo: memo is not a valid address", "memo", memo)
 		memo = strings.ToLower(memo)
 		return memo, ok
 	} else {
+		log.Warn("GetBindAddressFromMemo: memo is not a valid address", "memo", memo)
 		return "", false
 	}
 }
