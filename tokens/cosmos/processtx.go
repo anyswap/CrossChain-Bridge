@@ -17,6 +17,7 @@ func (b *Bridge) processTransaction(tx sdk.TxResponse) {
 }
 
 func (b *Bridge) processSwapin(tx sdk.TxResponse) {
+	log.Info("cosmos processSwapin", "tx", tx)
 	swapInfos, errs := b.verifySwapinTx(tx, true)
 	txid := strings.ToLower(tx.TxHash)
 	log.Debug("cosmos processSwapin", "txid", txid, "swapinfos", swapInfos, "errs", errs)
