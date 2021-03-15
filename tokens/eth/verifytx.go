@@ -5,6 +5,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 	"github.com/anyswap/CrossChain-Bridge/types"
@@ -229,7 +230,7 @@ func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
 		log.Warn("wrong bind address in swapin", "bind", bindAddr)
 		return tokens.ErrTxWithWrongMemo
 	}
-	if !tools.IsAddressRegistered(bindAddr) {
+	if params.MustRegisterAccount() && !tools.IsAddressRegistered(bindAddr) {
 		return tokens.ErrTxSenderNotRegistered
 	}
 	isContract, err := b.IsContractAddress(bindAddr)
