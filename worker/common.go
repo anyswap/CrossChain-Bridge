@@ -8,6 +8,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+	"github.com/anyswap/CrossChain-Bridge/log"
 )
 
 // MatchTx struct
@@ -159,7 +160,7 @@ func dcrmSignTransaction(bridge tokens.CrossChainBridge, rawTx interface{}, args
 	return signedTx, txHash, nil
 }
 
-func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin bool) (err error) {
+func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin bool) (resTxHash string, err error) {
 	var (
 		txHash              string
 		retrySendTxCount    = 3
@@ -167,7 +168,9 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 	)
 	for i := 0; i < retrySendTxCount; i++ {
 		txHash, err = bridge.SendTransaction(signedTx)
+		log.Info("sendSignedTransaction", "txHash", txHash)
 		if txHash != "" {
+			resTxHash = txHash
 			if tx, _ := bridge.GetTransaction(txHash); tx != nil {
 				logWorker("sendtx", "send tx success", "txHash", txHash)
 				err = nil
@@ -180,10 +183,11 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		logWorkerError("sendtx", "update swap status to TxSwapFailed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
 		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
-		return err
+		return resTxHash, err
 	}
 	if nonceSetter, ok := bridge.(tokens.NonceSetter); ok {
 		nonceSetter.IncreaseNonce(pairID, 1)
 	}
-	return nil
+	log.Info("sendSignedTransaction, return", "txHash", txHash)
+	return resTxHash, nil
 }

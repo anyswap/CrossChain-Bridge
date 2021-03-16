@@ -92,6 +92,9 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	swapType := getSwapType(isSwapin)
 
 	txStatus := resBridge.GetTransactionStatus(swapTxID)
+	if txStatus != nil && txStatus.PrioriFinalized {
+		return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
+	}
 	if txStatus == nil || txStatus.BlockHeight == 0 {
 		return nil
 	}

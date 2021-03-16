@@ -17,5 +17,5 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 		log.Info("SendTransaction failed", "hash", txHash, "err", err)
 		return txHash, err
 	}
-	return "", nil
+	return txHash, nil
 }

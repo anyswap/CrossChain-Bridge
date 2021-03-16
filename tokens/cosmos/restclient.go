@@ -196,6 +196,11 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 		if err == nil {
 			status.BlockTime = uint64(t.Unix())
 		}
+
+		if txResult.Code == 0 && status.BlockHeight > 0 {
+			status.PrioriFinalized = true // asserts that tx has finalized, no need to check everything again
+		}
+
 		return
 	}
 	return

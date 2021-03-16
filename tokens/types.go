@@ -169,11 +169,12 @@ type TxSwapInfo struct {
 
 // TxStatus struct
 type TxStatus struct {
-	Receipt       interface{} `json:"receipt,omitempty"`
-	Confirmations uint64      `json:"confirmations"`
-	BlockHeight   uint64      `json:"block_height"`
-	BlockHash     string      `json:"block_hash"`
-	BlockTime     uint64      `json:"block_time"`
+	Receipt         interface{} `json:"receipt,omitempty"`
+	PrioriFinalized bool        `json:"priori_finalized,omitempty"`
+	Confirmations   uint64      `json:"confirmations"`
+	BlockHeight     uint64      `json:"block_height"`
+	BlockHash       string      `json:"block_hash"`
+	BlockTime       uint64      `json:"block_time"`
 }
 
 // SwapInfo struct

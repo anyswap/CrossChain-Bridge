@@ -231,6 +231,7 @@ func processHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	}
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)
 	swapType := getSwapType(isSwapin)
+
 	if _, err := resBridge.GetTransaction(history.matchTx); err == nil {
 		matchTx := &MatchTx{
 			SwapTx:    history.matchTx,
@@ -238,6 +239,7 @@ func processHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
 			SwapType:  swapType,
 			SwapNonce: history.nonce,
 		}
+
 		_ = updateSwapResult(txid, pairID, bind, matchTx)
 		logWorker("swap", "ignore swapped swap", "txid", txid, "pairID", pairID, "bind", bind, "matchTx", history.matchTx, "isSwapin", isSwapin)
 		return errAlreadySwapped
@@ -341,7 +343,22 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	return sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
+	resTxHash, err := sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
+	if err == nil {
+		matchTx.SwapTx = resTxHash
+		err = updateSwapResult(txid, pairID, bind, matchTx)
+		if err != nil {
+			logWorkerError("doSwap", "update swap result failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+			return err
+		}
+
+		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxProcessed, now(), "")
+		if err != nil {
+			logWorkerError("doSwap", "update swap status failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+			return err
+		}
+	}
+	return err
 }
 
 type swapInfo struct {
