@@ -62,8 +62,7 @@ func (b *Bridge) VerifyChainID() {
 	)
 
 	for {
-		// call NetworkID instead of ChainID as ChainID may return 0x0 wrongly
-		chainID, err = b.NetworkID()
+		chainID, err = b.GetSignerChainID()
 		if err == nil {
 			break
 		}
