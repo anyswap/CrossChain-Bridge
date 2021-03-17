@@ -2,6 +2,7 @@ package eth
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -22,6 +23,10 @@ func (b *Bridge) StartPoolTransactionScanJob() {
 		txs, err := b.GetPendingTransactions()
 		if err != nil {
 			log.Error(errorSubject, "err", err)
+			if strings.Contains(strings.ToLower(err.Error()), "method not found") {
+				log.Info("stop scanning pool tx as eth_pendingTransactions not found")
+				return
+			}
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
