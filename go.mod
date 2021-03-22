@@ -30,6 +30,7 @@ require (
 	github.com/ltcsuite/ltcwallet/wallet/txrules v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.0.0
 	github.com/mattn/go-runewidth v0.0.4 // indirect
+	github.com/nervosnetwork/ckb-sdk-go v0.3.0 // indirect
 	github.com/pborman/uuid v1.2.1
 	github.com/peterh/liner v1.1.1-0.20190123174540-a2c9a5303de7 // indirect
 	github.com/shopspring/decimal v1.2.0
