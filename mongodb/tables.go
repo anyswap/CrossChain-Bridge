@@ -102,3 +102,9 @@ type MgoBlackAccount struct {
 	PairID    string `bson:"pairid"`
 	Timestamp int64  `bson:"timestamp"`
 }
+
+// MgoSwapinCommitment is hex encoded swapincommitment
+type MgoSwapinCommitment struct {
+	Key              string `bson:"_id"` // something seen on source chain that identifies a swapins, e.g. from address or memo
+	SwapinCommitment string `bson:"swapincommitment"`
+}
