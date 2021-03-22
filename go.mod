@@ -10,8 +10,6 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.0.0
 	github.com/cosmos/cosmos-sdk v0.39.2
-	github.com/dfuse-io/binary v0.0.0-20201123150056-096380ef3e5d
-	github.com/dfuse-io/solana-go v0.2.0
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9
 	github.com/fsnotify/fsnotify v1.4.9
@@ -31,12 +29,13 @@ require (
 	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txrules v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.0.0
-	github.com/mattn/go-runewidth v0.0.4 // indirect
-	github.com/nervosnetwork/ckb-sdk-go v0.3.0 // indirect
+	github.com/nervosnetwork/ckb-sdk-go v0.3.0
+	github.com/onsi/gomega v1.10.1 // indirect
 	github.com/pborman/uuid v1.2.1
-	github.com/peterh/liner v1.1.1-0.20190123174540-a2c9a5303de7 // indirect
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
+	github.com/spf13/cobra v1.1.1 // indirect
+	github.com/spf13/viper v1.7.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/tendermint/go-amino v0.16.0
