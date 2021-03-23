@@ -92,7 +92,7 @@ type CosmosCoin struct {
 	Decimal uint8
 }
 
-// Bridge btc bridge
+// Bridge cosmos bridge
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
 	*eth.NonceSetterBase
