@@ -237,3 +237,33 @@ func GetRegisteredAddress(w http.ResponseWriter, r *http.Request) {
 	res, err := swapapi.GetRegisteredAddress(address)
 	writeResponse(w, res, err)
 }
+
+// AddSwapinPromise handler
+func AddSwapinPromise(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	res, err := swapapi.AddSwapinPromise(vars)
+	writeResponse(w, res, err)
+}
+
+// CancelSwapinPromise handler
+func CancelSwapinPromise(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	pkey := vars["pkey"]
+	res, err := swapapi.CancelSwapinPromise(pkey)
+	writeResponse(w, res, err)
+}
+
+// UpdateSwapinPromise handler
+func UpdateSwapinPromise(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	res, err := swapapi.UpdateSwapinPromise(vars)
+	writeResponse(w, res, err)
+}
+
+// GetSwapinPromise handler
+func GetSwapinPromise(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	pkey := vars["pkey"]
+	res, err := swapapi.GetSwapinPromise(pkey)
+	writeResponse(w, res, err)
+}

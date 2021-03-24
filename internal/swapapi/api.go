@@ -253,6 +253,12 @@ func GetP2shAddressInfo(p2shAddress string) (*tokens.P2shAddressInfo, error) {
 	return calcP2shAddress(bindAddress, false)
 }
 
+func RegisterSwapinPromise(ptype, pkey, pvalue string) (tokens.SwapinPromise, error) {
+	promise := SwapinPromise{ptype, pkey, pvalue}
+
+	return nil, error
+}
+
 func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddressInfo, error) {
 	if btc.BridgeInstance == nil {
 		return nil, errNotBtcBridge
@@ -339,4 +345,55 @@ func RegisterAddress(address string) (*PostResult, error) {
 func GetRegisteredAddress(address string) (*RegisteredAddress, error) {
 	address = strings.ToLower(address)
 	return mongodb.FindRegisteredAddress(address)
+}
+
+// AddSwapinPromise add swapin promise
+func AddSwapinPromise(args map[string]interface{}) (*PostResult, error) {
+	promise, err := tokens.PromiseFromArgs(args)
+	if err != nil {
+		return nil, err
+	}
+	bz, err := tokens.TokenCDC.MarshalJSON(promise)
+	if err != nil {
+		return nil, err
+	}
+	err = mongodb.AddSwapinPromise(promise.Type(), promise.Key(), fmt.Sprintf("%X", bz))
+	if err != nil {
+		return nil, err
+	}
+	return &SuccessPostResult, nil
+}
+
+// CancelSwapinPromise cancel swapin promise
+func CancelSwapinPromise(pkey string) (*PostResult, error) {
+	err := mongodb.CancelSwapinPromise(pkey)
+	if err != nil {
+		return nil, err
+	}
+	return &SuccessPostResult, nil
+}
+
+func UpdateSwapinPromise(args map[string]interface{}) (*PostResult, error) {
+	promise, err := tokens.PromiseFromArgs(args)
+	if err != nil {
+		return nil, err
+	}
+	bz, err := tokens.TokenCDC.MarshalJSON(promise)
+	if err != nil {
+		return nil, err
+	}
+	err = mongodb.UpdateSwapinPromise(promise.Type(), promise.Key(), fmt.Sprintf("%X", bz))
+	if err != nil {
+		return nil, err
+	}
+	return &SuccessPostResult, nil
+}
+
+// GetSwapinPromise get swapin promise
+func GetSwapinPromise(pkey string) (SwapinPromise, error) {
+	mp, err := mongodb.FindSwapinPromise(pkey)
+	if err != nil {
+		return nil, err
+	}
+	return ConvertMgoSwapinPromiseToSwapinPromise(mp)
 }

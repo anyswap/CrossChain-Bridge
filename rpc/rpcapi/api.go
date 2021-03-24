@@ -283,3 +283,39 @@ func (s *RPCAPI) GetRegisteredAddress(r *http.Request, address *string, result *
 	}
 	return err
 }
+
+// AddSwapinPromise api
+func (s *RPCAPI) AddSwapinPromise(r *http.Request, *args map[string]interface{}, result *swapapi.PostResult) error {
+	res, err := swapapi.AddSwapinPromise(*args)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+// CancelSwapinPromise api
+func (s *RPCAPI) CancelSwapinPromise(r *http.Request, pkey *string, result *swapapi.PostResult) error {
+	res, err := swapapi.CancelSwapinPromise(*pkey)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+// UpdateSwapinPromise api
+func (s *RPCAPI) UpdateSwapinPromise(r *http.Request, *args map[string]interface{}, result *swapapi.PostResult) error {
+	res, err := swapapi.UpdateSwapinPromise(*args)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+// GetSwapinPromise api
+func (s *RPCAPI) GetSwapinPromise(r *http.Request, pkey *string, result *swapapi.SwapinPromise) error {
+	res, err := swapapi.GetSwapinPromise(*pkey)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}

@@ -119,12 +119,13 @@ func buildUnsignedTx(fromAddress, toAddress string, amount *big.Int) *solana.Tra
 		},
 	}
 
-	ctx := context.Background()
+	/*ctx := context.Background()
 	cli := GetClient()
 
 	resRbt, err := cli.GetRecentBlockhash(ctx, "finalized")
 	checkError(err)
-	blockHash := resRbt.Value.Blockhash
+	blockHash := resRbt.Value.Blockhash*/
+	blockHash, _ := solana.PublicKeyFromBase58("BZWW21AB8Qx2eQRWBcNQNQ4ZRRaQDwmNU1no6iQChTyS")
 	fmt.Printf("\nRecent block hash: %v\n", blockHash)
 
 	opt := &solana.Options{

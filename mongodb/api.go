@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"errors"
 	"math/big"
 	"strings"
 	"sync"
@@ -652,6 +653,64 @@ func FindRegisteredAddress(key string) (*MgoRegisteredAddress, error) {
 	err := collRegisteredAddress.FindId(key).One(&result)
 	if err != nil {
 		return nil, mgoError(err)
+	}
+	return &result, nil
+}
+
+// AddSwapinPromise add swapin promise
+func AddSwapinPromise(ptype, pkey, pvalue string) error {
+	mp := &MgoSwapinPromise{
+		Key:       ptype,
+		Type:      pkey,
+		Value:     pvalue,
+		Cancelled: false,
+	}
+	err := collSwapinPromise.Insert(mp)
+	if err == nil {
+		log.Info("mongodb add swapin promise", "key", mp.Key)
+	} else {
+		log.Debug("mongodb add swapin promise", "key", mp.Key, "err", err)
+	}
+	return mgoError(err)
+}
+
+// CancelSwapinPromise cancels a swapin promise
+func CancelSwapinPromise(key string) error {
+	err := collSwapinPromise.UpdateId(key, bson.D{{"cancelled", true}})
+	if err != nil {
+		log.Debug("mongodb cancelled swapin promise", "key", key, "err", err)
+		return mgoError(err)
+	}
+	log.Debug("mongodb cancelled swapin promise", "key", key)
+	return nil
+}
+
+// UpdateSwapinPromise update swapin promise
+func UpdateSwapinPromise(ptype, pkey, pvalue string) error {
+	mp := &MgoSwapinPromise{
+		Key:       ptype,
+		Type:      pkey,
+		Value:     pvalue,
+		Cancelled: false,
+	}
+	err := collSwapinPromise.UpdateId(key, bson.M{"$set": mp})
+	if err == nil {
+		log.Info("mongodb update swapin promise", "key", mp.Key)
+	} else {
+		log.Debug("mongodb update swapin promise", "key", mp.Key, "err", err)
+	}
+	return mgoError(err)
+}
+
+// FindSwapinPromise finds swapin promise
+func FindSwapinPromise(key string) (*MgoSwapinPromise, error) {
+	var result MgoSwapinPromise
+	err := collSwapinPromise.FindId(key).One(&result)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+	if result.Cancelled {
+		return nil, mgoError(errors.New("Swapin promise is cancelled"))
 	}
 	return &result, nil
 }

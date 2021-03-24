@@ -12,6 +12,10 @@ type Bridge struct {
 	*tokens.CrossChainBridgeBase
 }
 
+func init() {
+	tokens.TokenCDC.RegisterConcrete(&SolanaSwapinPromise{}, SolanaSwapinPromiseType, nil)
+}
+
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	return &Bridge{

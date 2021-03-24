@@ -1,6 +1,10 @@
 package swapapi
 
 import (
+	"encoding/hex"
+	"errors"
+	"strings"
+
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -74,4 +78,21 @@ func ConvertMgoSwapResultsToSwapInfos(mrSlice []*mongodb.MgoSwapResult) []*SwapI
 		result[k] = ConvertMgoSwapResultToSwapInfo(v)
 	}
 	return result
+}
+
+// ConvertMgoSwapinPromiseToSwapinPromise convert
+func ConvertMgoSwapinPromiseToSwapinPromise(mp *MgoSwapinPromise) (tokens.SwapinPromise, error) {
+	bz, err := hex.DecodeString(mp.Value)
+	if err != nil {
+		return nil, err
+	}
+	var p tokens.SwapinPromise
+	err := tokens.TokenCDC.Unmarshal(bz, &p)
+	if err != nil {
+		return nil, err
+	}
+	if strings.EqualFold(p.Type, mp.Type) == false {
+		return nil, errors.New("Swapin promise type not match")
+	}
+	return p, nil
 }

@@ -187,26 +187,9 @@ type SwapInfo struct {
 	Identifier string     `json:"identifier,omitempty"`
 }
 
-// SwapinCommitment interface
-type SwapinCommitment interface {
-	Key() string // something seen on source chain that identifies a swapins, e.g. from address or memo
-	Validate(event interface{}) bool
+type Marshalable interface {
 	MarshalJSON() []byte
 	UnmarshalJSON(data []byte) error
-}
-
-// ToHex encodes commitment to hex string
-func (commitment SwapinCommitment) ToHex() string {
-	return hex.EncodingToString(commitment.MarshalJSON())
-}
-
-// FromHex decodes hex string into commitment
-func (commitment SwapinCommitment) FromHex(data string) error {
-	bb, err := hex.DecodeString(data)
-	if err != nil {
-		return err
-	}
-	return commitment.UnmarshalJSON(bb)
 }
 
 // BuildTxArgs struct

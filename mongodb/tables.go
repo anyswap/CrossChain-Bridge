@@ -10,6 +10,7 @@ const (
 	tbLatestScanInfo    string = "LatestScanInfo"
 	tbRegisteredAddress string = "RegisteredAddress"
 	tbBlacklist         string = "Blacklist"
+	tbSwapinPromise     string = "SwapinPromise"
 
 	keyOfSrcLatestScanInfo string = "srclatest"
 	keyOfDstLatestScanInfo string = "dstlatest"
@@ -103,8 +104,10 @@ type MgoBlackAccount struct {
 	Timestamp int64  `bson:"timestamp"`
 }
 
-// MgoSwapinCommitment is hex encoded swapincommitment
-type MgoSwapinCommitment struct {
-	Key              string `bson:"_id"` // something seen on source chain that identifies a swapins, e.g. from address or memo
-	SwapinCommitment string `bson:"swapincommitment"`
+// MgoSwapinPromise is hex encoded swapinpromise
+type MgoSwapinPromise struct {
+	Key       string `bson:"_id"`
+	Type      string `bson:"type"`
+	Value     string `bson:"value"`
+	Cancelled bool   `bson:"cancelled"`
 }
