@@ -12,10 +12,12 @@ type SolanaSwapinPromise struct {
 
 func (p *SolanaSwapinPromise) Key() string {
 	depositAddress := strings.ToLower(p.SolanaDepositAddress)
-	return fmt.Sprintf("solana-deposit-address-%s", depositAddress)
+	return SolanaDepositAddressPrefix+depositAddress
 }
 
 const SolanaSwapinPromiseType = "solana-eth-bindaddress"
+
+const SolanaDepositAddressPrefix = "solana-deposit-address-"
 
 func (p *SolanaSwapinPromise) Type() string {
 	return SolanaSwapinPromiseType

@@ -241,3 +241,12 @@ func IsAddressRegistered(address string) bool {
 	}
 	return false
 }
+
+// GetSwapinPromise find swapin promise
+func GetSwapinPromise(pkey string) (tokens.SwapinPromise, error) {
+	mp, err := mongodb.FindSwapinPromise(pkey)
+	if err != nil {
+		return nil, err
+	}
+	return ConvertMgoSwapinPromiseToSwapinPromise(mp)
+}

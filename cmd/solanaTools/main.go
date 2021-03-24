@@ -16,11 +16,23 @@ import (
 	"github.com/dfuse-io/solana-go"
 	"github.com/dfuse-io/solana-go/programs/system"
 	"github.com/dfuse-io/solana-go/rpc"
+	"github.com/mr-tron/base58"
 )
 
 func main() {
 	//key_test()
-	tx_test()
+	//tx_test()
+	val, err := base58.Decode("3Bxs45iLYCoeyGyd")
+	checkError(err)
+	fmt.Printf("val: %v\n", val)
+	if val[0] == byte(0x2) {
+		fmt.Println("It's a transfer")
+	}
+	lamports := new(bin.Uint64)
+	decoder := bin.NewDecoder(val[4:])
+	err = decoder.Decode(lamports)
+	checkError(err)
+	fmt.Printf("lamports: %v\n", uint64(*lamports))
 }
 
 func checkError(err error) {
