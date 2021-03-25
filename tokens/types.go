@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"math/big"
@@ -59,6 +60,13 @@ type BlocknetCoreAPIArgs struct {
 	DisableTLS  bool
 }
 
+type KeyType string
+
+const (
+	ECDSAKeyType   KeyType = "ecdsa"
+	ED25519KeyType KeyType = "ed25519"
+)
+
 // TokenConfig struct
 type TokenConfig struct {
 	ID                     string `json:",omitempty"`
@@ -82,11 +90,14 @@ type TokenConfig struct {
 
 	DefaultGasLimit uint64 `json:",omitempty"`
 
+	PrivateKeyType KeyType `json:"ecdsa"`
+
 	// use private key address instead
-	DcrmAddressKeyStore string `json:"-"`
-	DcrmAddressPassword string `json:"-"`
-	DcrmAddressKeyFile  string `json:"-"`
-	dcrmAddressPriKey   *ecdsa.PrivateKey
+	DcrmAddressKeyStore      string `json:"-"`
+	DcrmAddressPassword      string `json:"-"`
+	DcrmAddressKeyFile       string `json:"-"`
+	dcrmAddressPriKey        *ecdsa.PrivateKey
+	dcrmAddressED25519PriKey *ed25519.PrivateKey
 
 	// calced value
 	maxSwap          *big.Int
@@ -350,6 +361,11 @@ func (c *TokenConfig) CalcAndStoreValue() {
 // GetDcrmAddressPrivateKey get private key
 func (c *TokenConfig) GetDcrmAddressPrivateKey() *ecdsa.PrivateKey {
 	return c.dcrmAddressPriKey
+}
+
+// GetDcrmAddressED25519PrivateKey get private key
+func (c *TokenConfig) GetDcrmAddressED25519PrivateKey() *eddsa.PrivateKey {
+	return c.dcrmAddressED25519PriKey
 }
 
 // LoadDcrmAddressPrivateKey load private key

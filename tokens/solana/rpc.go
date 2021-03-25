@@ -70,7 +70,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	return uint64(res), nil
 }
 
-// GetBalance gets main token balance
+// GetBalance gets SOL token balance
 func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 	ctx := context.Background()
 	rpcError := &RPCError{[]error, "GetBalance"}
@@ -83,6 +83,21 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 		}
 	}
 	return big.NewInt(0), rpcError.Error()
+}
+
+// GetRecentBlockhash gets recent block hash
+func (b *Bridge) GetRecentBlockhash() (string, error) {
+	ctx := context.Background()
+	rpcError := &RPCError{[]error, "GetBalance"}
+	for _, cli := range getClients {
+		res, err := cli.GetRecentBlockhash(ctx, "finalized")
+		if err == nil {
+			return resRbt.Value.Blockhash.String(), nil
+		} else {
+			rpcError.log(err)
+		}
+	}
+	return "", rpcError.Error()
 }
 
 // GetTokenBalance gets balance for given token

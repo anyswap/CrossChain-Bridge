@@ -88,6 +88,52 @@ func DoSign(signPubkey string, msgHash, msgContext []string) (rpcAddr, result st
 	return rpcAddr, result, err
 }
 
+// DoSignED25519One dcrm sign single msgHash with context msgContext
+func DoSignED25519One(signPubkey, msgHash, msgContext string) (rpcAddr, result string, err error) {
+	return DoSign(signPubkey, []string{msgHash}, []string{msgContext})
+
+// DoSignED25519 dcrm sign msgHash with context msgContext
+func DoSignED25519(signPubkey string, msgHash, msgContext []string) (rpcAddr, result string, err error) {
+	if !params.IsDcrmEnabled() {
+		return "", "", fmt.Errorf("dcrm sign is disabled")
+	}
+	log.Debug("dcrm DoSign", "msgHash", msgHash, "msgContext", msgContext)
+	if signPubkey == "" {
+		return "", "", fmt.Errorf("dcrm sign with empty public key")
+	}
+	dcrmNode := getDcrmNode()
+	if dcrmNode == nil {
+		return "", "", fmt.Errorf("dcrm sign with nil node info")
+	}
+	nonce, err := GetSignNonce(dcrmNode.dcrmUser.String(), dcrmNode.dcrmRPCAddress)
+	if err != nil {
+		return "", "", err
+	}
+	// randomly pick sub-group to sign
+	signGroups := dcrmNode.signGroups
+	randIndex, _ := rand.Int(rand.Reader, big.NewInt(int64(len(signGroups))))
+	signGroup := signGroups[randIndex.Int64()]
+	txdata := SignData{
+		TxType:     "SIGN",
+		PubKey:     signPubkey,
+		MsgHash:    msgHash,
+		MsgContext: msgContext,
+		Keytype:    "ED25519",
+		GroupID:    signGroup,
+		ThresHold:  dcrmThreshold,
+		Mode:       dcrmMode,
+		TimeStamp:  common.NowMilliStr(),
+	}
+	payload, _ := json.Marshal(txdata)
+	rawTX, err := BuildDcrmRawTx(nonce, payload, dcrmNode.keyWrapper)
+	if err != nil {
+		return "", "", err
+	}
+	rpcAddr = dcrmNode.dcrmRPCAddress
+	result, err = Sign(rawTX, rpcAddr)
+	return rpcAddr, result, err
+}
+
 // BuildDcrmRawTx build dcrm raw tx
 func BuildDcrmRawTx(nonce uint64, payload []byte, keyWrapper *keystore.Key) (string, error) {
 	tx := types.NewTransaction(

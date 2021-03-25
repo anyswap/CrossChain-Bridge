@@ -1,6 +1,8 @@
 package solana
 
 import (
+	"bytes"
+	"errors"
 	"strings"
 
 	"github.com/dfuse-io/solana-go/programs/system"
@@ -12,7 +14,27 @@ import (
 
 // VerifyMsgHash verify msg hash
 func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) {
-	// TODO
+	tx, ok := rawTx.(*solana.Transaction)
+	if !ok {
+		return errors.New("verify msg hash tx type error")
+	}
+
+	if len(msgHash) < 1 {
+		return errors.New("no msg hash")
+	}
+	mh := msgHash[0]
+
+	m := tx.Message
+	buf := new(bytes.Buffer)
+	err := bin.NewEncoder(buf).Encode(m)
+	if err != nil {
+		return err
+	}
+	messageCnt := buf.Bytes()
+
+	if strings.EqualFold(string(messageCnt), ,mh) == false {
+		return errors.New("msg hash not match")
+	}
 	return nil
 }
 
