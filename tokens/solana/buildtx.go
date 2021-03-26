@@ -6,6 +6,7 @@ import (
 
 	bin "github.com/dfuse-io/binary"
 	"github.com/dfuse-io/solana-go"
+	"github.com/dfuse-io/solana-go/programs/system"
 
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -19,7 +20,6 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		from     = args.From
 		to       = args.Bind
 		amount   = args.Value
-		memo     = args.Memo
 	)
 	args.Identifier = params.GetIdentifier()
 	tokenCfg = b.GetTokenConfig(pairID)
@@ -32,7 +32,6 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	case tokens.SwapoutType:
 		from = tokenCfg.DcrmAddress                                       // from
 		amount = tokens.CalcSwappedValue(pairID, args.OriginValue, false) // amount
-		memo = tokens.UnlockMemoPrefix + args.SwapID
 	}
 
 	if from == "" {

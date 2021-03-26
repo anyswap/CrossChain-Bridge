@@ -1,11 +1,15 @@
 package solana
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
+
+var PairID = "sol"
 
 // Bridge solana bridge
 type Bridge struct {
@@ -51,4 +55,18 @@ func (b *Bridge) InitLatestBlockNumber() {
 		log.Println("retry query gateway", gatewayCfg.APIAddress)
 		time.Sleep(3 * time.Second)
 	}
+}
+
+// VerifyTokenConfig verify token config
+func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
+	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
+		return fmt.Errorf("invalid dcrm address (not p2pkh): %v", tokenCfg.DcrmAddress)
+	}
+	if !b.IsValidAddress(tokenCfg.DepositAddress) {
+		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
+	}
+	if strings.EqualFold(tokenCfg.Symbol, "SOL") && *tokenCfg.Decimals != 9 {
+		return fmt.Errorf("invalid decimals for SOL: want 9 but have %v", *tokenCfg.Decimals)
+	}
+	return nil
 }

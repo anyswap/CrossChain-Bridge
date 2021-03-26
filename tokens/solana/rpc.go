@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"math/big"
 
+	bin "github.com/dfuse-io/binary"
 	"github.com/dfuse-io/solana-go"
 	solanarpc "github.com/dfuse-io/solana-go/rpc"
 	"github.com/ybbus/jsonrpc"
+
+	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
 func (b *Bridge) getClients() (clis []*solanarpc.Client) {
 	endpoints := b.GatewayConfig.APIAddress
-	clis := make([]*solanarpc.Client)
+	clis = make([]*solanarpc.Client, 0)
 	for _, endpoint := range endpoints {
 		cli := solanarpc.NewClient(endpoint)
 		if cli != nil {
@@ -29,7 +33,7 @@ func (b *Bridge) getURLs() (rpcURL []string) {
 }
 
 type RPCError struct {
-	errs []error
+	errs   []error
 	method string
 }
 
@@ -48,8 +52,8 @@ func (e *RPCError) Error() error {
 // GetLatestBlockNumber returns current finalized block height
 func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 	ctx := context.Background()
-	rpcError := &RPCError{[]error, "GetLatestBlockNumber"}
-	for _, cli := range getClients {
+	rpcError := &RPCError{[]error{}, "GetLatestBlockNumber"}
+	for _, cli := range b.getClients() {
 		res, err := cli.GetSlot(ctx, "finalized")
 		if err == nil {
 			return uint64(res), nil
@@ -62,10 +66,13 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 
 // GetLatestBlockNumberOf returns current finalized block height from given node
 func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
+	ctx := context.Background()
 	cli := solanarpc.NewClient(apiAddress)
+	rpcError := &RPCError{[]error{}, "GetLatestBlockNumberOf"}
 	res, err := cli.GetSlot(ctx, "finalized")
 	if err != nil {
-		return 0, RPCError{[]error{}, "GetLatestBlockNumberOf"}.log(err).Error()
+		rpcError.log(err)
+		return 0, rpcError.Error()
 	}
 	return uint64(res), nil
 }
@@ -73,11 +80,11 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 // GetBalance gets SOL token balance
 func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 	ctx := context.Background()
-	rpcError := &RPCError{[]error, "GetBalance"}
-	for _, cli := range getClients {
+	rpcError := &RPCError{[]error{}, "GetBalance"}
+	for _, cli := range b.getClients() {
 		res, err := cli.GetBalance(ctx, account, "finalized")
 		if err == nil {
-			return big.NewInt(uint64(res.Value)), nil
+			return new(big.Int).SetUint64(uint64(res.Value)), nil
 		} else {
 			rpcError.log(err)
 		}
@@ -88,11 +95,11 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 // GetRecentBlockhash gets recent block hash
 func (b *Bridge) GetRecentBlockhash() (string, error) {
 	ctx := context.Background()
-	rpcError := &RPCError{[]error, "GetBalance"}
-	for _, cli := range getClients {
+	rpcError := &RPCError{[]error{}, "GetBalance"}
+	for _, cli := range b.getClients() {
 		res, err := cli.GetRecentBlockhash(ctx, "finalized")
 		if err == nil {
-			return resRbt.Value.Blockhash.String(), nil
+			return res.Value.Blockhash.String(), nil
 		} else {
 			rpcError.log(err)
 		}
@@ -111,21 +118,22 @@ func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error
 }
 
 type GetConfirmedTransactonResult struct {
-		Transaction *solana.Transaction `json:"transaction"`
-		Meta        *TransactionMeta    `json:"meta,omitempty"`
-		Slot  bin.Uint64 `json:"slot,omitempty"`
-		BlockTime  bin.Uint64 `json:"blockTime,omitempty"`
-	}
+	Transaction *solana.Transaction        `json:"transaction"`
+	Meta        *solanarpc.TransactionMeta `json:"meta,omitempty"`
+	Slot        bin.Uint64                 `json:"slot,omitempty"`
+	BlockTime   bin.Uint64                 `json:"blockTime,omitempty"`
+}
 
 // GetTransaction gets tx by hash, returns sdk.Tx
 func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
-	rpcError := &RPCError{[]error, "GetConfirmedTransaction"}
-	for _, rpcURL := range getURLs() {
+	rpcError := &RPCError{[]error{}, "GetConfirmedTransaction"}
+	params := []interface{}{txHash, "json"}
+	for _, rpcURL := range b.getURLs() {
 		rpcClient := jsonrpc.NewClient(rpcURL)
 		tx := &GetConfirmedTransactonResult{}
-		err := rpcClient.CallFor(tx.(*GetConfirmedTransactonResult), "getConfirmedTransaction", params...)
+		err := rpcClient.CallFor(tx, "getConfirmedTransaction", params...)
 		if err == nil {
-			return
+			return tx, nil
 		} else {
 			rpcError.log(err)
 		}
@@ -135,18 +143,20 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 
 // GetTransactionStatus returns tx status
 func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
-	status = new(token.TxStatus)
-	rpcError := &RPCError{[]error, "GetConfirmedTransaction"}
-	for _, rpcURL := range getURLs() {
+	status = new(tokens.TxStatus)
+	params := []interface{}{txHash, "json"}
+	rpcError := &RPCError{[]error{}, "GetConfirmedTransaction"}
+	for _, rpcURL := range b.getURLs() {
 		rpcClient := jsonrpc.NewClient(rpcURL)
-		res, err := cli.GetConfirmedTransaction(ctx, txHash)
-		if err == nil && res.Meta.Err == nil {
-			status.Receipt = res
+		tx := &GetConfirmedTransactonResult{}
+		err := rpcClient.CallFor(tx, "getConfirmedTransaction", params...)
+		if err == nil && tx.Meta.Err == nil {
+			status.Receipt = tx
 			status.Confirmations = 1
 			status.PrioriFinalized = true
-			status.BlockHeight = uint64(res.Slot)
+			status.BlockHeight = uint64(tx.Slot)
 			status.BlockHash = ""
-			status.BlockTime = uint64(res.BlockTime)
+			status.BlockTime = uint64(tx.BlockTime)
 			return
 		} else {
 			status.Confirmations = 0
@@ -160,8 +170,8 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 // BroadcastTx broadcast tx
 func (b *Bridge) BroadcastTx(tx *solana.Transaction) (hash string, err error) {
 	ctx := context.Background()
-	rpcError := &RPCError{[]error, "GetBalance"}
-	for _, cli := range getClients {
+	rpcError := &RPCError{[]error{}, "GetBalance"}
+	for _, cli := range b.getClients() {
 		hash, err := cli.SendTransaction(ctx, tx)
 		if err == nil {
 			return hash, nil
@@ -173,11 +183,11 @@ func (b *Bridge) BroadcastTx(tx *solana.Transaction) (hash string, err error) {
 }
 
 // GetBlockByNumber get block by number
-func (b *Bridge) GetBlockByNumber(num *big.Int) (block *solanarpc.GetConfirmedBlockResult{}, err error) {
+func (b *Bridge) GetBlockByNumber(num *big.Int) (block *solanarpc.GetConfirmedBlockResult, err error) {
 	ctx := context.Background()
-	rpcError := &RPCError{[]error, "GetBalance"}
-	for _, cli := range getClients {
-		block, err := cli.GetConfirmedBlockResult(ctx, num, "")
+	rpcError := &RPCError{[]error{}, "GetBalance"}
+	for _, cli := range b.getClients() {
+		block, err := cli.GetConfirmedBlock(ctx, num.Uint64(), "")
 		if err == nil {
 			return block, nil
 		} else {

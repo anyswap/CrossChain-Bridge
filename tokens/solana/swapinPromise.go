@@ -1,7 +1,6 @@
 package solana
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -12,7 +11,7 @@ type SolanaSwapinPromise struct {
 
 func (p *SolanaSwapinPromise) Key() string {
 	depositAddress := strings.ToLower(p.SolanaDepositAddress)
-	return SolanaDepositAddressPrefix+depositAddress
+	return SolanaDepositAddressPrefix + depositAddress
 }
 
 const SolanaSwapinPromiseType = "solana-eth-bindaddress"

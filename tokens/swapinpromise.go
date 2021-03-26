@@ -20,7 +20,7 @@ type SwapinPromise interface {
 	Type() string
 	// Key returns something identifies a swapin binding rule
 	// e.g. for solana-eth, Key should be solana address
-	Key() interface{}
+	Key() string
 	// Value returns data required to define a binding rule
 	// For solana-eth, Value should return an eth binding address
 	Value() interface{}

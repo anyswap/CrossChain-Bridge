@@ -10,6 +10,8 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.0.0
 	github.com/cosmos/cosmos-sdk v0.39.2
+	github.com/dfuse-io/binary v0.0.0-20210216024852-4ae6830a495d
+	github.com/dfuse-io/solana-go v0.2.0
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9
 	github.com/fsnotify/fsnotify v1.4.9
@@ -30,18 +32,16 @@ require (
 	github.com/ltcsuite/ltcwallet/wallet/txrules v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.0.0
 	github.com/nervosnetwork/ckb-sdk-go v0.3.0
-	github.com/onsi/gomega v1.10.1 // indirect
 	github.com/pborman/uuid v1.2.1
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
-	github.com/spf13/cobra v1.1.1 // indirect
-	github.com/spf13/viper v1.7.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/tendermint/go-amino v0.16.0
 	github.com/tendermint/tendermint v0.33.9
 	github.com/terra-project/core v0.4.2
 	github.com/urfave/cli/v2 v2.3.0
+	github.com/ybbus/jsonrpc v2.1.2+incompatible
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 )

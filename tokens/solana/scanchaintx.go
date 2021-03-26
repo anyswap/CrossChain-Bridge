@@ -1,4 +1,4 @@
-package eth
+package solana
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"sync"
 	"time"
+
+	bin "github.com/dfuse-io/binary"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
@@ -101,8 +103,8 @@ func (b *Bridge) StartChainTransactionScanJob() {
 				tx := &GetConfirmedTransactonResult{
 					Transaction: entry.Transaction,
 					Meta:        entry.Meta,
-					Slot:        h,
-					BlockTime:   BlockTime,
+					Slot:        bin.Uint64(h),
+					BlockTime:   block.BlockTime,
 				}
 				b.processTransaction(tx)
 			}
@@ -167,10 +169,10 @@ func (b *Bridge) quickSyncRange(ctx context.Context, idx, start, end uint64, wg 
 			tx := &GetConfirmedTransactonResult{
 				Transaction: entry.Transaction,
 				Meta:        entry.Meta,
-				Slot:        h,
-				BlockTime:   BlockTime,
+				Slot:        bin.Uint64(h),
+				BlockTime:   block.BlockTime,
 			}
-			b.processTransaction(tx.String())
+			b.processTransaction(tx)
 		}
 		log.Tracef("[scanchain] id=%v scanned %v block, height=%v hash=%v txs=%v", idx, chainName, h, block.Blockhash.String(), len(block.Transactions))
 		h++

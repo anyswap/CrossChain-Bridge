@@ -3,13 +3,17 @@ package solana
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"math/big"
 	"strings"
 
+	bin "github.com/dfuse-io/binary"
+	"github.com/dfuse-io/solana-go"
 	"github.com/dfuse-io/solana-go/programs/system"
-	solanarpc "github.com/dfuse-io/solana-go/rpc"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
 // VerifyMsgHash verify msg hash
@@ -26,13 +30,13 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 
 	m := tx.Message
 	buf := new(bytes.Buffer)
-	err := bin.NewEncoder(buf).Encode(m)
+	err = bin.NewEncoder(buf).Encode(m)
 	if err != nil {
 		return err
 	}
 	messageCnt := buf.Bytes()
 
-	if strings.EqualFold(string(messageCnt), ,mh) == false {
+	if strings.EqualFold(string(messageCnt), mh) == false {
 		return errors.New("msg hash not match")
 	}
 	return nil
@@ -64,7 +68,7 @@ func (b *Bridge) verifySwapinTx(pairID string, tx *GetConfirmedTransactonResult,
 		return nil, []error{fmt.Errorf("Unexpected error, no signature")}
 	}
 	for _, ins := range tx.Transaction.Message.Instructions {
-		if ins.ProgramIDIndex >= len(tx.Transaction.Message.AccountKeys) {
+		if int(ins.ProgramIDIndex) >= len(tx.Transaction.Message.AccountKeys) {
 			continue
 		}
 		if tx.Transaction.Message.AccountKeys[ins.ProgramIDIndex] != system.PROGRAM_ID {
@@ -74,11 +78,11 @@ func (b *Bridge) verifySwapinTx(pairID string, tx *GetConfirmedTransactonResult,
 			continue
 		}
 		to := tx.Transaction.Message.AccountKeys[ins.Accounts[1]]
-		if strings.EqualFold(to, depositAddress) == false {
+		if strings.EqualFold(to.String(), depositAddress) == false {
 			continue
 		}
 		from := tx.Transaction.Message.AccountKeys[ins.Accounts[0]]
-		bind, ok := getBindAddress(from)
+		bind, ok := b.getBindAddress(from.String())
 		if !ok {
 			continue
 		}
@@ -91,16 +95,16 @@ func (b *Bridge) verifySwapinTx(pairID string, tx *GetConfirmedTransactonResult,
 		}
 		lamports := new(bin.Uint64)
 		decoder := bin.NewDecoder(ins.Data[4:])
-		err = decoder.Decode(lamports)
+		err := decoder.Decode(lamports)
 		if err != nil {
 			continue
 		}
-		value := big.NewInt(uint64(lamports))
+		value := new(big.Int).SetUint64(uint64(*lamports))
 		swapInfo := &tokens.TxSwapInfo{
 			PairID:    pairID,
 			Hash:      tx.Transaction.Signatures[0].String(),
 			Height:    uint64(tx.Slot),
-			Timestamp: uint64(BlockTime),
+			Timestamp: uint64(tx.BlockTime),
 			From:      from.String(),
 			TxTo:      to.String(),
 			To:        to.String(),
@@ -117,13 +121,17 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txid string, allowUnstable bool)
 	if err != nil {
 		return nil, []error{err}
 	}
-	return verifySwapinTx(pairID, tx, allowUnstable)
+	txres, ok := tx.(*GetConfirmedTransactonResult)
+	if !ok {
+		return nil, []error{errors.New("Solana transaction type error")}
+	}
+	return b.verifySwapinTx(pairID, txres, allowUnstable)
 }
 
 func (b *Bridge) getBindAddress(solanaAddress string) (bindAddress string, ok bool) {
 	solanaAddress = strings.ToLower(solanaAddress)
 	pkey := SolanaDepositAddressPrefix + solanaAddress
-	promise, err := GetSwapinPromise(pkey)
+	promise, err := tools.GetSwapinPromise(pkey)
 	if err != nil {
 		return "", false
 	}
