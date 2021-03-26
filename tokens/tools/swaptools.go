@@ -1,6 +1,9 @@
 package tools
 
 import (
+	"encoding/hex"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
@@ -249,4 +252,21 @@ func GetSwapinPromise(pkey string) (tokens.SwapinPromise, error) {
 		return nil, err
 	}
 	return ConvertMgoSwapinPromiseToSwapinPromise(mp)
+}
+
+// ConvertMgoSwapinPromiseToSwapinPromise convert
+func ConvertMgoSwapinPromiseToSwapinPromise(mp *mongodb.MgoSwapinPromise) (tokens.SwapinPromise, error) {
+	bz, err := hex.DecodeString(mp.Value)
+	if err != nil {
+		return nil, err
+	}
+	var p tokens.SwapinPromise
+	err = tokens.TokenCDC.UnmarshalJSON(bz, &p)
+	if err != nil {
+		return nil, err
+	}
+	if strings.EqualFold(p.Type(), mp.Type) == false {
+		return nil, errors.New("Swapin promise type not match")
+	}
+	return p, nil
 }

@@ -364,7 +364,7 @@ func (c *TokenConfig) GetDcrmAddressPrivateKey() *ecdsa.PrivateKey {
 }
 
 // GetDcrmAddressED25519PrivateKey get private key
-func (c *TokenConfig) GetDcrmAddressED25519PrivateKey() *eddsa.PrivateKey {
+func (c *TokenConfig) GetDcrmAddressED25519PrivateKey() *ed25519.PrivateKey {
 	return c.dcrmAddressED25519PriKey
 }
 

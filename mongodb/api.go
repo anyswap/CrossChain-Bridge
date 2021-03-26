@@ -688,12 +688,12 @@ func CancelSwapinPromise(key string) error {
 // UpdateSwapinPromise update swapin promise
 func UpdateSwapinPromise(ptype, pkey, pvalue string) error {
 	mp := &MgoSwapinPromise{
-		Key:       ptype,
-		Type:      pkey,
+		Type:      ptype,
+		Key:       pkey,
 		Value:     pvalue,
 		Cancelled: false,
 	}
-	err := collSwapinPromise.UpdateId(key, bson.M{"$set": mp})
+	err := collSwapinPromise.UpdateId(pkey, bson.M{"$set": mp})
 	if err == nil {
 		log.Info("mongodb update swapin promise", "key", mp.Key)
 	} else {

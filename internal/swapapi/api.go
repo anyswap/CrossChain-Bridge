@@ -2,6 +2,7 @@ package swapapi
 
 import (
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"time"
 
@@ -251,12 +252,6 @@ func GetP2shAddressInfo(p2shAddress string) (*tokens.P2shAddressInfo, error) {
 		return nil, err
 	}
 	return calcP2shAddress(bindAddress, false)
-}
-
-func RegisterSwapinPromise(ptype, pkey, pvalue string) (tokens.SwapinPromise, error) {
-	promise := SwapinPromise{ptype, pkey, pvalue}
-
-	return nil, error
 }
 
 func calcP2shAddress(bindAddress string, addToDatabase bool) (*tokens.P2shAddressInfo, error) {
