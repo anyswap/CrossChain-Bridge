@@ -91,6 +91,7 @@ func DoSign(signPubkey string, msgHash, msgContext []string) (rpcAddr, result st
 // DoSignED25519One dcrm sign single msgHash with context msgContext
 func DoSignED25519One(signPubkey, msgHash, msgContext string) (rpcAddr, result string, err error) {
 	return DoSign(signPubkey, []string{msgHash}, []string{msgContext})
+}
 
 // DoSignED25519 dcrm sign msgHash with context msgContext
 func DoSignED25519(signPubkey string, msgHash, msgContext []string) (rpcAddr, result string, err error) {
