@@ -321,17 +321,21 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 
 	swapTxNonce := args.GetTxNonce()
 
-	var existsInOld bool
 	var oldSwapTxs []string
-	for _, oldSwapTx := range res.OldSwapTxs {
-		if oldSwapTx == txHash {
-			existsInOld = true
-			break
+	if len(res.OldSwapTxs) > 0 {
+		var existsInOld bool
+		for _, oldSwapTx := range res.OldSwapTxs {
+			if oldSwapTx == txHash {
+				existsInOld = true
+				break
+			}
 		}
-	}
-	if !existsInOld {
-		oldSwapTxs = res.OldSwapTxs
-		oldSwapTxs = append(oldSwapTxs, txHash)
+		if !existsInOld {
+			oldSwapTxs = res.OldSwapTxs
+			oldSwapTxs = append(oldSwapTxs, txHash)
+		}
+	} else if res.SwapTx != "" && txHash != res.SwapTx {
+		oldSwapTxs = []string{res.SwapTx, txHash}
 	}
 
 	// update database before sending transaction

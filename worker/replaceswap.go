@@ -134,17 +134,21 @@ func replaceSwapResult(swapResult *mongodb.MgoSwapResult, txHash string, isSwapi
 	txid := swapResult.TxID
 	pairID := swapResult.PairID
 	bind := swapResult.Bind
-	var existsInOld bool
 	var oldSwapTxs []string
-	for _, oldSwapTx := range swapResult.OldSwapTxs {
-		if oldSwapTx == txHash {
-			existsInOld = true
-			break
+	if len(swapResult.OldSwapTxs) > 0 {
+		var existsInOld bool
+		for _, oldSwapTx := range swapResult.OldSwapTxs {
+			if oldSwapTx == txHash {
+				existsInOld = true
+				break
+			}
 		}
-	}
-	if !existsInOld {
-		oldSwapTxs = swapResult.OldSwapTxs
-		oldSwapTxs = append(oldSwapTxs, txHash)
+		if !existsInOld {
+			oldSwapTxs = swapResult.OldSwapTxs
+			oldSwapTxs = append(oldSwapTxs, txHash)
+		}
+	} else if swapResult.SwapTx != "" && txHash != swapResult.SwapTx {
+		oldSwapTxs = []string{swapResult.SwapTx, txHash}
 	}
 	err = updateOldSwapTxs(txid, pairID, bind, oldSwapTxs, isSwapin)
 	if err != nil {
