@@ -657,60 +657,60 @@ func FindRegisteredAddress(key string) (*MgoRegisteredAddress, error) {
 	return &result, nil
 }
 
-// AddSwapinPromise add swapin promise
-func AddSwapinPromise(ptype, pkey, pvalue string) error {
-	mp := &MgoSwapinPromise{
+// AddSwapAgreement add swapin agreement
+func AddSwapAgreement(ptype, pkey, pvalue string) error {
+	mp := &MgoSwapAgreement{
 		Key:       ptype,
 		Type:      pkey,
 		Value:     pvalue,
 		Cancelled: false,
 	}
-	err := collSwapinPromise.Insert(mp)
+	err := collSwapAgreement.Insert(mp)
 	if err == nil {
-		log.Info("mongodb add swapin promise", "key", mp.Key)
+		log.Info("mongodb add swapin agreement", "key", mp.Key)
 	} else {
-		log.Debug("mongodb add swapin promise", "key", mp.Key, "err", err)
+		log.Debug("mongodb add swapin agreement", "key", mp.Key, "err", err)
 	}
 	return mgoError(err)
 }
 
-// CancelSwapinPromise cancels a swapin promise
-func CancelSwapinPromise(key string) error {
-	err := collSwapinPromise.UpdateId(key, bson.D{{"cancelled", true}})
+// CancelSwapAgreement cancels a swapin agreement
+func CancelSwapAgreement(key string) error {
+	err := collSwapAgreement.UpdateId(key, bson.D{{"cancelled", true}})
 	if err != nil {
-		log.Debug("mongodb cancelled swapin promise", "key", key, "err", err)
+		log.Debug("mongodb cancelled swapin agreement", "key", key, "err", err)
 		return mgoError(err)
 	}
-	log.Debug("mongodb cancelled swapin promise", "key", key)
+	log.Debug("mongodb cancelled swapin agreement", "key", key)
 	return nil
 }
 
-// UpdateSwapinPromise update swapin promise
-func UpdateSwapinPromise(ptype, pkey, pvalue string) error {
-	mp := &MgoSwapinPromise{
+// UpdateSwapAgreement update swapin agreement
+func UpdateSwapAgreement(ptype, pkey, pvalue string) error {
+	mp := &MgoSwapAgreement{
 		Type:      ptype,
 		Key:       pkey,
 		Value:     pvalue,
 		Cancelled: false,
 	}
-	err := collSwapinPromise.UpdateId(pkey, bson.M{"$set": mp})
+	err := collSwapAgreement.UpdateId(pkey, bson.M{"$set": mp})
 	if err == nil {
-		log.Info("mongodb update swapin promise", "key", mp.Key)
+		log.Info("mongodb update swapin agreement", "key", mp.Key)
 	} else {
-		log.Debug("mongodb update swapin promise", "key", mp.Key, "err", err)
+		log.Debug("mongodb update swapin agreement", "key", mp.Key, "err", err)
 	}
 	return mgoError(err)
 }
 
-// FindSwapinPromise finds swapin promise
-func FindSwapinPromise(key string) (*MgoSwapinPromise, error) {
-	var result MgoSwapinPromise
-	err := collSwapinPromise.FindId(key).One(&result)
+// FindSwapAgreement finds swapin agreement
+func FindSwapAgreement(key string) (*MgoSwapAgreement, error) {
+	var result MgoSwapAgreement
+	err := collSwapAgreement.FindId(key).One(&result)
 	if err != nil {
 		return nil, mgoError(err)
 	}
 	if result.Cancelled {
-		return nil, mgoError(errors.New("Swapin promise is cancelled"))
+		return nil, mgoError(errors.New("Swapin agreement is cancelled"))
 	}
 	return &result, nil
 }

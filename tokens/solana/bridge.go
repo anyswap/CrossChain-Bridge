@@ -16,8 +16,12 @@ type Bridge struct {
 	*tokens.CrossChainBridgeBase
 }
 
-func init() {
-	tokens.TokenCDC.RegisterConcrete(&SolanaSwapinPromise{}, SolanaSwapinPromiseType, nil)
+func (b *Bridge) RegisterCDC(isSrc bool) {
+	if isSrc {
+		tokens.TokenCDC.RegisterConcrete(&Solana2ETHSwapinAgreement{}, Solana2ETHSwapinAgreementType, nil)
+	} else {
+		tokens.TokenCDC.RegisterConcrete(&ETH2SolanaSwapAgreement{}, ETH2SolanaSwapAgreementType, nil)
+	}
 }
 
 // NewCrossChainBridge new bridge
@@ -36,6 +40,12 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
+	networkID := strings.ToLower(b.ChainConfig.NetID)
+	switch networkID {
+	case "mainnet", "testnet", "devnet":
+	default:
+		log.Fatalf("unsupported solana network: %v", b.ChainConfig.NetID)
+	}
 }
 
 // InitLatestBlockNumber init latest block number
@@ -59,6 +69,9 @@ func (b *Bridge) InitLatestBlockNumber() {
 
 // VerifyTokenConfig verify token config
 func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
+	if tokenCfg.PrivateKeyType != tokens.ED25519KeyType {
+		return fmt.Errorf("solana private key type must be ed25519")
+	}
 	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
 		return fmt.Errorf("invalid dcrm address (not p2pkh): %v", tokenCfg.DcrmAddress)
 	}
@@ -67,6 +80,9 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	}
 	if strings.EqualFold(tokenCfg.Symbol, "SOL") && *tokenCfg.Decimals != 9 {
 		return fmt.Errorf("invalid decimals for SOL: want 9 but have %v", *tokenCfg.Decimals)
+	}
+	if _, err := solana.PublicKeyFromBase58(tokenCfg.ContractAddress); err != nil {
+		return fmt.Errorf("invalid solana program id (contract address)")
 	}
 	return nil
 }

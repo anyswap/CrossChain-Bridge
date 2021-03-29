@@ -238,8 +238,8 @@ func GetRegisteredAddress(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-// AddSwapinPromise handler
-func AddSwapinPromise(w http.ResponseWriter, r *http.Request) {
+// AddSwapAgreement handler
+func AddSwapAgreement(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	var obj = make(map[string]interface{})
 	for k, v := range vars {
@@ -250,20 +250,20 @@ func AddSwapinPromise(w http.ResponseWriter, r *http.Request) {
 		}
 		obj[k] = x
 	}
-	res, err := swapapi.AddSwapinPromise(obj)
+	res, err := swapapi.AddSwapAgreement(obj)
 	writeResponse(w, res, err)
 }
 
-// CancelSwapinPromise handler
-func CancelSwapinPromise(w http.ResponseWriter, r *http.Request) {
+// CancelSwapAgreement handler
+func CancelSwapAgreement(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pkey := vars["pkey"]
-	res, err := swapapi.CancelSwapinPromise(pkey)
+	res, err := swapapi.CancelSwapAgreement(pkey)
 	writeResponse(w, res, err)
 }
 
-// UpdateSwapinPromise handler
-func UpdateSwapinPromise(w http.ResponseWriter, r *http.Request) {
+// UpdateSwapAgreement handler
+func UpdateSwapAgreement(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	var obj = make(map[string]interface{})
 	for k, v := range vars {
@@ -274,14 +274,14 @@ func UpdateSwapinPromise(w http.ResponseWriter, r *http.Request) {
 		}
 		obj[k] = x
 	}
-	res, err := swapapi.UpdateSwapinPromise(obj)
+	res, err := swapapi.UpdateSwapAgreement(obj)
 	writeResponse(w, res, err)
 }
 
-// GetSwapinPromise handler
-func GetSwapinPromise(w http.ResponseWriter, r *http.Request) {
+// GetSwapAgreement handler
+func GetSwapAgreement(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pkey := vars["pkey"]
-	res, err := swapapi.GetSwapinPromise(pkey)
+	res, err := swapapi.GetSwapAgreement(pkey)
 	writeResponse(w, res, err)
 }

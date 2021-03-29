@@ -284,36 +284,36 @@ func (s *RPCAPI) GetRegisteredAddress(r *http.Request, address *string, result *
 	return err
 }
 
-// AddSwapinPromise api
-func (s *RPCAPI) AddSwapinPromise(r *http.Request, args map[string](interface{}), result *swapapi.PostResult) error {
-	res, err := swapapi.AddSwapinPromise(args)
+// AddSwapAgreement api
+func (s *RPCAPI) AddSwapAgreement(r *http.Request, args map[string](interface{}), result *swapapi.PostResult) error {
+	res, err := swapapi.AddSwapAgreement(args)
 	if err == nil && res != nil {
 		*result = *res
 	}
 	return err
 }
 
-// CancelSwapinPromise api
-func (s *RPCAPI) CancelSwapinPromise(r *http.Request, pkey *string, result *swapapi.PostResult) error {
-	res, err := swapapi.CancelSwapinPromise(*pkey)
+// CancelSwapAgreement api
+func (s *RPCAPI) CancelSwapAgreement(r *http.Request, pkey *string, result *swapapi.PostResult) error {
+	res, err := swapapi.CancelSwapAgreement(*pkey)
 	if err == nil && res != nil {
 		*result = *res
 	}
 	return err
 }
 
-// UpdateSwapinPromise api
-func (s *RPCAPI) UpdateSwapinPromise(r *http.Request, args map[string](interface{}), result *swapapi.PostResult) error {
-	res, err := swapapi.UpdateSwapinPromise(args)
+// UpdateSwapAgreement api
+func (s *RPCAPI) UpdateSwapAgreement(r *http.Request, args map[string](interface{}), result *swapapi.PostResult) error {
+	res, err := swapapi.UpdateSwapAgreement(args)
 	if err == nil && res != nil {
 		*result = *res
 	}
 	return err
 }
 
-// GetSwapinPromise api
-func (s *RPCAPI) GetSwapinPromise(r *http.Request, pkey *string, result swapapi.SwapinPromise) error {
-	res, err := swapapi.GetSwapinPromise(*pkey)
+// GetSwapAgreement api
+func (s *RPCAPI) GetSwapAgreement(r *http.Request, pkey *string, result swapapi.SwapAgreement) error {
+	res, err := swapapi.GetSwapAgreement(*pkey)
 	if err == nil && res != nil {
 		result = res
 	}

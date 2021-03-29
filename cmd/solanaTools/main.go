@@ -16,12 +16,18 @@ import (
 	"github.com/dfuse-io/solana-go"
 	"github.com/dfuse-io/solana-go/programs/system"
 	"github.com/dfuse-io/solana-go/rpc"
+	"github.com/dfuse-io/solana-go/rpc/ws"
 	"github.com/mr-tron/base58"
 )
 
 func main() {
 	//key_test()
 	//tx_test()
+	GetLatestBlock()
+	//SubscribeAccount()
+}
+
+func DecodeTransferData() {
 	val, err := base58.Decode("3Bxs45iLYCoeyGyd")
 	checkError(err)
 	fmt.Printf("val: %v\n", val)
@@ -211,4 +217,48 @@ func GetClient() *rpc.Client {
 	var endpoint = "https://testnet.solana.com"
 	cli := rpc.NewClient(endpoint)
 	return cli
+}
+
+func GetLatestBlock() {
+	ctx := context.Background()
+	var endpoint = "https://testnet.solana.com"
+	cli := rpc.NewClient(endpoint)
+	res, err := cli.GetSlot(ctx, "")
+	checkError(err)
+	fmt.Printf("res: %+v\n", res)
+
+	block, err := cli.GetConfirmedBlock(ctx, uint64(bin.Uint64(res)), "")
+	checkError(err)
+	fmt.Printf("block: %+v\n", block)
+}
+
+func SubscribeAccount() {
+	ctx := context.Background()
+	var endpoint = "wss://testnet.solana.com"
+	cli, err := ws.Dial(ctx, endpoint)
+	checkError(err)
+	acct, _ := solana.PublicKeyFromBase58("7R9zUfmcXPUFGEtWtjuFUjhW5WD2i4G6ZL4TFbDJSozu")
+	sbscrpt, err := cli.AccountSubscribe(acct, "finalized")
+	checkError(err)
+	fmt.Printf("subscription: %+v\n", sbscrpt)
+	for {
+		res, err := sbscrpt.Recv()
+		checkError(err)
+		fmt.Printf("res: %+v\n", res)
+	}
+}
+
+func SubscribeSlot() {
+	ctx := context.Background()
+	var endpoint = "wss://testnet.solana.com"
+	cli, err := ws.Dial(ctx, endpoint)
+	checkError(err)
+	sbscrpt, err := cli.SlotSubscribe()
+	checkError(err)
+	fmt.Printf("subscription: %+v\n", sbscrpt)
+	for {
+		res, err := sbscrpt.Recv()
+		checkError(err)
+		fmt.Printf("res: %+v\n", res)
+	}
 }

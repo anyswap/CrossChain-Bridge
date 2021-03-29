@@ -10,7 +10,7 @@ const (
 	tbLatestScanInfo    string = "LatestScanInfo"
 	tbRegisteredAddress string = "RegisteredAddress"
 	tbBlacklist         string = "Blacklist"
-	tbSwapinPromise     string = "SwapinPromise"
+	tbSwapAgreement     string = "SwapAgreement"
 
 	keyOfSrcLatestScanInfo string = "srclatest"
 	keyOfDstLatestScanInfo string = "dstlatest"
@@ -104,8 +104,8 @@ type MgoBlackAccount struct {
 	Timestamp int64  `bson:"timestamp"`
 }
 
-// MgoSwapinPromise is hex encoded swapinpromise
-type MgoSwapinPromise struct {
+// MgoSwapAgreement is hex encoded swapagreement
+type MgoSwapAgreement struct {
 	Key       string `bson:"_id"`
 	Type      string `bson:"type"`
 	Value     string `bson:"value"`

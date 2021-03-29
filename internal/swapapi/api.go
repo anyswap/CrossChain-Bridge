@@ -342,53 +342,53 @@ func GetRegisteredAddress(address string) (*RegisteredAddress, error) {
 	return mongodb.FindRegisteredAddress(address)
 }
 
-// AddSwapinPromise add swapin promise
-func AddSwapinPromise(args map[string]interface{}) (*PostResult, error) {
-	promise, err := tokens.PromiseFromArgs(args)
+// AddSwapAgreement add swapin agreement
+func AddSwapAgreement(args map[string]interface{}) (*PostResult, error) {
+	agreement, err := tokens.AgreementFromArgs(args)
 	if err != nil {
 		return nil, err
 	}
-	bz, err := tokens.TokenCDC.MarshalJSON(promise)
+	bz, err := tokens.TokenCDC.MarshalJSON(agreement)
 	if err != nil {
 		return nil, err
 	}
-	err = mongodb.AddSwapinPromise(promise.Type(), promise.Key(), fmt.Sprintf("%X", bz))
-	if err != nil {
-		return nil, err
-	}
-	return &SuccessPostResult, nil
-}
-
-// CancelSwapinPromise cancel swapin promise
-func CancelSwapinPromise(pkey string) (*PostResult, error) {
-	err := mongodb.CancelSwapinPromise(pkey)
+	err = mongodb.AddSwapAgreement(agreement.Type(), agreement.Key(), fmt.Sprintf("%X", bz))
 	if err != nil {
 		return nil, err
 	}
 	return &SuccessPostResult, nil
 }
 
-func UpdateSwapinPromise(args map[string]interface{}) (*PostResult, error) {
-	promise, err := tokens.PromiseFromArgs(args)
-	if err != nil {
-		return nil, err
-	}
-	bz, err := tokens.TokenCDC.MarshalJSON(promise)
-	if err != nil {
-		return nil, err
-	}
-	err = mongodb.UpdateSwapinPromise(promise.Type(), promise.Key(), fmt.Sprintf("%X", bz))
+// CancelSwapAgreement cancel swapin agreement
+func CancelSwapAgreement(pkey string) (*PostResult, error) {
+	err := mongodb.CancelSwapAgreement(pkey)
 	if err != nil {
 		return nil, err
 	}
 	return &SuccessPostResult, nil
 }
 
-// GetSwapinPromise get swapin promise
-func GetSwapinPromise(pkey string) (SwapinPromise, error) {
-	mp, err := mongodb.FindSwapinPromise(pkey)
+func UpdateSwapAgreement(args map[string]interface{}) (*PostResult, error) {
+	agreement, err := tokens.AgreementFromArgs(args)
 	if err != nil {
 		return nil, err
 	}
-	return ConvertMgoSwapinPromiseToSwapinPromise(mp)
+	bz, err := tokens.TokenCDC.MarshalJSON(agreement)
+	if err != nil {
+		return nil, err
+	}
+	err = mongodb.UpdateSwapAgreement(agreement.Type(), agreement.Key(), fmt.Sprintf("%X", bz))
+	if err != nil {
+		return nil, err
+	}
+	return &SuccessPostResult, nil
+}
+
+// GetSwapAgreement get swapin agreement
+func GetSwapAgreement(pkey string) (SwapAgreement, error) {
+	mp, err := mongodb.FindSwapAgreement(pkey)
+	if err != nil {
+		return nil, err
+	}
+	return ConvertMgoSwapAgreementToSwapAgreement(mp)
 }

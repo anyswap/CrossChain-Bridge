@@ -14,7 +14,7 @@ var (
 	collLatestScanInfo    *mgo.Collection
 	collRegisteredAddress *mgo.Collection
 	collBlacklist         *mgo.Collection
-	collSwapinPromise     *mgo.Collection
+	collSwapAgreement     *mgo.Collection
 )
 
 func isSwapin(collection *mgo.Collection) bool {
@@ -32,7 +32,7 @@ func deinintCollections() {
 	collLatestScanInfo = database.C(tbLatestScanInfo)
 	collRegisteredAddress = database.C(tbRegisteredAddress)
 	collBlacklist = database.C(tbBlacklist)
-	collSwapinPromise = database.C(tbSwapinPromise)
+	collSwapAgreement = database.C(tbSwapAgreement)
 }
 
 func initCollections() {
@@ -45,7 +45,7 @@ func initCollections() {
 	initCollection(tbLatestScanInfo, &collLatestScanInfo)
 	initCollection(tbRegisteredAddress, &collRegisteredAddress)
 	initCollection(tbBlacklist, &collBlacklist)
-	initCollection(tbSwapinPromise, &collSwapinPromise)
+	initCollection(tbSwapAgreement, &collSwapAgreement)
 
 	initDefaultValue()
 }

@@ -43,13 +43,18 @@ type GatewayConfig struct {
 
 // GatewayExtras struct
 type GatewayExtras struct {
-	BlockExtra *BlockExtraArgs
+	BlockExtra  *BlockExtraArgs
+	SolanaExtra *SolanaExtraArgs
 }
 
 // BlockExtraArgs struct
 type BlockExtraArgs struct {
 	CoreAPIs         []BlocknetCoreAPIArgs
 	UTXOAPIAddresses []string
+}
+
+type SolanaExtra struct {
+	WSEndpoints []string
 }
 
 // BlocknetCoreAPIArgs struct

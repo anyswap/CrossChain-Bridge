@@ -245,28 +245,28 @@ func IsAddressRegistered(address string) bool {
 	return false
 }
 
-// GetSwapinPromise find swapin promise
-func GetSwapinPromise(pkey string) (tokens.SwapinPromise, error) {
-	mp, err := mongodb.FindSwapinPromise(pkey)
+// GetSwapAgreement find swapin agreement
+func GetSwapAgreement(pkey string) (tokens.SwapAgreement, error) {
+	mp, err := mongodb.FindSwapAgreement(pkey)
 	if err != nil {
 		return nil, err
 	}
-	return ConvertMgoSwapinPromiseToSwapinPromise(mp)
+	return ConvertMgoSwapAgreementToSwapAgreement(mp)
 }
 
-// ConvertMgoSwapinPromiseToSwapinPromise convert
-func ConvertMgoSwapinPromiseToSwapinPromise(mp *mongodb.MgoSwapinPromise) (tokens.SwapinPromise, error) {
+// ConvertMgoSwapAgreementToSwapAgreement convert
+func ConvertMgoSwapAgreementToSwapAgreement(mp *mongodb.MgoSwapAgreement) (tokens.SwapAgreement, error) {
 	bz, err := hex.DecodeString(mp.Value)
 	if err != nil {
 		return nil, err
 	}
-	var p tokens.SwapinPromise
+	var p tokens.SwapAgreement
 	err = tokens.TokenCDC.UnmarshalJSON(bz, &p)
 	if err != nil {
 		return nil, err
 	}
 	if strings.EqualFold(p.Type(), mp.Type) == false {
-		return nil, errors.New("Swapin promise type not match")
+		return nil, errors.New("Swapin agreement type not match")
 	}
 	return p, nil
 }

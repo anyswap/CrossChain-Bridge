@@ -80,19 +80,19 @@ func ConvertMgoSwapResultsToSwapInfos(mrSlice []*mongodb.MgoSwapResult) []*SwapI
 	return result
 }
 
-// ConvertMgoSwapinPromiseToSwapinPromise convert
-func ConvertMgoSwapinPromiseToSwapinPromise(mp *mongodb.MgoSwapinPromise) (tokens.SwapinPromise, error) {
+// ConvertMgoSwapAgreementToSwapAgreement convert
+func ConvertMgoSwapAgreementToSwapAgreement(mp *mongodb.MgoSwapAgreement) (tokens.SwapAgreement, error) {
 	bz, err := hex.DecodeString(mp.Value)
 	if err != nil {
 		return nil, err
 	}
-	var p tokens.SwapinPromise
+	var p tokens.SwapAgreement
 	err = tokens.TokenCDC.UnmarshalJSON(bz, &p)
 	if err != nil {
 		return nil, err
 	}
 	if strings.EqualFold(p.Type(), mp.Type) == false {
-		return nil, errors.New("Swapin promise type not match")
+		return nil, errors.New("Swapin agreement type not match")
 	}
 	return p, nil
 }

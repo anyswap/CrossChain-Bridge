@@ -16,6 +16,14 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
+func addSwapInfoConsiderError(swapInfo *tokens.TxSwapInfo, err error, swapInfos *[]*tokens.TxSwapInfo, errs *[]error) {
+	if !tokens.ShouldRegisterSwapForError(err) {
+		return
+	}
+	*swapInfos = append(*swapInfos, swapInfo)
+	*errs = append(*errs, err)
+}
+
 // VerifyMsgHash verify msg hash
 func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) {
 	tx, ok := rawTx.(*solana.Transaction)
@@ -45,78 +53,95 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 // VerifyTransaction impl
 func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if !b.IsSrc {
-		return nil, tokens.ErrBridgeDestinationNotSupported
-	}
-	swapInfos, errs := b.verifySwapinTxWithHash(pairID, txHash, allowUnstable)
-	// swapinfos have already aggregated
-	for i, swapInfo := range swapInfos {
-		if strings.EqualFold(swapInfo.PairID, pairID) {
-			return swapInfo, errs[i]
+		swapInfos, errs := b.verifySwapoutTxWithPairID(pairID, txHash, allowUnstable)
+		// swapinfos have already aggregated
+		for i, swapInfo := range swapInfos {
+			if strings.EqualFold(swapInfo.PairID, pairID) {
+				return swapInfo, errs[i]
+			}
 		}
+		log.Warn("No such swapInfo")
+	} else {
+		swapInfos, errs := b.verifySwapinTxWithHash(txHash, allowUnstable)
+		// swapinfos have already aggregated
+		for i, swapInfo := range swapInfos {
+			if strings.EqualFold(swapInfo.PairID, pairID) {
+				return swapInfo, errs[i]
+			}
+		}
+		log.Warn("No such swapInfo")
 	}
-	log.Warn("No such swapInfo")
 	return nil, nil
 }
 
-func (b *Bridge) verifySwapinTx(pairID string, tx *GetConfirmedTransactonResult, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
-	tokenCfg := b.GetTokenConfig(pairID)
-	depositAddress := tokenCfg.DepositAddress
-	if tx.Meta.Err != nil {
-		return nil, []error{fmt.Errorf("%+v", tx.Meta.Err)}
+func (b *Bridge) verifySwapinTx(tx *GetConfirmedTransactonResult, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
+	tokenCfgs, pairIDs := tokens.FindTokenConfig(txRecipient, true)
+	if len(pairIDs) == 0 {
+		addSwapInfoConsiderError(nil, tokens.ErrTxWithWrongReceiver, &swapInfos, &errs)
+		return swapInfos, errs
 	}
-	if len(tx.Transaction.Signatures) < 1 {
-		return nil, []error{fmt.Errorf("Unexpected error, no signature")}
-	}
-	for _, ins := range tx.Transaction.Message.Instructions {
-		if int(ins.ProgramIDIndex) >= len(tx.Transaction.Message.AccountKeys) {
-			continue
+
+	for i, pairID := range pairIDs {
+		tokenCfg := tokenCfgs[i]
+
+		depositAddress := tokenCfg.DepositAddress
+		if tx.Meta.Err != nil {
+			return nil, []error{fmt.Errorf("%+v", tx.Meta.Err)}
 		}
-		if tx.Transaction.Message.AccountKeys[ins.ProgramIDIndex] != system.PROGRAM_ID {
-			continue
+		if len(tx.Transaction.Signatures) < 1 {
+			return nil, []error{fmt.Errorf("Unexpected error, no signature")}
 		}
-		if len(ins.Accounts) != 2 {
-			continue
+		for _, ins := range tx.Transaction.Message.Instructions {
+			if int(ins.ProgramIDIndex) >= len(tx.Transaction.Message.AccountKeys) {
+				continue
+			}
+			if tx.Transaction.Message.AccountKeys[ins.ProgramIDIndex] != system.PROGRAM_ID {
+				continue
+			}
+			if len(ins.Accounts) != 2 {
+				continue
+			}
+			to := tx.Transaction.Message.AccountKeys[ins.Accounts[1]]
+			if strings.EqualFold(to.String(), depositAddress) == false {
+				continue
+			}
+			from := tx.Transaction.Message.AccountKeys[ins.Accounts[0]]
+			bind, ok := b.getSolana2ETHSwapinBindAddress(from.String())
+			if !ok {
+				continue
+			}
+			if len(ins.Data) < 1 {
+				continue
+			}
+			if ins.Data[0] != byte(0x2) {
+				// Transfer prefix
+				continue
+			}
+			lamports := new(bin.Uint64)
+			decoder := bin.NewDecoder(ins.Data[4:])
+			err := decoder.Decode(lamports)
+			if err != nil {
+				continue
+			}
+			value := new(big.Int).SetUint64(uint64(*lamports))
+			swapInfo := &tokens.TxSwapInfo{
+				PairID:    pairID,
+				Hash:      tx.Transaction.Signatures[0].String(),
+				Height:    uint64(tx.Slot),
+				Timestamp: uint64(tx.BlockTime),
+				From:      from.String(),
+				TxTo:      to.String(),
+				To:        to.String(),
+				Bind:      bind,
+				Value:     value,
+			}
+			swapInfos = append(swapInfos, swapInfo)
 		}
-		to := tx.Transaction.Message.AccountKeys[ins.Accounts[1]]
-		if strings.EqualFold(to.String(), depositAddress) == false {
-			continue
-		}
-		from := tx.Transaction.Message.AccountKeys[ins.Accounts[0]]
-		bind, ok := b.getBindAddress(from.String())
-		if !ok {
-			continue
-		}
-		if len(ins.Data) < 1 {
-			continue
-		}
-		if ins.Data[0] != byte(0x2) {
-			// Transfer prefix
-			continue
-		}
-		lamports := new(bin.Uint64)
-		decoder := bin.NewDecoder(ins.Data[4:])
-		err := decoder.Decode(lamports)
-		if err != nil {
-			continue
-		}
-		value := new(big.Int).SetUint64(uint64(*lamports))
-		swapInfo := &tokens.TxSwapInfo{
-			PairID:    pairID,
-			Hash:      tx.Transaction.Signatures[0].String(),
-			Height:    uint64(tx.Slot),
-			Timestamp: uint64(tx.BlockTime),
-			From:      from.String(),
-			TxTo:      to.String(),
-			To:        to.String(),
-			Bind:      bind,
-			Value:     value,
-		}
-		swapInfos = append(swapInfos, swapInfo)
 	}
 	return swapInfos, nil
 }
 
-func (b *Bridge) verifySwapinTxWithHash(pairID, txid string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
+func (b *Bridge) verifySwapinTxWithHash(txid string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
 	tx, err := b.GetTransaction(txid)
 	if err != nil {
 		return nil, []error{err}
@@ -125,17 +150,45 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txid string, allowUnstable bool)
 	if !ok {
 		return nil, []error{errors.New("Solana transaction type error")}
 	}
-	return b.verifySwapinTx(pairID, txres, allowUnstable)
+	return b.verifySwapinTx(txres, allowUnstable)
 }
 
-func (b *Bridge) getBindAddress(solanaAddress string) (bindAddress string, ok bool) {
+func (b *Bridge) verifySwapoutTx(tx *GetConfirmedTransactonResult, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
+	tokenCfgs, pairIDs := tokens.FindTokenConfig(txRecipient, true)
+	if len(pairIDs) == 0 {
+		addSwapInfoConsiderError(nil, tokens.ErrTxWithWrongReceiver, &swapInfos, &errs)
+		return swapInfos, errs
+	}
+
+	for i, pairID := range pairIDs {
+		tokenCfg := tokenCfgs[i]
+
+		fmt.Printf("PairID: %v\nToken cfg: %+v\n", pairID, tokenCfg)
+		// TODO
+	}
+	return nil, nil
+}
+
+func (b *Bridge) verifySwapoutTxWithHash(txid string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
+	tx, err := b.GetTransaction(txid)
+	if err != nil {
+		return nil, []error{err}
+	}
+	txres, ok := tx.(*GetConfirmedTransactonResult)
+	if !ok {
+		return nil, []error{errors.New("Solana transaction type error")}
+	}
+	return b.verifySwapoutTx(txres, allowUnstable)
+}
+
+func (b *Bridge) getSolana2ETHSwapinBindAddress(solanaAddress string) (bindAddress string, ok bool) {
 	solanaAddress = strings.ToLower(solanaAddress)
 	pkey := SolanaDepositAddressPrefix + solanaAddress
-	promise, err := tools.GetSwapinPromise(pkey)
+	agreement, err := tools.GetSwapinAgreement(pkey)
 	if err != nil {
 		return "", false
 	}
-	sp, ok := promise.(*SolanaSwapinPromise)
+	sp, ok := agreement.(*SolanaSwapinAgreement)
 	if !ok {
 		return "", false
 	}
@@ -143,6 +196,46 @@ func (b *Bridge) getBindAddress(solanaAddress string) (bindAddress string, ok bo
 
 	dstBridge := tokens.DstBridge
 	if dstBridge.IsValidAddress(bindAddress) {
+		return bindAddress, true
+	}
+	return "", false
+}
+
+func (b *Bridge) getETH2SolanaSwapinAgreementBindAddress(ethAddress string) {
+	ethAddress = strings.ToLower(ethAddress)
+	pkey := ETHAddressPrefix + ethAddress
+	agreement, err := tools.GetSwapinAgreement(pkey)
+	if err != nil {
+		return "", false
+	}
+	sp, ok := agreement.(*SolanaSwapinAgreement)
+	if !ok {
+		return "", false
+	}
+	bindAddress = sp.SolanaBindAddress
+
+	dstBridge := tokens.DstBridge
+	if dstBridge.IsValidAddress(bindAddress) {
+		return bindAddress, true
+	}
+	return "", false
+}
+
+func (b *Bridge) getETH2SolanaSwapoutAgreementBindAddress(solanaAddress string) {
+	solanaAddress = strings.ToLower(solanaAddress)
+	pkey := SolanaDepositAddressPrefix + solanaAddress
+	agreement, err := tools.GetSwapinAgreement(pkey)
+	if err != nil {
+		return "", false
+	}
+	sp, ok := agreement.(*SolanaSwapinAgreement)
+	if !ok {
+		return "", false
+	}
+	bindAddress = sp.ETHBindAddress
+
+	srcBridge := tokens.SrcBridge
+	if srcBridge.IsValidAddress(bindAddress) {
 		return bindAddress, true
 	}
 	return "", false

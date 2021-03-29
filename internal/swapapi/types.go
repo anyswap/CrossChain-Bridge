@@ -23,8 +23,8 @@ type LatestScanInfo = mongodb.MgoLatestScanInfo
 // RegisteredAddress type alias
 type RegisteredAddress = mongodb.MgoRegisteredAddress
 
-// SwapinPromise type alias
-type SwapinPromise = tokens.SwapinPromise
+// SwapAgreement type alias
+type SwapAgreement = tokens.SwapAgreement
 
 // ServerInfo server info
 type ServerInfo struct {

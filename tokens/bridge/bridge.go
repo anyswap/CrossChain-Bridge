@@ -15,6 +15,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
+	"github.com/anyswap/CrossChain-Bridge/tokens/solana"
 	"github.com/anyswap/CrossChain-Bridge/tokens/terra"
 )
 
@@ -38,6 +39,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return cosmos.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "TERRA"):
 		return terra.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "SOLANA"):
+		return solana.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
 		return nil

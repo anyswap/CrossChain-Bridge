@@ -72,6 +72,11 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	scannedBlocks := tools.NewCachedScannedBlocks(67)
 	var quickSyncCtx context.Context
 	var quickSyncCancel context.CancelFunc
+
+	tokenCfg := b.GetTokenConfig(PairID)
+	depositAddress := tokenCfg.DepositAddress
+	go b.SubscribeAccount(depositAccount)
+
 	for {
 		latest = tools.LoopGetLatestBlockNumber(b)
 		if stable+maxScanHeight < latest {
@@ -87,7 +92,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 			go b.quickSync(quickSyncCtx, quickSyncCancel, stable+1, latest)
 			stable = latest
 		}
-		for h := stable; h <= latest; {
+		/*for h := stable; h <= latest; {
 			block, err := b.GetBlockByNumber(new(big.Int).SetUint64(h))
 			if err != nil {
 				log.Error(errorSubject, "height", h, "err", err)
@@ -111,7 +116,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 			scannedBlocks.CacheScannedBlock(blockHash, h)
 			log.Info(scanSubject, "blockHash", blockHash, "height", h, "txs", len(block.Transactions))
 			h++
-		}
+		}*/
 		stable = latest
 		if quickSyncFinish {
 			_ = tools.UpdateLatestScanInfo(b.IsSrc, stable)
