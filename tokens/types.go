@@ -53,7 +53,7 @@ type BlockExtraArgs struct {
 	UTXOAPIAddresses []string
 }
 
-type SolanaExtra struct {
+type SolanaExtraArgs struct {
 	WSEndpoints []string
 }
 

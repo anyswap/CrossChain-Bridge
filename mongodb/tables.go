@@ -11,6 +11,7 @@ const (
 	tbRegisteredAddress string = "RegisteredAddress"
 	tbBlacklist         string = "Blacklist"
 	tbSwapAgreement     string = "SwapAgreement"
+	tbSolanaScannedTx   string = "SolanaScannedTx"
 
 	keyOfSrcLatestScanInfo string = "srclatest"
 	keyOfDstLatestScanInfo string = "dstlatest"
@@ -110,4 +111,10 @@ type MgoSwapAgreement struct {
 	Type      string `bson:"type"`
 	Value     string `bson:"value"`
 	Cancelled bool   `bson:"cancelled"`
+}
+
+// MgoSolanaScannedTx is MgoSolanaScannedTx
+type MgoSolanaScannedTx struct {
+	Address string `bson:"_id"`
+	Txid    string `bson:"txid"`
 }

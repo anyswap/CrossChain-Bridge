@@ -50,8 +50,48 @@ func (b *Bridge) getStartAndLatestHeight() (start, latest uint64) {
 	return start, latest
 }
 
-// StartChainTransactionScanJob scan job
 func (b *Bridge) StartChainTransactionScanJob() {
+	chainName := b.ChainConfig.BlockChain
+	log.Infof("[scanchain] start %v scan chain job", chainName)
+
+	// get addresses
+	tokenCfgs, pairIDs := tokens.FindTokenConfig(txRecipient, true)
+	if len(pairIDs) == 0 {
+		return
+	}
+
+	for i, pairID := range pairIDs {
+		tokenCfg := tokenCfgs[i]
+		depositAddress := tokenCfg.DepositAddress
+
+		// For every address, start a scanner
+		go func(depositAddress string) {
+			// get scanned tx
+			scanned := tools.GetLatestScannedSolanaTxid(depositAddress)
+			before := ""
+			for {
+				txs, err := b.SearchTxs(depositAddress, scanned, "")
+				if err != nil {
+					log.Warn("Scan solana tx error", "address", depositAddress, "error", err)
+					continue
+				}
+				if len(txs) > 0 {
+					scanned = txs[0]
+					err := tools.UpdateLatestScannedSolanaTxid(depositAddress, scanned)
+					if err != nil {
+						log.Warn("UpdateLatestScannedSolanaTxid error", "address", depositAddress, "txid", scanned, "error", err)
+					}
+				}
+				for _, txid := range txs {
+					go processTransactionWithTxid(txid)
+				}
+			}
+		}(depositAddress)
+	}
+}
+
+// StartChainTransactionScanJob2 scan job
+func (b *Bridge) StartChainTransactionScanJob2() {
 	chainName := b.ChainConfig.BlockChain
 	log.Infof("[scanchain] start %v scan chain job", chainName)
 
@@ -92,7 +132,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 			go b.quickSync(quickSyncCtx, quickSyncCancel, stable+1, latest)
 			stable = latest
 		}
-		/*for h := stable; h <= latest; {
+		for h := stable; h <= latest; {
 			block, err := b.GetBlockByNumber(new(big.Int).SetUint64(h))
 			if err != nil {
 				log.Error(errorSubject, "height", h, "err", err)
@@ -116,7 +156,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 			scannedBlocks.CacheScannedBlock(blockHash, h)
 			log.Info(scanSubject, "blockHash", blockHash, "height", h, "txs", len(block.Transactions))
 			h++
-		}*/
+		}
 		stable = latest
 		if quickSyncFinish {
 			_ = tools.UpdateLatestScanInfo(b.IsSrc, stable)

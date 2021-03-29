@@ -182,6 +182,38 @@ func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
 	return ""
 }
 
+// GetLatestScannedSolanaTxid get latest scanned solana txid
+func GetLatestScannedSolanaTxid(address string) string {
+	if mongodb.HasSession() {
+		for {
+			txid, err := mongodb.FindLatestSolanaTxid(address)
+			if err == nil {
+				log.Info("GetLatestScannedSolanaTxid", "txid", txid)
+				return txid
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
+	var result mongodb.MgoSolanaTxid
+	for {
+		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetLatestScannedSolanaTxid", address)
+		if err == nil {
+			txid := result.Txid
+			log.Info("GetLatestScannedSolanaTxid", "txid", txid)
+			return txid
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+// UpdateLatestScannedSolanaTxid updates latest scanned solana txid
+func UpdateLatestScannedSolanaTxid(address, txid string) error {
+	if dcrm.IsSwapServer() {
+		return mongodb.UpdateLatestSolanaTxid(address, txid)
+	}
+	return nil
+}
+
 // GetLatestScanHeight get latest scanned block height
 func GetLatestScanHeight(isSrc bool) uint64 {
 	if mongodb.HasSession() {

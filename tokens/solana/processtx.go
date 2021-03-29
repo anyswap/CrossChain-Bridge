@@ -7,6 +7,15 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
+func (b *Bridge) processTransactionWithTxid(txid string) {
+	tx, err := b.GetTransaction(txid)
+	if err != nil {
+		log.Warn("get tx failed", "txid", txid)
+		return
+	}
+	b.processTransaction(tx.(*GetConfirmedTransactonResult))
+}
+
 func (b *Bridge) processTransaction(tx *GetConfirmedTransactonResult) {
 	if b.IsSrc {
 		b.processSwapin(tx)

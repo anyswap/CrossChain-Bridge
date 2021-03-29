@@ -205,7 +205,7 @@ type AccountSubscription struct {
 
 func (s *AccountSubscription) Recv() (*solanaws.AccountResult, error) {
 	res, err := s.Subscription.Recv()
-	if res != nil, err == nil {
+	if res != nil || err == nil {
 		acctres, ok := res.(*solanaws.AccountResult)
 		if !ok {
 			return nil, errors.New("Account subscription result type error")
@@ -221,7 +221,7 @@ type SlotSubscription struct {
 
 func (s *SlotSubscription) Recv() (*solanaws.SlotResult, error) {
 	res, err := s.Subscription.Recv()
-	if res != nil, err == nil {
+	if res != nil || err == nil {
 		acctres, ok := res.(*solanaws.SlotResult)
 		if !ok {
 			return nil, errors.New("Account subscription result type error")
@@ -258,7 +258,7 @@ func (b *Bridge) SubscribeAccount(account string) (*AccountSubscription, error) 
 
 // SubscribeSlot subscribe slot
 func (b *Bridge) SubscribeSlot(account string) (*SlotSubscription, error) {
-	rpcError := &RPCError{[]error{}, "SubscribeAccount"}
+	rpcError := &RPCError{[]error{}, "SubscribeSlot"}
 	ctx := context.Background()
 	for _, endpoint := range getWSURLs() {
 		cli, err := ws.Dial(ctx, endpoint)
@@ -274,4 +274,64 @@ func (b *Bridge) SubscribeSlot(account string) (*SlotSubscription, error) {
 		return *SlotSubscription(sbscrpt), nil
 	}
 	return nil, rpcError.Error()
+}
+
+func (b *Bridge) searchTxs(address string, before, until string, limit uint64) (txs []string, err error) {
+	rpcError := &RPCError{[]error{}, "SearchTxs"}
+	acct, err := solana.PublicKeyFromBase58(address)
+	if err != nil {
+		rpcError.log(err)
+		return nil, rpcError.Error()
+	}
+
+	opts := &solanarpc.GetConfirmedSignaturesForAddress2Opts{
+		Limit: limit,
+	}
+	if until != "" {
+		opts.Until = until
+	}
+	if before != "" {
+		opts.Before = before
+	}
+
+	ctx := context.Background()
+	for _, cli := range getClients() {
+		res, err := cli.GetConfirmedSignaturesForAddress2(ctx, acct, opts)
+		if err != nil {
+			rpcError.log(err)
+			continue
+		}
+		txs = make([]string, 0)
+		for _, tx := range res {
+			txs = append(txs, tx.Signature)
+		}
+		return txs, nil
+	}
+	return nil, rpcError.Error()
+}
+
+// SearchTxs searches txs for address
+func (b *Bridge) SearchTxs(address string, start, end string) (txs []string, err error) {
+	before := end
+	util := start
+	limit := uint64(10)
+	txs = make([]string, 0)
+	for {
+		txs1, err := b.searchTxs(address, before, util, limit)
+		if err != nil {
+			return nil, err
+		}
+		txs = append(txs, txs1...)
+		if len(txs1) == 0 || strings.EqualFold(txs1[len(txs1)-1], util) {
+			break
+		}
+		before = txs[len(txs)-1]
+	}
+	if end != "" {
+		txs = append([]string{end}, txs...)
+	}
+	if start != "" {
+		txs = append(txs, start)
+	}
+	return txs, nil
 }
