@@ -53,7 +53,7 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 // VerifyTransaction impl
 func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if !b.IsSrc {
-		swapInfos, errs := b.verifySwapoutTxWithPairID(pairID, txHash, allowUnstable)
+		swapInfos, errs := b.verifySwapoutTxWithHash(txHash, allowUnstable)
 		// swapinfos have already aggregated
 		for i, swapInfo := range swapInfos {
 			if strings.EqualFold(swapInfo.PairID, pairID) {
@@ -75,14 +75,14 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 }
 
 func (b *Bridge) verifySwapinTx(tx *GetConfirmedTransactonResult, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
-	tokenCfgs, pairIDs := tokens.FindTokenConfig(txRecipient, true)
+	pairIDs := tokens.GetAllPairIDs()
 	if len(pairIDs) == 0 {
 		addSwapInfoConsiderError(nil, tokens.ErrTxWithWrongReceiver, &swapInfos, &errs)
 		return swapInfos, errs
 	}
 
-	for i, pairID := range pairIDs {
-		tokenCfg := tokenCfgs[i]
+	for _, pairID := range pairIDs {
+		tokenCfg := tokens.GetTokenConfig(pairID, b.IsSrc)
 
 		depositAddress := tokenCfg.DepositAddress
 		if tx.Meta.Err != nil {
@@ -154,14 +154,14 @@ func (b *Bridge) verifySwapinTxWithHash(txid string, allowUnstable bool) (swapIn
 }
 
 func (b *Bridge) verifySwapoutTx(tx *GetConfirmedTransactonResult, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
-	tokenCfgs, pairIDs := tokens.FindTokenConfig(txRecipient, true)
+	pairIDs := tokens.GetAllPairIDs()
 	if len(pairIDs) == 0 {
 		addSwapInfoConsiderError(nil, tokens.ErrTxWithWrongReceiver, &swapInfos, &errs)
 		return swapInfos, errs
 	}
 
-	for i, pairID := range pairIDs {
-		tokenCfg := tokenCfgs[i]
+	for _, pairID := range pairIDs {
+		tokenCfg := tokens.GetTokenConfig(pairID, b.IsSrc)
 
 		fmt.Printf("PairID: %v\nToken cfg: %+v\n", pairID, tokenCfg)
 		// TODO
@@ -181,62 +181,62 @@ func (b *Bridge) verifySwapoutTxWithHash(txid string, allowUnstable bool) (swapI
 	return b.verifySwapoutTx(txres, allowUnstable)
 }
 
-func (b *Bridge) getSolana2ETHSwapinBindAddress(solanaAddress string) (bindAddress string, ok bool) {
+func (b *Bridge) getSolana2ETHSwapinBindAddress(solanaAddress string) (ethAddress string, ok bool) {
 	solanaAddress = strings.ToLower(solanaAddress)
-	pkey := SolanaDepositAddressPrefix + solanaAddress
-	agreement, err := tools.GetSwapinAgreement(pkey)
+	pkey := SolanaAddressPrefix + solanaAddress
+	agreement, err := tools.GetSwapAgreement(pkey)
 	if err != nil {
 		return "", false
 	}
-	sp, ok := agreement.(*SolanaSwapinAgreement)
+	sp, ok := agreement.(*Solana2ETHSwapinAgreement)
 	if !ok {
 		return "", false
 	}
-	bindAddress = sp.ETHBindAddress
+	ethAddress = sp.ETHBindAddress
 
 	dstBridge := tokens.DstBridge
-	if dstBridge.IsValidAddress(bindAddress) {
-		return bindAddress, true
+	if dstBridge.IsValidAddress(ethAddress) {
+		return ethAddress, true
 	}
 	return "", false
 }
 
-func (b *Bridge) getETH2SolanaSwapinAgreementBindAddress(ethAddress string) {
+func (b *Bridge) getETH2SolanaSwapinAgreementBindAddress(ethAddress string) (solanaAddress string, ok bool) {
 	ethAddress = strings.ToLower(ethAddress)
 	pkey := ETHAddressPrefix + ethAddress
-	agreement, err := tools.GetSwapinAgreement(pkey)
+	agreement, err := tools.GetSwapAgreement(pkey)
 	if err != nil {
 		return "", false
 	}
-	sp, ok := agreement.(*SolanaSwapinAgreement)
+	sp, ok := agreement.(*ETH2SolanaSwapinAgreement)
 	if !ok {
 		return "", false
 	}
-	bindAddress = sp.SolanaBindAddress
+	solanaAddress = sp.SolanaBindAddress
 
 	dstBridge := tokens.DstBridge
-	if dstBridge.IsValidAddress(bindAddress) {
-		return bindAddress, true
+	if dstBridge.IsValidAddress(solanaAddress) {
+		return solanaAddress, true
 	}
 	return "", false
 }
 
-func (b *Bridge) getETH2SolanaSwapoutAgreementBindAddress(solanaAddress string) {
+func (b *Bridge) getETH2SolanaSwapoutAgreementBindAddress(solanaAddress string) (ethAddress string, ok bool) {
 	solanaAddress = strings.ToLower(solanaAddress)
-	pkey := SolanaDepositAddressPrefix + solanaAddress
-	agreement, err := tools.GetSwapinAgreement(pkey)
+	pkey := SolanaAddressPrefix + solanaAddress
+	agreement, err := tools.GetSwapAgreement(pkey)
 	if err != nil {
 		return "", false
 	}
-	sp, ok := agreement.(*SolanaSwapinAgreement)
+	sp, ok := agreement.(*ETH2SolanaSwapoutAgreement)
 	if !ok {
 		return "", false
 	}
-	bindAddress = sp.ETHBindAddress
+	ethAddress = sp.ETHBindAddress
 
 	srcBridge := tokens.SrcBridge
-	if srcBridge.IsValidAddress(bindAddress) {
-		return bindAddress, true
+	if srcBridge.IsValidAddress(ethAddress) {
+		return solanaAddress, true
 	}
 	return "", false
 }

@@ -11,9 +11,9 @@ Swapout				|	Read bind address from ETH tx data		|	ETH2SolanaSwapoutAgreement	|
 */
 
 const (
-	Solana2ETHSwapinAgreementType    = "Solana2ETHSwapinAgreement"
-	ETH2SolanaSwapinAgreementType    = "ETH2SolanaSwapinAgreement"
-	ETH2SolanaSwapinoutAgreementType = "ETH2SolanaSwapinoutAgreement"
+	Solana2ETHSwapinAgreementType  = "Solana2ETHSwapinAgreement"
+	ETH2SolanaSwapinAgreementType  = "ETH2SolanaSwapinAgreement"
+	ETH2SolanaSwapoutAgreementType = "ETH2SolanaSwapoutAgreement"
 )
 
 const (
@@ -50,7 +50,7 @@ func (p *ETH2SolanaSwapinAgreement) Key() string {
 }
 
 func (p *ETH2SolanaSwapinAgreement) Type() string {
-	return ETH2SolanaSwapAgreementType
+	return ETH2SolanaSwapinAgreementType
 }
 
 func (p *ETH2SolanaSwapinAgreement) Value() interface{} {
@@ -68,7 +68,7 @@ func (p *ETH2SolanaSwapoutAgreement) Key() string {
 }
 
 func (p *ETH2SolanaSwapoutAgreement) Type() string {
-	return ETH2SolanaSwapAgreementType
+	return ETH2SolanaSwapoutAgreementType
 }
 
 func (p *ETH2SolanaSwapoutAgreement) Value() interface{} {

@@ -392,3 +392,8 @@ func GetSwapAgreement(pkey string) (SwapAgreement, error) {
 	}
 	return ConvertMgoSwapAgreementToSwapAgreement(mp)
 }
+
+// GetLatestScannedSolanaTxid api
+func GetLatestScannedSolanaTxid(address string) string {
+	return mongodb.FindLatestSolanaTxid(address)
+}

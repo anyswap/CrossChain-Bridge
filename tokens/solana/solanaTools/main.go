@@ -23,8 +23,9 @@ import (
 func main() {
 	//key_test()
 	//tx_test()
-	GetLatestBlock()
+	//GetLatestBlock()
 	//SubscribeAccount()
+	SearchTxs()
 }
 
 func DecodeTransferData() {
@@ -260,5 +261,70 @@ func SubscribeSlot() {
 		res, err := sbscrpt.Recv()
 		checkError(err)
 		fmt.Printf("res: %+v\n", res)
+	}
+}
+
+func searchTxs(address string, before, until string, limit uint64) (txs []string, err error) {
+	acct, err := solana.PublicKeyFromBase58(address)
+	checkError(err)
+
+	opts := &rpc.GetConfirmedSignaturesForAddress2Opts{
+		Limit: limit,
+	}
+	if until != "" {
+		opts.Until = until
+	}
+	if before != "" {
+		opts.Before = before
+	}
+
+	ctx := context.Background()
+	var endpoint = "https://testnet.solana.com"
+	cli := rpc.NewClient(endpoint)
+
+	res, err := cli.GetConfirmedSignaturesForAddress2(ctx, acct, opts)
+	checkError(err)
+	txs = make([]string, 0)
+	for _, tx := range res {
+		txs = append(txs, tx.Signature)
+	}
+	return txs, nil
+}
+
+func searchAllTxs(address string, start, end string) (txs []string, err error) {
+	before := end
+	util := start
+	limit := uint64(5)
+	txs = make([]string, 0)
+	for {
+		txs1, err := searchTxs(address, before, util, limit)
+		if err != nil {
+			return nil, err
+		}
+		txs = append(txs, txs1...)
+		if len(txs1) == 0 || txs1[len(txs1)-1] == util {
+			break
+		}
+		before = txs[len(txs)-1]
+	}
+	if end != "" {
+		txs = append([]string{end}, txs...)
+	}
+	if start != "" {
+		txs = append(txs, start)
+	}
+	return txs, nil
+}
+
+func SearchTxs() {
+	address := "2z55nksdCojo3jDW5reezbZMEvBQmdgPvMa7djMn3vR4"
+	start := ""
+	//start := "67DUqEMTzRfr9WWrd28Sbdh1tYRhF9AFjSBDbARuaMzkV5GZ46wxnehDyMMGZVXogDQKoqhxspSvGQjWzXpcFT8C"
+	end := ""
+	//end := "3tvdDrKbRA7XCzc3aKAyKVHLTGuiU71mzXPCwDMWvU4NQtJBX7PNt9iDMbUh54BM9f9gqBSxBtSJpDvbF1wcRreP"
+	txs, err := searchAllTxs(address, start, end)
+	checkError(err)
+	for _, txid := range txs {
+		fmt.Printf("tx: %+v\n", txid)
 	}
 }

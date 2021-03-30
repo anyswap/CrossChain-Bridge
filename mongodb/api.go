@@ -714,3 +714,20 @@ func FindSwapAgreement(key string) (*MgoSwapAgreement, error) {
 	}
 	return &result, nil
 }
+
+// FindLatestSolanaTxid finds latest solana txid
+func FindLatestSolanaTxid(address string) string {
+	key := strings.ToLower(address)
+	var result MgoSolanaScannedTx
+	err := collSolanaScannedTx.FindId(key).One(&result)
+	if err != nil {
+		return ""
+	}
+	return result.Txid
+}
+
+func UpdateLatestSolanaTxid(addess, txid string) error {
+	key := strings.ToLower(addess)
+	_, err := collSolanaScannedTx.UpsertId(key, MgoSolanaScannedTx{key, txid})
+	return err
+}

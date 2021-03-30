@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 
 	bin "github.com/dfuse-io/binary"
 	"github.com/dfuse-io/solana-go"
@@ -28,10 +29,6 @@ func (b *Bridge) getClients() (clis []*solanarpc.Client) {
 
 func (b *Bridge) getURLs() (rpcURL []string) {
 	return b.GatewayConfig.APIAddress
-}
-
-func (b *Bridge) getWSURLs() (wsURL []string) {
-	return b.GatewayConfig.Extras.WSEndpoints
 }
 
 type RPCError struct {
@@ -199,79 +196,62 @@ func (b *Bridge) GetBlockByNumber(num *big.Int) (block *solanarpc.GetConfirmedBl
 	return nil, rpcError.Error()
 }
 
-type AccountSubscription struct {
-	solanaws.Subscription
-}
-
-func (s *AccountSubscription) Recv() (*solanaws.AccountResult, error) {
-	res, err := s.Subscription.Recv()
-	if res != nil, err == nil {
-		acctres, ok := res.(*solanaws.AccountResult)
-		if !ok {
-			return nil, errors.New("Account subscription result type error")
-		}
-		return acctres, nil
-	}
-	return nil, err
-}
-
-type SlotSubscription struct {
-	solanaws.Subscription
-}
-
-func (s *SlotSubscription) Recv() (*solanaws.SlotResult, error) {
-	res, err := s.Subscription.Recv()
-	if res != nil, err == nil {
-		acctres, ok := res.(*solanaws.SlotResult)
-		if !ok {
-			return nil, errors.New("Account subscription result type error")
-		}
-		return acctres, nil
-	}
-	return nil, err
-}
-
-// SubscribeAccount subscribe account
-func (b *Bridge) SubscribeAccount(account string) (*AccountSubscription, error) {
-	rpcError := &RPCError{[]error{}, "SubscribeAccount"}
-	acct, err := solana.PublicKeyFromBase58(account)
+func (b *Bridge) searchTxs(address string, before, until string, limit uint64) (txs []string, err error) {
+	rpcError := &RPCError{[]error{}, "SearchTxs"}
+	acct, err := solana.PublicKeyFromBase58(address)
 	if err != nil {
 		rpcError.log(err)
 		return nil, rpcError.Error()
 	}
+
+	opts := &solanarpc.GetConfirmedSignaturesForAddress2Opts{
+		Limit: limit,
+	}
+	if until != "" {
+		opts.Until = until
+	}
+	if before != "" {
+		opts.Before = before
+	}
+
 	ctx := context.Background()
-	for _, endpoint := range getWSURLs() {
-		cli, err := ws.Dial(ctx, endpoint)
+	for _, cli := range b.getClients() {
+		res, err := cli.GetConfirmedSignaturesForAddress2(ctx, acct, opts)
 		if err != nil {
 			rpcError.log(err)
 			continue
 		}
-		sbscrpt, err := cli.AccountSubscribe(acct, "finalized")
-		if err != nil {
-			rpcError.log(err)
-			continue
+		txs = make([]string, 0)
+		for _, tx := range res {
+			txs = append(txs, tx.Signature)
 		}
-		return *AccountSubscription(sbscrpt), nil
+		return txs, nil
 	}
 	return nil, rpcError.Error()
 }
 
-// SubscribeSlot subscribe slot
-func (b *Bridge) SubscribeSlot(account string) (*SlotSubscription, error) {
-	rpcError := &RPCError{[]error{}, "SubscribeAccount"}
-	ctx := context.Background()
-	for _, endpoint := range getWSURLs() {
-		cli, err := ws.Dial(ctx, endpoint)
+// SearchTxs searches txs for address
+func (b *Bridge) SearchTxs(address string, start, end string) (txs []string, err error) {
+	before := end
+	util := start
+	limit := uint64(10)
+	txs = make([]string, 0)
+	for {
+		txs1, err := b.searchTxs(address, before, util, limit)
 		if err != nil {
-			rpcError.log(err)
-			continue
+			return nil, err
 		}
-		sbscrpt, err := cli.SlotSubscribe()
-		if err != nil {
-			rpcError.log(err)
-			continue
+		txs = append(txs, txs1...)
+		if len(txs1) == 0 || strings.EqualFold(txs1[len(txs1)-1], util) {
+			break
 		}
-		return *SlotSubscription(sbscrpt), nil
+		before = txs[len(txs)-1]
 	}
-	return nil, rpcError.Error()
+	if end != "" {
+		txs = append([]string{end}, txs...)
+	}
+	if start != "" {
+		txs = append(txs, start)
+	}
+	return txs, nil
 }
