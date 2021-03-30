@@ -22,8 +22,8 @@ const (
 )
 
 type Solana2ETHSwapinAgreement struct {
-	SolanaDepositAddress string
-	ETHBindAddress       string
+	SolanaDepositAddress string `json:"solanadepositaddress"`
+	ETHBindAddress       string `json:"ethbindaddress"`
 }
 
 func (p *Solana2ETHSwapinAgreement) Key() string {
@@ -40,8 +40,8 @@ func (p *Solana2ETHSwapinAgreement) Value() interface{} {
 }
 
 type ETH2SolanaSwapinAgreement struct {
-	ETHDepositAddress string
-	SolanaBindAddress string
+	ETHDepositAddress string `json:"ethdepositaddress"`
+	SolanaBindAddress string `json:"solanabindaddress"`
 }
 
 func (p *ETH2SolanaSwapinAgreement) Key() string {
@@ -58,8 +58,8 @@ func (p *ETH2SolanaSwapinAgreement) Value() interface{} {
 }
 
 type ETH2SolanaSwapoutAgreement struct {
-	SolanaWithdrawAddress string
-	ETHBindAddress        string
+	SolanaWithdrawAddress string `json:"solanawithdrawaddress"`
+	ETHBindAddress        string `json:"ethbindaddress"`
 }
 
 func (p *ETH2SolanaSwapoutAgreement) Key() string {

@@ -238,6 +238,7 @@ func GetRegisteredAddress(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+/*
 // AddSwapAgreement handler
 func AddSwapAgreement(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -285,3 +286,4 @@ func GetSwapAgreement(w http.ResponseWriter, r *http.Request) {
 	res, err := swapapi.GetSwapAgreement(pkey)
 	writeResponse(w, res, err)
 }
+*/

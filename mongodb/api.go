@@ -660,8 +660,8 @@ func FindRegisteredAddress(key string) (*MgoRegisteredAddress, error) {
 // AddSwapAgreement add swapin agreement
 func AddSwapAgreement(ptype, pkey, pvalue string) error {
 	mp := &MgoSwapAgreement{
-		Key:       ptype,
-		Type:      pkey,
+		Type:      ptype,
+		Key:       pkey,
 		Value:     pvalue,
 		Cancelled: false,
 	}
