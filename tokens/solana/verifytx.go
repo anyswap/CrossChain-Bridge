@@ -86,41 +86,61 @@ func (b *Bridge) verifySwapinTx(tx *GetConfirmedTransactonResult, allowUnstable 
 
 		depositAddress := tokenCfg.DepositAddress
 		if tx.Meta.Err != nil {
-			return nil, []error{fmt.Errorf("%+v", tx.Meta.Err)}
+			swapInfos = append(swapInfos, &tokens.TxSwapInfo{PairID: pairID})
+			errs = append(errs, fmt.Errorf("Solana tx error: %v", tx.Meta.Err))
+			break
 		}
 		if len(tx.Transaction.Signatures) < 1 {
-			return nil, []error{fmt.Errorf("Unexpected error, no signature")}
+			swapInfos = append(swapInfos, &tokens.TxSwapInfo{PairID: pairID})
+			errs = append(errs, fmt.Errorf("Unexpected, no signature"))
+			break
 		}
 		for _, ins := range tx.Transaction.Message.Instructions {
 			if int(ins.ProgramIDIndex) >= len(tx.Transaction.Message.AccountKeys) {
+				swapInfos = append(swapInfos, &tokens.TxSwapInfo{PairID: pairID})
+				errs = append(errs, fmt.Errorf("Unexpected, wrong program ID index"))
 				continue
 			}
 			if tx.Transaction.Message.AccountKeys[ins.ProgramIDIndex] != system.PROGRAM_ID {
+				swapInfos = append(swapInfos, &tokens.TxSwapInfo{PairID: pairID})
+				errs = append(errs, fmt.Errorf("Program ID not match"))
 				continue
 			}
 			if len(ins.Accounts) != 2 {
+				swapInfos = append(swapInfos, &tokens.TxSwapInfo{PairID: pairID})
+				errs = append(errs, fmt.Errorf("Tx has not enough account keys"))
 				continue
 			}
 			to := tx.Transaction.Message.AccountKeys[ins.Accounts[1]]
 			if strings.EqualFold(to.String(), depositAddress) == false {
+				swapInfos = append(swapInfos, &tokens.TxSwapInfo{PairID: pairID})
+				errs = append(errs, fmt.Errorf("Tx recipient not match"))
 				continue
 			}
 			from := tx.Transaction.Message.AccountKeys[ins.Accounts[0]]
 			bind, ok := b.getSolana2ETHSwapinBindAddress(from.String())
 			if !ok {
+				swapInfos = append(swapInfos, &tokens.TxSwapInfo{PairID: pairID})
+				errs = append(errs, fmt.Errorf("Bind address not found or invalid"))
 				continue
 			}
 			if len(ins.Data) < 1 {
+				swapInfos = append(swapInfos, &tokens.TxSwapInfo{PairID: pairID})
+				errs = append(errs, fmt.Errorf("No transfer data"))
 				continue
 			}
 			if ins.Data[0] != byte(0x2) {
 				// Transfer prefix
+				swapInfos = append(swapInfos, &tokens.TxSwapInfo{PairID: pairID})
+				errs = append(errs, fmt.Errorf("Transfer data prefix is not 0x2: %v", ins.Data[0]))
 				continue
 			}
 			lamports := new(bin.Uint64)
 			decoder := bin.NewDecoder(ins.Data[4:])
 			err := decoder.Decode(lamports)
 			if err != nil {
+				swapInfos = append(swapInfos, &tokens.TxSwapInfo{PairID: pairID})
+				errs = append(errs, fmt.Errorf("Decode transfer data error: %v", err))
 				continue
 			}
 			value := new(big.Int).SetUint64(uint64(*lamports))
@@ -136,9 +156,10 @@ func (b *Bridge) verifySwapinTx(tx *GetConfirmedTransactonResult, allowUnstable 
 				Value:     value,
 			}
 			swapInfos = append(swapInfos, swapInfo)
+			errs = append(errs, nil)
 		}
 	}
-	return swapInfos, nil
+	return swapInfos, errs
 }
 
 func (b *Bridge) verifySwapinTxWithHash(txid string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
