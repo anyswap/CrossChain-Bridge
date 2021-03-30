@@ -10,6 +10,7 @@ import (
 	bin "github.com/dfuse-io/binary"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
@@ -55,20 +56,19 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	log.Infof("[scanchain] start %v scan chain job", chainName)
 
 	// get addresses
-	tokenCfgs, pairIDs := tokens.FindTokenConfig(txRecipient, true)
+	pairIDs := tokens.GetAllPairIDs()
 	if len(pairIDs) == 0 {
 		return
 	}
 
-	for i, pairID := range pairIDs {
-		tokenCfg := tokenCfgs[i]
+	for _, pairID := range pairIDs {
+		tokenCfg := tokens.GetTokenConfig(pairID, b.IsSrc)
 		depositAddress := tokenCfg.DepositAddress
 
 		// For every address, start a scanner
 		go func(depositAddress string) {
 			// get scanned tx
 			scanned := tools.GetLatestScannedSolanaTxid(depositAddress)
-			before := ""
 			for {
 				txs, err := b.SearchTxs(depositAddress, scanned, "")
 				if err != nil {
@@ -83,7 +83,7 @@ func (b *Bridge) StartChainTransactionScanJob() {
 					}
 				}
 				for _, txid := range txs {
-					go processTransactionWithTxid(txid)
+					go b.processTransactionWithTxid(txid)
 				}
 			}
 		}(depositAddress)
@@ -112,10 +112,6 @@ func (b *Bridge) StartChainTransactionScanJob2() {
 	scannedBlocks := tools.NewCachedScannedBlocks(67)
 	var quickSyncCtx context.Context
 	var quickSyncCancel context.CancelFunc
-
-	tokenCfg := b.GetTokenConfig(PairID)
-	depositAddress := tokenCfg.DepositAddress
-	go b.SubscribeAccount(depositAccount)
 
 	for {
 		latest = tools.LoopGetLatestBlockNumber(b)

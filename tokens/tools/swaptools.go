@@ -185,20 +185,13 @@ func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
 // GetLatestScannedSolanaTxid get latest scanned solana txid
 func GetLatestScannedSolanaTxid(address string) string {
 	if mongodb.HasSession() {
-		for {
-			txid, err := mongodb.FindLatestSolanaTxid(address)
-			if err == nil {
-				log.Info("GetLatestScannedSolanaTxid", "txid", txid)
-				return txid
-			}
-			time.Sleep(1 * time.Second)
-		}
+		return mongodb.FindLatestSolanaTxid(address)
 	}
-	var result mongodb.MgoSolanaTxid
+	var result = ""
 	for {
 		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetLatestScannedSolanaTxid", address)
 		if err == nil {
-			txid := result.Txid
+			txid := result
 			log.Info("GetLatestScannedSolanaTxid", "txid", txid)
 			return txid
 		}

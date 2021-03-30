@@ -395,5 +395,5 @@ func GetSwapAgreement(pkey string) (SwapAgreement, error) {
 
 // GetLatestScannedSolanaTxid api
 func GetLatestScannedSolanaTxid(address string) string {
-	return mongodb.FindP2shBindAddress(address)
+	return mongodb.FindLatestSolanaTxid(address)
 }

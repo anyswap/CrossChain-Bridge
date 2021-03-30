@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dfuse-io/solana-go"
+
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -20,15 +22,18 @@ func (b *Bridge) RegisterCDC(isSrc bool) {
 	if isSrc {
 		tokens.TokenCDC.RegisterConcrete(&Solana2ETHSwapinAgreement{}, Solana2ETHSwapinAgreementType, nil)
 	} else {
-		tokens.TokenCDC.RegisterConcrete(&ETH2SolanaSwapAgreement{}, ETH2SolanaSwapAgreementType, nil)
+		tokens.TokenCDC.RegisterConcrete(&ETH2SolanaSwapinAgreement{}, ETH2SolanaSwapinAgreementType, nil)
+		tokens.TokenCDC.RegisterConcrete(&ETH2SolanaSwapoutAgreement{}, ETH2SolanaSwapoutAgreementType, nil)
 	}
 }
 
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	return &Bridge{
+	b := &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
 	}
+	b.RegisterCDC(isSrc)
+	return b
 }
 
 // SetChainAndGateway set chain and gateway config

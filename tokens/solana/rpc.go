@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 
 	bin "github.com/dfuse-io/binary"
 	"github.com/dfuse-io/solana-go"
@@ -28,10 +29,6 @@ func (b *Bridge) getClients() (clis []*solanarpc.Client) {
 
 func (b *Bridge) getURLs() (rpcURL []string) {
 	return b.GatewayConfig.APIAddress
-}
-
-func (b *Bridge) getWSURLs() (wsURL []string) {
-	return b.GatewayConfig.Extras.WSEndpoints
 }
 
 type RPCError struct {
@@ -199,83 +196,6 @@ func (b *Bridge) GetBlockByNumber(num *big.Int) (block *solanarpc.GetConfirmedBl
 	return nil, rpcError.Error()
 }
 
-type AccountSubscription struct {
-	solanaws.Subscription
-}
-
-func (s *AccountSubscription) Recv() (*solanaws.AccountResult, error) {
-	res, err := s.Subscription.Recv()
-	if res != nil || err == nil {
-		acctres, ok := res.(*solanaws.AccountResult)
-		if !ok {
-			return nil, errors.New("Account subscription result type error")
-		}
-		return acctres, nil
-	}
-	return nil, err
-}
-
-type SlotSubscription struct {
-	solanaws.Subscription
-}
-
-func (s *SlotSubscription) Recv() (*solanaws.SlotResult, error) {
-	res, err := s.Subscription.Recv()
-	if res != nil || err == nil {
-		acctres, ok := res.(*solanaws.SlotResult)
-		if !ok {
-			return nil, errors.New("Account subscription result type error")
-		}
-		return acctres, nil
-	}
-	return nil, err
-}
-
-// SubscribeAccount subscribe account
-func (b *Bridge) SubscribeAccount(account string) (*AccountSubscription, error) {
-	rpcError := &RPCError{[]error{}, "SubscribeAccount"}
-	acct, err := solana.PublicKeyFromBase58(account)
-	if err != nil {
-		rpcError.log(err)
-		return nil, rpcError.Error()
-	}
-	ctx := context.Background()
-	for _, endpoint := range getWSURLs() {
-		cli, err := ws.Dial(ctx, endpoint)
-		if err != nil {
-			rpcError.log(err)
-			continue
-		}
-		sbscrpt, err := cli.AccountSubscribe(acct, "finalized")
-		if err != nil {
-			rpcError.log(err)
-			continue
-		}
-		return *AccountSubscription(sbscrpt), nil
-	}
-	return nil, rpcError.Error()
-}
-
-// SubscribeSlot subscribe slot
-func (b *Bridge) SubscribeSlot(account string) (*SlotSubscription, error) {
-	rpcError := &RPCError{[]error{}, "SubscribeSlot"}
-	ctx := context.Background()
-	for _, endpoint := range getWSURLs() {
-		cli, err := ws.Dial(ctx, endpoint)
-		if err != nil {
-			rpcError.log(err)
-			continue
-		}
-		sbscrpt, err := cli.SlotSubscribe()
-		if err != nil {
-			rpcError.log(err)
-			continue
-		}
-		return *SlotSubscription(sbscrpt), nil
-	}
-	return nil, rpcError.Error()
-}
-
 func (b *Bridge) searchTxs(address string, before, until string, limit uint64) (txs []string, err error) {
 	rpcError := &RPCError{[]error{}, "SearchTxs"}
 	acct, err := solana.PublicKeyFromBase58(address)
@@ -295,7 +215,7 @@ func (b *Bridge) searchTxs(address string, before, until string, limit uint64) (
 	}
 
 	ctx := context.Background()
-	for _, cli := range getClients() {
+	for _, cli := range b.getClients() {
 		res, err := cli.GetConfirmedSignaturesForAddress2(ctx, acct, opts)
 		if err != nil {
 			rpcError.log(err)

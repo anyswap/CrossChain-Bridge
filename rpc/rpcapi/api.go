@@ -321,10 +321,8 @@ func (s *RPCAPI) GetSwapAgreement(r *http.Request, pkey *string, result swapapi.
 }
 
 // GetLatestScanInfo api
-func (s *RPCAPI) GetLatestScannedSolanaTxid(r *http.Request, address string, result *swapapi.LatestScanInfo) error {
-	res, err := swapapi.GetLatestScannedSolanaTxid(address)
-	if err == nil && res != nil {
-		*result = *res
-	}
-	return err
+func (s *RPCAPI) GetLatestScannedSolanaTxid(r *http.Request, address string, result *string) error {
+	res := swapapi.GetLatestScannedSolanaTxid(address)
+	*result = res
+	return nil
 }
