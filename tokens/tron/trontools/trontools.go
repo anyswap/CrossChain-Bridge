@@ -102,7 +102,8 @@ var (
 
 func ethToTron(ctx *cli.Context) error {
 	ethAddress := ctx.String(ethFlag.Name)
-	tronaddr := tronaddress.Address(common.HexToAddress(ethAddress).Bytes())
+
+	tronaddr := tronaddress.Address(append([]byte{0x41}, common.HexToAddress(ethAddress).Bytes()...))
 	fmt.Println(tronaddr.String())
 	return nil
 }
