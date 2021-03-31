@@ -342,11 +342,12 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 
 // CalcAndStoreValue calc and store value (minus duplicate calculation)
 func (c *TokenConfig) CalcAndStoreValue() {
-	c.maxSwap = ToBits(*c.MaximumSwap, *c.Decimals)
-	c.minSwap = ToBits(*c.MinimumSwap, *c.Decimals)
+	smallBiasValue := 0.0001
+	c.maxSwap = ToBits(*c.MaximumSwap+smallBiasValue, *c.Decimals)
+	c.minSwap = ToBits(*c.MinimumSwap-smallBiasValue, *c.Decimals)
 	c.maxSwapFee = ToBits(*c.MaximumSwapFee, *c.Decimals)
 	c.minSwapFee = ToBits(*c.MinimumSwapFee, *c.Decimals)
-	c.bigValThreshhold = ToBits(*c.BigValueThreshold+0.0001, *c.Decimals)
+	c.bigValThreshhold = ToBits(*c.BigValueThreshold+smallBiasValue, *c.Decimals)
 }
 
 // GetDcrmAddressPrivateKey get private key
