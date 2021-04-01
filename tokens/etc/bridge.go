@@ -79,6 +79,7 @@ func (b *Bridge) VerifyChainID() {
 		log.Fatalf("unsupported etc network %v", networkID)
 	}
 
+	b.SignerChainID = chainID
 	b.Signer = types.MakeSigner("EIP155", chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)

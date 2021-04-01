@@ -22,7 +22,8 @@ const (
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
 	*NonceSetterBase
-	Signer types.Signer
+	Signer        types.Signer
+	SignerChainID *big.Int
 }
 
 // NewCrossChainBridge new bridge
@@ -89,6 +90,7 @@ func (b *Bridge) VerifyChainID() {
 		log.Fatalf("unsupported ethereum network %v", networkID)
 	}
 
+	b.SignerChainID = chainID
 	b.Signer = types.MakeSigner("EIP155", chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
