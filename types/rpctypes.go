@@ -26,7 +26,7 @@ type RPCBlock struct {
 	Extra           *hexutil.Bytes  `json:"extraData"`
 	MixDigest       *common.Hash    `json:"mixHash"`
 	Nonce           *hexutil.Bytes  `json:"nonce"`
-	Size            interface{}     `json:"size"`
+	Size            interface{}     `json:"size"` // unexpect maybe string or number
 	TotalDifficulty *hexutil.Big    `json:"totalDifficulty"`
 	Transactions    []*common.Hash  `json:"transactions"`
 	Uncles          []*common.Hash  `json:"uncles"`
@@ -39,7 +39,7 @@ type RPCTransaction struct {
 	BlockNumber      *hexutil.Big    `json:"blockNumber,omitempty"`
 	BlockHash        *common.Hash    `json:"blockHash,omitempty"`
 	From             *common.Address `json:"from,omitempty"`
-	AccountNonce     *hexutil.Uint64 `json:"nonce"`
+	AccountNonce     interface{}     `json:"nonce"` // unexpect RSK has leading zero (eg. 0x01)
 	Price            *hexutil.Big    `json:"gasPrice"`
 	GasLimit         *hexutil.Uint64 `json:"gas"`
 	Recipient        *common.Address `json:"to"`
