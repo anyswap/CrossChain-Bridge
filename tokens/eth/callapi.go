@@ -242,6 +242,21 @@ func (b *Bridge) NetworkID() (*big.Int, error) {
 	return nil, err
 }
 
+// GetSignerChainID default way to get signer chain id
+// use chain ID first, if missing then use network ID instead.
+// normally this way works, but sometimes it failed (eg. ETC),
+// then we should overwrite this function
+func (b *Bridge) GetSignerChainID() (*big.Int, error) {
+	chainID, err := b.ChainID()
+	if err != nil {
+		return nil, err
+	}
+	if chainID.Sign() != 0 {
+		return chainID, nil
+	}
+	return b.NetworkID()
+}
+
 // GetCode call eth_getCode
 func (b *Bridge) GetCode(contract string) ([]byte, error) {
 	gateway := b.GatewayConfig

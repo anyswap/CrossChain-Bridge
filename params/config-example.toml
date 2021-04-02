@@ -1,5 +1,7 @@
 # a short string to identify the bridge
 Identifier = "BTC2ETH"
+# if users should register their address before swapping
+MustRegisterAccount = false
 
 # administrators who can do admin work like maintain blacklist etc.
 Admins = [

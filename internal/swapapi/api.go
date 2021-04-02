@@ -39,11 +39,12 @@ func GetServerInfo() (*ServerInfo, error) {
 		return nil, nil
 	}
 	return &ServerInfo{
-		Identifier: config.Identifier,
-		SrcChain:   config.SrcChain,
-		DestChain:  config.DestChain,
-		PairIDs:    tokens.GetAllPairIDs(),
-		Version:    params.VersionWithMeta,
+		Identifier:          config.Identifier,
+		MustRegisterAccount: config.MustRegisterAccount,
+		SrcChain:            config.SrcChain,
+		DestChain:           config.DestChain,
+		PairIDs:             tokens.GetAllPairIDs(),
+		Version:             params.VersionWithMeta,
 	}, nil
 }
 
