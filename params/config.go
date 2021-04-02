@@ -37,6 +37,7 @@ type ServerConfig struct {
 	Dcrm                *DcrmConfig            `toml:",omitempty" json:",omitempty"`
 	Oracle              *OracleConfig          `toml:",omitempty" json:",omitempty"`
 	BtcExtra            *tokens.BtcExtraConfig `toml:",omitempty" json:",omitempty"`
+	Extra               *ExtraConfig           `toml:",omitempty" json:",omitempty"`
 	Admins              []string               `toml:",omitempty" json:",omitempty"`
 }
 
@@ -77,6 +78,11 @@ type MongoDBConfig struct {
 	DBName   string
 	UserName string `json:"-"`
 	Password string `json:"-"`
+}
+
+// ExtraConfig extra config
+type ExtraConfig struct {
+	MinReserveFee string
 }
 
 // GetAPIPort get api service port
@@ -121,6 +127,11 @@ func GetConfig() *ServerConfig {
 // SetConfig set config items
 func SetConfig(config *ServerConfig) {
 	serverConfig = config
+}
+
+// GetExtraConfig get extra config
+func GetExtraConfig() *ExtraConfig {
+	return GetConfig().Extra
 }
 
 // LoadConfig load config

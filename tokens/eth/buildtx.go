@@ -17,8 +17,7 @@ var (
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
 
-	defReserveGasFee = big.NewInt(1e16) // 0.01 ETH
-
+	minReserveFee  *big.Int
 	latestGasPrice *big.Int
 )
 
@@ -118,7 +117,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		needValue = value
 	}
 	if args.SwapType != tokens.NoSwapType {
-		needValue = new(big.Int).Add(needValue, defReserveGasFee)
+		needValue = new(big.Int).Add(needValue, getMinReserveFee())
 	} else {
 		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
@@ -136,6 +135,17 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		"gasLimit", gasLimit, "gasPrice", gasPrice, "data", common.ToHex(input))
 
 	return rawTx, nil
+}
+
+func getMinReserveFee() *big.Int {
+	if minReserveFee != nil {
+		return minReserveFee
+	}
+	if params.GetExtraConfig() == nil || params.GetExtraConfig().MinReserveFee == "" {
+		minReserveFee = big.NewInt(1e16) // default 0.01 ETH
+	}
+	minReserveFee, _ = new(big.Int).SetString(params.GetExtraConfig().MinReserveFee, 10)
+	return minReserveFee
 }
 
 func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraArgs, err error) {
