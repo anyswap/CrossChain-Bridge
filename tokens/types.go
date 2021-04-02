@@ -119,6 +119,16 @@ func (c *TokenConfig) IsProxyErc20() bool {
 	return strings.EqualFold(c.ID, "ProxyERC20")
 }
 
+// IsTrc20 return if token is trc20
+func (c *TokenConfig) IsTrc20() bool {
+	return strings.EqualFold(c.ID, "ERC20") || c.IsProxyTrc20()
+}
+
+// IsProxyTrc20 return if token is proxy contract of trc20
+func (c *TokenConfig) IsProxyTrc20() bool {
+	return strings.EqualFold(c.ID, "ProxyTRC20")
+}
+
 // SwapType type
 type SwapType uint32
 

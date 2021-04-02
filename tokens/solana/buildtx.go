@@ -16,7 +16,6 @@ import (
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var (
 		pairID   = args.PairID
-		tokenCfg = b.GetTokenConfig(pairID)
 		from     = args.From
 		to       = args.Bind
 		amount   = args.Value

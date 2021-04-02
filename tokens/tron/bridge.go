@@ -13,6 +13,12 @@ type Bridge struct {
 	*tokens.CrossChainBridgeBase
 }
 
+const (
+	PairID = "TRX"
+	TRC10TokenType = "TRC10"
+	TRC20TokenType = "TRC20"
+)
+
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	tokens.IsSwapoutToStringAddress = true
@@ -52,21 +58,25 @@ func (b *Bridge) InitLatestBlockNumber() {
 
 // VerifyTokenConfig verify token config
 func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
+	if tokenCfg.ContractAddress != "" {
+		if !b.IsValidAddress(tokenCfg.ContractAddress) {
+			return fmt.Errorf("invalid contract address: %v", tokenCfg.ContractAddress)
+		}
+		switch {
+		case !b.IsSrc:
+			if err := b.VerifyMbtcContractAddress(tokenCfg.ContractAddress); err != nil {
+				return fmt.Errorf("wrong contract address: %v, %v", tokenCfg.ContractAddress, err)
+			}
+		case tokenCfg.IsTrc20():
+			if err := b.VerifyTrc20ContractAddress(tokenCfg.ContractAddress, tokenCfg.ContractCodeHash, tokenCfg.IsProxyErc20()); err != nil {
+				return fmt.Errorf("wrong contract address: %v, %v", tokenCfg.ContractAddress, err)
+			}
+		default:
+			return fmt.Errorf("unsupported type of contract address '%v' in source chain, please assign SrcToken.ID (eg. ERC20) in config file", tokenCfg.ContractAddress)
+		}
+		log.Info("verify contract address pass", "address", tokenCfg.ContractAddress)
+	} else if tokenCfg.ID != "TRX" {
+		return fmt.Errorf("token ID is not TRX and contract address is not given")
+	}
 	return nil
-	/*if tokenCfg.PrivateKeyType != tokens.ED25519KeyType {
-		return fmt.Errorf("solana private key type must be ed25519")
-	}
-	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
-		return fmt.Errorf("invalid dcrm address (not p2pkh): %v", tokenCfg.DcrmAddress)
-	}
-	if !b.IsValidAddress(tokenCfg.DepositAddress) {
-		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
-	}
-	if strings.EqualFold(tokenCfg.Symbol, "SOL") && *tokenCfg.Decimals != 9 {
-		return fmt.Errorf("invalid decimals for SOL: want 9 but have %v", *tokenCfg.Decimals)
-	}
-	if _, err := solana.PublicKeyFromBase58(tokenCfg.ContractAddress); err != nil {
-		return fmt.Errorf("invalid solana program id (contract address)")
-	}
-	return nil*/
 }

@@ -18,15 +18,15 @@ import (
 
 pubkey to address
 ./trontools pubkeyToAddress --pubkey 04d38309dfdfd9adf129287b68cf2e1f1124e0cbc40cc98f94e5f2d23c26712fa3b33d63280dd1448319a6a4f4111722d6b3a730ebe07652ed2b3770947b3de2e2
-2ZNCnWr36489CgAfRbFJNCs6yF7P4D3FJ
+TBXaCqtaBpB5JNjoFhExpWu11kzRZ956Ay
 
 tron to eth
-./trontools tronToEth --tron 2ZNCnWr36489CgAfRbFJNCs6yF7P4D3FJ
+./trontools tronToEth --tron TBXaCqtaBpB5JNjoFhExpWu11kzRZ956Ay
 0x111722d6b3a730ebe07652eD2B3770947b3DE2E2
 
 eth to tron
 ./trontools ethToTron --eth 0x111722d6b3a730ebe07652eD2B3770947b3DE2E2
-2ZNCnWr36489CgAfRbFJNCs6yF7P4D3FJ
+TBXaCqtaBpB5JNjoFhExpWu11kzRZ956Ay
 
 */
 
@@ -126,7 +126,7 @@ func pubkeyToAddress(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	tronaddr := tronaddress.Address(bz[len(bz)-20:])
+	tronaddr := tronaddress.Address(append([]byte{0x41}, bz[len(bz)-20:]...))
 	fmt.Println(tronaddr)
 	return nil
 }
