@@ -63,6 +63,15 @@ func CalcTxHash(tx *core.Transaction) string {
 	return txhash
 }
 
+func GetTxData(tx *core.Transaction) []byte {
+	inputrawdata := tx.GetRawData()
+	rawData, err := proto.Marshal(tx.GetRawData())
+	if err != nil {
+		return []byte{}
+	}
+	return rawData
+}
+
 // VerifyTransaction impl
 func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if !b.IsSrc {

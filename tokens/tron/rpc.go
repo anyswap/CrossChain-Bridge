@@ -398,3 +398,25 @@ func (b *Bridge) GetBlockByLimitNext(start, end int64) (res *api.BlockListExtent
 	}
 	return res, nil
 }
+
+// BroadcastTx broadcast tx to network
+func (b *Bridge) BroadcastTx(tx core.Transaction) (err error) {
+	rpcError := &RPCError{[]error{}, "BroadcastTx"}
+	for _, cli := range b.getClients() {
+		err = cli.Start(grpc.WithInsecure())
+		if err != nil {
+			rpcError.Log(err)
+			continue
+		}
+		res, err := cli.Broadcast()
+		if err == nil {
+			cli.Stop()
+			if result.Code != 0 {
+				rpcError.Log(fmt.Errorf("bad transaction: %v", string(res.GetMessage())))
+			}
+			return nil
+		}
+		rpcError.Log(err)
+	}
+	return rpcError.Error()
+}

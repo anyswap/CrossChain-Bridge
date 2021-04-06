@@ -38,15 +38,15 @@ var timeout = time.Second * 15
 func main() {
 	// GetCode()
 
-	// BuildSwapinTx()
+	BuildSwapinTx()
 
 	// ScanBlock()
 
 	// CalcTxid()
 
-	//GetContractCode()
+	// GetContractCode()
 
-	GetTransaction()
+	// GetTransaction()
 }
 
 func GetTransaction() {
