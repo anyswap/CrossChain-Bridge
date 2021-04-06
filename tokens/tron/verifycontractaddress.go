@@ -1,9 +1,8 @@
-package eth
+package tron
 
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -84,8 +83,8 @@ func VerifyContractCodeParts(code []byte, codePartsSlice ...map[string][]byte) (
 	return nil
 }
 
-// VerifyErc20ContractCode verify erc20 contract code
-func VerifyErc20ContractCode(code []byte) (err error) {
+// VerifyTrc20ContractCode verify erc20 contract code
+func VerifyTrc20ContractCode(code []byte) (err error) {
 	return VerifyContractCodeParts(code, erc20CodeParts)
 }
 
@@ -94,15 +93,15 @@ func VerifySwapContractCode(code []byte) (err error) {
 	return VerifyContractCodeParts(code, ExtCodeParts, erc20CodeParts)
 }
 
-// VerifyErc20ContractAddress verify erc20 contract
+// VerifyTrc20ContractAddress verify erc20 contract
 // For proxy contract delegating erc20 contract, verify its contract code hash
-func (b *Bridge) VerifyErc20ContractAddress(contract, codeHash string, isProxy bool) (err error) {
+func (b *Bridge) VerifyTrc20ContractAddress(contract, codeHash string, isProxy bool) (err error) {
 	code, err := b.getContractCode(contract)
 	if err != nil {
 		return err
 	}
 	if !isProxy {
-		err = VerifyErc20ContractCode(code)
+		err = VerifyTrc20ContractCode(code)
 		if err != nil {
 			return err
 		}

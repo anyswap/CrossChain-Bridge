@@ -20,6 +20,16 @@ const (
 )
 
 // NewCrossChainBridge new bridge
+/*
+	1. tron -> eth/fusion/bsc/heco
+		TRX -> anyTRX (ERC20)
+		TRC20 tokens -> anyTokens (ERC20)
+	2. eth/fusion/bsc/heco -> tron
+		ETH/FSN/BNB/HT -> anyETH/anyFSN/anyBNB/anyHT (TRC20)
+		USDT/Anyswap/BUSD/HUSD (ERC20) -> anyTokens (TRC20)
+	3. btc/ltc -> tron
+		BTC/LTC -> anyBTC/anyLTC (TRC20)
+*/
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	tokens.IsSwapoutToStringAddress = true
 	return &Bridge{

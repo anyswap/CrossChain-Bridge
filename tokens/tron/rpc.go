@@ -1,25 +1,36 @@
 package tron
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"time"
+	"math/big"
+	"strings"
 
 	"github.com/fbsobreira/gotron-sdk/pkg/client"
+	"github.com/fbsobreira/gotron-sdk/pkg/common"
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
+	"github.com/fbsobreira/gotron-sdk/pkg/proto/api"
+	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
+	"google.golang.org/grpc"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
 var GRPC_TIMEOUT = time.Second * 15
 
 func (b *Bridge) getClients() []*client.GrpcClient {
 	endpoints := b.GatewayConfig.APIAddress
-	clis = make([]*client.GrpcClient, 0)
+	clis := make([]*client.GrpcClient, 0)
 	for _, endpoint := range endpoints {
 		cli := client.NewGrpcClientWithTimeout(endpoint, GRPC_TIMEOUT)
 		if cli != nil {
 			clis = append(clis, cli)
 		}
 	}
+	return clis
 }
 
 type RPCError struct {
@@ -183,7 +194,7 @@ func (b *Bridge) GetErc20TotalSupply(tokenAddress string) (totalSupply *big.Int,
 		cli.Stop()
 	}
 	if totalSupply.Cmp(big.NewInt(0)) > 0 {
-		return balance, nil
+		return totalSupply, nil
 	}
 	return big.NewInt(0), rpcError.Error()
 }
@@ -213,7 +224,8 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 // GetTransactionStatus returns tx status
 func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 	status = &tokens.TxStatus{}
-	var tx *troncore.Transaction
+	var tx *core.TransactionInfo
+	rpcError := &RPCError{[]error{}, "GetTransactionStatus"}
 	for _, cli := range b.getClients() {
 		err := cli.Start(grpc.WithInsecure())
 		if err != nil {
@@ -227,13 +239,10 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 		}
 		cli.Stop()
 	}
-	if err != nil {
-		return nil, rpcError.Error()
-	}
 	status.Receipt = tx.Receipt
 	status.PrioriFinalized = false
-	status.BlockNumber = tx.BlockNumber
-	status.BlockTime = tx.BlockTimeStamp / 1000
+	status.BlockHeight = uint64(tx.BlockNumber)
+	status.BlockTime = uint64(tx.BlockTimeStamp / 1000)
 
 	if latest, err := b.GetLatestBlockNumber(); err == nil {
 		status.Confirmations = latest - status.BlockHeight
@@ -242,7 +251,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 }
 
 // BuildTransfer returns an unsigned tron transfer tx
-func (b *Bridge) BuildTransfer(from, to string, amount *big.NewInt, input []byte) (tx *core.Transaction, err error) {
+func (b *Bridge) BuildTransfer(from, to string, amount *big.Int, input []byte) (tx *core.Transaction, err error) {
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
 		return nil, errors.New("Amount exceed max uint64")
@@ -257,30 +266,34 @@ func (b *Bridge) BuildTransfer(from, to string, amount *big.NewInt, input []byte
 		return nil, err
 	}
 	rpcError := &RPCError{[]error{}, "BuildTransfer"}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), GRPC_TIMEOUT)
 	defer cancel()
 	for _, cli := range b.getClients() {
 		err = cli.Start(grpc.WithInsecure())
 		if err != nil {
-			rpcError.Log(err)
+			rpcError.log(err)
 			continue
 		}
-		tx, err = cli.Client.CreateTransaction2(ctx, contract)
+		txext, err1 := cli.Client.CreateTransaction2(ctx, contract)
+		err = err1
 		if err == nil {
 			cli.Stop()
+			cancel()
+			tx = txext.Transaction
 			break
 		}
-		rpcError(err)
+		rpcError.log(err)
 		cli.Stop()
+		cancel()
 	}
 	if err != nil {
-		return rpcError.Error()
+		return nil, rpcError.Error()
 	}
 	return tx, nil
 }
 
 // BuildTRC20Transfer returns an unsigned trc20 transfer tx
-func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string, amount *big.NewInt) (tx *core.Transaction, err error) {
+func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string, amount *big.Int) (tx *core.Transaction, err error) {
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
 		return nil, errors.New("Amount exceed max uint64")
@@ -298,40 +311,10 @@ func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string, amount *big.N
 	for _, cli := range b.getClients() {
 		err = cli.Start(grpc.WithInsecure())
 		if err != nil {
-			rpcError.Log(err)
+			rpcError.log(err)
 			continue
 		}
-		txext, err1 := cli.TRC20Send(from, to, tokenAddress, amount)
-		err = err1
-		if err == nil {
-			tx = txext.Transaction
-			cli.Stop()
-			break
-		}
-		rpcError(err)
-		cli.Stop()
-	}
-	if err != nil {
-		return rpcError.Error()
-	}
-	return tx, nil
-}
-
-// BuildSwapinTx returns an unsigned mapping asset minting tx
-func (b *Bridge) BuildSwapinTx(from, to, tokenAddress string, amount *big.NewInt, txhash string) (tx *core.Transaction, err error) {
-	n, _ := new(big.Int).SetString("18446740000000000000", 0)
-	if amount.Cmp(n) > 0 {
-		return nil, errors.New("Amount exceed max uint64")
-	}
-	param := fmt.Sprintf(`[{"string":"%s"},{"address":"%s"},{"uint256":"%v"}]`, txhash, to, amount.Uint64())
-	rpcError := &RPCError{[]error{}, "BuildSwapinTx"}
-	for _, cli := range b.getClients() {
-		err = cli.Start(grpc.WithInsecure())
-		if err != nil {
-			rpcError.Log(err)
-			continue
-		}
-		txext, err1 := cli.TriggerConstantContract(from, contract, method, param)
+		txext, err1 := cli.TRC20Send(from, to, tokenAddress, amount, 0)
 		err = err1
 		if err == nil {
 			tx = txext.Transaction
@@ -342,7 +325,38 @@ func (b *Bridge) BuildSwapinTx(from, to, tokenAddress string, amount *big.NewInt
 		cli.Stop()
 	}
 	if err != nil {
-		return rpcError.Error()
+		return nil, rpcError.Error()
+	}
+	return tx, nil
+}
+
+// BuildSwapinTx returns an unsigned mapping asset minting tx
+func (b *Bridge) BuildSwapinTx(from, to, tokenAddress string, amount *big.Int, txhash string) (tx *core.Transaction, err error) {
+	n, _ := new(big.Int).SetString("18446740000000000000", 0)
+	if amount.Cmp(n) > 0 {
+		return nil, errors.New("Amount exceed max uint64")
+	}
+	method := "Swapin"
+	param := fmt.Sprintf(`[{"string":"%s"},{"address":"%s"},{"uint256":"%v"}]`, txhash, to, amount.Uint64())
+	rpcError := &RPCError{[]error{}, "BuildSwapinTx"}
+	for _, cli := range b.getClients() {
+		err = cli.Start(grpc.WithInsecure())
+		if err != nil {
+			rpcError.log(err)
+			continue
+		}
+		txext, err1 := cli.TriggerConstantContract(from, tokenAddress, method, param)
+		err = err1
+		if err == nil {
+			tx = txext.Transaction
+			cli.Stop()
+			break
+		}
+		rpcError.log(err)
+		cli.Stop()
+	}
+	if err != nil {
+		return nil, rpcError.Error()
 	}
 	return tx, nil
 }
@@ -358,8 +372,9 @@ func (b *Bridge) GetCode(contractAddress string) (data []byte, err error) {
 	rpcError := &RPCError{[]error{}, "GetCode"}
 	for _, cli := range b.getClients() {
 		err = cli.Start(grpc.WithInsecure())
+		ctx, cancel := context.WithTimeout(context.Background(), GRPC_TIMEOUT)
 		if err != nil {
-			rpcError.Log(err)
+			rpcError.log(err)
 			continue
 		}
 		sm, err1 := cli.Client.GetContract(ctx, message)
@@ -367,9 +382,11 @@ func (b *Bridge) GetCode(contractAddress string) (data []byte, err error) {
 		if err == nil {
 			data = sm.Bytecode
 			cli.Stop()
+			cancel()
 			break
 		}
 		cli.Stop()
+		cancel()
 	}
 	if err != nil {
 		return nil, rpcError.Error()
@@ -383,7 +400,7 @@ func (b *Bridge) GetBlockByLimitNext(start, end int64) (res *api.BlockListExtent
 	for _, cli := range b.getClients() {
 		err = cli.Start(grpc.WithInsecure())
 		if err != nil {
-			rpcError.Log(err)
+			rpcError.log(err)
 			continue
 		}
 		res, err = cli.GetBlockByLimitNext(start, end)
@@ -391,7 +408,7 @@ func (b *Bridge) GetBlockByLimitNext(start, end int64) (res *api.BlockListExtent
 			cli.Stop()
 			break
 		}
-		rpcError.Log(err)
+		rpcError.log(err)
 	}
 	if err != nil {
 		return nil, rpcError.Error()
@@ -400,23 +417,23 @@ func (b *Bridge) GetBlockByLimitNext(start, end int64) (res *api.BlockListExtent
 }
 
 // BroadcastTx broadcast tx to network
-func (b *Bridge) BroadcastTx(tx core.Transaction) (err error) {
+func (b *Bridge) BroadcastTx(tx *core.Transaction) (err error) {
 	rpcError := &RPCError{[]error{}, "BroadcastTx"}
 	for _, cli := range b.getClients() {
 		err = cli.Start(grpc.WithInsecure())
 		if err != nil {
-			rpcError.Log(err)
+			rpcError.log(err)
 			continue
 		}
-		res, err := cli.Broadcast()
+		res, err := cli.Broadcast(tx)
 		if err == nil {
 			cli.Stop()
-			if result.Code != 0 {
-				rpcError.Log(fmt.Errorf("bad transaction: %v", string(res.GetMessage())))
+			if res.Code != 0 {
+				rpcError.log(fmt.Errorf("bad transaction: %v", string(res.GetMessage())))
 			}
 			return nil
 		}
-		rpcError.Log(err)
+		rpcError.log(err)
 	}
 	return rpcError.Error()
 }

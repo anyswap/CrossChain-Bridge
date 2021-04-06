@@ -1,7 +1,6 @@
 package tron
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -10,12 +9,13 @@ import (
 
 	"github.com/fbsobreira/gotron-sdk/pkg/common"
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
+	"github.com/golang/protobuf/ptypes"
 	proto "github.com/golang/protobuf/proto"
+	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
-	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
 func addSwapInfoConsiderError(swapInfo *tokens.TxSwapInfo, err error, swapInfos *[]*tokens.TxSwapInfo, errs *[]error) {
@@ -48,7 +48,6 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 }
 
 func CalcTxHash(tx *core.Transaction) string {
-	inputrawdata := tx.GetRawData()
 	rawData, err := proto.Marshal(tx.GetRawData())
 	if err != nil {
 		return ""
@@ -64,7 +63,6 @@ func CalcTxHash(tx *core.Transaction) string {
 }
 
 func GetTxData(tx *core.Transaction) []byte {
-	inputrawdata := tx.GetRawData()
 	rawData, err := proto.Marshal(tx.GetRawData())
 	if err != nil {
 		return []byte{}
@@ -104,7 +102,7 @@ type TransactionExtention struct {
 }
 
 func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
-	tx := txext.Transaction
+	tx := &txext.Transaction
 
 	ret := tx.GetRet()
 	if len(ret) != 1 {
@@ -114,7 +112,7 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 		return
 	}
 
-	if err := b.VerifyMsgHash(tx, fmt.Sprintf("%X", txext.Txid)); err != nil {
+	if err := b.VerifyMsgHash(tx, []string{fmt.Sprintf("%X", txext.Txid)}); err != nil {
 		addSwapInfoConsiderError(nil, err, &swapInfos, &errs)
 		return
 	}
@@ -136,18 +134,18 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 	case core.Transaction_Contract_TransferContract:
 		// 普通转账
 		var c core.TransferContract
-		err = ptypes.UnmarshalAny(contract.GetParameter(), &c)
+		err := ptypes.UnmarshalAny(contract.GetParameter(), &c)
 		if err != nil {
 			addSwapInfoConsiderError(nil, errors.New("Tx inconsistent"), &swapInfos, &errs)
 			return
 		}
 		toAddress := fmt.Sprintf("%v", tronaddress.Address(c.ToAddress))
-		for _, token := range tokenPairsConfig {
-			if token.ID == "TRX" {
+		for _, tokenPair := range tokenPairsConfig {
+			token := tokenPair.SrcToken
+			if tokenPair.PairID == "TRX" {
 				depositAddress := token.DepositAddress
-				depositAddress = strings.TrimPrefix(depositAddress, "0x")
 				if strings.EqualFold(toAddress, depositAddress) {
-					swapInfo.PairID = token.ID
+					swapInfo.PairID = tokenPair.PairID
 				}
 			}
 		}
@@ -156,41 +154,43 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 		}
 		swapInfo.TxTo = toAddress
 		swapInfo.To = toAddress
-		swapInfo.From = fmt.Sprintf("%v", tronaddress.Address(OwnerAddress))
-		swapInfo.Bind = tronToEth(swapInfo.From)
-		swapInfo.Value := big.NewInt(c.Amount)
+		swapInfo.From = fmt.Sprintf("%v", tronaddress.Address(c.OwnerAddress))
+		swapInfo.Bind, _ = tronToEth(swapInfo.From)
+		swapInfo.Value = big.NewInt(c.Amount)
 	case core.Transaction_Contract_TransferAssetContract:
 		// TRC10 swapin not supported
 		return
 	case core.Transaction_Contract_TriggerSmartContract:
 		// TRC20
 		var c core.TriggerSmartContract
-		err = ptypes.UnmarshalAny(contract.GetParameter(), &c)
+		err := ptypes.UnmarshalAny(contract.GetParameter(), &c)
 		if err != nil {
 			addSwapInfoConsiderError(nil, errors.New("Tx inconsistent"), &swapInfos, &errs)
 			return
 		}
 		contractAddress := fmt.Sprintf("%v", tronaddress.Address(c.ContractAddress))
-		for _, token := range tokenPairsConfig {
+		for _, tokenPair := range tokenPairsConfig {
+			token := tokenPair.SrcToken
 			if token.IsTrc20() {
-				depositAddress := strings.TrimPrefix(token.DepositAddress)
-				tokenContractAddress := strings.TrimPrefix(token.ContractAddress)
+				depositAddress := token.DepositAddress
+				tokenContractAddress := token.ContractAddress
 				inputData := c.Data
-				checkToAddress := tronToEth(contractAddress)
+				checkToAddress, _ := tronToEth(contractAddress)
 				from := fmt.Sprintf("%v", tronaddress.Address(c.OwnerAddress))
-				_, to, value, err := eth.ParseErc20SwapinTxInput(inputData, checkToAddress)
+				_, to, value, err := eth.ParseErc20SwapinTxInput(&inputData, checkToAddress)
+				transferTo, _ := ethToTron(to)
 				if err != nil {
 					addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)
 					return
 				}
-				if strings.EqualFold(tokenContractAddress, contractAddress) && strings.EqualFold(depositAddress, "TRC20 recipient address") {
-					swapInfo.PairID = token.ID
+				if strings.EqualFold(tokenContractAddress, contractAddress) && strings.EqualFold(depositAddress, transferTo) {
+					swapInfo.PairID = tokenPair.PairID
+					swapInfo.From = from
+					swapInfo.Bind, _ = tronToEth(from)
+					swapInfo.TxTo = contractAddress
+					swapInfo.Value = value
 				}
 			}
-			swapInfo.From = from
-			swapInfo.TxTo = contractAddress
-			swapInfo.Bind = tronToEth(from)
-			swapInfo.Value = value
 		}
 		if swapInfo.PairID == "" {
 			return
@@ -213,17 +213,18 @@ func (b *Bridge) verifySwapinTxWithHash(txid string, allowUnstable bool) (swapIn
 	if !ok {
 		return nil, []error{errors.New("Tron transaction type error")}
 	}
-	txext := TransactionExtention{
-		txres,
-		Txid: txid,
-		BlockNumber: status.BlockNumber,
+	status := b.GetTransactionStatus(txid)
+	txext := &TransactionExtention{
+		Transaction: *txres,
+		BlockNumber: status.BlockHeight,
 		BlockTime: status.BlockTime,
 	}
+	txext.Txid, _ = common.FromHex(txid)
 	return b.verifySwapinTx(txext, allowUnstable)
 }
 
 func (b *Bridge) verifySwapoutTx(txext *TransactionExtention, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
-	tx := txext.Transaction
+	tx := &txext.Transaction
 	ret := tx.GetRet()
 	if len(ret) != 1 {
 		return
@@ -247,7 +248,7 @@ func (b *Bridge) verifySwapoutTx(txext *TransactionExtention, allowUnstable bool
 	switch contract.Type {
 	case core.Transaction_Contract_TriggerSmartContract:
 		var c core.TriggerSmartContract
-		err = ptypes.UnmarshalAny(contract.GetParameter(), &c)
+		err := ptypes.UnmarshalAny(contract.GetParameter(), &c)
 		if err != nil {
 			addSwapInfoConsiderError(nil, errors.New("Tx inconsistent"), &swapInfos, &errs)
 			return
@@ -256,21 +257,19 @@ func (b *Bridge) verifySwapoutTx(txext *TransactionExtention, allowUnstable bool
 		if swapInfo.PairID == "" {
 			return
 		}
-		for _, token := range tokenPairsConfig {
-			if token.IsTrc20() {
-				tokenContractAddress := strings.TrimPrefix(token.ContractAddress)
+		for _, tokenPair := range tokenPairsConfig {
+			token := tokenPair.DestToken
+				tokenContractAddress := token.ContractAddress
 				if strings.EqualFold(tokenContractAddress, contractAddress) {
-					swapInfo.PairID = token.ID
+					swapInfo.PairID = tokenPair.PairID
 				}
-			}
 		}
 		if swapInfo.PairID == "" {
 			return
 		}
 		inputData := c.Data
-		checkToAddress := tronToEth(contractAddress)
 		from := fmt.Sprintf("%v", tronaddress.Address(c.OwnerAddress))
-		bindAddress, value, err := eth.ParseSwapoutTxInput(inputData, checkToAddress)
+		bindAddress, value, err := eth.ParseSwapoutTxInput(&inputData)
 		if err != nil {
 			addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)
 			return
@@ -295,12 +294,12 @@ func (b *Bridge) verifySwapoutTxWithHash(txid string, allowUnstable bool) (swapI
 	if !ok {
 		return nil, []error{errors.New("Tron transaction type error")}
 	}
-	status := GetTransactionStatus(txid)
-	txext := TransactionExtention{
-		txres,
-		Txid: txid,
-		BlockNumber: status.BlockNumber,
+	status := b.GetTransactionStatus(txid)
+	txext := &TransactionExtention{
+		Transaction: *txres,
+		BlockNumber: status.BlockHeight,
 		BlockTime: status.BlockTime,
 	}
+	txext.Txid, _ = common.FromHex(txid)
 	return b.verifySwapoutTx(txext, allowUnstable)
 }

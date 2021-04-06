@@ -17,6 +17,7 @@ require (
 	github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-resty/resty/v2 v2.5.0
+	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3 // indirect
 	github.com/google/gofuzz v1.1.1-0.20200604201612-c04b05f3adfa // indirect
 	github.com/gorilla/handlers v1.5.1
@@ -44,6 +45,7 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/ybbus/jsonrpc v2.1.2+incompatible
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
+	google.golang.org/grpc v1.31.1
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 )
 

@@ -1,16 +1,11 @@
 package tron
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"time"
 
-	"github.com/anyswap/CrossChain-Bridge/common"
-	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 var (
@@ -40,23 +35,23 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 			if b.IsSrc {
 				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
 			}
-			amount := tokens.CalcSwappedValue(pairID, args.OriginValue, true)
+			amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, true)
 			//  mint mapping asset
-			return b.BuildSwapinTx(args.From, args.Bind, args.To, amount)
+			return b.BuildSwapinTx(args.From, args.Bind, args.To, amount, args.SwapInfo.SwapID)
 		case tokens.SwapoutType:
 			if !b.IsSrc {
 				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
 			}
 			if tokenCfg.IsTrc20() {
-				amount := tokens.CalcSwappedValue(pairID, args.OriginValue, false)
+				amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, false)
 				//  transfer trc20
 				return b.BuildTRC20Transfer(args.From, args.Bind, args.To, amount)
 			} else {
 				args.To = args.Bind
 				input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
-				amount := tokens.CalcSwappedValue(pairID, args.OriginValue, false)
+				amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, false)
 				// transfer trx
-				return b.BuildTransfer(args.From, to, amount, input)
+				return b.BuildTransfer(args.From, args.To, amount, input)
 			}
 		}
 	} else {

@@ -1,12 +1,10 @@
 package tron
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
+	"crypto/ecdsa"
+	"crypto/sha256"
 	"fmt"
-	"math/big"
-	"strings"
 	"time"
 
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
@@ -25,40 +23,6 @@ const (
 )
 
 func (b *Bridge) verifyTransactionWithArgs(tx *core.Transaction, args *tokens.BuildTxArgs) error {
-	tokenCfg := b.GetTokenConfig(args.PairID)
-	if len(tx.Message.Instructions) != 1 {
-		return errors.New("wrong solana instructions length")
-	}
-	ins := tx.Message.Instructions[0]
-	if len(ins.Accounts) < 2 {
-		return errors.New("wrong solana transfer account count")
-	}
-	txprogram := tx.Message.AccountKeys[ins.ProgramIDIndex]
-	typeID := ins.Data[0]
-	txfrom := tx.Message.AccountKeys[ins.Accounts[0]].String()
-	txto := tx.Message.AccountKeys[ins.Accounts[1]].String()
-	lamports := new(bin.Uint64)
-	decoder := bin.NewDecoder(ins.Data[4:])
-	err := decoder.Decode(lamports)
-	if err != nil {
-		return errors.New("cannot decode solana transfer data")
-	}
-	txamount := new(big.Int).SetUint64(uint64(*lamports))
-	switch {
-	case txprogram != system.PROGRAM_ID:
-		return errors.New("wrong solana program id")
-	case typeID != byte(0x2):
-		return errors.New("wrong solana instruction id")
-	case strings.EqualFold(txfrom, args.From) == false:
-		return errors.New("wrong solana transfer from address")
-	case strings.EqualFold(txfrom, tokenCfg.DcrmAddress) == false:
-		return errors.New("solana transfer from address is not dcrm address")
-	case strings.EqualFold(txto, args.Bind) == false:
-		return errors.New("wrong solana transfer to address")
-	case txamount.Cmp(args.OriginValue) >= 0:
-		return errors.New("solana transfer amount not match")
-	default:
-	}
 	return nil
 }
 
@@ -73,13 +37,13 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 
-	txHash := CalcTxHash(tx)
+	txHash = CalcTxHash(tx)
 	txData:= GetTxData(tx)
-	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), txHash, txData)
+	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), txHash, fmt.Sprintf("%X", txData))
 	if err != nil {
 		return nil, "", err
 	}
-	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", fmt.Sprintf("%X", msgHash), "txid", args.SwapID)
+	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", fmt.Sprintf("%X", txHash), "txid", args.SwapID)
 	time.Sleep(retryGetSignStatusInterval)
 
 	var rsv string
@@ -109,11 +73,9 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 
 	signature := common.FromHex(rsv)
 
-	tx.Signatures = append(tx.Signatures, solanasignature)
-	signedTx = tx
 
+	tx.Signature = append(tx.Signature, signature)
 	signedTx = tx
-	signedTx.Signature = append(signedTx.Signature, signature)
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhassh", txHash)
 	return signedTx, txHash, err
 }
@@ -134,18 +96,18 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 
 	rawData, err := proto.Marshal(tx.GetRawData())
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	h256h := sha256.New()
 	h256h.Write(rawData)
 	hash := h256h.Sum(nil)
-	txhash = fmt.Sprintf("%X", hash)
+	txhash := fmt.Sprintf("%X", hash)
 
 	signature, err := crypto.Sign(hash, privKey)
 	if err != nil {
 		return nil, "", err
 	}
+	tx.Signature = append(tx.Signature, signature)
 	signedTx = tx
-	signedTx.Signature = append(signedTx.Signature, signature)
 	return tx, txhash, nil
 }

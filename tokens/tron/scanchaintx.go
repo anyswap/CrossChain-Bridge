@@ -33,12 +33,12 @@ func (b *Bridge) StartChainTransactionScanJob() {
 		}
 		log.Debug("Scan block", "start", start, "end", end)
 
-		for _, tx := range block.Transactions {
+		for _, tx := range res.Block[0].Transactions {
 			b.processTransaction(tx)
 		}
 
-		latest := start + int64(len(res.Block) - 1
-		_ = UpdateLatestScanInfo(b.IsSrc, uint64(latest))
+		latest := start + int64(len(res.Block)) - 1
+		_ = tools.UpdateLatestScanInfo(b.IsSrc, uint64(latest))
 		start = start + int64(len(res.Block))
 		end = start + int64(step)
 		if len(res.Block) < step {

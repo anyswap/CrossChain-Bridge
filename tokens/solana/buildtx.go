@@ -21,7 +21,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		amount   = args.Value
 	)
 	args.Identifier = params.GetIdentifier()
-	tokenCfg = b.GetTokenConfig(pairID)
+	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
 		return nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
 	}
