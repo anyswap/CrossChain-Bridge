@@ -14,7 +14,7 @@ type Bridge struct {
 }
 
 const (
-	PairID = "TRX"
+	PairID         = "TRX"
 	TRC10TokenType = "TRC10"
 	TRC20TokenType = "TRC20"
 )

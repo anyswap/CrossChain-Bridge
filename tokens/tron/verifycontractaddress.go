@@ -60,8 +60,7 @@ var erc20CodeParts = map[string][]byte{
 }
 
 func (b *Bridge) getContractCode(contract string) (code []byte, err error) {
-	// TODO
-	return nil, nil
+	return b.GetCode(contract)
 }
 
 // VerifyContractCode verify contract code

@@ -197,7 +197,7 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 			rpcError.log(err)
 			continue
 		}
-		tx, err = cli.GetTransactionInfoByID(txHash)
+		tx, err = cli.GetTransactionByID(txHash)
 		if err == nil {
 			cli.Stop()
 			break
@@ -242,7 +242,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 }
 
 // BuildTransfer returns an unsigned tron transfer tx
-func (b *Bridge) BuildTransfer(from, to string amount *big.NewInt, input []byte) (tx *core.Transaction, err error) {
+func (b *Bridge) BuildTransfer(from, to string, amount *big.NewInt, input []byte) (tx *core.Transaction, err error) {
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
 		return nil, errors.New("Amount exceed max uint64")
@@ -280,7 +280,7 @@ func (b *Bridge) BuildTransfer(from, to string amount *big.NewInt, input []byte)
 }
 
 // BuildTRC20Transfer returns an unsigned trc20 transfer tx
-func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string amount *big.NewInt) (tx *core.Transaction, err error) {
+func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string, amount *big.NewInt) (tx *core.Transaction, err error) {
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
 		return nil, errors.New("Amount exceed max uint64")
@@ -318,7 +318,7 @@ func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string amount *big.Ne
 }
 
 // BuildSwapinTx returns an unsigned mapping asset minting tx
-func (b *Bridge) BuildSwapinTx(from, to, tokenAddress string amount *big.NewInt, txhash string) (tx *core.Transaction, err error) {
+func (b *Bridge) BuildSwapinTx(from, to, tokenAddress string, amount *big.NewInt, txhash string) (tx *core.Transaction, err error) {
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
 		return nil, errors.New("Amount exceed max uint64")
@@ -362,7 +362,8 @@ func (b *Bridge) GetCode(contractAddress string) (data []byte, err error) {
 			rpcError.Log(err)
 			continue
 		}
-		sm, err := cli.Client.GetContract(ctx, message)
+		sm, err1 := cli.Client.GetContract(ctx, message)
+		err = err1
 		if err == nil {
 			data = sm.Bytecode
 			cli.Stop()
@@ -374,4 +375,26 @@ func (b *Bridge) GetCode(contractAddress string) (data []byte, err error) {
 		return nil, rpcError.Error()
 	}
 	return data, nil
+}
+
+// GetBlockByLimitNext gets block by limit next
+func (b *Bridge) GetBlockByLimitNext(start, end int64) (res *api.BlockListExtention, err error) {
+	rpcError := &RPCError{[]error{}, "GetBlockByLimitNext"}
+	for _, cli := range b.getClients() {
+		err = cli.Start(grpc.WithInsecure())
+		if err != nil {
+			rpcError.Log(err)
+			continue
+		}
+		res, err = cli.GetBlockByLimitNext(start, end)
+		if err == nil {
+			cli.Stop()
+			break
+		}
+		rpcError.Log(err)
+	}
+	if err != nil {
+		return nil, rpcError.Error()
+	}
+	return res, nil
 }

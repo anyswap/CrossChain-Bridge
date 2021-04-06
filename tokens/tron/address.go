@@ -22,3 +22,17 @@ func (b *Bridge) PublicKeyToAddress(pubKeyHex string) (address string, err error
 	address = tronaddress.Address(append([]byte{0x41}, bz[len(bz)-20:]...))
 	return
 }
+
+func ethToTron(ethAddress string) (string, error) {
+	tronaddr := tronaddress.Address(append([]byte{0x41}, common.HexToAddress(ethAddress).Bytes()...))
+	return tronaddr.String(), nil
+}
+
+func tronToEth(tronAddress string) (string, error) {
+	addr, err := tronaddress.Base58ToAddress(tronAddress)
+	if err != nil {
+		return "", err
+	}
+	ethaddr := common.BytesToAddress(addr.Bytes())
+	return ethaddr.String(), nil
+}

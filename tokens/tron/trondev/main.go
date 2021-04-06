@@ -2,19 +2,22 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"log"
-	//"math/big"
+	"math/big"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
+	"github.com/golang/protobuf/ptypes"
 
 	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
 	"github.com/fbsobreira/gotron-sdk/pkg/client"
-	//"github.com/fbsobreira/gotron-sdk/pkg/common"
-	//"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
+	"github.com/fbsobreira/gotron-sdk/pkg/common"
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/api"
-
+	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
+	proto "github.com/golang/protobuf/proto"
 )
 
 func checkError(err error) {
@@ -33,6 +36,20 @@ var testnetendpoint = "grpc.shasta.trongrid.io:50051"
 var timeout = time.Second * 15
 
 func main() {
+	// GetCode()
+
+	// BuildSwapinTx()
+
+	// ScanBlock()
+
+	// CalcTxid()
+
+	//GetContractCode()
+
+	GetTransaction()
+}
+
+func GetTransaction() {
 	cli := client.NewGrpcClientWithTimeout(testnetendpoint, timeout)
 	err := cli.Start(grpc.WithInsecure())
 	checkError(err)
@@ -103,54 +120,87 @@ func main() {
 		fmt.Printf("Token total supply: %v\n", totalSupply)
 	*/
 
-	/*
-		divide()
-		tx, err := cli.GetTransactionInfoByID("c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
-		//tx, err := cli.GetTransactionInfoByID("f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3")
+	divide()
+	// f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3 普通转账
+	// c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984 TRC20 转账
+	//txinfo, err := cli.GetTransactionInfoByID("f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3")
+	txinfo, err := cli.GetTransactionInfoByID("c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
+	checkError(err)
+	fmt.Printf("Transaction info: %+v\n", txinfo)
+	fmt.Printf("Transaction block: %+v\n", txinfo.BlockNumber)
+	fmt.Printf("Transaction time: %+v\n", txinfo.BlockTimeStamp)
+	fmt.Printf("Transaction contract result: %+v\n", txinfo.ContractResult)
+	fmt.Printf("Transaction receipt: %+v\n", txinfo.Receipt)
+	fmt.Printf("Transaction log: %+v\n", txinfo.Log)
+
+	divide()
+	//tx, err := cli.GetTransactionByID("f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3")
+	tx, err := cli.GetTransactionByID("c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
+	checkError(err)
+	fmt.Printf("Transaction: %+v\n", tx)
+	fmt.Printf("Contract ret: %v\n", (tx.GetRet()[0].Ret == core.Transaction_Result_SUCESS))
+	if len(tx.RawData.Contract) != 1 {
+		checkError(fmt.Errorf("Invalid contract"))
+	}
+	contract := tx.RawData.Contract[0]
+	switch contract.Type {
+	case core.Transaction_Contract_TransferContract:
+		// 普通转账
+		var c core.TransferContract
+		err = ptypes.UnmarshalAny(contract.GetParameter(), &c)
 		checkError(err)
-		fmt.Printf("Transaction block: %+v\n", tx.BlockNumber)
-		fmt.Printf("Transaction time: %+v\n", tx.BlockTimeStamp)
-		fmt.Printf("Transaction contract result: %+v\n", tx.ContractResult)
-		fmt.Printf("Transaction receipt: %+v\n", tx.Receipt)
-		fmt.Printf("Transaction log: %+v\n", tx.Log)
-	*/
+		fmt.Printf("Trigger smart contract: %+v\n", c)
+		fmt.Printf("To address: %v\n", tronaddress.Address(c.ToAddress))
+		fmt.Printf("From address: %v\n", tronaddress.Address(c.OwnerAddress))
+		fmt.Printf("Transfer value: %v\n", big.NewInt(c.Amount))
+	case core.Transaction_Contract_TransferAssetContract:
+		// TRC10
+		checkError(fmt.Errorf("TRC10 transfer not supported"))
+	case core.Transaction_Contract_TriggerSmartContract:
+		// TRC20
+		var c core.TriggerSmartContract
+		err = ptypes.UnmarshalAny(contract.GetParameter(), &c)
+		checkError(err)
+		fmt.Printf("Trigger smart contract: %+v\n", c)
+		fmt.Printf("Contract address: %v\n", tronaddress.Address(c.ContractAddress))
+		fmt.Printf("Data: %X\n", c.Data)
+
+	default:
+		return
+	}
 
 	// 构造交易
 	// TransferContract 普通转账
 	/*
-	from := "TEtNLh69XnK9Fs8suCogK3sRrWJbQHah4k"
-	to := "TXexdzdZv3z5mJP1yzTeEc4LZwcBvenmZc"
-	divide()
-	contract := &core.TransferContract{}
-	contract.OwnerAddress, err = common.DecodeCheck(from)
-	checkError(err)
-	contract.ToAddress, err = common.DecodeCheck(to)
-	checkError(err)
-	contract.Amount = 1000
-	fmt.Printf("Contract: %+v\n", contract)
+		from := "TEtNLh69XnK9Fs8suCogK3sRrWJbQHah4k"
+		to := "TXexdzdZv3z5mJP1yzTeEc4LZwcBvenmZc"
+		divide()
+		contract := &core.TransferContract{}
+		contract.OwnerAddress, err = common.DecodeCheck(from)
+		checkError(err)
+		contract.ToAddress, err = common.DecodeCheck(to)
+		checkError(err)
+		contract.Amount = 1000
+		fmt.Printf("Contract: %+v\n", contract)
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	tx, err := cli.Client.CreateTransaction2(ctx, contract)
-	checkError(err)
-	fmt.Printf("Tx: %+v\n", tx)
-	fmt.Printf("Txid: %X\n", tx.Txid)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		tx, err := cli.Client.CreateTransaction2(ctx, contract)
+		checkError(err)
+		fmt.Printf("Tx: %+v\n", tx)
+		fmt.Printf("Txid: %X\n", tx.Txid)
 	*/
 
 	// TRC20 转账
 	// TriggerSmartContract 合约交易
 	/*
-	divide()
-	tokenAddress := "TQCeH8Bc7zcJv6DjdCYWQuMX4Rzmc3gcs2"
-	trc20tx, err := cli.TRC20Send(from, to, tokenAddress, big.NewInt(1000), 0)
-	checkError(err)
-	fmt.Printf("TRC20: %+v\n", trc20tx)
-	fmt.Printf("TRC20 txid: %X\n", trc20tx.Txid)
+		divide()
+		tokenAddress := "TQCeH8Bc7zcJv6DjdCYWQuMX4Rzmc3gcs2"
+		trc20tx, err := cli.TRC20Send(from, to, tokenAddress, big.NewInt(1000), 0)
+		checkError(err)
+		fmt.Printf("TRC20: %+v\n", trc20tx)
+		fmt.Printf("TRC20 txid: %X\n", trc20tx.Txid)
 	*/
-
-	// GetCode()
-
-	BuildSwapinTx()
 }
 
 func BuildSwapinTx() {
@@ -188,4 +238,87 @@ func GetCode() {
 	sm, err := cli.Client.GetContract(ctx, message)
 	checkError(err)
 	fmt.Printf("Bytecode: %X\n", sm.Bytecode)
+}
+
+func ScanBlock() {
+	cli := client.NewGrpcClientWithTimeout(testnetendpoint, timeout)
+	//cli := client.NewGrpcClientWithTimeout(mainnetendpoint, timeout)
+	err := cli.Start(grpc.WithInsecure())
+	checkError(err)
+	defer cli.Stop()
+
+	divide()
+
+	var step int = 10
+	var start, end int64
+	longSleep := time.Second * 2
+	shortSleep := time.Millisecond * 400
+	start = 13689800 // TODO Load latest scanned
+	end = start + int64(step)
+	for {
+		res, err := cli.GetBlockByLimitNext(start, end)
+		checkError(err)
+		fmt.Printf("Blocks: %+v\n", len(res.Block))
+		l := len(res.Block)
+		if l > 0 {
+			fmt.Printf("%v - %v\n", res.Block[0].BlockHeader.RawData.Number, res.Block[l-1].BlockHeader.RawData.Number)
+		}
+		// TODO process tx
+		for _, block := range res.Block {
+			txexts := make([]*api.TransactionExtention, 0)
+			txexts = block.Transactions
+			for _, txext := range txexts {
+				var tx *core.Transaction
+				tx = txext.Transaction
+				fmt.Printf("tx: %+v/n", tx)
+			}
+		}
+
+		// TODO Add latest scanned
+		start = start + int64(len(res.Block))
+		end = start + int64(step)
+		if len(res.Block) < step {
+			time.Sleep(longSleep)
+		} else {
+			time.Sleep(shortSleep)
+		}
+	}
+}
+
+func CalcTxid() {
+	divide()
+	cli := client.NewGrpcClientWithTimeout(testnetendpoint, timeout)
+	//cli := client.NewGrpcClientWithTimeout(mainnetendpoint, timeout)
+	err := cli.Start(grpc.WithInsecure())
+	checkError(err)
+	defer cli.Stop()
+	tx, err := cli.GetTransactionByID("0xc0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
+	checkError(err)
+	fmt.Printf("Tx: %+v", tx)
+	rawData, err := proto.Marshal(tx.GetRawData())
+	checkError(err)
+	h256h := sha256.New()
+	h256h.Write(rawData)
+	hash := h256h.Sum(nil)
+	txhash := common.ToHex(hash)
+	txhash = strings.TrimPrefix(txhash, "0x")
+
+	fmt.Printf("Tx hash: %v\n", txhash)
+}
+
+func GetContractCode() {
+	divide()
+	contractDesc, err := tronaddress.Base58ToAddress("TQCeH8Bc7zcJv6DjdCYWQuMX4Rzmc3gcs2")
+	checkError(err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cli := client.NewGrpcClientWithTimeout(testnetendpoint, timeout)
+	//cli := client.NewGrpcClientWithTimeout(mainnetendpoint, timeout)
+	err = cli.Start(grpc.WithInsecure())
+	checkError(err)
+	defer cli.Stop()
+	sm, err := cli.Client.GetContract(ctx, client.GetMessageBytes(contractDesc))
+	checkError(err)
+	fmt.Printf("SM: %X", sm.GetBytecode())
 }
