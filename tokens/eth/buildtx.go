@@ -143,8 +143,9 @@ func getMinReserveFee() *big.Int {
 	}
 	if params.GetExtraConfig() == nil || params.GetExtraConfig().MinReserveFee == "" {
 		minReserveFee = big.NewInt(1e16) // default 0.01 ETH
+	} else {
+		minReserveFee, _ = new(big.Int).SetString(params.GetExtraConfig().MinReserveFee, 10)
 	}
-	minReserveFee, _ = new(big.Int).SetString(params.GetExtraConfig().MinReserveFee, 10)
 	return minReserveFee
 }
 
