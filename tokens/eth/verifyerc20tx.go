@@ -40,7 +40,7 @@ func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID stri
 
 	swapInfo.From = strings.ToLower(receipt.From.String()) // From
 
-	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.DepositAddress)
+	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.ContractAddress, token.DepositAddress)
 	if err != nil {
 		if err != tokens.ErrTxWithWrongReceiver {
 			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", txHash, "err", err)
@@ -122,7 +122,8 @@ func ParseErc20SwapinTxInput(input *[]byte, checkToAddress string) (from, to str
 }
 
 // ParseErc20SwapinTxLogs parse erc20 swapin tx logs
-func ParseErc20SwapinTxLogs(logs []*types.RPCLog, checkToAddress string) (from, to string, value *big.Int, err error) {
+func ParseErc20SwapinTxLogs(logs []*types.RPCLog, contractAddress, checkToAddress string) (from, to string, value *big.Int, err error) {
+	transferLogExist := false
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
 			continue
@@ -133,15 +134,24 @@ func ParseErc20SwapinTxLogs(logs []*types.RPCLog, checkToAddress string) (from, 
 		if !bytes.Equal(log.Topics[0][:], erc20CodeParts["LogTransfer"]) {
 			continue
 		}
-		from = common.BytesToAddress(log.Topics[1][:]).String()
+		transferLogExist = true
 		to = common.BytesToAddress(log.Topics[2][:]).String()
-		value = common.GetBigInt(*log.Data, 0, 32)
 		if !common.IsEqualIgnoreCase(to, checkToAddress) {
-			err = tokens.ErrTxWithWrongReceiver
+			continue
 		}
-		return from, to, value, err
+		if log.Address == nil || !common.IsEqualIgnoreCase(log.Address.String(), contractAddress) {
+			continue
+		}
+		from = common.BytesToAddress(log.Topics[1][:]).String()
+		value = common.GetBigInt(*log.Data, 0, 32)
+		return from, to, value, nil
 	}
-	return "", "", nil, tokens.ErrDepositLogNotFound
+	if transferLogExist {
+		err = tokens.ErrTxWithWrongReceiver
+	} else {
+		err = tokens.ErrDepositLogNotFound
+	}
+	return "", "", nil, err
 }
 
 func parseErc20EncodedData(encData []byte, isTransferFrom bool, checkToAddress string) (from, to string, value *big.Int, err error) {
