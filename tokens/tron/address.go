@@ -5,8 +5,10 @@ import (
 	"strings"
 
 	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
-	"github.com/fbsobreira/gotron-sdk/pkg/common"
+	troncommon "github.com/fbsobreira/gotron-sdk/pkg/common"
+
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
+	"github.com/anyswap/CrossChain-Bridge/common"
 )
 
 // IsValidAddress check address
@@ -32,7 +34,7 @@ func (b *Bridge) PublicKeyToAddress(pubKeyHex string) (address string, err error
 }
 
 func ethToTron(ethAddress string) (string, error) {
-	bz, _ := common.FromHex(ethAddress)
+	bz, _ := troncommon.FromHex(ethAddress)
 	tronaddr := tronaddress.Address(append([]byte{0x41}, bz...))
 	return tronaddr.String(), nil
 }
@@ -42,6 +44,6 @@ func tronToEth(tronAddress string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ethaddr := tronaddress.Address(addr.Bytes())
+	ethaddr := common.BytesToAddress(addr.Bytes())
 	return ethaddr.String(), nil
 }
