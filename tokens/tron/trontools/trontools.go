@@ -12,21 +12,22 @@ import (
 	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
 
 /*
 
 pubkey to address
 ./trontools pubkeyToAddress --pubkey 04d38309dfdfd9adf129287b68cf2e1f1124e0cbc40cc98f94e5f2d23c26712fa3b33d63280dd1448319a6a4f4111722d6b3a730ebe07652ed2b3770947b3de2e2
-TBXaCqtaBpB5JNjoFhExpWu11kzRZ956Ay
+TXSxUhgSoHkHNLgip2kQRHXVT6BqoaqtvX
 
 tron to eth
-./trontools tronToEth --tron TBXaCqtaBpB5JNjoFhExpWu11kzRZ956Ay
-0x111722d6b3a730ebe07652eD2B3770947b3DE2E2
+./trontools tronToEth --tron TXSxUhgSoHkHNLgip2kQRHXVT6BqoaqtvX
+0xEB9A2A3502A78B27842DD2FB09E9514E3CE597ED
 
 eth to tron
-./trontools ethToTron --eth 0x111722d6b3a730ebe07652eD2B3770947b3DE2E2
-TBXaCqtaBpB5JNjoFhExpWu11kzRZ956Ay
+./trontools ethToTron --eth 0xEB9A2A3502A78B27842DD2FB09E9514E3CE597ED
+TXSxUhgSoHkHNLgip2kQRHXVT6BqoaqtvX
 
 */
 
@@ -126,7 +127,13 @@ func pubkeyToAddress(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	tronaddr := tronaddress.Address(append([]byte{0x41}, bz[len(bz)-20:]...))
+	ecdsaPub, err := crypto.UnmarshalPubkey(bz)
+	if err != nil {
+		return err
+	}
+	ethAddress := crypto.PubkeyToAddress(*ecdsaPub)
+	fmt.Printf("%X\n", ethAddress)
+	tronaddr := tronaddress.Address(append([]byte{0x41}, ethAddress.Bytes()...))
 	fmt.Println(tronaddr)
 	return nil
 }
