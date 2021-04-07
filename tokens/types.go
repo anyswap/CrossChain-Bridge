@@ -121,7 +121,7 @@ func (c *TokenConfig) IsProxyErc20() bool {
 
 // IsTrc20 return if token is trc20
 func (c *TokenConfig) IsTrc20() bool {
-	return strings.EqualFold(c.ID, "ERC20") || c.IsProxyTrc20()
+	return strings.EqualFold(c.ID, "ERC20") || strings.EqualFold(c.ID, "TRC20") || c.IsProxyErc20() || c.IsProxyTrc20()
 }
 
 // IsProxyTrc20 return if token is proxy contract of trc20

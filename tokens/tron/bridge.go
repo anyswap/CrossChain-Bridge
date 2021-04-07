@@ -31,7 +31,7 @@ const (
 		BTC/LTC -> anyBTC/anyLTC (TRC20)
 */
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	tokens.IsSwapoutToStringAddress = true
+	tokens.IsSwapoutToStringAddress = false
 	return &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
 	}
