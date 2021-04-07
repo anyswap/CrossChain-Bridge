@@ -186,7 +186,7 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 				if strings.EqualFold(tokenContractAddress, contractAddress) && strings.EqualFold(depositAddress, transferTo) {
 					swapInfo.PairID = tokenPair.PairID
 					swapInfo.From = from
-					swapInfo.Bind, _ = tronToEth(from)
+					swapInfo.Bind = from // Use eth format
 					swapInfo.TxTo = contractAddress
 					swapInfo.Value = value
 				}
