@@ -6,6 +6,7 @@ import (
 
 	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
 	"github.com/fbsobreira/gotron-sdk/pkg/common"
+	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
 
 // IsValidAddress check address
@@ -21,7 +22,12 @@ func (b *Bridge) PublicKeyToAddress(pubKeyHex string) (address string, err error
 	if err != nil {
 		return "", err
 	}
-	address = tronaddress.Address(append([]byte{0x41}, bz[len(bz)-20:]...)).String()
+	ecdsaPub, err := crypto.UnmarshalPubkey(bz)
+	if err != nil {
+		return "", err
+	}
+	ethAddress := crypto.PubkeyToAddress(*ecdsaPub)
+	address = tronaddress.Address(append([]byte{0x41}, ethAddress.Bytes()...)).String()
 	return
 }
 
