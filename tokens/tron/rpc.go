@@ -252,6 +252,10 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 
 // BuildTransfer returns an unsigned tron transfer tx
 func (b *Bridge) BuildTransfer(from, to string, amount *big.Int, input []byte) (tx *core.Transaction, err error) {
+	to, err = ethToTron(to)
+	if err != nil {
+		return nil, err
+	}
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
 		return nil, errors.New("Amount exceed max uint64")
@@ -265,6 +269,7 @@ func (b *Bridge) BuildTransfer(from, to string, amount *big.Int, input []byte) (
 	if err != nil {
 		return nil, err
 	}
+	contract.Amount = amount.Int64()
 	rpcError := &RPCError{[]error{}, "BuildTransfer"}
 	ctx, cancel := context.WithTimeout(context.Background(), GRPC_TIMEOUT)
 	defer cancel()
@@ -280,6 +285,10 @@ func (b *Bridge) BuildTransfer(from, to string, amount *big.Int, input []byte) (
 			cli.Stop()
 			cancel()
 			tx = txext.Transaction
+			if tx == nil {
+				err = fmt.Errorf("%v", txext)
+				rpcError.log(err)
+			}
 			break
 		}
 		rpcError.log(err)
@@ -294,6 +303,10 @@ func (b *Bridge) BuildTransfer(from, to string, amount *big.Int, input []byte) (
 
 // BuildTRC20Transfer returns an unsigned trc20 transfer tx
 func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string, amount *big.Int) (tx *core.Transaction, err error) {
+	to, err = ethToTron(to)
+	if err != nil {
+		return nil, err
+	}
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
 		return nil, errors.New("Amount exceed max uint64")

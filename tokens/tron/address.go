@@ -13,6 +13,10 @@ import (
 
 // IsValidAddress check address
 func (b *Bridge) IsValidAddress(address string) bool {
+	if common.IsHexAddress(address) {
+		_, err := ethToTron(address)
+		return err == nil
+	}
 	_, err := tronaddress.Base58ToAddress(address)
 	return err == nil
 }

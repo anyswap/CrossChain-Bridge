@@ -23,6 +23,11 @@ const (
 )
 
 func (b *Bridge) verifyTransactionWithArgs(tx *core.Transaction, args *tokens.BuildTxArgs) error {
+	// TODO
+	tokenCfg := b.GetTokenConfig(args.PairID)
+	if tokenCfg == nil {
+		return fmt.Errorf("[sign] verify tx with unknown pairID '%v'", args.PairID)
+	}
 	return nil
 }
 
@@ -32,6 +37,9 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	if !ok {
 		return nil, "", errors.New("wrong raw tx param")
 	}
+	fmt.Printf("\n\ntx:\n%+v\n\n", tx)
+	fmt.Printf("\n\nargs:\n%+v\n\n", args)
+	log.Info("111111 tron dcrm sign tx", "tx", tx, "args", args)
 	err = b.verifyTransactionWithArgs(tx, args)
 	if err != nil {
 		return nil, "", err
@@ -39,11 +47,12 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 
 	txHash = CalcTxHash(tx)
 	txData:= GetTxData(tx)
+	log.Info("222222 tron dcrm sign tx", "txHash", txHash, "txData", txData)
 	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), txHash, fmt.Sprintf("%X", txData))
 	if err != nil {
 		return nil, "", err
 	}
-	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", fmt.Sprintf("%X", txHash), "txid", args.SwapID)
+	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", txHash, "txid", args.SwapID, "data", fmt.Sprintf("%X", txData))
 	time.Sleep(retryGetSignStatusInterval)
 
 	var rsv string

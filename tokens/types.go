@@ -248,6 +248,7 @@ func (args *BuildTxArgs) GetTxNonce() uint64 {
 type AllExtras struct {
 	BtcExtra *BtcExtraArgs `json:"btcExtra,omitempty"`
 	EthExtra *EthExtraArgs `json:"ethExtra,omitempty"`
+	TronExtra *TronExtraArgs `json:"tronExtra,omitempty"`
 }
 
 // EthExtraArgs struct
@@ -268,6 +269,11 @@ type BtcExtraArgs struct {
 	RelayFeePerKb     *int64         `json:"relayFeePerKb,omitempty"`
 	ChangeAddress     *string        `json:"-"`
 	PreviousOutPoints []*BtcOutPoint `json:"previousOutPoints,omitempty"`
+}
+
+// TronExtraArgs struct
+type TronExtraArgs struct {
+	RawTx string
 }
 
 // P2shAddressInfo struct
