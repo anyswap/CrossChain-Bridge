@@ -38,7 +38,7 @@ var timeout = time.Second * 15
 func main() {
 	// GetCode()
 
-	BuildSwapinTx()
+	// BuildSwapinTx()
 
 	// ScanBlock()
 
@@ -47,6 +47,8 @@ func main() {
 	// GetContractCode()
 
 	// GetTransaction()
+
+	MarshalUnmarshalTx()
 }
 
 func GetTransaction() {
@@ -321,4 +323,31 @@ func GetContractCode() {
 	sm, err := cli.Client.GetContract(ctx, client.GetMessageBytes(contractDesc))
 	checkError(err)
 	fmt.Printf("SM: %X", sm.GetBytecode())
+}
+
+func MarshalUnmarshalTx() {
+	cli := client.NewGrpcClientWithTimeout(testnetendpoint, timeout)
+	err := cli.Start(grpc.WithInsecure())
+	checkError(err)
+	defer cli.Stop()
+
+	divide()
+
+	from := "TEtNLh69XnK9Fs8suCogK3sRrWJbQHah4k"
+	contract := "TBssYqEV8BxJJDhGsf7pUkfPZxGbt2JU2M"
+	method := "Swapin"
+	param := `[{"string":"0xbeea0dfefc66107a3b1922f75a67ddd1d577a36ed0099e84a381e7a71774501e"},{"address":"TEtNLh69XnK9Fs8suCogK3sRrWJbQHah4k"},{"uint256":"1"}]`
+
+	tx, err := cli.TriggerConstantContract(from, contract, method, param)
+	checkError(err)
+	fmt.Printf("Tx: %+v\n", tx.Transaction)
+
+	txmsg, err := proto.Marshal(tx.Transaction)
+	checkError(err)
+	fmt.Printf("txmsg: %X\n", txmsg)
+
+	var decodedTx core.Transaction
+	err = proto.Unmarshal(txmsg, &decodedTx)
+	checkError(err)
+	fmt.Printf("Decoded tx:\n%+v\n", &decodedTx)
 }

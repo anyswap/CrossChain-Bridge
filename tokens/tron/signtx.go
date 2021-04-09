@@ -39,7 +39,6 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	}
 	fmt.Printf("\n\ntx:\n%+v\n\n", tx)
 	fmt.Printf("\n\nargs:\n%+v\n\n", args)
-	log.Info("111111 tron dcrm sign tx", "tx", tx, "args", args)
 	err = b.verifyTransactionWithArgs(tx, args)
 	if err != nil {
 		return nil, "", err
@@ -47,7 +46,6 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 
 	txHash = CalcTxHash(tx)
 	txData:= GetTxData(tx)
-	log.Info("222222 tron dcrm sign tx", "txHash", txHash, "txData", txData)
 	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), txHash, fmt.Sprintf("%X", txData))
 	if err != nil {
 		return nil, "", err
