@@ -62,6 +62,8 @@ InitialHeight = 0
 EnableScan = false
 # whether scan transaction receipt logs
 ScanReceipt = false
+# max gas price fluct percent
+MaxGasPriceFluctPercent = 10
 
 # source blockchain gateway config
 [SrcGateway]
@@ -79,6 +81,8 @@ InitialHeight = 0
 EnableScan = false
 # whether scan transaction receipt logs
 ScanReceipt = false
+# max gas price fluct percent
+MaxGasPriceFluctPercent = 10
 
 # dest blockchain gateway config
 [DestGateway]
