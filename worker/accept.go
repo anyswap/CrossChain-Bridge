@@ -62,6 +62,7 @@ func acceptSign() {
 			}
 			agreeResult := "AGREE"
 			err := verifySignInfo(info)
+			log.Info("====== 111111 acceptSign ======", "err", err)
 			switch err {
 			case errIdentifierMismatch,
 				errInitiatorMismatch,
@@ -79,6 +80,7 @@ func acceptSign() {
 			}
 			logWorker("accept", "dcrm DoAcceptSign", "keyID", keyID, "result", agreeResult)
 			res, err := dcrm.DoAcceptSign(keyID, agreeResult, info.MsgHash, info.MsgContext)
+			log.Info("====== 222222 acceptSign ======", "res", res, "err", err)
 			if err != nil {
 				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res)
 			} else {
@@ -104,7 +106,6 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	if err != nil {
 		return errWrongMsgContext
 	}
-	log.Info("====== !!!!!! verifySignInfo ======", "params.GetIdentifier()", params.GetIdentifier(), "args.Identifier", args.Identifier)
 	switch args.Identifier {
 	case params.GetIdentifier():
 	case tokens.AggregateIdentifier:

@@ -29,9 +29,13 @@ func init() {
 			BlockExtra: &tokens.BlockExtraArgs{
 				CoreAPIs: []tokens.BlocknetCoreAPIArgs{
 					{
-						APIAddress:  "5.189.139.168:51515",
-						RPCUser:     "xxmm",
-						RPCPassword: "123456",
+						//APIAddress:  "5.189.139.168:51515",
+						//RPCUser:     "xxmm",
+						//RPCPassword: "123456",
+						//DisableTLS:  true,
+						APIAddress:  "49.235.100.95:51515",
+						RPCUser:     "block",
+						RPCPassword: "bn123456",
 						DisableTLS:  true,
 					},
 				},
@@ -70,7 +74,8 @@ func TestNewAddressPubKeyHash(t *testing.T) {
 
 func TestGetLatestBlockNumberOf(t *testing.T) {
 	t.Logf("TestGetLatestBlockNumberOf")
-	num, err := b.GetLatestBlockNumberOf("5.189.139.168:51515")
+	//num, err := b.GetLatestBlockNumberOf("5.189.139.168:51515")
+	num, err := b.GetLatestBlockNumberOf("49.235.100.95:51515")
 	checkError(t, err)
 	t.Logf("GetLatestBlockNumberOf: %v\n", num)
 }
