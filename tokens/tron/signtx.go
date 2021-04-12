@@ -1,6 +1,7 @@
 package tron
 
 import (
+	"encoding/json"
 	"errors"
 	"crypto/ecdsa"
 	"crypto/sha256"
@@ -37,20 +38,19 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	if !ok {
 		return nil, "", errors.New("wrong raw tx param")
 	}
-	fmt.Printf("\n\ntx:\n%+v\n\n", tx)
-	fmt.Printf("\n\nargs:\n%+v\n\n", args)
 	err = b.verifyTransactionWithArgs(tx, args)
 	if err != nil {
 		return nil, "", err
 	}
 
 	txHash = CalcTxHash(tx)
-	txData:= GetTxData(tx)
-	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), txHash, fmt.Sprintf("%X", txData))
+	jsondata, _ := json.Marshal(args)
+	msgContext := string(jsondata)
+	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), txHash, msgContext)
 	if err != nil {
 		return nil, "", err
 	}
-	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", txHash, "txid", args.SwapID, "data", fmt.Sprintf("%X", txData))
+	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", txHash, "txid", args.SwapID, "data", msgContext)
 	time.Sleep(retryGetSignStatusInterval)
 
 	var rsv string

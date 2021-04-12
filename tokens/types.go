@@ -273,7 +273,7 @@ type BtcExtraArgs struct {
 
 // TronExtraArgs struct
 type TronExtraArgs struct {
-	RawTx string
+	RawTx string `json:"rawTx,omitempty"`
 }
 
 // P2shAddressInfo struct

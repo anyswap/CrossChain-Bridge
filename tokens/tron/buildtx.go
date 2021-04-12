@@ -9,6 +9,7 @@ import (
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
 	proto "github.com/golang/protobuf/proto"
 
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
@@ -21,6 +22,7 @@ var (
 
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
+	args.Identifier = params.GetIdentifier()
 	//	For server, build tx and set TronExtra with marshal tx
 	//	For oracle nodes, TronExtra should exists in args
 	//		unmarshal raw tx from TronExtra,
@@ -71,8 +73,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 			}
 			if tokenCfg.IsTrc20() {
 				amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, false)
+				args.Value = amount
 				//  transfer trc20
-				fmt.Printf("\n\n\nSwapout BuildTRC20Transfer\n\n\n")
 				rawTx, err =  b.BuildTRC20Transfer(args.From, args.Bind, args.To, amount)
 				if err == nil {
 					txmsg, _ := proto.Marshal(rawTx.(*core.Transaction))
@@ -87,8 +89,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 				args.To = args.Bind
 				input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
 				amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, false)
+				args.Value = amount
 				// transfer trx
-				fmt.Printf("\n\n\nSwapout BuildTransfer\n\n\n")
 				rawTx, err = b.BuildTransfer(args.From, args.To, amount, input)
 				if err == nil {
 					txmsg, _ := proto.Marshal(rawTx.(*core.Transaction))
