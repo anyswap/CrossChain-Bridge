@@ -126,7 +126,7 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 	}
 
 	if len(tx.RawData.Contract) != 1 {
-		addSwapInfoConsiderError(nil, errors.New("Invalid tron contract"), &swapInfos, &errs)
+		addSwapInfoConsiderError(nil, errors.New("Tron contract is not 1"), &swapInfos, &errs)
 		return
 	}
 	contract := tx.RawData.Contract[0]

@@ -1,6 +1,7 @@
 package tron
 
 import (
+	"fmt"
 	"encoding/hex"
 	"strings"
 
@@ -35,6 +36,20 @@ func (b *Bridge) PublicKeyToAddress(pubKeyHex string) (address string, err error
 	ethAddress := crypto.PubkeyToAddress(*ecdsaPub)
 	address = tronaddress.Address(append([]byte{0x41}, ethAddress.Bytes()...)).String()
 	return
+}
+
+func EqualAddress(addr1, addr2 string) bool {
+	ethaddr1, err1 := tronToEth(addr1)
+	if err1 == nil {
+		addr1 = ethaddr1
+	}
+	ethaddr2, err2 := tronToEth(addr2)
+	if err2 == nil {
+		addr2 = ethaddr2
+	}
+	bz1, _ := troncommon.FromHex(addr1)
+	bz2, _ := troncommon.FromHex(addr2)
+	return fmt.Sprintf("%X", bz1) == fmt.Sprintf("%X", bz2)
 }
 
 func ethToTron(ethAddress string) (string, error) {

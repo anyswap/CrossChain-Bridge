@@ -6,16 +6,21 @@ import (
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"fmt"
+	"math/big"
+	"strings"
 	"time"
 
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
+	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
 	proto "github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 )
 
 const (
@@ -23,11 +28,68 @@ const (
 	retryGetSignStatusInterval = 10 * time.Second
 )
 
+// oracle nodes cannot build an identical Tron tx with BuildTxArgs, which they check signing message against
+// instead, they accept the raw tx from BuildTxArgs.TronExtra when rebuilding tx and check everything in this function
 func (b *Bridge) verifyTransactionWithArgs(tx *core.Transaction, args *tokens.BuildTxArgs) error {
-	// TODO
 	tokenCfg := b.GetTokenConfig(args.PairID)
 	if tokenCfg == nil {
 		return fmt.Errorf("[sign] verify tx with unknown pairID '%v'", args.PairID)
+	}
+	rawdata := tx.GetRawData()
+	contracts := rawdata.GetContract()
+	if l := len(contracts); l != 1 {
+		return fmt.Errorf("[sign] Tron tx contract number is not 1: %v", l)
+	}
+	if tokenCfg.IsTrc20() {
+		// TRC20
+		var contract core.TriggerSmartContract
+		err := ptypes.UnmarshalAny(contracts[0].GetParameter(), &contract)
+		if err != nil {
+			return fmt.Errorf("[sign] Decode tron contract error: %v", err)
+		}
+		txFrom := tronaddress.Address(contract.OwnerAddress).String()
+		if EqualAddress(txFrom, args.From) == false {
+			return fmt.Errorf("[sign] TRC20 transfer with wrong from address")
+		}
+		txRecipient := tronaddress.Address(contract.ContractAddress).String()
+		if EqualAddress(txRecipient, args.To) == false {
+			return fmt.Errorf("[sign] TRC20 transfer with wrong recipient")
+		}
+		if EqualAddress(txRecipient, tokenCfg.ContractAddress) == false {
+			return fmt.Errorf("[sign] TRC20 transfer recipient is not token contract address")
+		}
+		input := rawdata.GetData()
+		bindAddress, value, err := eth.ParseSwapoutTxInput(&input)
+		if err != nil {
+			return fmt.Errorf("[sign] TRC20 transfer with wrong input data: %v", err)
+		}
+		if EqualAddress(args.Bind, bindAddress) == false {
+			return fmt.Errorf("[sign] TRC20 transfer with wrong bind address")
+		}
+		if args.Value.Cmp(value) != 0 {
+			return fmt.Errorf("[sign] TRC20 transfer with wrong value")
+		}
+	} else {
+		// Not TRC20
+		var contract core.TransferContract
+		err := ptypes.UnmarshalAny(contracts[0].GetParameter(), &contract)
+		if err != nil {
+			return fmt.Errorf("[sign] Decode tron contract error: %v", err)
+		}
+		txFrom := tronaddress.Address(contract.OwnerAddress).String()
+		if strings.EqualFold(txFrom, args.From) == false {
+			return fmt.Errorf("[sign] TRX transfer with wrong from address")
+		}
+		txRecipient := tronaddress.Address(contract.ToAddress).String()
+		if strings.EqualFold(txRecipient, args.To) == false {
+			return fmt.Errorf("[sign] TRX transfer with wrong recipient")
+		}
+		if strings.EqualFold(txRecipient, tokenCfg.ContractAddress) == false {
+			return fmt.Errorf("[sign] TRX transfer recipient is not token contract address")
+		}
+		if args.Value.Cmp(big.NewInt(contract.Amount)) != 0 {
+			return fmt.Errorf("[sign] TRX transfer with wrong value")
+		}
 	}
 	return nil
 }
