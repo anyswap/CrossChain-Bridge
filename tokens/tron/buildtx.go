@@ -74,6 +74,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 			if tokenCfg.IsTrc20() {
 				amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, false)
 				args.Value = amount
+				args.To = tokenCfg.ContractAddress
 				//  transfer trc20
 				rawTx, err =  b.BuildTRC20Transfer(args.From, args.Bind, args.To, amount)
 				if err == nil {

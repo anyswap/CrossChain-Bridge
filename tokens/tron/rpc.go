@@ -39,7 +39,7 @@ type RPCError struct {
 }
 
 func (e *RPCError) log(msg error) {
-	log.Warn("[Solana RPC error]", "method", e.method, "msg", msg)
+	log.Warn("[Tron RPC error]", "method", e.method, "msg", msg)
 	if len(e.errs) < 1 {
 		e.errs = make([]error, 1)
 	}
@@ -98,7 +98,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	return uint64(res.BlockHeader.RawData.Number), nil
 }
 
-// GetBalance gets SOL token balance
+// GetBalance gets TRON token balance
 func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 	rpcError := &RPCError{[]error{}, "GetBalance"}
 	for _, cli := range b.getClients() {
@@ -252,9 +252,23 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 
 // BuildTransfer returns an unsigned tron transfer tx
 func (b *Bridge) BuildTransfer(from, to string, amount *big.Int, input []byte) (tx *core.Transaction, err error) {
-	to, err = ethToTron(to)
+	fromaddr, err := tronaddress.Base58ToAddress(from)
 	if err != nil {
-		return nil, err
+		from, err = ethToTron(from)
+		if err != nil {
+			return nil, errors.New("Malformed from address")
+		}
+	} else {
+		from = fromaddr.String()
+	}
+	toaddr, err := tronaddress.Base58ToAddress(to)
+	if err != nil {
+		to, err = ethToTron(to)
+		if err != nil {
+			return nil, errors.New("Malformed from address")
+		}
+	} else {
+		to = toaddr.String()
 	}
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
@@ -303,23 +317,40 @@ func (b *Bridge) BuildTransfer(from, to string, amount *big.Int, input []byte) (
 
 // BuildTRC20Transfer returns an unsigned trc20 transfer tx
 func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string, amount *big.Int) (tx *core.Transaction, err error) {
-	to, err = ethToTron(to)
+	tokenaddr, err := tronaddress.Base58ToAddress(tokenAddress)
 	if err != nil {
-		return nil, err
+		tokenAddress, err = ethToTron(tokenAddress)
+		if err != nil {
+			return nil, errors.New("Malformed TRC20 token address")
+		}
+	} else {
+		tokenAddress = tokenaddr.String()
+	}
+	fromaddr, err := tronaddress.Base58ToAddress(from)
+	if err != nil {
+		from, err = ethToTron(from)
+		if err != nil {
+			return nil, errors.New("Malformed from address")
+		}
+	} else {
+		from = fromaddr.String()
+	}
+	toaddr, err := tronaddress.Base58ToAddress(to)
+	if err != nil {
+		to, err = ethToTron(to)
+		if err != nil {
+			return nil, errors.New("Malformed from address")
+		}
+	} else {
+		to = toaddr.String()
 	}
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
 		return nil, errors.New("Amount exceed max uint64")
 	}
-	contract := &core.TransferContract{}
-	contract.OwnerAddress, err = common.DecodeCheck(from)
-	if err != nil {
-		return nil, err
-	}
-	contract.ToAddress, err = common.DecodeCheck(to)
-	if err != nil {
-		return nil, err
-	}
+	log.Info("==========")
+	log.Info("BuildTRC20Transfer", "from", from, "to", to, "tokenAddress", tokenAddress, "amount", amount)
+	log.Info("==========")
 	rpcError := &RPCError{[]error{}, "BuildTRC20Transfer"}
 	for _, cli := range b.getClients() {
 		err = cli.Start(grpc.WithInsecure())
