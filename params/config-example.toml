@@ -68,6 +68,8 @@ MaxGasPriceFluctPercent = 10
 WaitTimeToReplace = 900
 # max replace swap count
 MaxReplaceCount = 20
+# enable replace swap job
+EnableReplaceSwap = false
 
 # source blockchain gateway config
 [SrcGateway]
@@ -91,6 +93,8 @@ MaxGasPriceFluctPercent = 10
 WaitTimeToReplace = 900
 # max replace swap count
 MaxReplaceCount = 20
+# enable replace swap job
+EnableReplaceSwap = false
 
 # dest blockchain gateway config
 [DestGateway]

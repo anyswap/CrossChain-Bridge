@@ -28,6 +28,10 @@ func StartReplaceJob() {
 
 func startReplaceSwapinJob() {
 	logWorker("replace", "start replace swapin job")
+	if !tokens.DstBridge.GetChainConfig().EnableReplaceSwap {
+		logWorker("replace", "stop replace swapin job as disabled")
+		return
+	}
 	for {
 		res, err := findSwapinsToReplace()
 		if err != nil {
@@ -45,6 +49,10 @@ func startReplaceSwapinJob() {
 
 func startReplaceSwapoutJob() {
 	logWorker("replace", "start replace swapout job")
+	if !tokens.SrcBridge.GetChainConfig().EnableReplaceSwap {
+		logWorker("replace", "stop replace swapout job as disabled")
+		return
+	}
 	for {
 		res, err := findSwapoutsToReplace()
 		if err != nil {

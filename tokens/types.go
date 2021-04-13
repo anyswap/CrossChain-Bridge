@@ -37,6 +37,7 @@ type ChainConfig struct {
 	MaxGasPriceFluctPercent uint64 `json:",omitempty"`
 	WaitTimeToReplace       int64  // seconds
 	MaxReplaceCount         int
+	EnableReplaceSwap       bool
 }
 
 // GatewayConfig struct
