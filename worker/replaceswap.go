@@ -7,6 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
@@ -91,7 +92,7 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) error {
 	nonce := res.SwapNonce
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
-			Identifier: tokens.ReplaceSwapIdentifier,
+			Identifier: params.GetIdentifier(),
 			PairID:     pairID,
 			SwapID:     txid,
 			SwapType:   swapType,
