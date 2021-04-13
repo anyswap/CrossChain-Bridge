@@ -145,20 +145,6 @@ func verifySwapTransaction(bridge tokens.CrossChainBridge, pairID, txid, bind st
 	return swapInfo, err
 }
 
-func dcrmSignTransaction(bridge tokens.CrossChainBridge, rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
-	maxRetryDcrmSignCount := 5
-	for i := 0; i < maxRetryDcrmSignCount; i++ {
-		signedTx, txHash, err = bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		return nil, "", err
-	}
-	return signedTx, txHash, nil
-}
-
 func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin bool) (err error) {
 	var (
 		txHash              string
