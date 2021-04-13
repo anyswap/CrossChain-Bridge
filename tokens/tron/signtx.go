@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
@@ -35,6 +34,7 @@ func (b *Bridge) verifyTransactionWithArgs(tx *core.Transaction, args *tokens.Bu
 	if tokenCfg == nil {
 		return fmt.Errorf("[sign] verify tx with unknown pairID '%v'", args.PairID)
 	}
+	isSwapin := (args.SwapType == tokens.SwapinType)
 	rawdata := tx.GetRawData()
 	contracts := rawdata.GetContract()
 	if l := len(contracts); l != 1 {
@@ -66,7 +66,8 @@ func (b *Bridge) verifyTransactionWithArgs(tx *core.Transaction, args *tokens.Bu
 		if EqualAddress(args.Bind, bindAddress) == false {
 			return fmt.Errorf("[sign] TRC20 transfer with wrong bind address")
 		}
-		if args.Value.Cmp(value) != 0 {
+		argsValue := tokens.CalcSwappedValue(args.PairID, args.OriginValue, isSwapin)
+		if argsValue.Cmp(value) != 0 {
 			return fmt.Errorf("[sign] TRC20 transfer with wrong value")
 		}
 	} else {
@@ -77,17 +78,15 @@ func (b *Bridge) verifyTransactionWithArgs(tx *core.Transaction, args *tokens.Bu
 			return fmt.Errorf("[sign] Decode tron contract error: %v", err)
 		}
 		txFrom := tronaddress.Address(contract.OwnerAddress).String()
-		if strings.EqualFold(txFrom, args.From) == false {
+		if EqualAddress(txFrom, args.From) == false {
 			return fmt.Errorf("[sign] TRX transfer with wrong from address")
 		}
 		txRecipient := tronaddress.Address(contract.ToAddress).String()
-		if strings.EqualFold(txRecipient, args.To) == false {
+		if EqualAddress(txRecipient, args.To) == false {
 			return fmt.Errorf("[sign] TRX transfer with wrong recipient")
 		}
-		if strings.EqualFold(txRecipient, tokenCfg.ContractAddress) == false {
-			return fmt.Errorf("[sign] TRX transfer recipient is not token contract address")
-		}
-		if args.Value.Cmp(big.NewInt(contract.Amount)) != 0 {
+		argsValue := tokens.CalcSwappedValue(args.PairID, args.OriginValue, isSwapin)
+		if argsValue.Cmp(big.NewInt(contract.Amount)) != 0 {
 			return fmt.Errorf("[sign] TRX transfer with wrong value")
 		}
 	}

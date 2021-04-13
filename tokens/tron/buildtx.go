@@ -66,14 +66,23 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 			}
 			amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, true)
 			//  mint mapping asset
-			return b.BuildSwapinTx(args.From, args.Bind, args.To, amount, args.SwapInfo.SwapID)
+			rawTx, err = b.BuildSwapinTx(args.From, args.Bind, args.To, amount, args.SwapInfo.SwapID)
+			if err == nil {
+				txmsg, _ := proto.Marshal(rawTx.(*core.Transaction))
+				args.Extra = &tokens.AllExtras{
+					TronExtra: &tokens.TronExtraArgs{
+						RawTx: fmt.Sprintf("%X", txmsg),
+					},
+				}
+			}
+			return
 		case tokens.SwapoutType:
 			if !b.IsSrc {
 				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
 			}
 			if tokenCfg.IsTrc20() {
+				// TRC20
 				amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, false)
-				args.Value = amount
 				args.To = tokenCfg.ContractAddress
 				//  transfer trc20
 				rawTx, err =  b.BuildTRC20Transfer(args.From, args.Bind, args.To, amount)
@@ -87,6 +96,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 				}
 				return
 			} else {
+				// TRX
 				args.To = args.Bind
 				input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
 				amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, false)

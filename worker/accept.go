@@ -11,7 +11,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
@@ -62,7 +61,6 @@ func acceptSign() {
 			}
 			agreeResult := "AGREE"
 			err := verifySignInfo(info)
-			log.Info("====== 111111 acceptSign ======", "err", err)
 			switch err {
 			case errIdentifierMismatch,
 				errInitiatorMismatch,
@@ -80,7 +78,6 @@ func acceptSign() {
 			}
 			logWorker("accept", "dcrm DoAcceptSign", "keyID", keyID, "result", agreeResult)
 			res, err := dcrm.DoAcceptSign(keyID, agreeResult, info.MsgHash, info.MsgContext)
-			log.Info("====== 222222 acceptSign ======", "res", res, "err", err)
 			if err != nil {
 				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res)
 			} else {
