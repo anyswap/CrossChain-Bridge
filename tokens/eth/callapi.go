@@ -201,6 +201,13 @@ func (b *Bridge) SendSignedTransaction(tx *types.Transaction) error {
 			success = true
 		}
 	}
+	for _, apiAddress := range gateway.APIAddressExt {
+		url := apiAddress
+		err = client.RPCPost(&result, url, "eth_sendRawTransaction", hexData)
+		if err == nil {
+			success = true
+		}
+	}
 	if success {
 		return nil
 	}

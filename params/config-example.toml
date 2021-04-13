@@ -68,6 +68,7 @@ MaxGasPriceFluctPercent = 10
 # source blockchain gateway config
 [SrcGateway]
 APIAddress = ["http://47.107.50.83:3002"]
+APIAddressExt = ["http://47.107.50.83:3000"]
 
 # dest chain config
 [DestChain]
@@ -87,6 +88,7 @@ MaxGasPriceFluctPercent = 10
 # dest blockchain gateway config
 [DestGateway]
 APIAddress = ["http://5.189.139.168:8018"]
+APIAddressExt = ["http://5.189.139.168:8000"]
 
 # DCRM config
 [Dcrm]
