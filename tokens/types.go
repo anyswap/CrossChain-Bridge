@@ -42,8 +42,9 @@ type ChainConfig struct {
 
 // GatewayConfig struct
 type GatewayConfig struct {
-	APIAddress []string
-	Extras     *GatewayExtras
+	APIAddress    []string
+	APIAddressExt []string
+	Extras        *GatewayExtras
 }
 
 // GatewayExtras struct

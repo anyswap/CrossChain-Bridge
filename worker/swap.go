@@ -312,7 +312,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
 		signedTx, txHash, err = resBridge.SignTransaction(rawTx, pairID)
 	} else {
-		signedTx, txHash, err = dcrmSignTransaction(resBridge, rawTx, args.GetExtraArgs())
+		signedTx, txHash, err = resBridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	}
 	if err != nil {
 		logWorkerError("doSwap", "sign tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)

@@ -107,6 +107,7 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 
 func updateSwapTx(txid, pairID, bind, swapTx string, isSwapin bool) (err error) {
 	updates := &mongodb.SwapResultUpdateItems{
+		Status:    mongodb.KeepStatus,
 		SwapTx:    swapTx,
 		Timestamp: now(),
 	}
@@ -185,20 +186,6 @@ func verifySwapTransaction(bridge tokens.CrossChainBridge, pairID, txid, bind st
 		return nil, tokens.ErrBindAddressMismatch
 	}
 	return swapInfo, err
-}
-
-func dcrmSignTransaction(bridge tokens.CrossChainBridge, rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
-	maxRetryDcrmSignCount := 5
-	for i := 0; i < maxRetryDcrmSignCount; i++ {
-		signedTx, txHash, err = bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		return nil, "", err
-	}
-	return signedTx, txHash, nil
 }
 
 func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin, isReplace bool) (err error) {
