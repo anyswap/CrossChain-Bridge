@@ -47,7 +47,7 @@ func (e *RPCError) log(msg error) {
 }
 
 func (e *RPCError) Error() error {
-	return fmt.Errorf("[Solana RPC error] method: %v errors:%+v", e.method, e.errs)
+	return fmt.Errorf("[Tron RPC error] method: %v errors:%+v", e.method, e.errs)
 }
 
 // GetLatestBlockNumber returns current finalized block height
@@ -233,13 +233,13 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 			continue
 		}
 		tx, err = cli.GetTransactionInfoByID(txHash)
-		if err == nil {
+		if err == nil && tx != nil {
 			cli.Stop()
 			break
 		}
 		cli.Stop()
 	}
-	status.Receipt = tx.Receipt
+	status.Receipt = tx
 	status.PrioriFinalized = false
 	status.BlockHeight = uint64(tx.BlockNumber)
 	status.BlockTime = uint64(tx.BlockTimeStamp / 1000)
@@ -252,24 +252,8 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 
 // BuildTransfer returns an unsigned tron transfer tx
 func (b *Bridge) BuildTransfer(from, to string, amount *big.Int, input []byte) (tx *core.Transaction, err error) {
-	fromaddr, err := tronaddress.Base58ToAddress(from)
-	if err != nil {
-		from, err = ethToTron(from)
-		if err != nil {
-			return nil, errors.New("Malformed from address")
-		}
-	} else {
-		from = fromaddr.String()
-	}
-	toaddr, err := tronaddress.Base58ToAddress(to)
-	if err != nil {
-		to, err = ethToTron(to)
-		if err != nil {
-			return nil, errors.New("Malformed from address")
-		}
-	} else {
-		to = toaddr.String()
-	}
+	from = anyToTron(from)
+	to = anyToTron(to)
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
 		return nil, errors.New("Amount exceed max uint64")
@@ -317,40 +301,13 @@ func (b *Bridge) BuildTransfer(from, to string, amount *big.Int, input []byte) (
 
 // BuildTRC20Transfer returns an unsigned trc20 transfer tx
 func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string, amount *big.Int) (tx *core.Transaction, err error) {
-	tokenaddr, err := tronaddress.Base58ToAddress(tokenAddress)
-	if err != nil {
-		tokenAddress, err = ethToTron(tokenAddress)
-		if err != nil {
-			return nil, errors.New("Malformed TRC20 token address")
-		}
-	} else {
-		tokenAddress = tokenaddr.String()
-	}
-	fromaddr, err := tronaddress.Base58ToAddress(from)
-	if err != nil {
-		from, err = ethToTron(from)
-		if err != nil {
-			return nil, errors.New("Malformed from address")
-		}
-	} else {
-		from = fromaddr.String()
-	}
-	toaddr, err := tronaddress.Base58ToAddress(to)
-	if err != nil {
-		to, err = ethToTron(to)
-		if err != nil {
-			return nil, errors.New("Malformed from address")
-		}
-	} else {
-		to = toaddr.String()
-	}
+	tokenAddress = anyToTron(tokenAddress)
+	from = anyToTron(from)
+	to = anyToTron(to)
 	n, _ := new(big.Int).SetString("18446740000000000000", 0)
 	if amount.Cmp(n) > 0 {
 		return nil, errors.New("Amount exceed max uint64")
 	}
-	log.Info("==========")
-	log.Info("BuildTRC20Transfer", "from", from, "to", to, "tokenAddress", tokenAddress, "amount", amount)
-	log.Info("==========")
 	rpcError := &RPCError{[]error{}, "BuildTRC20Transfer"}
 	for _, cli := range b.getClients() {
 		err = cli.Start(grpc.WithInsecure())
@@ -375,21 +332,30 @@ func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string, amount *big.I
 }
 
 // BuildSwapinTx returns an unsigned mapping asset minting tx
-func (b *Bridge) BuildSwapinTx(from, to, tokenAddress string, amount *big.Int, txhash string) (tx *core.Transaction, err error) {
-	n, _ := new(big.Int).SetString("18446740000000000000", 0)
-	if amount.Cmp(n) > 0 {
-		return nil, errors.New("Amount exceed max uint64")
+func (b *Bridge) BuildSwapinTx(from, tokenAddress string, dataBytes []byte) (tx *core.Transaction, err error) {
+	tokenAddress = anyToTron(tokenAddress)
+	from = anyToTron(from)
+
+	fromAddr, _ := tronaddress.Base58ToAddress(from)
+	tokenAddr, _ := tronaddress.Base58ToAddress(tokenAddress)
+	ct := &core.TriggerSmartContract{
+		OwnerAddress:    fromAddr.Bytes(),
+		ContractAddress: tokenAddr.Bytes(),
+		Data:            dataBytes,
 	}
-	method := "Swapin"
-	param := fmt.Sprintf(`[{"string":"%s"},{"address":"%s"},{"uint256":"%v"}]`, txhash, to, amount.Uint64())
+
 	rpcError := &RPCError{[]error{}, "BuildSwapinTx"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), GRPC_TIMEOUT)
+	defer cancel()
+
 	for _, cli := range b.getClients() {
 		err = cli.Start(grpc.WithInsecure())
 		if err != nil {
 			rpcError.log(err)
 			continue
 		}
-		txext, err1 := cli.TriggerConstantContract(from, tokenAddress, method, param)
+		txext, err1 := cli.Client.TriggerConstantContract(ctx, ct)
 		err = err1
 		if err == nil {
 			tx = txext.Transaction

@@ -108,8 +108,12 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 	if len(ret) != 1 {
 		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{errors.New("Tron tx return not found")}
 	}
-	if ret[0].Ret != core.Transaction_Result_SUCESS {
-		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{errors.New("Tron tx not success")}
+	if txret := ret[0].GetRet(); txret != core.Transaction_Result_SUCESS {
+		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{fmt.Errorf("Tron tx not success: %v", txret)}
+	}
+
+	if cret := ret[0].GetContractRet(); cret == core.Transaction_Result_SUCCESS {
+		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{fmt.Errorf("Tron contract not success: %v", cret)}
 	}
 
 	if err := b.VerifyMsgHash(tx, []string{fmt.Sprintf("%X", txext.Txid)}); err != nil {
@@ -185,7 +189,28 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 					break
 				}
 				transferTo, _ := ethToTron(to)
-				if strings.EqualFold(tokenContractAddress, contractAddress) && strings.EqualFold(depositAddress, transferTo) {
+				if EqualAddress(tokenContractAddress, contractAddress) && EqualAddress(depositAddress, transferTo) {
+					txStatus := b.GetTransactionStatus(fmt.Sprintf("%+X", txext.Txid))
+					recpt, ok := txStatus.Receipt.(*core.TransactionInfo)
+					if !ok {
+						addSwapInfoConsiderError(swapInfo, errors.New("Get tron tx receipt error"), &swapInfos, &errs)
+						break
+					}
+					txlogs := recpt.GetLog()
+					if len(txlogs) < 1 {
+						addSwapInfoConsiderError(swapInfo, errors.New("No contract log"), &swapInfos, &errs)
+						break
+					}
+					logfrom, logto, logamount, err := checkErc20TransferLog(txlogs, contractAddress)
+					if err != nil {
+						addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)
+						break
+					}
+					if EqualAddress(logfrom, from) == false || EqualAddress(logto, depositAddress) == false || logamount.Cmp(value) != 0 {
+						addSwapInfoConsiderError(swapInfo, errors.New("Contract log mismatch"), &swapInfos, &errs)
+						break
+					}
+
 					swapInfo.PairID = tokenPair.PairID
 					swapInfo.From = from
 					swapInfo.Bind, _ = tronToEth(swapInfo.From) // Use eth format
@@ -206,6 +231,34 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 	swapInfos = append(swapInfos, swapInfo)
 	errs = append(errs, nil)
 	return swapInfos, errs
+}
+
+func checkErc20TransferLog (txlogs []*core.TransactionInfo_Log, contractAddress string) (logfrom, logto string, logamount *big.Int, err error) {
+	logamount = new(big.Int)
+	hasAddr := false
+	for _, txlog := range txlogs {
+		for _, addr := range txlog.GetAddress() {
+			if EqualAddress(fmt.Sprintf("%X", addr), contractAddress) {
+				hasAddr = true
+				topics := txlog.GetTopics()
+				if len(topics) < 3 {
+					return "", "", nil, errors.New("Log topic number error")
+				}
+				if fmt.Sprintf("%X", topics[0]) != fmt.Sprintf("%X", erc20CodeParts["LogTransfer"]) {
+					return "", "", nil, errors.New("Log topic number error")
+				}
+				logfrom = fmt.Sprintf("%X", topics[1])
+				logto = fmt.Sprintf("%X", topics[2])
+				amthex := fmt.Sprintf("%X", txlog.GetData())
+				logamount, _ = logamount.SetString(amthex, 16)
+				break
+			}
+		}
+	}
+	if hasAddr == false {
+		return "", "", nil, errors.New("Logs do not contain contract address")
+	}
+	return
 }
 
 func (b *Bridge) verifySwapinTxWithHash(txid string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
@@ -233,8 +286,11 @@ func (b *Bridge) verifySwapoutTx(txext *TransactionExtention, allowUnstable bool
 	if len(ret) != 1 {
 		return nil, []error{errors.New("Tron tx return not found")}
 	}
-	if ret[0].Ret != core.Transaction_Result_SUCESS {
-		return nil, []error{errors.New("Tron tx not success")}
+	if txret := ret[0].GetRet(); txret != core.Transaction_Result_SUCESS {
+		return nil, []error{fmt.Errorf("Tron tx not success: %+v", txret)}
+	}
+	if cret := ret[0].GetContractRet(); cret != core.Transaction_Result_SUCCESS {
+		return nil, []error{fmt.Errorf("Tron tx contract not success: %+v", cret)}
 	}
 	swapInfo := &tokens.TxSwapInfo{
 		Hash: CalcTxHash(tx),

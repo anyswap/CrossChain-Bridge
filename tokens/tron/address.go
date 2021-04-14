@@ -60,9 +60,28 @@ func ethToTron(ethAddress string) (string, error) {
 
 func tronToEth(tronAddress string) (string, error) {
 	addr, err := tronaddress.Base58ToAddress(tronAddress)
-	if err != nil {
+	if err != nil || len(addr) == 0 {
 		return "", err
 	}
 	ethaddr := common.BytesToAddress(addr.Bytes())
 	return ethaddr.String(), nil
+}
+
+func anyToTron(address string) string {
+	addr, err := tronaddress.Base58ToAddress(address)
+	if err != nil {
+		address, err = ethToTron(address)
+		if err != nil {
+			return ""
+		}
+	} else {
+		address = addr.String()
+	}
+	return address
+}
+
+func anyToEth(address string) string {
+	tronaddr := anyToTron(address)
+	address, _ = tronToEth(tronaddr)
+	return address
 }

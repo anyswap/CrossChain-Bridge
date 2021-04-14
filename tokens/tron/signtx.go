@@ -40,7 +40,39 @@ func (b *Bridge) verifyTransactionWithArgs(tx *core.Transaction, args *tokens.Bu
 	if l := len(contracts); l != 1 {
 		return fmt.Errorf("[sign] Tron tx contract number is not 1: %v", l)
 	}
-	if tokenCfg.IsTrc20() {
+	if isSwapin {
+		// Swapin
+		var contract core.TriggerSmartContract
+		err := ptypes.UnmarshalAny(contracts[0].GetParameter(), &contract)
+		if err != nil {
+			return fmt.Errorf("[sign] Decode tron contract error: %v", err)
+		}
+		txFrom := tronaddress.Address(contract.OwnerAddress).String()
+		if EqualAddress(txFrom, args.From) == false || EqualAddress(txFrom, tokenCfg.DcrmAddress) == false {
+			return fmt.Errorf("[sign] Swapin tx with wrong from address")
+		}
+		txRecipient := tronaddress.Address(contract.ContractAddress).String()
+		if EqualAddress(txRecipient, tokenCfg.ContractAddress) == false {
+			return fmt.Errorf("[sign] Swapin tx recipient is not token contract address")
+		}
+		//checkInput := *args.Input
+		err = b.buildSwapinTxInput(args)
+		if err != nil {
+			log.Warn("[sign] Swapin tx cannot build input", "error", err)
+		}
+		input := contract.Data
+		_, bindAddress, value, err := eth.ParseErc20SwapinTxInput(&input, anyToEth(tokenCfg.DcrmAddress))
+		if err != nil {
+			return fmt.Errorf("[sign] Swapin tx with wrong input data: %v", err)
+		}
+		if EqualAddress(args.Bind, bindAddress) == false {
+			return fmt.Errorf("[sign] Swapin tx with wrong bind address")
+		}
+		argsValue := tokens.CalcSwappedValue(args.PairID, args.OriginValue, isSwapin)
+		if argsValue.Cmp(value) != 0 {
+			return fmt.Errorf("[sign] Swapin tx with wrong value")
+		}
+	} else if tokenCfg.IsTrc20() {
 		// TRC20
 		var contract core.TriggerSmartContract
 		err := ptypes.UnmarshalAny(contracts[0].GetParameter(), &contract)
@@ -52,9 +84,6 @@ func (b *Bridge) verifyTransactionWithArgs(tx *core.Transaction, args *tokens.Bu
 			return fmt.Errorf("[sign] TRC20 transfer with wrong from address")
 		}
 		txRecipient := tronaddress.Address(contract.ContractAddress).String()
-		if EqualAddress(txRecipient, args.To) == false {
-			return fmt.Errorf("[sign] TRC20 transfer with wrong recipient")
-		}
 		if EqualAddress(txRecipient, tokenCfg.ContractAddress) == false {
 			return fmt.Errorf("[sign] TRC20 transfer recipient is not token contract address")
 		}
@@ -82,8 +111,8 @@ func (b *Bridge) verifyTransactionWithArgs(tx *core.Transaction, args *tokens.Bu
 			return fmt.Errorf("[sign] TRX transfer with wrong from address")
 		}
 		txRecipient := tronaddress.Address(contract.ToAddress).String()
-		if EqualAddress(txRecipient, args.To) == false {
-			return fmt.Errorf("[sign] TRX transfer with wrong recipient")
+		if EqualAddress(txRecipient, args.Bind) == false {
+			return fmt.Errorf("[sign] TRX transfer with wrong recipient, has %v, want %v", txRecipient, args.Bind)
 		}
 		argsValue := tokens.CalcSwappedValue(args.PairID, args.OriginValue, isSwapin)
 		if argsValue.Cmp(big.NewInt(contract.Amount)) != 0 {

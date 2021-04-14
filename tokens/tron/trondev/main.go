@@ -46,9 +46,11 @@ func main() {
 
 	// GetContractCode()
 
-	// GetTransaction()
+	GetTransaction()
 
-	MarshalUnmarshalTx()
+	// MarshalUnmarshalTx()
+
+	// GetSmartContractLog()
 }
 
 func GetTransaction() {
@@ -126,21 +128,40 @@ func GetTransaction() {
 	// f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3 普通转账
 	// c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984 TRC20 转账
 	//txinfo, err := cli.GetTransactionInfoByID("f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3")
-	txinfo, err := cli.GetTransactionInfoByID("c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
+	// txinfo, err := cli.GetTransactionInfoByID("c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
+	// txinfo, err := cli.GetTransactionInfoByID("aa1d7b84277097c3fe8657a663e01eec11f3b5cfcdf2dea41f5593784637fab7")
+	txinfo, err := cli.GetTransactionInfoByID("0802edce3c7bd11b4d995eac84a7b235594f12088493264f3fd4d9f4bd991b57")
 	checkError(err)
 	fmt.Printf("Transaction info: %+v\n", txinfo)
 	fmt.Printf("Transaction block: %+v\n", txinfo.BlockNumber)
 	fmt.Printf("Transaction time: %+v\n", txinfo.BlockTimeStamp)
 	fmt.Printf("Transaction contract result: %+v\n", txinfo.ContractResult)
 	fmt.Printf("Transaction receipt: %+v\n", txinfo.Receipt)
-	fmt.Printf("Transaction log: %+v\n", txinfo.Log)
+
+	txlog := txinfo.GetLog()
+	fmt.Printf("Transaction log length: %v\n", len(txlog))
+	/*
+	fmt.Printf("Transaction log: %v\n", txlog[0])
+	fmt.Printf("Transaction log address: %v\n", tronaddress.Address(append([]byte{0x41}, txlog[0].GetAddress()...))) // 合约地址
+	fmt.Printf("Transaction log topics: %X\n", txlog[0].GetTopics()[0]) // trc20TransferEventSignature DDF252AD1BE2C89B69C2B068FC378DAA952BA7F163C4A11628F55A4DF523B3EF
+	fmt.Printf("Transaction log topics: %X\n", txlog[0].GetTopics()[1]) // from
+	fmt.Printf("Transaction log topics: %X\n", txlog[0].GetTopics()[2]) // to
+	fmt.Printf("Transaction log data: %X\n", txlog[0].GetData())
+	*/
 
 	divide()
-	//tx, err := cli.GetTransactionByID("f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3")
-	tx, err := cli.GetTransactionByID("c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
+	tx, err := cli.GetTransactionByID("f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3")
+	//tx, err := cli.GetTransactionByID("c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
+	// tx, err := cli.GetTransactionByID("aa1d7b84277097c3fe8657a663e01eec11f3b5cfcdf2dea41f5593784637fab7")
+	// tx, err := cli.GetTransactionByID("0802edce3c7bd11b4d995eac84a7b235594f12088493264f3fd4d9f4bd991b57")
 	checkError(err)
 	fmt.Printf("Transaction: %+v\n", tx)
-	fmt.Printf("Contract ret: %v\n", (tx.GetRet()[0].Ret == core.Transaction_Result_SUCESS))
+	fmt.Printf("Transaction Ret: %+v\n", tx.GetRet()[0])
+	fmt.Printf("Transaction Ret Success: %+v\n", (tx.GetRet()[0].GetRet() == core.Transaction_Result_SUCESS))
+	fmt.Printf("Contract Ret: %+v\n", tx.GetRet()[0].GetContractRet())
+	fmt.Printf("Contract Ret Default: %+v\n", (tx.GetRet()[0].GetContractRet() == core.Transaction_Result_DEFAULT))
+	fmt.Printf("Contract Ret Success: %+v\n", (tx.GetRet()[0].GetContractRet() == core.Transaction_Result_SUCCESS))
+	fmt.Printf("Contract Ret Out Of Energy: %+v\n", (tx.GetRet()[0].GetContractRet() == core.Transaction_Result_OUT_OF_ENERGY))
 	if len(tx.RawData.Contract) != 1 {
 		checkError(fmt.Errorf("Invalid contract"))
 	}
@@ -294,7 +315,9 @@ func CalcTxid() {
 	err := cli.Start(grpc.WithInsecure())
 	checkError(err)
 	defer cli.Stop()
-	tx, err := cli.GetTransactionByID("0xc0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
+	//tx, err := cli.GetTransactionByID("0xc0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
+	//tx, err := cli.GetTransactionByID("c7effb1b0b86f4a22dcce26208027a21ef903685655a2d75e4819a63b903f0e7")
+	tx, err := cli.GetTransactionByID("013e79e7dd5229909dea401d498e2e474dacbe7cfa8fda57a19a17c610d22df9")
 	checkError(err)
 	fmt.Printf("Tx: %+v", tx)
 	rawData, err := proto.Marshal(tx.GetRawData())
@@ -306,6 +329,18 @@ func CalcTxid() {
 	txhash = strings.TrimPrefix(txhash, "0x")
 
 	fmt.Printf("Tx hash: %v\n", txhash)
+
+	ret := tx.GetRet()
+	crt := ret[0].ContractRet
+	fmt.Printf("%v\n", crt)
+
+	var contract core.TriggerSmartContract
+	err = ptypes.UnmarshalAny(tx.GetRawData().GetContract()[0].GetParameter(), &contract)
+	checkError(err)
+	fmt.Printf("\nContract: %+v\n", contract)
+	data := tx.GetRawData().GetData()
+	fmt.Printf("\nData: %X\n", data)
+	fmt.Printf("\nData: %X\n", contract.Data)
 }
 
 func GetContractCode() {

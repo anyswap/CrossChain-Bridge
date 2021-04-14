@@ -2,6 +2,7 @@ package tron
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -10,7 +11,10 @@ import (
 	proto "github.com/golang/protobuf/proto"
 
 	"github.com/anyswap/CrossChain-Bridge/params"
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 )
 
 var (
@@ -64,9 +68,12 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 			if b.IsSrc {
 				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
 			}
-			amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, true)
 			//  mint mapping asset
-			rawTx, err = b.BuildSwapinTx(args.From, args.Bind, args.To, amount, args.SwapInfo.SwapID)
+			err = b.buildSwapinTxInput(args)
+			if err != nil {
+				return nil, err
+			}
+			rawTx, err = b.BuildSwapinTx(args.From, args.To, *args.Input)
 			if err == nil {
 				txmsg, _ := proto.Marshal(rawTx.(*core.Transaction))
 				args.Extra = &tokens.AllExtras{
@@ -121,4 +128,27 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		}
 	}
 	return nil, fmt.Errorf("Cannot build tron transaction")
+}
+
+// build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
+func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
+	pairID := args.PairID
+	funcHash := eth.ExtCodeParts["SwapinFuncHash"]
+	txHash := common.HexToHash(args.SwapID)
+	address := common.HexToAddress(args.Bind)
+	if address == (common.Address{}) || !common.IsHexAddress(args.Bind) {
+		log.Warn("swapin to wrong address", "address", args.Bind)
+		return errors.New("can not swapin to empty or invalid address")
+	}
+	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, true)
+
+	input := eth.PackDataWithFuncHash(funcHash, txHash, address, amount)
+	args.Input = &input // input
+
+	token := b.GetTokenConfig(pairID)
+	if token == nil {
+		return tokens.ErrUnknownPairID
+	}
+	args.To = token.ContractAddress // to
+	return nil
 }
