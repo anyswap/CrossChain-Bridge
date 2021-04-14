@@ -1,6 +1,7 @@
 package tron
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -244,7 +245,7 @@ func checkErc20TransferLog (txlogs []*core.TransactionInfo_Log, contractAddress 
 				if len(topics) < 3 {
 					return "", "", nil, errors.New("Log topic number error")
 				}
-				if fmt.Sprintf("%X", topics[0]) != fmt.Sprintf("%X", erc20CodeParts["LogTransfer"]) {
+				if bytes.Equal(topics[0], ExtCodeParts["LogTransfer"]) == false {
 					return "", "", nil, errors.New("Log topic number error")
 				}
 				logfrom = fmt.Sprintf("%X", topics[1])

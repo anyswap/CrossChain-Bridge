@@ -50,6 +50,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		}
 		return nil, verifyErr
 	}
+
 	var input []byte
 	var tokenCfg *tokens.TokenConfig
 	if args.Input == nil {

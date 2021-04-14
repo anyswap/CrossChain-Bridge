@@ -42,11 +42,11 @@ func main() {
 
 	// ScanBlock()
 
-	// CalcTxid()
+	GetTxArgs()
 
 	// GetContractCode()
 
-	GetTransaction()
+	// GetTransaction()
 
 	// MarshalUnmarshalTx()
 
@@ -308,7 +308,7 @@ func ScanBlock() {
 	}
 }
 
-func CalcTxid() {
+func GetTxArgs() {
 	divide()
 	cli := client.NewGrpcClientWithTimeout(testnetendpoint, timeout)
 	//cli := client.NewGrpcClientWithTimeout(mainnetendpoint, timeout)

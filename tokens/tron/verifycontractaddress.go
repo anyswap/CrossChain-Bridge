@@ -3,6 +3,7 @@ package tron
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -152,4 +153,24 @@ func getSwapoutFuncHash() []byte {
 
 func getLogSwapoutTopic() []byte {
 	return ExtCodeParts["LogSwapoutTopic"]
+}
+
+// ParseTransferTxInput parse transfer tx input
+func ParseTransferTxInput(input *[]byte) (toaddr string, value *big.Int, err error) {
+	if input == nil || len(*input) < 4 {
+		return "", nil, tokens.ErrTxWithWrongInput
+	}
+	data := *input
+	funcHash := data[:4]
+	transferFuncHash := erc20CodeParts["transfer"]
+	if !bytes.Equal(funcHash, transferFuncHash) {
+		return "", nil, tokens.ErrTxFuncHashMismatch
+	}
+	encData := data[4:]
+	if len(encData) != 64 {
+		return "", nil, tokens.ErrTxIncompatible
+	}
+	toaddr = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
+	value = common.GetBigInt(encData, 32, 32)
+	return toaddr, value, nil
 }

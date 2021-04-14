@@ -87,16 +87,16 @@ func (b *Bridge) verifyTransactionWithArgs(tx *core.Transaction, args *tokens.Bu
 		if EqualAddress(txRecipient, tokenCfg.ContractAddress) == false {
 			return fmt.Errorf("[sign] TRC20 transfer recipient is not token contract address")
 		}
-		input := rawdata.GetData()
-		bindAddress, value, err := eth.ParseSwapoutTxInput(&input)
+		input := contract.Data
+		transferto, transfervalue, err := ParseTransferTxInput(&input)
 		if err != nil {
 			return fmt.Errorf("[sign] TRC20 transfer with wrong input data: %v", err)
 		}
-		if EqualAddress(args.Bind, bindAddress) == false {
+		if EqualAddress(args.Bind, transferto) == false {
 			return fmt.Errorf("[sign] TRC20 transfer with wrong bind address")
 		}
 		argsValue := tokens.CalcSwappedValue(args.PairID, args.OriginValue, isSwapin)
-		if argsValue.Cmp(value) != 0 {
+		if argsValue.Cmp(transfervalue) != 0 {
 			return fmt.Errorf("[sign] TRC20 transfer with wrong value")
 		}
 	} else {
