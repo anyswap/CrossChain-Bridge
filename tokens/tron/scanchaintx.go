@@ -41,8 +41,11 @@ func (b *Bridge) StartChainTransactionScanJob() {
 			continue
 		}
 
+		log.Debug("Find tron block", "num", len(res.Block))
 		for _, block := range res.Block {
+			//log.Debugf("Check tron block %x, fount tron tx %v", block.Blockid, len(block.Transactions))
 			for _, tx := range block.Transactions {
+				// log.Debugf("Check tron tx: %x", tx.GetTxid())
 				b.processTransaction(tx)
 			}
 		}

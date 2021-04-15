@@ -14,10 +14,12 @@ import (
 
 	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
 	"github.com/fbsobreira/gotron-sdk/pkg/client"
-	"github.com/fbsobreira/gotron-sdk/pkg/common"
+	troncommon "github.com/fbsobreira/gotron-sdk/pkg/common"
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/api"
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
 	proto "github.com/golang/protobuf/proto"
+
+	"github.com/anyswap/CrossChain-Bridge/common"
 )
 
 func checkError(err error) {
@@ -46,11 +48,58 @@ func main() {
 
 	// GetContractCode()
 
-	GetTransaction()
+	// GetTransaction()
+
+	ParseAddress()
 
 	// MarshalUnmarshalTx()
 
 	// GetSmartContractLog()
+}
+
+func ParseAddress() {
+	addr := "TEtNLh69XnK9Fs8suCogK3sRrWJbQHah4k"
+	fmt.Printf("tron to tron: %v\n", anyToTron(addr))
+	fmt.Printf("tron to eth: %v\n", anyToEth(addr))
+	fmt.Printf("tron to eth to eth: %v\n", anyToEth(anyToEth(addr)))
+}
+
+func ethToTron(ethAddress string) (string, error) {
+	intaddr, ok := new(big.Int).SetString(ethAddress, 16)
+	if ok {
+		ethAddress = common.BigToAddress(intaddr).String()
+	}
+	bz, _ := troncommon.FromHex(ethAddress)
+	tronaddr := tronaddress.Address(append([]byte{0x41}, bz...))
+	return tronaddr.String(), nil
+}
+
+func tronToEth(tronAddress string) (string, error) {
+	addr, err := tronaddress.Base58ToAddress(tronAddress)
+	if err != nil || len(addr) == 0 {
+		return "", err
+	}
+	ethaddr := common.BytesToAddress(addr.Bytes())
+	return ethaddr.String(), nil
+}
+
+func anyToTron(address string) string {
+	addr, err := tronaddress.Base58ToAddress(address)
+	if err != nil {
+		address, err = ethToTron(address)
+		if err != nil {
+			return ""
+		}
+	} else {
+		address = addr.String()
+	}
+	return address
+}
+
+func anyToEth(address string) string {
+	tronaddr := anyToTron(address)
+	address, _ = tronToEth(tronaddr)
+	return address
 }
 
 func GetTransaction() {
@@ -205,9 +254,9 @@ func GetTransaction() {
 		to := "TXexdzdZv3z5mJP1yzTeEc4LZwcBvenmZc"
 		divide()
 		contract := &core.TransferContract{}
-		contract.OwnerAddress, err = common.DecodeCheck(from)
+		contract.OwnerAddress, err = troncommon.DecodeCheck(from)
 		checkError(err)
-		contract.ToAddress, err = common.DecodeCheck(to)
+		contract.ToAddress, err = troncommon.DecodeCheck(to)
 		checkError(err)
 		contract.Amount = 1000
 		fmt.Printf("Contract: %+v\n", contract)
@@ -332,7 +381,7 @@ func GetTxArgs() {
 	h256h := sha256.New()
 	h256h.Write(rawData)
 	hash := h256h.Sum(nil)
-	txhash := common.ToHex(hash)
+	txhash := troncommon.ToHex(hash)
 	txhash = strings.TrimPrefix(txhash, "0x")
 
 	fmt.Printf("Tx hash: %v\n", txhash)

@@ -113,7 +113,7 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{fmt.Errorf("Tron tx not success: %v", txret)}
 	}
 
-	if cret := ret[0].GetContractRet(); cret == core.Transaction_Result_SUCCESS {
+	if cret := ret[0].GetContractRet(); cret != core.Transaction_Result_SUCCESS {
 		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{fmt.Errorf("Tron contract not success: %v", cret)}
 	}
 
@@ -189,6 +189,7 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 					addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)
 					break
 				}
+				//transferTo, _ := ethToTron(to)
 				transferTo, _ := ethToTron(to)
 				if EqualAddress(tokenContractAddress, contractAddress) && EqualAddress(depositAddress, transferTo) {
 					txStatus := b.GetTransactionStatus(fmt.Sprintf("%+X", txext.Txid))
@@ -202,7 +203,7 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 						addSwapInfoConsiderError(swapInfo, errors.New("No contract log"), &swapInfos, &errs)
 						break
 					}
-					logfrom, logto, logamount, err := checkErc20TransferLog(txlogs, contractAddress)
+					logfrom, logto, logamount, err := checkTrc20TransferLog(txlogs, contractAddress)
 					if err != nil {
 						addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)
 						break
@@ -234,27 +235,26 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 	return swapInfos, errs
 }
 
-func checkErc20TransferLog (txlogs []*core.TransactionInfo_Log, contractAddress string) (logfrom, logto string, logamount *big.Int, err error) {
+func checkTrc20TransferLog (txlogs []*core.TransactionInfo_Log, contractAddress string) (logfrom, logto string, logamount *big.Int, err error) {
 	logamount = new(big.Int)
 	hasAddr := false
 	for _, txlog := range txlogs {
-		for _, addr := range txlog.GetAddress() {
-			if EqualAddress(fmt.Sprintf("%X", addr), contractAddress) {
+		addr := txlog.GetAddress()
+			if EqualAddress(tronaddress.Address(addr).String(), contractAddress) {
 				hasAddr = true
 				topics := txlog.GetTopics()
 				if len(topics) < 3 {
 					return "", "", nil, errors.New("Log topic number error")
 				}
-				if bytes.Equal(topics[0], ExtCodeParts["LogTransfer"]) == false {
-					return "", "", nil, errors.New("Log topic number error")
+				if bytes.Equal(topics[0], erc20CodeParts["LogTransfer"]) == false {
+					return "", "", nil, errors.New("Log topic is not log transfer")
 				}
-				logfrom = fmt.Sprintf("%X", topics[1])
-				logto = fmt.Sprintf("%X", topics[2])
-				amthex := fmt.Sprintf("%X", txlog.GetData())
+				logfrom = fmt.Sprintf("%x", topics[1])
+				logto = fmt.Sprintf("%x", topics[2])
+				amthex := fmt.Sprintf("%x", txlog.GetData())
 				logamount, _ = logamount.SetString(amthex, 16)
 				break
 			}
-		}
 	}
 	if hasAddr == false {
 		return "", "", nil, errors.New("Logs do not contain contract address")

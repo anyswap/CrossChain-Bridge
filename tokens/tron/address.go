@@ -1,8 +1,8 @@
 package tron
 
 import (
-	"fmt"
 	"encoding/hex"
+	"math/big"
 	"strings"
 
 	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
@@ -39,20 +39,16 @@ func (b *Bridge) PublicKeyToAddress(pubKeyHex string) (address string, err error
 }
 
 func EqualAddress(addr1, addr2 string) bool {
-	ethaddr1, err1 := tronToEth(addr1)
-	if err1 == nil {
-		addr1 = ethaddr1
-	}
-	ethaddr2, err2 := tronToEth(addr2)
-	if err2 == nil {
-		addr2 = ethaddr2
-	}
-	bz1, _ := troncommon.FromHex(addr1)
-	bz2, _ := troncommon.FromHex(addr2)
-	return fmt.Sprintf("%X", bz1) == fmt.Sprintf("%X", bz2)
+	addr1 = anyToEth(addr1)
+	addr2 = anyToEth(addr2)
+	return strings.EqualFold(addr1, addr2)
 }
 
 func ethToTron(ethAddress string) (string, error) {
+	intaddr, ok := new(big.Int).SetString(ethAddress, 16)
+	if ok {
+		ethAddress = common.BigToAddress(intaddr).String()
+	}
 	bz, _ := troncommon.FromHex(ethAddress)
 	tronaddr := tronaddress.Address(append([]byte{0x41}, bz...))
 	return tronaddr.String(), nil

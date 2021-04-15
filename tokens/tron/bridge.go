@@ -32,6 +32,7 @@ const (
 */
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	tokens.IsSwapoutToStringAddress = false
+	InitExtCodeParts()
 	return &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
 	}
