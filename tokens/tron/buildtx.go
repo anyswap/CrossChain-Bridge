@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
 	proto "github.com/golang/protobuf/proto"
@@ -17,11 +16,11 @@ import (
 )
 
 var (
-	retryRPCCount    = 3
-	retryRPCInterval = 1 * time.Second
+	SwapinFeeLimit int64 = 300000000 // 300 TRX
+	TransferTRXLimit int64 = 300000000 // 300 TRX
+	TransferTRC20FeeLimit int64 = 300000000 // 300 TRX
 
-	SwapinFeeLimit int64 = 1000000 // 1 TRX
-	TransferTRC20FeeLimit int64 = 1000000 // 1 TRX
+	ExtraExpiration int64 = 900000 // 15 min
 )
 
 // BuildRawTransaction build raw tx

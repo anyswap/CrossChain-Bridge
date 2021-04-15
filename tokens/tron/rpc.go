@@ -291,6 +291,10 @@ func (b *Bridge) BuildTransfer(from, to string, amount *big.Int, input []byte) (
 			continue
 		}
 		txext, err1 := cli.Client.CreateTransaction2(ctx, contract)
+		if txext != nil {
+			txext.Transaction.RawData.Expiration = txext.Transaction.RawData.Expiration + ExtraExpiration
+			txext.Transaction.RawData.FeeLimit = TransferTRXLimit
+		}
 		err = err1
 		if err == nil {
 			cli.Stop()
@@ -329,6 +333,9 @@ func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string, amount *big.I
 			continue
 		}
 		txext, err1 := cli.TRC20Send(from, to, tokenAddress, amount, TransferTRC20FeeLimit)
+		if txext != nil {
+			txext.Transaction.RawData.Expiration = txext.Transaction.RawData.Expiration + ExtraExpiration
+		}
 		err = err1
 		if err == nil {
 			tx = txext.Transaction
@@ -371,6 +378,7 @@ func (b *Bridge) BuildSwapinTx(from, tokenAddress string, dataBytes []byte) (tx 
 		txext, err1 := cli.Client.TriggerConstantContract(ctx, ct)
 		if txext != nil {
 			txext.Transaction.RawData.FeeLimit = SwapinFeeLimit
+			txext.Transaction.RawData.Expiration = txext.Transaction.RawData.Expiration + ExtraExpiration
 		}
 		err = err1
 		if err == nil {

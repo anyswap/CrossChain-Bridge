@@ -159,6 +159,7 @@ func GetTransaction() {
 	tx, err := cli.GetTransactionByID("b034937d9e2975170b73b6cc3f9f7857f813ab26f9560fd3785f9e8c1e7085ca")
 	checkError(err)
 	fmt.Printf("Transaction raw data: %+v\n", tx.GetRawData())
+	fmt.Printf("Transaction expiration: %+v\n", tx.GetRawData().GetExpiration())
 	fmt.Printf("Transaction fee limit: %v\n", tx.GetRawData().GetFeeLimit())
 	fmt.Printf("Transaction: %+v\n", tx)
 	fmt.Printf("Transaction Ret: %+v\n", tx.GetRet()[0])
