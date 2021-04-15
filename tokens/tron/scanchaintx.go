@@ -28,6 +28,10 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	if start == 0 {
 		start = int64(*chainCfg.InitialHeight)
 	}
+	if start == 0 {
+		latest, _ := b.GetLatestBlockNumber()
+		start = int64(latest)
+	}
 	log.Infof("[scanchain] latest scan height is %v", start)
 	end = start + int64(step)
 	for {
@@ -37,8 +41,10 @@ func (b *Bridge) StartChainTransactionScanJob() {
 			continue
 		}
 
-		for _, tx := range res.Block[0].Transactions {
-			b.processTransaction(tx)
+		for _, block := range res.Block {
+			for _, tx := range block.Transactions {
+				b.processTransaction(tx)
+			}
 		}
 
 		latest := start + int64(len(res.Block)) - 1
