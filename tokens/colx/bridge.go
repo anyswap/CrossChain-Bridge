@@ -59,9 +59,9 @@ func (b *Bridge) VerifyChainConfig() {
 
 // VerifyTokenConfig verify token config
 func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
-	// if !b.IsP2pkhAddress(tokenCfg.DcrmAddress) {
-	// 	return fmt.Errorf("invalid dcrm address (not p2pkh): %v", tokenCfg.DcrmAddress)
-	// }
+	if !b.IsP2pkhAddress(tokenCfg.DcrmAddress) {
+		return fmt.Errorf("invalid dcrm address (not p2pkh): %v", tokenCfg.DcrmAddress)
+	}
 	if !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
