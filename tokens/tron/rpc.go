@@ -239,6 +239,19 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 		}
 		cli.Stop()
 	}
+
+	if tx.Result != core.TransactionInfo_SUCESS {
+		return nil
+	}
+	if cres := tx.GetContractResult(); len(cres) < 1 {
+		return nil
+		for _, r := range cres {
+			if new(big.Int).SetBytes(r).Int64() != 1 {
+				return nil
+			}
+		}
+	}
+
 	status.Receipt = tx
 	status.PrioriFinalized = false
 	status.BlockHeight = uint64(tx.BlockNumber)
@@ -315,7 +328,7 @@ func (b *Bridge) BuildTRC20Transfer(from, to, tokenAddress string, amount *big.I
 			rpcError.log(err)
 			continue
 		}
-		txext, err1 := cli.TRC20Send(from, to, tokenAddress, amount, 0)
+		txext, err1 := cli.TRC20Send(from, to, tokenAddress, amount, TransferTRC20FeeLimit)
 		err = err1
 		if err == nil {
 			tx = txext.Transaction
@@ -356,6 +369,9 @@ func (b *Bridge) BuildSwapinTx(from, tokenAddress string, dataBytes []byte) (tx 
 			continue
 		}
 		txext, err1 := cli.Client.TriggerConstantContract(ctx, ct)
+		if txext != nil {
+			txext.Transaction.RawData.FeeLimit = SwapinFeeLimit
+		}
 		err = err1
 		if err == nil {
 			tx = txext.Transaction

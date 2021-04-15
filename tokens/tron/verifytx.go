@@ -357,6 +357,9 @@ func (b *Bridge) verifySwapoutTxWithHash(txid string, allowUnstable bool) (swapI
 		return nil, []error{errors.New("Tron transaction type error")}
 	}
 	status := b.GetTransactionStatus(txid)
+	if status == nil || status.Receipt == nil {
+		return nil, []error{errors.New("Tron transaction failed")}
+	}
 	txext := &TransactionExtention{
 		Transaction: *txres,
 		BlockNumber: status.BlockHeight,

@@ -42,11 +42,11 @@ func main() {
 
 	// ScanBlock()
 
-	GetTxArgs()
+	// GetTxArgs()
 
 	// GetContractCode()
 
-	// GetTransaction()
+	GetTransaction()
 
 	// MarshalUnmarshalTx()
 
@@ -128,11 +128,13 @@ func GetTransaction() {
 	// f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3 普通转账
 	// c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984 TRC20 转账
 	//txinfo, err := cli.GetTransactionInfoByID("f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3")
-	// txinfo, err := cli.GetTransactionInfoByID("c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
+	txinfo, err := cli.GetTransactionInfoByID("c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
 	// txinfo, err := cli.GetTransactionInfoByID("aa1d7b84277097c3fe8657a663e01eec11f3b5cfcdf2dea41f5593784637fab7")
-	txinfo, err := cli.GetTransactionInfoByID("0802edce3c7bd11b4d995eac84a7b235594f12088493264f3fd4d9f4bd991b57")
+	//txinfo, err := cli.GetTransactionInfoByID("0802edce3c7bd11b4d995eac84a7b235594f12088493264f3fd4d9f4bd991b57")
+	//txinfo, err := cli.GetTransactionInfoByID("b034937d9e2975170b73b6cc3f9f7857f813ab26f9560fd3785f9e8c1e7085ca")
 	checkError(err)
 	fmt.Printf("Transaction info: %+v\n", txinfo)
+	fmt.Printf("Transaction info contract result: %v\n", new(big.Int).SetBytes(txinfo.GetContractResult()[0]))
 	fmt.Printf("Transaction block: %+v\n", txinfo.BlockNumber)
 	fmt.Printf("Transaction time: %+v\n", txinfo.BlockTimeStamp)
 	fmt.Printf("Transaction contract result: %+v\n", txinfo.ContractResult)
@@ -150,11 +152,14 @@ func GetTransaction() {
 	*/
 
 	divide()
-	tx, err := cli.GetTransactionByID("f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3")
+	//tx, err := cli.GetTransactionByID("f1ca51fac8b21527443068a56dd6b01a625d3f283534f10645a7932c73b1bae3")
 	//tx, err := cli.GetTransactionByID("c0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
 	// tx, err := cli.GetTransactionByID("aa1d7b84277097c3fe8657a663e01eec11f3b5cfcdf2dea41f5593784637fab7")
 	// tx, err := cli.GetTransactionByID("0802edce3c7bd11b4d995eac84a7b235594f12088493264f3fd4d9f4bd991b57")
+	tx, err := cli.GetTransactionByID("b034937d9e2975170b73b6cc3f9f7857f813ab26f9560fd3785f9e8c1e7085ca")
 	checkError(err)
+	fmt.Printf("Transaction raw data: %+v\n", tx.GetRawData())
+	fmt.Printf("Transaction fee limit: %v\n", tx.GetRawData().GetFeeLimit())
 	fmt.Printf("Transaction: %+v\n", tx)
 	fmt.Printf("Transaction Ret: %+v\n", tx.GetRet()[0])
 	fmt.Printf("Transaction Ret Success: %+v\n", (tx.GetRet()[0].GetRet() == core.Transaction_Result_SUCESS))
@@ -317,7 +322,8 @@ func GetTxArgs() {
 	defer cli.Stop()
 	//tx, err := cli.GetTransactionByID("0xc0391bd5fe5913df182282b4c07df0aa26f476c8286dc965eb4a780b5b690984")
 	//tx, err := cli.GetTransactionByID("c7effb1b0b86f4a22dcce26208027a21ef903685655a2d75e4819a63b903f0e7")
-	tx, err := cli.GetTransactionByID("013e79e7dd5229909dea401d498e2e474dacbe7cfa8fda57a19a17c610d22df9")
+	//tx, err := cli.GetTransactionByID("013e79e7dd5229909dea401d498e2e474dacbe7cfa8fda57a19a17c610d22df9")
+	tx, err := cli.GetTransactionByID("b034937d9e2975170b73b6cc3f9f7857f813ab26f9560fd3785f9e8c1e7085ca")
 	checkError(err)
 	fmt.Printf("Tx: %+v", tx)
 	rawData, err := proto.Marshal(tx.GetRawData())

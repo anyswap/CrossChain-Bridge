@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
@@ -21,7 +20,8 @@ var (
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
 
-	defReserveFee = big.NewInt(1e16) // 0.01 TRX
+	SwapinFeeLimit int64 = 1000000 // 1 TRX
+	TransferTRC20FeeLimit int64 = 1000000 // 1 TRX
 )
 
 // BuildRawTransaction build raw tx
