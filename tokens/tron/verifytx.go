@@ -272,6 +272,9 @@ func (b *Bridge) verifySwapinTxWithHash(txid string, allowUnstable bool) (swapIn
 		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{errors.New("Tron transaction type error")}
 	}
 	status := b.GetTransactionStatus(txid)
+	if status == nil {
+		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{errors.New("Tron transaction not success")}
+	}
 	txext := &TransactionExtention{
 		Transaction: *txres,
 		BlockNumber: status.BlockHeight,
@@ -359,6 +362,9 @@ func (b *Bridge) verifySwapoutTxWithHash(txid string, allowUnstable bool) (swapI
 	status := b.GetTransactionStatus(txid)
 	if status == nil || status.Receipt == nil {
 		return nil, []error{errors.New("Tron transaction failed")}
+	}
+	if status == nil {
+		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{errors.New("Tron transaction type error")}
 	}
 	txext := &TransactionExtention{
 		Transaction: *txres,

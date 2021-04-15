@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	step int = 10
+	step int = 100
 	longSleep = time.Second * 2
 	shortSleep = time.Millisecond * 500
 
@@ -22,8 +22,13 @@ func (b *Bridge) StartChainTransactionScanJob() {
 	chainName := b.ChainConfig.BlockChain
 	log.Infof("[scanchain] start %v scan chain job", chainName)
 
+	chainCfg := b.GetChainConfig()
 	var start, end int64
 	start = int64(tools.GetLatestScanHeight(b.IsSrc))
+	if start == 0 {
+		start = int64(*chainCfg.InitialHeight)
+	}
+	log.Infof("[scanchain] latest scan height is %v", start)
 	end = start + int64(step)
 	for {
 		res, err := b.GetBlockByLimitNext(start, end)
@@ -31,14 +36,16 @@ func (b *Bridge) StartChainTransactionScanJob() {
 			log.Warn("Get block failed", "start", start, "end", end)
 			continue
 		}
-		log.Debug("Scan block", "start", start, "end", end)
 
 		for _, tx := range res.Block[0].Transactions {
 			b.processTransaction(tx)
 		}
 
 		latest := start + int64(len(res.Block)) - 1
-		_ = tools.UpdateLatestScanInfo(b.IsSrc, uint64(latest))
+		err = tools.UpdateLatestScanInfo(b.IsSrc, uint64(latest))
+		if err != nil {
+			log.Warn("[scanchain] update latest scan info", "error", err)
+		}
 		start = start + int64(len(res.Block))
 		end = start + int64(step)
 		if len(res.Block) < step {
