@@ -8,7 +8,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
-	"github.com/btcsuite/btcwallet/wallet/txauthor"
+	"github.com/tinhnguyenhn/colxwallet/wallet/txauthor"
 )
 
 // BuildAggregateTransaction build aggregate tx (spend p2sh utxo)

@@ -14,7 +14,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
-	"github.com/btcsuite/btcwallet/wallet/txauthor"
+	"github.com/tinhnguyenhn/colxwallet/wallet/txauthor"
 )
 
 func (b *Bridge) verifyTransactionWithArgs(tx *txauthor.AuthoredTx, args *tokens.BuildTxArgs) error {

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
-	"github.com/btcsuite/btcwallet/wallet/txauthor"
+	"github.com/tinhnguyenhn/colxwallet/wallet/txauthor"
 )
 
 // MarshalToJSON marshal to json

@@ -10,9 +10,9 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
-	"github.com/btcsuite/btcwallet/wallet/txauthor"
-	"github.com/btcsuite/btcwallet/wallet/txrules"
-	"github.com/btcsuite/btcwallet/wallet/txsizes"
+	"github.com/tinhnguyenhn/colxwallet/wallet/txauthor"
+	"github.com/tinhnguyenhn/colxwallet/wallet/txrules"
+	"github.com/tinhnguyenhn/colxwallet/wallet/txsizes"
 )
 
 const (
