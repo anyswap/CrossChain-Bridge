@@ -224,6 +224,12 @@ github.com/tebeka/strftime v0.1.5 h1:1NQKN1NiQgkqd/2moD6ySP/5CoZQsKa1d3ZhJ44Jpmg
 github.com/tebeka/strftime v0.1.5/go.mod h1:29/OidkoWHdEKZqzyDLUyC+LmgDgdHo4WAFCDT7D/Ig=
 github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161/go.mod h1:wM7WEvslTq+iOEAMDLSzhVuOt5BRZ05WirO+b09GHQU=
 github.com/templexxx/xor v0.0.0-20181023030647-4e92f724b73b/go.mod h1:5XA7W9S6mni3h5uvOC75dA3m9CCCaS83lltmc0ukdi4=
+github.com/tinhnguyenhn/colxwallet/wallet/txauthor v1.0.0 h1:HvilaT3++iXF4xnzLEEqzMA5OCPp6O1kaK1H72HpZ5Q=
+github.com/tinhnguyenhn/colxwallet/wallet/txauthor v1.0.0/go.mod h1:VufDts7bd/zs3GV13f/lXc/0lXrPnvxD/NvmpG/FEKU=
+github.com/tinhnguyenhn/colxwallet/wallet/txrules v1.0.0 h1:SlZ7ZjA/euLiSVn1bnLkJiXuoWhkvmC1GmO/4UQXK9s=
+github.com/tinhnguyenhn/colxwallet/wallet/txrules v1.0.0/go.mod h1:UwQE78yCerZ313EXZwEiu3jNAtfXj2n2+c8RWiE/WNA=
+github.com/tinhnguyenhn/colxwallet/wallet/txsizes v1.0.0 h1:bYVGr6jxQt2spEbKeVnUSYAaMAzvYUxVatKlHcFnZm0=
+github.com/tinhnguyenhn/colxwallet/wallet/txsizes v1.0.0/go.mod h1:pauEU8UuMFiThe5PB3EO+gO5kx87Me5NvdQDsTuq6cs=
 github.com/tjfoc/gmsm v1.0.1/go.mod h1:XxO4hdhhrzAd+G4CjDqaOkd0hUzmtPR/d3EiBBMn/wc=
 github.com/urfave/cli/v2 v2.3.0 h1:qph92Y649prgesehzOrQjdWyxFOp/QVM+6imKHad91M=
 github.com/urfave/cli/v2 v2.3.0/go.mod h1:LJmUH05zAU44vOAcrfzZQKsZbVcdbOG8rtL3/XcUArI=
