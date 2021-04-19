@@ -27,12 +27,13 @@ type BtcExtraConfig struct {
 
 // ChainConfig struct
 type ChainConfig struct {
-	BlockChain    string
-	NetID         string
-	Confirmations *uint64
-	InitialHeight *uint64
-	EnableScan    bool
-	ScanReceipt   bool `json:",omitempty"`
+	BlockChain     string
+	NetID          string
+	Confirmations  *uint64
+	InitialHeight  *uint64
+	EnableScan     bool
+	EnableScanPool bool
+	ScanReceipt    bool `json:",omitempty"`
 
 	MaxGasPriceFluctPercent uint64 `json:",omitempty"`
 	WaitTimeToReplace       int64  // seconds

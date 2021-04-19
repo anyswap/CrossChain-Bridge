@@ -60,6 +60,8 @@ Confirmations = 0 # suggest >= 6 for Mainnet
 InitialHeight = 0
 # whether enable scan blocks and register swaps
 EnableScan = false
+# whether enable scan txs in pool
+EnableScanPool = false
 # whether scan transaction receipt logs
 ScanReceipt = false
 # max gas price fluct percent
@@ -86,6 +88,8 @@ Confirmations = 0 # suggest >= 30 for Mainnet
 InitialHeight = 0
 # whether enable scan blocks and register swaps
 EnableScan = false
+# whether enable scan txs in pool
+EnableScanPool = false
 # whether scan transaction receipt logs
 ScanReceipt = false
 # max gas price fluct percent
