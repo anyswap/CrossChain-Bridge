@@ -109,7 +109,7 @@ func (b *Bridge) GetPendingTransactions() (result []*types.RPCTransaction, err e
 func (b *Bridge) IsTransactionOnChain(txHash string) bool {
 	gateway := b.GatewayConfig
 	receipt, _ := getTransactionReceipt(txHash, gateway.APIAddress)
-	if receipt == nil {
+	if receipt == nil && len(gateway.APIAddressExt) > 0 {
 		receipt, _ = getTransactionReceipt(txHash, gateway.APIAddressExt)
 	}
 	return receipt != nil
@@ -192,28 +192,31 @@ func getMaxPoolNonce(account common.Address, height string, urls []string) (maxN
 // SuggestPrice call eth_gasPrice
 func (b *Bridge) SuggestPrice() (*big.Int, error) {
 	gateway := b.GatewayConfig
-	maxGasPrice, err := getMaxGasPrice(gateway.APIAddressExt)
-	if err == nil {
-		return maxGasPrice, nil
+	if len(gateway.APIAddressExt) > 0 {
+		maxGasPrice, err := getMaxGasPrice(gateway.APIAddressExt)
+		if err == nil {
+			return maxGasPrice, nil
+		}
 	}
 	return getMaxGasPrice(gateway.APIAddress)
 }
 
 func getMaxGasPrice(urls []string) (maxGasPrice *big.Int, err error) {
-	maxGasPrice = big.NewInt(0)
+	var success bool
 	var result hexutil.Big
 	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_gasPrice")
 		if err == nil {
-			if result.ToInt().Cmp(maxGasPrice) > 0 {
+			success = true
+			if maxGasPrice == nil || result.ToInt().Cmp(maxGasPrice) > 0 {
 				maxGasPrice = result.ToInt()
 			}
 		}
 	}
-	if maxGasPrice.Sign() > 0 {
+	if success {
 		return maxGasPrice, nil
 	}
-	return nil, err
+	return nil, errors.New("call eth_gasPrice failed")
 }
 
 // SendSignedTransaction call eth_sendRawTransaction
@@ -243,7 +246,7 @@ func sendRawTransaction(hexData string, urls []string) (success bool, err error)
 	if success {
 		return true, nil
 	}
-	return false, err
+	return false, errors.New("call eth_sendRawTransaction failed")
 }
 
 // ChainID call eth_chainId
