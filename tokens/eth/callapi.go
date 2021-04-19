@@ -12,6 +12,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
+var errEmptyURLs = errors.New("empty URLs")
+
 // GetLatestBlockNumberOf call eth_blockNumber
 func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	var result string
@@ -122,6 +124,9 @@ func (b *Bridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, erro
 }
 
 func getTransactionReceipt(txHash string, urls []string) (result *types.RPCTxReceipt, err error) {
+	if len(urls) == 0 {
+		return nil, errEmptyURLs
+	}
 	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionReceipt", txHash)
 		if err == nil && result != nil {
@@ -172,6 +177,9 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 }
 
 func getMaxPoolNonce(account common.Address, height string, urls []string) (maxNonce uint64, err error) {
+	if len(urls) == 0 {
+		return 0, errEmptyURLs
+	}
 	var success bool
 	var result hexutil.Uint64
 	for _, url := range urls {
@@ -202,6 +210,9 @@ func (b *Bridge) SuggestPrice() (*big.Int, error) {
 }
 
 func getMaxGasPrice(urls []string) (maxGasPrice *big.Int, err error) {
+	if len(urls) == 0 {
+		return nil, errEmptyURLs
+	}
 	var success bool
 	var result hexutil.Big
 	for _, url := range urls {
@@ -216,7 +227,7 @@ func getMaxGasPrice(urls []string) (maxGasPrice *big.Int, err error) {
 	if success {
 		return maxGasPrice, nil
 	}
-	return nil, errors.New("call eth_gasPrice failed")
+	return nil, err
 }
 
 // SendSignedTransaction call eth_sendRawTransaction
@@ -236,6 +247,9 @@ func (b *Bridge) SendSignedTransaction(tx *types.Transaction) error {
 }
 
 func sendRawTransaction(hexData string, urls []string) (success bool, err error) {
+	if len(urls) == 0 {
+		return false, errEmptyURLs
+	}
 	var result interface{}
 	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_sendRawTransaction", hexData)
@@ -246,7 +260,7 @@ func sendRawTransaction(hexData string, urls []string) (success bool, err error)
 	if success {
 		return true, nil
 	}
-	return false, errors.New("call eth_sendRawTransaction failed")
+	return false, err
 }
 
 // ChainID call eth_chainId
