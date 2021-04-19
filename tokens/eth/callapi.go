@@ -105,13 +105,24 @@ func (b *Bridge) GetPendingTransactions() (result []*types.RPCTransaction, err e
 	return nil, err
 }
 
+// IsTransactionOnChain impl
+func (b *Bridge) IsTransactionOnChain(txHash string) bool {
+	gateway := b.GatewayConfig
+	receipt, _ := getTransactionReceipt(txHash, gateway.APIAddress)
+	if receipt == nil {
+		receipt, _ = getTransactionReceipt(txHash, gateway.APIAddressExt)
+	}
+	return receipt != nil
+}
+
 // GetTransactionReceipt call eth_getTransactionReceipt
 func (b *Bridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, error) {
 	gateway := b.GatewayConfig
-	var result *types.RPCTxReceipt
-	var err error
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
+	return getTransactionReceipt(txHash, gateway.APIAddress)
+}
+
+func getTransactionReceipt(txHash string, urls []string) (result *types.RPCTxReceipt, err error) {
+	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionReceipt", txHash)
 		if err == nil && result != nil {
 			return result, nil

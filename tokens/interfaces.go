@@ -101,6 +101,7 @@ type CrossChainBridge interface {
 
 // NonceSetter interface (for eth-like)
 type NonceSetter interface {
+	IsTransactionOnChain(txHash string) bool
 	GetPoolNonce(address, height string) (uint64, error)
 	SetNonce(pairID string, value uint64)
 	AdjustNonce(pairID string, value uint64) (nonce uint64)

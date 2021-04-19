@@ -40,14 +40,12 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 		return nil, nil, errors.New("swaptx with block height")
 	}
 	bridge := tokens.GetCrossChainBridge(!isSwapin)
-	txStat := getSwapTxStatus(bridge, res)
-	if txStat != nil && txStat.BlockHeight > 0 {
-		return nil, nil, errors.New("swaptx exist in chain")
-	}
-
 	nonceSetter, ok := bridge.(tokens.NonceSetter)
 	if !ok {
 		return nil, nil, errors.New("not nonce support bridge")
+	}
+	if nonceSetter.IsTransactionOnChain(res.SwapTx) {
+		return nil, nil, errors.New("swaptx exist in chain")
 	}
 
 	tokenCfg := bridge.GetTokenConfig(pairID)
