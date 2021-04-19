@@ -33,4 +33,9 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
+	github.com/giangnamnabka/btcd v0.21.0-beta
+	github.com/giangnamnabka/btcutil v1.0.2
+	github.com/giangnamnabka/btcwallet/wallet/txauthor v1.0.0
+	github.com/giangnamnabka/btcwallet/wallet/txrules v1.0.0
+	github.com/giangnamnabka/btcwallet/wallet/txsizes v1.0.0
 )
