@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/anyswap/CrossChain-Bridge/log"
 )
 
 const (
@@ -88,9 +90,14 @@ func RPCPostRequest(url string, req *Request, result interface{}) error {
 	}
 	resp, err := HTTPPost(url, reqBody, nil, nil, req.Timeout)
 	if err != nil {
+		log.Trace("post rpc error", "url", url, "method", req.Method, "err", err)
 		return err
 	}
-	return getResultFromJSONResponse(result, resp)
+	err = getResultFromJSONResponse(result, resp)
+	if err != nil {
+		log.Trace("post rpc error", "url", url, "method", req.Method, "err", err)
+	}
+	return err
 }
 
 func getResultFromJSONResponse(result interface{}, resp *http.Response) error {

@@ -257,6 +257,8 @@ func (b *Bridge) checkBalance(token, account string, amount *big.Int) (err error
 	if err == nil && balance.Cmp(amount) < 0 {
 		return fmt.Errorf("not enough %v balance. %v < %v", token, balance, amount)
 	}
-	log.Warn("get balance error", "token", token, "account", account, "err", err)
+	if err != nil {
+		log.Warn("get balance error", "token", token, "account", account, "err", err)
+	}
 	return err
 }

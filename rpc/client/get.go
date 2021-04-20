@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+
+	"github.com/anyswap/CrossChain-Bridge/log"
 )
 
 // RPCGet rpc get
@@ -26,6 +28,7 @@ func RPCGetRequest(result interface{}, url string, params, headers map[string]st
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
+		log.Trace("get rpc status error", "url", url, "status", resp.StatusCode)
 		return fmt.Errorf("error response status: %v (url: %v)", resp.StatusCode, url)
 	}
 
@@ -67,6 +70,7 @@ func RPCRawGetRequest(url string, params, headers map[string]string, timeout int
 	}
 
 	if resp.StatusCode != 200 {
+		log.Trace("get rpc status error", "url", url, "status", resp.StatusCode)
 		return "", fmt.Errorf("wrong response status %v. message: %v", resp.StatusCode, string(body))
 	}
 	return string(body), nil
