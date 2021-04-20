@@ -74,6 +74,8 @@ PlusGasPricePercentage = 15 # plus 15% gas price
 BigValueThreshold = 5.0
 # disable deposit function if this flag is true
 DisableSwap = false
+# whether enable scan blockchain
+EnableScan = false
 
 # source blockchain gateway config
 [SrcGateway]
@@ -113,6 +115,8 @@ PlusGasPricePercentage = 1 # plus 1% gas price
 BigValueThreshold = 50.0
 # disable withdraw function if this flag is true
 DisableSwap = false
+# whether enable scan blockchain
+EnableScan = false
 
 # dest blockchain gateway config
 [DestGateway]

@@ -42,6 +42,7 @@ type TokenConfig struct {
 	InitialHeight          uint64
 	PlusGasPricePercentage uint64 `json:",omitempty"`
 	DisableSwap            bool
+	EnableScan             bool
 
 	// calced value
 	maxSwap          *big.Int
