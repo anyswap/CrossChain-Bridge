@@ -153,7 +153,7 @@ For the config file, please refer [config file example](https://github.com/anysw
     config `[MongoDB]` section accordingly (eg. `DbURL`,`DbName`,`UserName`,`Password`)
 
     For security reason, we suggest:
-    1. change the mongod `port` ( deafults to `27017`)
+    1. change the mongodb `port` ( defaults to `27017`)
     2. enable `auth`
     3. create user with passord to access the database
 
