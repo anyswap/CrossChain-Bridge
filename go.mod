@@ -5,13 +5,18 @@ go 1.14
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/btcsuite/btcd v0.21.0-beta
-	github.com/btcsuite/btcutil v1.0.2
+	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.0.0
 	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.0.0
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9
 	github.com/fsnotify/fsnotify v1.4.9
+	github.com/giangnamnabka/btcd v0.21.0-beta.0.20210421053028-91430c8dc7b0
+	github.com/giangnamnabka/btcutil v1.0.3-0.20210421053153-55ad5ef66f21
+	github.com/giangnamnabka/btcwallet/wallet/txauthor v1.0.1-0.20210420072038-a00c5ff72602
+	github.com/giangnamnabka/btcwallet/wallet/txrules v1.0.1-0.20210420072038-a00c5ff72602
+	github.com/giangnamnabka/btcwallet/wallet/txsizes v1.0.1-0.20210420065930-67219ae54cf3
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/rpc v1.2.0
@@ -33,9 +38,14 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
-	github.com/giangnamnabka/btcd v0.21.0-beta
-	github.com/giangnamnabka/btcutil v1.0.2
-	github.com/giangnamnabka/btcwallet/wallet/txauthor v1.0.0
-	github.com/giangnamnabka/btcwallet/wallet/txrules v1.0.0
-	github.com/giangnamnabka/btcwallet/wallet/txsizes v1.0.0
 )
+
+replace github.com/giangnamnabka/btcd v0.21.0-beta.0.20210421053028-91430c8dc7b0 => /home/tinhnguyenhn/anyswap/20210421_2/btcd
+
+replace github.com/giangnamnabka/btcutil v1.0.3-0.20210421053153-55ad5ef66f21 => /home/tinhnguyenhn/anyswap/20210421_2/btcutil
+
+replace github.com/giangnamnabka/btcwallet/wallet/txauthor => ../btcwallet/wallet/txauthor
+
+replace github.com/giangnamnabka/btcwallet/wallet/txrules => ../btcwallet/wallet/txrules
+
+replace github.com/giangnamnabka/btcwallet/wallet/txsizes => ../btcwallet/wallet/txsizes
