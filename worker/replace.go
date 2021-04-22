@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -88,7 +89,7 @@ func processSwapoutReplace(swap *mongodb.MgoSwapResult) error {
 	return processReplaceSwap(swap, false)
 }
 
-func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) error {
+func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	var chainCfg *tokens.ChainConfig
 	if isSwapin {
 		chainCfg = tokens.DstBridge.GetChainConfig()
@@ -106,11 +107,47 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) error {
 	if len(swap.OldSwapTxs) > maxReplaceCount {
 		return fmt.Errorf("replace swap too many times (> %v)", maxReplaceCount)
 	}
-	if getSepTimeInFind(waitTimeToReplace) < swap.Timestamp {
+	if getSepTimeInFind(waitTimeToReplace) < swap.InitTime {
 		return nil
 	}
-	if isSwapin {
-		return ReplaceSwapin(swap.TxID, swap.PairID, swap.Bind, "")
+	bridge := tokens.GetCrossChainBridge(!isSwapin)
+	nonceSetter, ok := bridge.(tokens.NonceSetter)
+	if !ok {
+		return nil
 	}
-	return ReplaceSwapout(swap.TxID, swap.PairID, swap.Bind, "")
+	var txHash string
+	for {
+		if isSwapin {
+			txHash, err = ReplaceSwapin(swap.TxID, swap.PairID, swap.Bind, "")
+		} else {
+			txHash, err = ReplaceSwapout(swap.TxID, swap.PairID, swap.Bind, "")
+		}
+		if txHash != "" {
+			if checkTxIsPacked(nonceSetter, txHash, waitTimeToReplace/5+1) {
+				return nil
+			}
+		} else {
+			switch err {
+			case errSwapTxWithHeight,
+				errSwapTxIsOnChain,
+				errWrongResultStatus,
+				errSwapNoncePassed:
+				return nil
+			case errSwapWithoutSwapTx:
+			default:
+				logWorkerTrace("replace", "replace swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin)
+			}
+			time.Sleep(60 * time.Second)
+		}
+	}
+}
+
+func checkTxIsPacked(bridge tokens.NonceSetter, txHash string, loopCount int64) bool {
+	for i := int64(0); i < loopCount; i++ {
+		if bridge.IsTransactionOnChain(txHash) {
+			return true
+		}
+		time.Sleep(5 * time.Second)
+	}
+	return false
 }

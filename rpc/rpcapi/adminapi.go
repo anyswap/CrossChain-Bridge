@@ -263,18 +263,19 @@ func replaceswap(args *admin.CallArgs, result *string) (err error) {
 	bind := args.Params[3]
 	gasPrice := args.Params[4]
 
+	var txHash string
 	switch operation {
 	case swapinOp:
-		err = worker.ReplaceSwapin(txid, pairID, bind, gasPrice)
+		txHash, err = worker.ReplaceSwapin(txid, pairID, bind, gasPrice)
 	case swapoutOp:
-		err = worker.ReplaceSwapout(txid, pairID, bind, gasPrice)
+		txHash, err = worker.ReplaceSwapout(txid, pairID, bind, gasPrice)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
 	if err != nil {
 		return err
 	}
-	*result = successReuslt
+	*result = successReuslt + " txHash is " + txHash
 	return nil
 }
 
