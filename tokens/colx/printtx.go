@@ -65,10 +65,10 @@ func AuthoredTxToString(authtx interface{}, pretty bool) string {
 			Value:    authoredTx.PrevInputValues[i],
 		}
 		encTx.TxIn[i].SignatureScript, _ = disasmScriptToString(txIn.SignatureScript)
-		encTx.TxIn[i].Witness = make([]hexutil.Bytes, len(txIn.Witness))
-		for j, witness := range txIn.Witness {
-			encTx.TxIn[i].Witness[j] = hexutil.Bytes(witness)
-		}
+		// encTx.TxIn[i].Witness = make([]hexutil.Bytes, len(txIn.Witness))
+		// for j, witness := range txIn.Witness {
+		// 	encTx.TxIn[i].Witness[j] = hexutil.Bytes(witness)
+		// }
 	}
 
 	encAuthTx.Tx = &encTx
