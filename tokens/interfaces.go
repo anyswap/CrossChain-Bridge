@@ -50,19 +50,20 @@ var (
 
 // ShouldRegisterSwapForError return true if this error should record in database
 func ShouldRegisterSwapForError(err error) bool {
-	switch err {
-	case nil,
-		ErrTxWithWrongMemo,
-		ErrTxWithWrongValue,
-		ErrTxWithWrongReceipt,
-		ErrTxWithWrongSender,
-		ErrTxSenderNotRegistered,
-		ErrTxIncompatible,
-		ErrBindAddrIsContract,
-		ErrRPCQueryError:
-		return true
+	switch {
+	case err == nil:
+	case errors.Is(err, ErrTxWithWrongMemo):
+	case errors.Is(err, ErrTxWithWrongValue):
+	case errors.Is(err, ErrTxWithWrongReceipt):
+	case errors.Is(err, ErrTxWithWrongSender):
+	case errors.Is(err, ErrTxSenderNotRegistered):
+	case errors.Is(err, ErrTxIncompatible):
+	case errors.Is(err, ErrBindAddrIsContract):
+	case errors.Is(err, ErrRPCQueryError):
+	default:
+		return false
 	}
-	return false
+	return true
 }
 
 // CrossChainBridge interface

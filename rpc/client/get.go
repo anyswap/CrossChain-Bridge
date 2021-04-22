@@ -23,7 +23,7 @@ func RPCGetWithTimeout(result interface{}, url string, timeout int) error {
 func RPCGetRequest(result interface{}, url string, params, headers map[string]string, timeout int) error {
 	resp, err := HTTPGet(url, params, headers, timeout)
 	if err != nil {
-		return fmt.Errorf("GET request error: %v (url: %v, params: %v)", err, url, params)
+		return fmt.Errorf("GET request error: %w (url: %v, params: %v)", err, url, params)
 	}
 	defer resp.Body.Close()
 
@@ -35,12 +35,12 @@ func RPCGetRequest(result interface{}, url string, params, headers map[string]st
 	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
 	if err != nil {
-		return fmt.Errorf("read body error: %v", err)
+		return fmt.Errorf("read body error: %w", err)
 	}
 
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		return fmt.Errorf("unmarshal result error: %v", err)
+		return fmt.Errorf("unmarshal result error: %w", err)
 	}
 	return nil
 }
@@ -59,14 +59,14 @@ func RPCRawGetWithTimeout(url string, timeout int) (string, error) {
 func RPCRawGetRequest(url string, params, headers map[string]string, timeout int) (string, error) {
 	resp, err := HTTPGet(url, params, headers, timeout)
 	if err != nil {
-		return "", fmt.Errorf("GET request error: %v (url: %v, params: %v)", err, url, params)
+		return "", fmt.Errorf("GET request error: %w (url: %v, params: %v)", err, url, params)
 	}
 
 	defer resp.Body.Close()
 	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
 	if err != nil {
-		return "", fmt.Errorf("read body error: %v", err)
+		return "", fmt.Errorf("read body error: %w", err)
 	}
 
 	if resp.StatusCode != 200 {
