@@ -27,6 +27,13 @@ var (
 
 // StartSwapJob swap job
 func StartSwapJob() {
+	swapinNonces, swapoutNonces := mongodb.LoadAllSwapNonces()
+	if nonceSetter, ok := tokens.DstBridge.(tokens.NonceSetter); ok {
+		nonceSetter.InitNonces(swapinNonces)
+	}
+	if nonceSetter, ok := tokens.SrcBridge.(tokens.NonceSetter); ok {
+		nonceSetter.InitNonces(swapoutNonces)
+	}
 	for _, pairCfg := range tokens.GetTokenPairsConfig() {
 		AddSwapJob(pairCfg)
 	}

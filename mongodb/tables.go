@@ -10,6 +10,7 @@ const (
 	tbLatestScanInfo    string = "LatestScanInfo"
 	tbRegisteredAddress string = "RegisteredAddress"
 	tbBlacklist         string = "Blacklist"
+	tbLatestSwapNonces  string = "LatestSwapNonces"
 
 	keyOfSrcLatestScanInfo string = "srclatest"
 	keyOfDstLatestScanInfo string = "dstlatest"
@@ -104,5 +105,14 @@ type MgoBlackAccount struct {
 	Key       string `bson:"_id"` // address + pairid
 	Address   string `bson:"address"`
 	PairID    string `bson:"pairid"`
+	Timestamp int64  `bson:"timestamp"`
+}
+
+// MgoLatestSwapNonce latest swap nonce
+type MgoLatestSwapNonce struct {
+	Key       string `bson:"_id"` // address + swaptype
+	Address   string `bson:"address"`
+	IsSwapin  bool   `bson:"isswapin"`
+	SwapNonce uint64 `bson:"swapnonce"`
 	Timestamp int64  `bson:"timestamp"`
 }

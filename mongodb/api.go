@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"fmt"
 	"math/big"
 	"strings"
 	"sync"
@@ -465,8 +466,8 @@ func getCountWithStatus(collection *mgo.Collection, pairID string, status SwapSt
 
 func updateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error {
 	pairID = strings.ToLower(pairID)
-	curr, err := FindSwapStatistics(pairID)
-	if err != nil {
+	curr, _ := FindSwapStatistics(pairID)
+	if curr == nil {
 		curr = &MgoSwapStatistics{
 			Key:                pairID,
 			PairID:             pairID,
@@ -477,6 +478,7 @@ func updateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error 
 			TotalSwapoutValue:  "0",
 			TotalSwapoutFee:    "0",
 		}
+		_ = collSwapStatistics.Insert(curr)
 	}
 
 	addVal, _ := new(big.Int).SetString(value, 0)
@@ -504,7 +506,7 @@ func updateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error 
 		updates["totalswapoutvalue"] = curVal.String()
 		updates["totalswapoutfee"] = curFee.String()
 	}
-	_, err = collSwapStatistics.UpsertId(pairID, bson.M{"$set": updates})
+	err := collSwapStatistics.UpdateId(pairID, bson.M{"$set": updates})
 	if err == nil {
 		log.Info("mongodb update swap statistics", "updates", updates)
 	} else {
@@ -670,4 +672,67 @@ func FindRegisteredAddress(key string) (*MgoRegisteredAddress, error) {
 		return nil, mgoError(err)
 	}
 	return &result, nil
+}
+
+// ---------------------- latest swap nonces -----------------------------
+
+func getSwapNonceKey(address string, isSwapin bool) string {
+	return strings.ToLower(fmt.Sprintf("%v:%v", address, isSwapin))
+}
+
+// UpdateLatestSwapNonce update
+func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err error) {
+	key := getSwapNonceKey(address, isSwapin)
+	oldItem, _ := FindLatestSwapNonce(address, isSwapin)
+	if oldItem != nil && oldItem.SwapNonce >= nonce {
+		return nil // only increase
+	}
+	if oldItem == nil {
+		ma := &MgoLatestSwapNonce{
+			Key:       key,
+			Address:   strings.ToLower(address),
+			IsSwapin:  isSwapin,
+			SwapNonce: nonce,
+			Timestamp: time.Now().Unix(),
+		}
+		err = collLatestSwapNonces.Insert(key, ma)
+	} else {
+		updates := bson.M{
+			"swapnonce": nonce,
+			"timestamp": time.Now().Unix(),
+		}
+		err = collLatestSwapNonces.UpdateId(key, updates)
+	}
+	if err == nil {
+		log.Info("mongodb update swap nonce success", "key", key, "nonce", nonce)
+	} else {
+		log.Debug("mongodb update swap nonce failed", "key", key, "nonce", nonce, "err", err)
+	}
+	return mgoError(err)
+}
+
+// FindLatestSwapNonce find
+func FindLatestSwapNonce(address string, isSwapin bool) (*MgoLatestSwapNonce, error) {
+	var result MgoLatestSwapNonce
+	err := collLatestSwapNonces.FindId(getSwapNonceKey(address, isSwapin)).One(&result)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+	return &result, nil
+}
+
+// LoadAllSwapNonces load
+func LoadAllSwapNonces() (swapinNonces, swapoutNonces map[string]uint64) {
+	swapinNonces = make(map[string]uint64)
+	swapoutNonces = make(map[string]uint64)
+	var result MgoLatestSwapNonce
+	iter := collLatestSwapNonces.Find(nil).Iter()
+	for iter.Next(&result) {
+		if result.IsSwapin {
+			swapinNonces[result.Address] = result.SwapNonce + 1
+		} else {
+			swapoutNonces[result.Address] = result.SwapNonce + 1
+		}
+	}
+	return swapinNonces, swapoutNonces
 }
