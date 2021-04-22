@@ -129,6 +129,7 @@ func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
 	}
 	ms.PairID = strings.ToLower(ms.PairID)
 	ms.Key = GetSwapKey(ms.TxID, ms.PairID, ms.Bind)
+	ms.InitTime = common.NowMilli()
 	err := collection.Insert(ms)
 	if err == nil {
 		log.Info("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
@@ -200,10 +201,10 @@ func findSwapsWithStatus(collection *mgo.Collection, status SwapStatus, septime 
 }
 
 func findSwapsOrSwapResultsWithStatus(result interface{}, collection *mgo.Collection, status SwapStatus, septime int64) error {
-	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
+	qtime := bson.M{"inittime": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qtime, qstatus}
-	q := collection.Find(bson.M{"$and": queries}).Sort("timestamp").Limit(maxCountOfResults)
+	q := collection.Find(bson.M{"$and": queries}).Sort("inittime").Limit(maxCountOfResults)
 	return mgoError(q.All(result))
 }
 
@@ -215,10 +216,10 @@ func findSwapsWithPairIDAndStatus(pairID string, collection *mgo.Collection, sta
 func findSwapsOrSwapResultsWithPairIDAndStatus(result interface{}, pairID string, collection *mgo.Collection, status SwapStatus, septime int64) error {
 	pairID = strings.ToLower(pairID)
 	qpair := bson.M{"pairid": pairID}
-	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
+	qtime := bson.M{"inittime": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qpair, qtime, qstatus}
-	q := collection.Find(bson.M{"$and": queries}).Sort("timestamp").Limit(maxCountOfResults)
+	q := collection.Find(bson.M{"$and": queries}).Sort("inittime").Limit(maxCountOfResults)
 	return mgoError(q.All(result))
 }
 
@@ -315,6 +316,7 @@ func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
 	}
 	ms.PairID = strings.ToLower(ms.PairID)
 	ms.Key = GetSwapKey(ms.TxID, ms.PairID, ms.Bind)
+	ms.InitTime = common.NowMilli()
 	err := collection.Insert(ms)
 	if err == nil {
 		log.Info("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection))
@@ -437,7 +439,7 @@ func findSwapResults(collection *mgo.Collection, address, pairID string, offset,
 	if limit >= 0 {
 		q = q.Skip(offset).Limit(limit)
 	} else {
-		q = q.Sort("-timestamp").Skip(offset).Limit(-limit)
+		q = q.Sort("-inittime").Skip(offset).Limit(-limit)
 	}
 	err := q.All(&result)
 	if err != nil {

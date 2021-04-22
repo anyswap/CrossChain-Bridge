@@ -24,6 +24,7 @@ type MgoSwap struct {
 	TxType    uint32     `bson:"txtype"`
 	Bind      string     `bson:"bind"`
 	Status    SwapStatus `bson:"status"`
+	InitTime  int64      `bson:"inittime"`
 	Timestamp int64      `bson:"timestamp"`
 	Memo      string     `bson:"memo"`
 }
@@ -48,6 +49,7 @@ type MgoSwapResult struct {
 	SwapType   uint32     `bson:"swaptype"`
 	SwapNonce  uint64     `bson:"swapnonce"`
 	Status     SwapStatus `bson:"status"`
+	InitTime   int64      `bson:"inittime"`
 	Timestamp  int64      `bson:"timestamp"`
 	Memo       string     `bson:"memo"`
 }
