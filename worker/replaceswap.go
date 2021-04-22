@@ -57,6 +57,7 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 		return nil, nil, fmt.Errorf("get nonce failed, %v", err)
 	}
 	if nonce > res.SwapNonce {
+		_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
 		return nil, nil, errors.New("can not replace swap with old nonce")
 	}
 
@@ -149,11 +150,12 @@ func replaceSwapResult(swapResult *mongodb.MgoSwapResult, txHash string, isSwapi
 	} else if swapResult.SwapTx != "" && txHash != swapResult.SwapTx {
 		oldSwapTxs = []string{swapResult.SwapTx, txHash}
 	}
+	swapType := tokens.SwapType(swapResult.SwapType).String()
 	err = updateOldSwapTxs(txid, pairID, bind, oldSwapTxs, isSwapin)
 	if err != nil {
-		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "nonce", swapResult.SwapNonce)
+		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", swapResult.SwapNonce)
 	} else {
-		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "nonce", swapResult.SwapNonce)
+		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", swapResult.SwapNonce)
 	}
 	return err
 }
