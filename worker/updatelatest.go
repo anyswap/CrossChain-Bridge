@@ -79,7 +79,7 @@ func adjustGatewayOrderImpl(isSrc bool) {
 		height, _ := bridge.GetLatestBlockNumberOf(apiAddress)
 		weightedAPIs = weightedAPIs.Add(apiAddress, height+uint64((length-i)*10))
 	}
-
+	weightedAPIs.Reverse() // reverse as iter in reverse order in the above
 	weightedAPIs = weightedAPIs.Sort()
 	gateway.APIAddress = weightedAPIs.GetStrings()
 	logWorker("gateway", "adjustGatewayOrder", "isSrc", isSrc, "result", gateway.APIAddress)

@@ -38,6 +38,14 @@ func (s WeightedStringSlice) Add(content string, weight uint64) WeightedStringSl
 	return s
 }
 
+// Reverse reverse items
+func (s WeightedStringSlice) Reverse() {
+	length := s.Len()
+	for i := 0; i < length/2; i++ {
+		s.Swap(i, length-i-1)
+	}
+}
+
 // Sort sort items
 func (s WeightedStringSlice) Sort() WeightedStringSlice {
 	sort.Stable(s)
