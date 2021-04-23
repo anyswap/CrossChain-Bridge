@@ -62,7 +62,7 @@ func (b *Bridge) IncreaseNonce(pairID string, value uint64) {
 		_ = mongodb.UpdateLatestSwapNonce(account, false, b.SwapoutNonce[account])
 	} else {
 		b.SwapinNonce[account] += value
-		_ = mongodb.UpdateLatestSwapNonce(account, true, b.SwapoutNonce[account])
+		_ = mongodb.UpdateLatestSwapNonce(account, true, b.SwapinNonce[account])
 	}
 }
 

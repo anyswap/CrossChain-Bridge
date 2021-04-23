@@ -729,9 +729,9 @@ func LoadAllSwapNonces() (swapinNonces, swapoutNonces map[string]uint64) {
 	iter := collLatestSwapNonces.Find(nil).Iter()
 	for iter.Next(&result) {
 		if result.IsSwapin {
-			swapinNonces[result.Address] = result.SwapNonce + 1
+			swapinNonces[result.Address] = result.SwapNonce
 		} else {
-			swapoutNonces[result.Address] = result.SwapNonce + 1
+			swapoutNonces[result.Address] = result.SwapNonce
 		}
 	}
 	return swapinNonces, swapoutNonces
