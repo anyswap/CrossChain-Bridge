@@ -7,6 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tools/rlp"
 	"github.com/anyswap/CrossChain-Bridge/types"
@@ -260,6 +261,7 @@ func sendRawTransaction(hexData string, urls []string) (success bool, err error)
 	if success {
 		return true, nil
 	}
+	log.Debug("call eth_sendRawTransaction failed", "urls", urls, "err", err)
 	return false, err
 }
 
