@@ -11,7 +11,7 @@ import (
 var (
 	updateLatestBlockHeightStarter  sync.Once
 	updateLatestBlockHeightInterval = 5 * time.Second
-	adjustGatewayOrderInterval      = 10 * time.Minute
+	adjustGatewayOrderInterval      = 5 * time.Minute
 )
 
 // StartUpdateLatestBlockHeightJob update latest block height job
@@ -82,5 +82,5 @@ func adjustGatewayOrderImpl(isSrc bool) {
 
 	weightedAPIs = weightedAPIs.Sort()
 	gateway.APIAddress = weightedAPIs.GetStrings()
-	logWorkerTrace("gateway", "adjustGatewayOrder", "isSrc", isSrc, "result", gateway.APIAddress)
+	logWorker("gateway", "adjustGatewayOrder", "isSrc", isSrc, "result", gateway.APIAddress)
 }
