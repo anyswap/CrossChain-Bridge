@@ -9,7 +9,7 @@ import (
 	"github.com/giangnamnabka/btcutil/base58"
 )
 
-// ConvertLTCAddress decode ltc address and convert to BTC address
+// ConvertCOLXAddress decode ltc address and convert to BTC address
 // nolint:gocyclo // keep it
 func (b *Bridge) ConvertCOLXAddress(addr, net string) (address btcutil.Address, err error) {
 	bchainConfig := &chaincfg.MainNetParams
