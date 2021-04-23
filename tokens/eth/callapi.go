@@ -237,17 +237,18 @@ func (b *Bridge) SendSignedTransaction(tx *types.Transaction) error {
 	if err != nil {
 		return err
 	}
+	txHash := tx.Hash().Hex()
 	hexData := common.ToHex(data)
 	gateway := b.GatewayConfig
-	success1, _ := sendRawTransaction(hexData, gateway.APIAddressExt)
-	success2, err := sendRawTransaction(hexData, gateway.APIAddress)
+	success1, _ := sendRawTransaction(txHash, hexData, gateway.APIAddressExt)
+	success2, err := sendRawTransaction(txHash, hexData, gateway.APIAddress)
 	if success1 || success2 {
 		return nil
 	}
 	return err
 }
 
-func sendRawTransaction(hexData string, urls []string) (success bool, err error) {
+func sendRawTransaction(txHash, hexData string, urls []string) (success bool, err error) {
 	if len(urls) == 0 {
 		return false, errEmptyURLs
 	}
@@ -255,13 +256,15 @@ func sendRawTransaction(hexData string, urls []string) (success bool, err error)
 	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_sendRawTransaction", hexData)
 		if err == nil {
+			log.Trace("call eth_sendRawTransaction success", "txHash", txHash, "url", url)
 			success = true
+		} else {
+			log.Trace("call eth_sendRawTransaction failed", "txHash", txHash, "url", url, "err", err)
 		}
 	}
 	if success {
 		return true, nil
 	}
-	log.Debug("call eth_sendRawTransaction failed", "urls", urls, "err", err)
 	return false, err
 }
 

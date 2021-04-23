@@ -132,6 +132,7 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) 
 				errSwapTxIsOnChain,
 				errWrongResultStatus,
 				errSwapNoncePassed:
+				logWorker("replace", "jump swap", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "err", err)
 				return nil
 			case errSwapWithoutSwapTx:
 			default:

@@ -695,7 +695,7 @@ func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err err
 			SwapNonce: nonce,
 			Timestamp: time.Now().Unix(),
 		}
-		err = collLatestSwapNonces.Insert(key, ma)
+		err = collLatestSwapNonces.Insert(ma)
 	} else {
 		updates := bson.M{
 			"swapnonce": nonce,
