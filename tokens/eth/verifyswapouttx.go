@@ -22,15 +22,9 @@ func (b *Bridge) verifySwapoutTxWithPairID(pairID, txHash string, allowUnstable 
 		return swapInfo, tokens.ErrUnknownPairID
 	}
 
-	var receipt *types.RPCTxReceipt
-	var err error
-	if !allowUnstable {
-		receipt, err = b.getStableReceipt(swapInfo)
-		if err != nil {
-			return swapInfo, err
-		}
-	} else {
-		receipt, _ = b.GetTransactionReceipt(txHash)
+	receipt, err := b.getReceipt(swapInfo, allowUnstable)
+	if err != nil {
+		return swapInfo, err
 	}
 
 	if !allowUnstable || receipt != nil {

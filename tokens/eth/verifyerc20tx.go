@@ -13,13 +13,6 @@ import (
 
 // verifyErc20SwapinTx verify erc20 swapin with pairID
 func (b *Bridge) verifyErc20SwapinTx(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	if allowUnstable {
-		return b.verifyErc20SwapinTxUnstable(tx, pairID, token)
-	}
-	return b.verifyErc20SwapinTxStable(tx, pairID, token)
-}
-
-func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
 	txHash := tx.Hash.String()
 	txRecipient := strings.ToLower(tx.Recipient.String())
 
@@ -28,14 +21,35 @@ func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID stri
 	swapInfo.Hash = txHash      // Hash
 	swapInfo.TxTo = txRecipient // TxTo
 
-	receipt, err := b.getStableReceipt(swapInfo)
+	receipt, err := b.getReceipt(swapInfo, allowUnstable)
 	if err != nil {
 		return swapInfo, err
 	}
 
+	if !allowUnstable || receipt != nil {
+		err = b.verifyErc20SwapinTxReceipt(swapInfo, receipt, token)
+	} else {
+		err = b.verifySwapinRawTx(tx, swapInfo, token)
+	}
+	if err != nil {
+		return swapInfo, err
+	}
+
+	err = b.checkSwapinInfo(swapInfo)
+	if err != nil {
+		return swapInfo, err
+	}
+
+	if !allowUnstable {
+		log.Debug("verify erc20 swapin pass", "from", "pairID", swapInfo.PairID, swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+	}
+	return swapInfo, nil
+}
+
+func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *types.RPCTxReceipt, token *tokens.TokenConfig) error {
 	if receipt.Recipient == nil ||
 		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) {
-		return swapInfo, tokens.ErrTxWithWrongContract
+		return tokens.ErrTxWithWrongContract
 	}
 
 	swapInfo.From = strings.ToLower(receipt.From.String()) // From
@@ -43,36 +57,24 @@ func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID stri
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.ContractAddress, token.DepositAddress)
 	if err != nil {
 		if err != tokens.ErrTxWithWrongReceiver {
-			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", txHash, "err", err)
+			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", swapInfo.Hash, "err", err)
 		}
-		return swapInfo, err
+		return err
 	}
 	swapInfo.To = strings.ToLower(to)     // To
 	swapInfo.Value = value                // Value
 	swapInfo.Bind = strings.ToLower(from) // Bind
-
-	err = b.checkSwapinInfo(swapInfo)
-	if err != nil {
-		return swapInfo, err
-	}
-
-	log.Debug("verify erc20 swapin pass", "from", "pairID", swapInfo.PairID, swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
-	return swapInfo, nil
+	return nil
 }
 
-func (b *Bridge) verifyErc20SwapinTxUnstable(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
-	txHash := tx.Hash.String()
-	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID // PairID
-	swapInfo.Hash = txHash   // Hash
-
+func (b *Bridge) verifySwapinRawTx(tx *types.RPCTransaction, swapInfo *tokens.TxSwapInfo, token *tokens.TokenConfig) error {
 	if tx.Recipient == nil {
-		return swapInfo, tokens.ErrTxWithWrongContract
+		return tokens.ErrTxWithWrongContract
 	}
 
 	txRecipient := strings.ToLower(tx.Recipient.String())
 	if !common.IsEqualIgnoreCase(txRecipient, token.ContractAddress) {
-		return swapInfo, tokens.ErrTxWithWrongContract
+		return tokens.ErrTxWithWrongContract
 	}
 
 	swapInfo.TxTo = txRecipient                       // TxTo
@@ -82,9 +84,9 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(tx *types.RPCTransaction, pairID st
 	from, to, value, err := ParseErc20SwapinTxInput(input, token.DepositAddress)
 	if err != nil {
 		if err != tokens.ErrTxWithWrongReceiver {
-			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", txHash, "err", err)
+			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", swapInfo.Hash, "err", err)
 		}
-		return swapInfo, err
+		return err
 	}
 	swapInfo.To = strings.ToLower(to) // To
 	swapInfo.Value = value            // Value
@@ -93,13 +95,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(tx *types.RPCTransaction, pairID st
 	} else {
 		swapInfo.Bind = swapInfo.From // Bind
 	}
-
-	err = b.checkSwapinInfo(swapInfo)
-	if err != nil {
-		return swapInfo, err
-	}
-
-	return swapInfo, nil
+	return nil
 }
 
 // ParseErc20SwapinTxInput parse erc20 swapin tx input

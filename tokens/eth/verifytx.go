@@ -197,6 +197,21 @@ func addSwapInfoConsiderError(swapInfo *tokens.TxSwapInfo, err error, swapInfos 
 	*errs = append(*errs, err)
 }
 
+func (b *Bridge) getReceipt(swapInfo *tokens.TxSwapInfo, allowUnstable bool) (*types.RPCTxReceipt, error) {
+	if !allowUnstable {
+		return b.getStableReceipt(swapInfo)
+	}
+	receipt, err := b.GetTransactionReceipt(swapInfo.Hash)
+	if err != nil {
+		return nil, nil // if receipt not found, then verify raw tx input
+	}
+	swapInfo.Height = receipt.BlockNumber.ToInt().Uint64() // Height
+	if *receipt.Status != 1 {
+		return nil, tokens.ErrTxWithWrongReceipt
+	}
+	return receipt, nil
+}
+
 func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxReceipt, error) {
 	txStatus := b.GetTransactionStatus(swapInfo.Hash)
 	swapInfo.Height = txStatus.BlockHeight  // Height
