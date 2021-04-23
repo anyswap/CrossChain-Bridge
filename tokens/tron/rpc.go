@@ -260,6 +260,9 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 	if latest, err := b.GetLatestBlockNumber(); err == nil {
 		status.Confirmations = latest - status.BlockHeight
 	}
+	status.CustomeCheckStable = func(confirmations uint64) bool {
+		return status.Confirmations >= confirmations
+	}
 	return
 }
 

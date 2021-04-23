@@ -92,10 +92,20 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	swapType := getSwapType(isSwapin)
 
 	txStatus := resBridge.GetTransactionStatus(swapTxID)
+	if txStatus == nil || txStatus.BlockHeight == 0 {
+		return nil
+	}
 	if txStatus != nil && txStatus.PrioriFinalized {
+		// For blockchains like Cosmos, which can tell tx is finailized at this stage
 		return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 	}
-	if txStatus == nil || txStatus.BlockHeight == 0 {
+	if txStatus.CustomeCheckStable != nil {
+		// Custome check stable logic
+		// For blockchains like Tron, which can tell tx is conditionally finailized
+		// but only cannot provide an Eth style RPCTxReceipt
+		if txStatus.CustomeCheckStable(*resBridge.GetChainConfig().Confirmations) {
+			return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
+		}
 		return nil
 	}
 
