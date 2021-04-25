@@ -105,6 +105,35 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 	return err
 }
 
+func updateSwapResultHeight(swap *mongodb.MgoSwapResult, blockHeight, blockTime uint64, updateSwapTx bool) (err error) {
+	updates := &mongodb.SwapResultUpdateItems{
+		Status:    mongodb.KeepStatus,
+		Timestamp: now(),
+	}
+	updates.SwapHeight = blockHeight
+	updates.SwapTime = blockTime
+	if updateSwapTx {
+		updates.SwapTx = swap.SwapTx
+	}
+	txid := swap.TxID
+	pairID := swap.PairID
+	bind := swap.Bind
+	switch tokens.SwapType(swap.SwapType) {
+	case tokens.SwapinType:
+		err = mongodb.UpdateSwapinResult(txid, pairID, bind, updates)
+	case tokens.SwapoutType:
+		err = mongodb.UpdateSwapoutResult(txid, pairID, bind, updates)
+	default:
+		err = tokens.ErrUnknownSwapType
+	}
+	if err != nil {
+		logWorkerError("update", "updateSwapResultHeight", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swap.SwapTx, "height", blockHeight)
+	} else {
+		logWorker("update", "updateSwapResultHeight", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swap.SwapTx, "height", blockHeight)
+	}
+	return err
+}
+
 func updateSwapTx(txid, pairID, bind, swapTx string, isSwapin bool) (err error) {
 	updates := &mongodb.SwapResultUpdateItems{
 		Status:    mongodb.KeepStatus,

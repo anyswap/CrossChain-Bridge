@@ -145,10 +145,15 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) 
 
 func checkTxIsPacked(bridge tokens.NonceSetter, txHash string, loopCount int64) bool {
 	for i := int64(0); i < loopCount; i++ {
-		if bridge.IsTransactionOnChain(txHash) {
+		if isTransactionOnChain(bridge, txHash) {
 			return true
 		}
 		time.Sleep(5 * time.Second)
 	}
 	return false
+}
+
+func isTransactionOnChain(bridge tokens.NonceSetter, txHash string) bool {
+	blockHeight, _ := bridge.GetTxBlockInfo(txHash)
+	return blockHeight > 0
 }

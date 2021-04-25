@@ -108,14 +108,26 @@ func (b *Bridge) GetPendingTransactions() (result []*types.RPCTransaction, err e
 	return nil, err
 }
 
-// IsTransactionOnChain impl
-func (b *Bridge) IsTransactionOnChain(txHash string) bool {
+// GetTxBlockInfo impl
+func (b Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
+	var useExt bool
 	gateway := b.GatewayConfig
 	receipt, _ := getTransactionReceipt(txHash, gateway.APIAddress)
 	if receipt == nil && len(gateway.APIAddressExt) > 0 {
+		useExt = true
 		receipt, _ = getTransactionReceipt(txHash, gateway.APIAddressExt)
 	}
-	return receipt != nil
+	if receipt == nil {
+		return 0, 0
+	}
+	blockHeight = receipt.BlockNumber.ToInt().Uint64()
+	if !useExt {
+		block, err := b.GetBlockByHash(receipt.BlockHash.Hex())
+		if err == nil {
+			blockTime = block.Time.ToInt().Uint64()
+		}
+	}
+	return blockHeight, blockTime
 }
 
 // GetTransactionReceipt call eth_getTransactionReceipt

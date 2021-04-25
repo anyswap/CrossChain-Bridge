@@ -56,7 +56,7 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 	if !ok {
 		return nil, nil, errors.New("not nonce support bridge")
 	}
-	if nonceSetter.IsTransactionOnChain(res.SwapTx) {
+	if isTransactionOnChain(nonceSetter, res.SwapTx) {
 		return nil, nil, errSwapTxIsOnChain
 	}
 
