@@ -19,7 +19,7 @@ func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
 // GetTransactionStatus impl
 func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	var txStatus tokens.TxStatus
-	txr, err := b.GetTransactionReceipt(txHash)
+	txr, url, err := b.GetTransactionReceipt(txHash)
 	if err != nil {
 		log.Trace("GetTransactionReceipt fail", "hash", txHash, "err", err)
 		return &txStatus
@@ -33,7 +33,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 		log.Debug("GetBlockByHash fail", "hash", txStatus.BlockHash, "err", err)
 	}
 	if txStatus.BlockHeight != 0 {
-		latest, err := b.GetLatestBlockNumber()
+		latest, err := b.GetLatestBlockNumberOf(url)
 		if err == nil {
 			if latest > txStatus.BlockHeight {
 				txStatus.Confirmations = latest - txStatus.BlockHeight
@@ -195,7 +195,7 @@ func (b *Bridge) getReceipt(swapInfo *tokens.TxSwapInfo, allowUnstable bool) (*t
 	if !allowUnstable {
 		return b.getStableReceipt(swapInfo)
 	}
-	receipt, err := b.GetTransactionReceipt(swapInfo.Hash)
+	receipt, _, err := b.GetTransactionReceipt(swapInfo.Hash)
 	if err != nil {
 		return nil, nil // if receipt not found, then verify raw tx input
 	}

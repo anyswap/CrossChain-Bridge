@@ -153,3 +153,16 @@ func SetLatestBlockHeight(latest uint64, isSrc bool) {
 		DstLatestBlockHeight = latest
 	}
 }
+
+// CmpAndSetLatestBlockHeight cmp and set latest block height
+func CmpAndSetLatestBlockHeight(latest uint64, isSrc bool) {
+	if isSrc {
+		if latest > SrcLatestBlockHeight {
+			SrcLatestBlockHeight = latest
+		}
+	} else {
+		if latest > DstLatestBlockHeight {
+			DstLatestBlockHeight = latest
+		}
+	}
+}
