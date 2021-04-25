@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"fmt"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
@@ -11,17 +11,24 @@ import (
 var (
 	defWaitTimeToReplace = int64(900) // seconds
 	defMaxReplaceCount   = 20
+
+	srcNonceSetter tokens.NonceSetter
+	dstNonceSetter tokens.NonceSetter
+
+	// key is signer address
+	swapinReplaceChanMap  = make(map[string]chan *mongodb.MgoSwapResult)
+	swapoutReplaceChanMap = make(map[string]chan *mongodb.MgoSwapResult)
 )
 
 // StartReplaceJob replace job
 func StartReplaceJob() {
 	var ok bool
-	_, ok = tokens.DstBridge.(tokens.NonceSetter)
+	dstNonceSetter, ok = tokens.DstBridge.(tokens.NonceSetter)
 	if ok {
 		go startReplaceSwapinJob()
 	}
 
-	_, ok = tokens.SrcBridge.(tokens.NonceSetter)
+	srcNonceSetter, ok = tokens.SrcBridge.(tokens.NonceSetter)
 	if ok {
 		go startReplaceSwapoutJob()
 	}
@@ -39,10 +46,7 @@ func startReplaceSwapinJob() {
 			logWorkerError("replace", "find swapins error", err)
 		}
 		for _, swap := range res {
-			err = processSwapinReplace(swap)
-			if err != nil {
-				logWorkerError("replace", "process swapin replace error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
-			}
+			processReplaceSwap(swap, true)
 		}
 		restInJob(restIntervalInReplaceSwapJob)
 	}
@@ -60,10 +64,7 @@ func startReplaceSwapoutJob() {
 			logWorkerError("replace", "find swapouts error", err)
 		}
 		for _, swap := range res {
-			err = processSwapoutReplace(swap)
-			if err != nil {
-				logWorkerError("replace", "process swapout replace error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
-			}
+			processReplaceSwap(swap, false)
 		}
 		restInJob(restIntervalInReplaceSwapJob)
 	}
@@ -72,32 +73,34 @@ func startReplaceSwapoutJob() {
 func findSwapinsToReplace() ([]*mongodb.MgoSwapResult, error) {
 	status := mongodb.MatchTxNotStable
 	septime := getSepTimeInFind(maxReplaceSwapLifetime)
-	return mongodb.FindSwapinResultsWithStatus(status, septime)
+	return mongodb.FindSwapResultsToReplace(status, septime, true)
 }
 
 func findSwapoutsToReplace() ([]*mongodb.MgoSwapResult, error) {
 	status := mongodb.MatchTxNotStable
 	septime := getSepTimeInFind(maxReplaceSwapLifetime)
-	return mongodb.FindSwapoutResultsWithStatus(status, septime)
+	return mongodb.FindSwapResultsToReplace(status, septime, false)
 }
 
-func processSwapinReplace(swap *mongodb.MgoSwapResult) error {
-	return processReplaceSwap(swap, true)
-}
-
-func processSwapoutReplace(swap *mongodb.MgoSwapResult) error {
-	return processReplaceSwap(swap, false)
-}
-
-func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
+func getReplaceConfigs(isSwapin bool) (waitTimeToReplace int64, maxReplaceCount int) {
 	var chainCfg *tokens.ChainConfig
 	if isSwapin {
 		chainCfg = tokens.DstBridge.GetChainConfig()
 	} else {
 		chainCfg = tokens.SrcBridge.GetChainConfig()
 	}
-	waitTimeToReplace := chainCfg.WaitTimeToReplace
-	maxReplaceCount := chainCfg.MaxReplaceCount
+	waitTimeToReplace = chainCfg.WaitTimeToReplace
+	maxReplaceCount = chainCfg.MaxReplaceCount
+	return waitTimeToReplace, maxReplaceCount
+}
+
+func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) {
+	if swap.SwapTx == "" ||
+		swap.Status != mongodb.MatchTxNotStable ||
+		swap.SwapHeight != 0 {
+		return
+	}
+	waitTimeToReplace, maxReplaceCount := getReplaceConfigs(isSwapin)
 	if waitTimeToReplace == 0 {
 		waitTimeToReplace = defWaitTimeToReplace
 	}
@@ -105,17 +108,59 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) 
 		maxReplaceCount = defMaxReplaceCount
 	}
 	if len(swap.OldSwapTxs) > maxReplaceCount {
-		return fmt.Errorf("replace swap too many times (> %v)", maxReplaceCount)
+		return
 	}
 	if getSepTimeInFind(waitTimeToReplace) < swap.InitTime {
-		return nil
+		return
 	}
-	bridge := tokens.GetCrossChainBridge(!isSwapin)
-	nonceSetter, ok := bridge.(tokens.NonceSetter)
-	if !ok {
-		return nil
+	dispatchReplaceTask(swap)
+}
+
+func dispatchReplaceTask(swap *mongodb.MgoSwapResult) {
+	pairID := strings.ToLower(swap.PairID)
+	pairCfg := tokens.GetTokenPairConfig(pairID)
+	isSwapin := tokens.SwapType(swap.SwapType) == tokens.SwapinType
+	if isSwapin {
+		swapinDcrmAddr := strings.ToLower(pairCfg.DestToken.DcrmAddress)
+		if _, exist := swapinReplaceChanMap[swapinDcrmAddr]; !exist {
+			swapinReplaceChanMap[swapinDcrmAddr] = make(chan *mongodb.MgoSwapResult, swapChanSize)
+			go processReplaceSwapTask(swapinReplaceChanMap[swapinDcrmAddr])
+		}
+		swapinReplaceChanMap[swapinDcrmAddr] <- swap
+	} else {
+		swapoutDcrmAddr := strings.ToLower(pairCfg.SrcToken.DcrmAddress)
+		if _, exist := swapoutReplaceChanMap[swapoutDcrmAddr]; !exist {
+			swapoutReplaceChanMap[swapoutDcrmAddr] = make(chan *mongodb.MgoSwapResult, swapChanSize)
+			go processReplaceSwapTask(swapoutReplaceChanMap[swapoutDcrmAddr])
+		}
+		swapoutReplaceChanMap[swapoutDcrmAddr] <- swap
 	}
+}
+
+func processReplaceSwapTask(swapChan <-chan *mongodb.MgoSwapResult) {
+	for {
+		swap := <-swapChan
+		doReplaceSwap(swap)
+	}
+}
+
+func getNonceSetter(isSwapin bool) tokens.NonceSetter {
+	if isSwapin {
+		return dstNonceSetter
+	}
+	return srcNonceSetter
+}
+
+func doReplaceSwap(swap *mongodb.MgoSwapResult) {
+	isSwapin := tokens.SwapType(swap.SwapType) == tokens.SwapinType
+	nonceSetter := getNonceSetter(isSwapin)
+	if nonceSetter == nil {
+		logWorkerWarn("replace", "not nonce support chain", "isSwapin", isSwapin)
+		return
+	}
+
 	var txHash string
+	var err error
 	for {
 		if isSwapin {
 			txHash, err = ReplaceSwapin(swap.TxID, swap.PairID, swap.Bind, "")
@@ -123,8 +168,9 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) 
 			txHash, err = ReplaceSwapout(swap.TxID, swap.PairID, swap.Bind, "")
 		}
 		if txHash != "" {
+			waitTimeToReplace, _ := getReplaceConfigs(isSwapin)
 			if checkTxIsPacked(nonceSetter, txHash, waitTimeToReplace/5+1) {
-				return nil
+				return
 			}
 		} else {
 			switch err {
@@ -133,7 +179,7 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) 
 				errWrongResultStatus,
 				errSwapNoncePassed:
 				logWorkerTrace("replace", "jump swap", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "err", err)
-				return nil
+				return
 			case errSwapWithoutSwapTx:
 			default:
 				logWorkerTrace("replace", "replace swap error", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "err", err)

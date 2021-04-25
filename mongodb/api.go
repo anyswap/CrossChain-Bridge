@@ -256,6 +256,24 @@ func FindSwapinResults(address, pairID string, offset, limit int) ([]*MgoSwapRes
 	return findSwapResults(collSwapinResult, address, pairID, offset, limit)
 }
 
+// FindSwapResultsToReplace find swap results to replace
+func FindSwapResultsToReplace(status SwapStatus, septime int64, isSwapin bool) ([]*MgoSwapResult, error) {
+	qstatus := bson.M{"status": status}
+	qheight := bson.M{"swapheight": 0}
+	qtime := bson.M{"inittime": bson.M{"$gte": septime}}
+	queries := []bson.M{qstatus, qheight, qtime}
+	var collection *mgo.Collection
+	if isSwapin {
+		collection = collSwapinResult
+	} else {
+		collection = collSwapoutResult
+	}
+	result := make([]*MgoSwapResult, 0, 20)
+	q := collection.Find(bson.M{"$and": queries}).Sort("inittime").Limit(maxCountOfResults)
+	err := q.All(result)
+	return result, mgoError(err)
+}
+
 // GetCountOfSwapinResults get count of swapin results
 func GetCountOfSwapinResults(pairID string) (int, error) {
 	return getCount(collSwapinResult, pairID)
