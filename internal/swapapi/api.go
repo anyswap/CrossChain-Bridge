@@ -209,6 +209,11 @@ func swap(txid, pairID *string, isSwapin bool) (*PostResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	if isSwapin {
+		log.Info("[api] receive swapin register", "txid", txidstr, "pairID", pairIDStr)
+	} else {
+		log.Info("[api] receive swapout register", "txid", txidstr, "pairID", pairIDStr)
+	}
 	return &SuccessPostResult, nil
 }
 

@@ -12,14 +12,10 @@ import (
 )
 
 // verifyErc20SwapinTx verify erc20 swapin with pairID
-func (b *Bridge) verifyErc20SwapinTx(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	txHash := tx.Hash.String()
-	txRecipient := strings.ToLower(tx.Recipient.String())
-
+func (b *Bridge) verifyErc20SwapinTx(pairID, txHash string, allowUnstable bool, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID    // PairID
-	swapInfo.Hash = txHash      // Hash
-	swapInfo.TxTo = txRecipient // TxTo
+	swapInfo.PairID = pairID // PairID
+	swapInfo.Hash = txHash   // Hash
 
 	receipt, err := b.getReceipt(swapInfo, allowUnstable)
 	if err != nil {
@@ -29,7 +25,7 @@ func (b *Bridge) verifyErc20SwapinTx(tx *types.RPCTransaction, pairID string, to
 	if !allowUnstable || receipt != nil {
 		err = b.verifyErc20SwapinTxReceipt(swapInfo, receipt, token)
 	} else {
-		err = b.verifySwapinRawTx(tx, swapInfo, token)
+		err = b.verifySwapinRawTx(swapInfo, token)
 	}
 	if err != nil {
 		return swapInfo, err
@@ -52,7 +48,8 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 		return tokens.ErrTxWithWrongContract
 	}
 
-	swapInfo.From = strings.ToLower(receipt.From.String()) // From
+	swapInfo.TxTo = strings.ToLower(receipt.Recipient.String()) // TxTo
+	swapInfo.From = strings.ToLower(receipt.From.String())      // From
 
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.ContractAddress, token.DepositAddress)
 	if err != nil {
@@ -67,7 +64,13 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 	return nil
 }
 
-func (b *Bridge) verifySwapinRawTx(tx *types.RPCTransaction, swapInfo *tokens.TxSwapInfo, token *tokens.TokenConfig) error {
+func (b *Bridge) verifySwapinRawTx(swapInfo *tokens.TxSwapInfo, token *tokens.TokenConfig) error {
+	txHash := swapInfo.Hash
+	tx, err := b.GetTransactionByHash(txHash)
+	if err != nil {
+		log.Debug("[verifySwapinRawTx] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		return tokens.ErrTxNotFound
+	}
 	if tx.Recipient == nil {
 		return tokens.ErrTxWithWrongContract
 	}

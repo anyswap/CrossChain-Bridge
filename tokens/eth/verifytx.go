@@ -83,28 +83,22 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, tokens.ErrUnknownPairID
 	}
 
+	if token.IsErc20() {
+		return b.verifyErc20SwapinTx(pairID, txHash, allowUnstable, token)
+	}
+
+	_, err := b.getReceipt(swapInfo, allowUnstable)
+	if err != nil {
+		return swapInfo, err
+	}
+
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
-
 	if tx.Recipient == nil { // ignore contract creation tx
-		if token.IsErc20() {
-			return swapInfo, tokens.ErrTxWithWrongContract
-		}
 		return swapInfo, tokens.ErrTxWithWrongReceiver
-	}
-
-	if token.IsErc20() {
-		return b.verifyErc20SwapinTx(tx, pairID, token, allowUnstable)
-	}
-
-	if !allowUnstable {
-		_, err = b.getStableReceipt(swapInfo)
-		if err != nil {
-			return swapInfo, err
-		}
 	}
 
 	txRecipient := strings.ToLower(tx.Recipient.String())
@@ -152,7 +146,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (swapInfos []
 		token := tokenCfgs[i]
 
 		if token.IsErc20() {
-			swapInfo, errf := b.verifyErc20SwapinTx(tx, pairID, token, allowUnstable)
+			swapInfo, errf := b.verifyErc20SwapinTx(pairID, txHash, allowUnstable, token)
 			addSwapInfoConsiderError(swapInfo, errf, &swapInfos, &errs)
 			continue
 		}
