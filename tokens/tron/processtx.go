@@ -17,7 +17,7 @@ func (b *Bridge) processTransaction(txext *api.TransactionExtention) {
 
 func (b *Bridge) processSwapin(txext *api.TransactionExtention) {
 	tx := &TransactionExtention{
-		Transaction: *txext.Transaction,
+		Transaction: txext.Transaction,
 		Txid:        txext.GetTxid(),
 	}
 	swapInfos, errs := b.verifySwapinTx(tx, true)
@@ -26,7 +26,7 @@ func (b *Bridge) processSwapin(txext *api.TransactionExtention) {
 
 func (b *Bridge) processSwapout(txext *api.TransactionExtention) {
 	tx := &TransactionExtention{
-		Transaction: *txext.Transaction,
+		Transaction: txext.Transaction,
 		Txid:        txext.GetTxid(),
 	}
 	swapInfos, errs := b.verifySwapoutTx(tx, true)

@@ -96,14 +96,14 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 }
 
 type TransactionExtention struct {
-	core.Transaction
+	*core.Transaction
 	Txid        []byte
 	BlockNumber uint64
 	BlockTime   uint64
 }
 
 func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
-	tx := &txext.Transaction
+	tx := txext.Transaction
 
 	ret := tx.GetRet()
 	if len(ret) != 1 {
@@ -276,7 +276,7 @@ func (b *Bridge) verifySwapinTxWithHash(txid string, allowUnstable bool) (swapIn
 		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{errors.New("Tron transaction not success")}
 	}
 	txext := &TransactionExtention{
-		Transaction: *txres,
+		Transaction: txres,
 		BlockNumber: status.BlockHeight,
 		BlockTime:   status.BlockTime,
 	}
@@ -285,7 +285,7 @@ func (b *Bridge) verifySwapinTxWithHash(txid string, allowUnstable bool) (swapIn
 }
 
 func (b *Bridge) verifySwapoutTx(txext *TransactionExtention, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
-	tx := &txext.Transaction
+	tx := txext.Transaction
 	ret := tx.GetRet()
 	if len(ret) != 1 {
 		return nil, []error{errors.New("Tron tx return not found")}
@@ -367,7 +367,7 @@ func (b *Bridge) verifySwapoutTxWithHash(txid string, allowUnstable bool) (swapI
 		return []*tokens.TxSwapInfo{&tokens.TxSwapInfo{}}, []error{errors.New("Tron transaction type error")}
 	}
 	txext := &TransactionExtention{
-		Transaction: *txres,
+		Transaction: txres,
 		BlockNumber: status.BlockHeight,
 		BlockTime:   status.BlockTime,
 	}

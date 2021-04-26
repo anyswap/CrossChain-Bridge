@@ -133,7 +133,7 @@ func sendTx() {
 	}
 	memo := ""
 
-	feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(50000)}}
+	feeAmount := []sdk.Coin{sdk.NewCoin("uluna", sdk.NewInt(50000))}
 	//feeAmount := sdk.Coins{sdk.Coin{"umuon", sdk.NewInt(50000)}}
 	gas := uint64(300000)
 	fee := authtypes.NewStdFee(gas, feeAmount)

@@ -164,17 +164,17 @@ func (b *Bridge) FeeGetter() func() authtypes.StdFee {
 	switch b.ChainConfig.NetID {
 	case "stargate-final":
 		return func() authtypes.StdFee {
-			feeAmount := sdk.Coins{sdk.Coin{"umuon", sdk.NewInt(3000)}}
+			feeAmount := []sdk.Coin{sdk.NewCoin("umuon", sdk.NewInt(3000))}
 			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 		}
 	case "cosmos-hub4":
 		return func() authtypes.StdFee {
-			feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
+			feeAmount := []sdk.Coin{sdk.NewCoin("uatom", sdk.NewInt(3000))}
 			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 		}
 	default:
 		return func() authtypes.StdFee {
-			feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
+			feeAmount := []sdk.Coin{sdk.NewCoin("uatom", sdk.NewInt(3000))}
 			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 		}
 	}

@@ -123,7 +123,7 @@ var DefaultSwapoutGas uint64 = 300000
 func (b *Bridge) FeeGetter() func() authtypes.StdFee {
 	return func() authtypes.StdFee {
 		// TODO
-		feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(50000)}}
+		feeAmount := []sdk.Coin{sdk.NewCoin("uluna", sdk.NewInt(50000))}
 		return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 	}
 }

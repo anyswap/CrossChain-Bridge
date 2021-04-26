@@ -243,14 +243,16 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 	if tx.Result != core.TransactionInfo_SUCESS {
 		return nil
 	}
-	if cres := tx.GetContractResult(); len(cres) < 1 {
+	cres := tx.GetContractResult()
+	if len(cres) < 1 {
 		return nil
-		for _, r := range cres {
-			if new(big.Int).SetBytes(r).Int64() != 1 {
-				return nil
-			}
+	}
+	for _, r := range cres {
+		if new(big.Int).SetBytes(r).Int64() != 1 {
+			return nil
 		}
 	}
+
 
 	status.Receipt = tx
 	status.PrioriFinalized = false
@@ -412,6 +414,7 @@ func (b *Bridge) GetCode(contractAddress string) (data []byte, err error) {
 		ctx, cancel := context.WithTimeout(context.Background(), GRPC_TIMEOUT)
 		if err != nil {
 			rpcError.log(err)
+			cancel()
 			continue
 		}
 		sm, err1 := cli.Client.GetContract(ctx, message)

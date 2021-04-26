@@ -712,7 +712,7 @@ func AddSwapAgreement(ptype, pkey, pvalue string) error {
 
 // CancelSwapAgreement cancels a swapin agreement
 func CancelSwapAgreement(key string) error {
-	err := collSwapAgreement.UpdateId(key, bson.D{{"cancelled", true}})
+	err := collSwapAgreement.UpdateId(key, bson.M{"cancelled": true})
 	if err != nil {
 		log.Debug("mongodb cancelled swapin agreement", "key", key, "err", err)
 		return mgoError(err)

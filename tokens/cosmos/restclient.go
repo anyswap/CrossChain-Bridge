@@ -552,7 +552,7 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 	value["signatures"] = signatures
 	bz2, err := json.Marshal(value)
 	if err != nil {
-		return txhash, fmt.Errorf("Remarshal, std tx error", "err", err)
+		return txhash, fmt.Errorf("Remarshal, std tx error: %v", err)
 	}
 	data := fmt.Sprintf(`{"tx":%v,"mode":"block"}`, string(bz2))
 

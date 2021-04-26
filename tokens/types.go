@@ -220,7 +220,7 @@ type SwapInfo struct {
 }
 
 type Marshalable interface {
-	MarshalJSON() []byte
+	MarshalJSON() ([]byte, error)
 	UnmarshalJSON(data []byte) error
 }
 
