@@ -162,10 +162,10 @@ func (b Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
 func (b *Bridge) GetTransactionReceipt(txHash string) (receipt *types.RPCTxReceipt, url string, err error) {
 	gateway := b.GatewayConfig
 	receipt, url, err = getTransactionReceipt(txHash, gateway.APIAddress)
-	if err == nil {
-		return receipt, url, err
+	if err != nil && len(gateway.APIAddressExt) > 0 {
+		return getTransactionReceipt(txHash, gateway.APIAddressExt)
 	}
-	return getTransactionReceipt(txHash, gateway.APIAddressExt)
+	return receipt, url, err
 }
 
 func getTransactionReceipt(txHash string, urls []string) (result *types.RPCTxReceipt, rpcURL string, err error) {

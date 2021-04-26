@@ -65,13 +65,13 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) error {
 	return nil
 }
 
-func getTxByHashWithExt(b *Bridge, txHash string) (*types.RPCTransaction, error) {
+func getTxByHash(b *Bridge, txHash string, withExt bool) (*types.RPCTransaction, error) {
 	gateway := b.GatewayConfig
 	tx, err := getTransactionByHash(txHash, gateway.APIAddress)
-	if err == nil {
-		return tx, err
+	if err != nil && withExt && len(gateway.APIAddressExt) > 0 {
+		tx, err = getTransactionByHash(txHash, gateway.APIAddressExt)
 	}
-	return getTransactionByHash(txHash, gateway.APIAddressExt)
+	return tx, err
 }
 
 // VerifyTransaction impl
@@ -101,7 +101,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, err
 	}
 
-	tx, err := getTxByHashWithExt(b, txHash)
+	tx, err := getTxByHash(b, txHash, !allowUnstable)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
