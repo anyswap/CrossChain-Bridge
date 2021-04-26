@@ -1,25 +1,25 @@
 package tron
 
 import (
-	"encoding/json"
-	"errors"
 	"crypto/ecdsa"
 	"crypto/sha256"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
 
-	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
 	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
+	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
-	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
+	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
 
 const (
@@ -146,7 +146,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	var rsv string
 	i := 0
 	for ; i < retryGetSignStatusCount; i++ {
-		signStatus, err2 := dcrm.GetSignStatus(keyID, rpcAddr)
+		signStatus, err2 := dcrm.GetSignStatus(keyID[0], rpcAddr)
 		if err2 == nil {
 			if len(signStatus.Rsv) != 1 {
 				return nil, "", fmt.Errorf("get sign status require one rsv but have %v (keyID = %v)", len(signStatus.Rsv), keyID)
@@ -169,7 +169,6 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	log.Trace(b.ChainConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
 
 	signature := common.FromHex(rsv)
-
 
 	tx.Signature = append(tx.Signature, signature)
 	signedTx = tx

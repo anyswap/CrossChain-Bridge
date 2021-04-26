@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
@@ -21,7 +22,8 @@ const (
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
 	*NonceSetterBase
-	Signer types.Signer
+	Signer        types.Signer
+	SignerChainID *big.Int
 }
 
 // NewCrossChainBridge new bridge
@@ -61,8 +63,7 @@ func (b *Bridge) VerifyChainID() {
 	)
 
 	for {
-		// call NetworkID instead of ChainID as ChainID may return 0x0 wrongly
-		chainID, err = b.NetworkID()
+		chainID, err = b.GetSignerChainID()
 		if err == nil {
 			break
 		}
@@ -89,6 +90,7 @@ func (b *Bridge) VerifyChainID() {
 		log.Fatalf("unsupported ethereum network %v", networkID)
 	}
 
+	b.SignerChainID = chainID
 	b.Signer = types.MakeSigner("EIP155", chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
@@ -102,6 +104,9 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
 	if b.IsSrc && !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
+	if tokenCfg.IsDelegateContract {
+		return b.verifyDelegateContract(tokenCfg)
+	}
 
 	err = b.verifyDecimals(tokenCfg)
 	if err != nil {
@@ -113,6 +118,22 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
 		return err
 	}
 
+	return nil
+}
+
+func (b *Bridge) verifyDelegateContract(tokenCfg *tokens.TokenConfig) error {
+	if tokenCfg.DelegateToken == "" {
+		return nil
+	}
+	// keccak256 'proxyToken()' is '0x4faaefae'
+	res, err := b.CallContract(tokenCfg.ContractAddress, common.FromHex("0x4faaefae"), "latest")
+	if err != nil {
+		return err
+	}
+	proxyToken := common.HexToAddress(res)
+	if common.HexToAddress(tokenCfg.DelegateToken) != proxyToken {
+		return fmt.Errorf("mismatch 'DelegateToken', has %v, want %v", tokenCfg.DelegateToken, proxyToken.String())
+	}
 	return nil
 }
 

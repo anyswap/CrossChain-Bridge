@@ -121,7 +121,7 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 
 // IsSwapAlreadyExistRegisterError is err of swap already exist
 func IsSwapAlreadyExistRegisterError(err error) bool {
-	return err == mongodb.ErrItemIsDup
+	return errors.Is(err, mongodb.ErrItemIsDup)
 }
 
 // RegisterP2shSwapin register p2sh swapin

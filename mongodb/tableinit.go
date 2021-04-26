@@ -16,6 +16,7 @@ var (
 	collBlacklist         *mgo.Collection
 	collSwapAgreement     *mgo.Collection
 	collSolanaScannedTx   *mgo.Collection
+	collLatestSwapNonces  *mgo.Collection
 )
 
 func isSwapin(collection *mgo.Collection) bool {
@@ -35,13 +36,14 @@ func deinintCollections() {
 	collBlacklist = database.C(tbBlacklist)
 	collSwapAgreement = database.C(tbSwapAgreement)
 	collSolanaScannedTx = database.C(tbSolanaScannedTx)
+	collLatestSwapNonces = database.C(tbLatestSwapNonces)
 }
 
 func initCollections() {
-	initCollection(tbSwapins, &collSwapin, "timestamp", "status")
-	initCollection(tbSwapouts, &collSwapout, "timestamp", "status")
-	initCollection(tbSwapinResults, &collSwapinResult, "from", "timestamp")
-	initCollection(tbSwapoutResults, &collSwapoutResult, "from", "timestamp")
+	initCollection(tbSwapins, &collSwapin, "inittime", "status")
+	initCollection(tbSwapouts, &collSwapout, "inittime", "status")
+	initCollection(tbSwapinResults, &collSwapinResult, "from", "inittime")
+	initCollection(tbSwapoutResults, &collSwapoutResult, "from", "inittime")
 	initCollection(tbP2shAddresses, &collP2shAddress, "p2shaddress")
 	initCollection(tbSwapStatistics, &collSwapStatistics)
 	initCollection(tbLatestScanInfo, &collLatestScanInfo)
@@ -49,6 +51,7 @@ func initCollections() {
 	initCollection(tbBlacklist, &collBlacklist)
 	initCollection(tbSwapAgreement, &collSwapAgreement)
 	initCollection(tbSolanaScannedTx, &collSolanaScannedTx)
+	initCollection(tbLatestSwapNonces, &collLatestSwapNonces, "address")
 
 	initDefaultValue()
 }

@@ -8,11 +8,11 @@ import (
 	"math/big"
 	"strings"
 
+	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
 	"github.com/fbsobreira/gotron-sdk/pkg/common"
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
-	"github.com/golang/protobuf/ptypes"
 	proto "github.com/golang/protobuf/proto"
-	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
+	"github.com/golang/protobuf/ptypes"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -97,9 +97,9 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 
 type TransactionExtention struct {
 	core.Transaction
-	Txid []byte
+	Txid        []byte
 	BlockNumber uint64
-	BlockTime uint64
+	BlockTime   uint64
 }
 
 func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
@@ -125,8 +125,8 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 	tokenPairsConfig := tokens.GetTokenPairsConfig()
 
 	swapInfo := &tokens.TxSwapInfo{
-		Hash: CalcTxHash(tx),
-		Height: txext.BlockNumber,
+		Hash:      CalcTxHash(tx),
+		Height:    txext.BlockNumber,
 		Timestamp: txext.BlockTime,
 	}
 
@@ -235,26 +235,26 @@ func (b *Bridge) verifySwapinTx(txext *TransactionExtention, allowUnstable bool)
 	return swapInfos, errs
 }
 
-func checkTrc20TransferLog (txlogs []*core.TransactionInfo_Log, contractAddress string) (logfrom, logto string, logamount *big.Int, err error) {
+func checkTrc20TransferLog(txlogs []*core.TransactionInfo_Log, contractAddress string) (logfrom, logto string, logamount *big.Int, err error) {
 	logamount = new(big.Int)
 	hasAddr := false
 	for _, txlog := range txlogs {
 		addr := txlog.GetAddress()
-			if EqualAddress(tronaddress.Address(addr).String(), contractAddress) {
-				hasAddr = true
-				topics := txlog.GetTopics()
-				if len(topics) < 3 {
-					return "", "", nil, errors.New("Log topic number error")
-				}
-				if bytes.Equal(topics[0], erc20CodeParts["LogTransfer"]) == false {
-					return "", "", nil, errors.New("Log topic is not log transfer")
-				}
-				logfrom = fmt.Sprintf("%x", topics[1])
-				logto = fmt.Sprintf("%x", topics[2])
-				amthex := fmt.Sprintf("%x", txlog.GetData())
-				logamount, _ = logamount.SetString(amthex, 16)
-				break
+		if EqualAddress(tronaddress.Address(addr).String(), contractAddress) {
+			hasAddr = true
+			topics := txlog.GetTopics()
+			if len(topics) < 3 {
+				return "", "", nil, errors.New("Log topic number error")
 			}
+			if bytes.Equal(topics[0], erc20CodeParts["LogTransfer"]) == false {
+				return "", "", nil, errors.New("Log topic is not log transfer")
+			}
+			logfrom = fmt.Sprintf("%x", topics[1])
+			logto = fmt.Sprintf("%x", topics[2])
+			amthex := fmt.Sprintf("%x", txlog.GetData())
+			logamount, _ = logamount.SetString(amthex, 16)
+			break
+		}
 	}
 	if hasAddr == false {
 		return "", "", nil, errors.New("Logs do not contain contract address")
@@ -278,7 +278,7 @@ func (b *Bridge) verifySwapinTxWithHash(txid string, allowUnstable bool) (swapIn
 	txext := &TransactionExtention{
 		Transaction: *txres,
 		BlockNumber: status.BlockHeight,
-		BlockTime: status.BlockTime,
+		BlockTime:   status.BlockTime,
 	}
 	txext.Txid, _ = common.FromHex(txid)
 	return b.verifySwapinTx(txext, allowUnstable)
@@ -297,8 +297,8 @@ func (b *Bridge) verifySwapoutTx(txext *TransactionExtention, allowUnstable bool
 		return nil, []error{fmt.Errorf("Tron tx contract not success: %+v", cret)}
 	}
 	swapInfo := &tokens.TxSwapInfo{
-		Hash: CalcTxHash(tx),
-		Height: txext.BlockNumber,
+		Hash:      CalcTxHash(tx),
+		Height:    txext.BlockNumber,
 		Timestamp: txext.BlockTime,
 	}
 
@@ -320,10 +320,10 @@ func (b *Bridge) verifySwapoutTx(txext *TransactionExtention, allowUnstable bool
 		contractAddress := fmt.Sprintf("%v", tronaddress.Address(c.ContractAddress))
 		for _, tokenPair := range tokenPairsConfig {
 			token := tokenPair.DestToken
-				tokenContractAddress := token.ContractAddress
-				if strings.EqualFold(tokenContractAddress, contractAddress) {
-					swapInfo.PairID = tokenPair.PairID
-				}
+			tokenContractAddress := token.ContractAddress
+			if strings.EqualFold(tokenContractAddress, contractAddress) {
+				swapInfo.PairID = tokenPair.PairID
+			}
 		}
 		if swapInfo.PairID == "" {
 			addSwapInfoConsiderError(nil, errors.New("Invalid swapout"), &swapInfos, &errs)
@@ -369,7 +369,7 @@ func (b *Bridge) verifySwapoutTxWithHash(txid string, allowUnstable bool) (swapI
 	txext := &TransactionExtention{
 		Transaction: *txres,
 		BlockNumber: status.BlockHeight,
-		BlockTime: status.BlockTime,
+		BlockTime:   status.BlockTime,
 	}
 	txext.Txid, _ = common.FromHex(txid)
 	return b.verifySwapoutTx(txext, allowUnstable)

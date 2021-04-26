@@ -12,6 +12,7 @@ const (
 	tbBlacklist         string = "Blacklist"
 	tbSwapAgreement     string = "SwapAgreement"
 	tbSolanaScannedTx   string = "SolanaScannedTx"
+	tbLatestSwapNonces  string = "LatestSwapNonces"
 
 	keyOfSrcLatestScanInfo string = "srclatest"
 	keyOfDstLatestScanInfo string = "dstlatest"
@@ -26,6 +27,7 @@ type MgoSwap struct {
 	TxType    uint32     `bson:"txtype"`
 	Bind      string     `bson:"bind"`
 	Status    SwapStatus `bson:"status"`
+	InitTime  int64      `bson:"inittime"`
 	Timestamp int64      `bson:"timestamp"`
 	Memo      string     `bson:"memo"`
 }
@@ -43,12 +45,14 @@ type MgoSwapResult struct {
 	Bind       string     `bson:"bind"`
 	Value      string     `bson:"value"`
 	SwapTx     string     `bson:"swaptx"`
+	OldSwapTxs []string   `bson:"oldswaptxs"`
 	SwapHeight uint64     `bson:"swapheight"`
 	SwapTime   uint64     `bson:"swaptime"`
 	SwapValue  string     `bson:"swapvalue"`
 	SwapType   uint32     `bson:"swaptype"`
 	SwapNonce  uint64     `bson:"swapnonce"`
 	Status     SwapStatus `bson:"status"`
+	InitTime   int64      `bson:"inittime"`
 	Timestamp  int64      `bson:"timestamp"`
 	Memo       string     `bson:"memo"`
 }
@@ -56,6 +60,7 @@ type MgoSwapResult struct {
 // SwapResultUpdateItems swap update items
 type SwapResultUpdateItems struct {
 	SwapTx     string
+	OldSwapTxs []string
 	SwapHeight uint64
 	SwapTime   uint64
 	SwapValue  string
@@ -117,4 +122,13 @@ type MgoSwapAgreement struct {
 type MgoSolanaScannedTx struct {
 	Address string `bson:"_id"`
 	Txid    string `bson:"txid"`
+}
+
+// MgoLatestSwapNonce latest swap nonce
+type MgoLatestSwapNonce struct {
+	Key       string `bson:"_id"` // address + swaptype
+	Address   string `bson:"address"`
+	IsSwapin  bool   `bson:"isswapin"`
+	SwapNonce uint64 `bson:"swapnonce"`
+	Timestamp int64  `bson:"timestamp"`
 }

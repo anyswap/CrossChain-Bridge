@@ -27,6 +27,13 @@ var (
 
 // StartSwapJob swap job
 func StartSwapJob() {
+	swapinNonces, swapoutNonces := mongodb.LoadAllSwapNonces()
+	if nonceSetter, ok := tokens.DstBridge.(tokens.NonceSetter); ok {
+		nonceSetter.InitNonces(swapinNonces)
+	}
+	if nonceSetter, ok := tokens.SrcBridge.(tokens.NonceSetter); ok {
+		nonceSetter.InitNonces(swapoutNonces)
+	}
 	for _, pairCfg := range tokens.GetTokenPairsConfig() {
 		AddSwapJob(pairCfg)
 	}
@@ -314,7 +321,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
 		signedTx, txHash, err = resBridge.SignTransaction(rawTx, pairID)
 	} else {
-		signedTx, txHash, err = dcrmSignTransaction(resBridge, rawTx, args.GetExtraArgs())
+		signedTx, txHash, err = resBridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	}
 	if err != nil {
 		logWorkerError("doSwap", "sign tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
@@ -323,13 +330,31 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 
 	swapTxNonce := args.GetTxNonce()
 
+	var oldSwapTxs []string
+	if len(res.OldSwapTxs) > 0 {
+		var existsInOld bool
+		for _, oldSwapTx := range res.OldSwapTxs {
+			if oldSwapTx == txHash {
+				existsInOld = true
+				break
+			}
+		}
+		if !existsInOld {
+			oldSwapTxs = res.OldSwapTxs
+			oldSwapTxs = append(oldSwapTxs, txHash)
+		}
+	} else if res.SwapTx != "" && txHash != res.SwapTx {
+		oldSwapTxs = []string{res.SwapTx, txHash}
+	}
+
 	// update database before sending transaction
 	addSwapHistory(txid, bind, originValue, txHash, swapTxNonce, isSwapin)
 	matchTx := &MatchTx{
-		SwapTx:    txHash,
-		SwapValue: tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
-		SwapType:  swapType,
-		SwapNonce: swapTxNonce,
+		SwapTx:     txHash,
+		OldSwapTxs: oldSwapTxs,
+		SwapValue:  tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
+		SwapType:   swapType,
+		SwapNonce:  swapTxNonce,
 	}
 	err = updateSwapResult(txid, pairID, bind, matchTx)
 	if err != nil {
@@ -343,22 +368,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	resTxHash, err := sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
-	if err == nil {
-		matchTx.SwapTx = resTxHash
-		err = updateSwapResult(txid, pairID, bind, matchTx)
-		if err != nil {
-			logWorkerError("doSwap", "update swap result failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
-			return err
-		}
-
-		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxProcessed, now(), "")
-		if err != nil {
-			logWorkerError("doSwap", "update swap status failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
-			return err
-		}
-	}
-	return err
+	return sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin, false)
 }
 
 type swapInfo struct {

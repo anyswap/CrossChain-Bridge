@@ -28,11 +28,12 @@ type SwapAgreement = tokens.SwapAgreement
 
 // ServerInfo server info
 type ServerInfo struct {
-	Identifier string
-	SrcChain   *tokens.ChainConfig
-	DestChain  *tokens.ChainConfig
-	PairIDs    []string
-	Version    string
+	Identifier          string
+	MustRegisterAccount bool
+	SrcChain            *tokens.ChainConfig
+	DestChain           *tokens.ChainConfig
+	PairIDs             []string
+	Version             string
 }
 
 // PostResult post result

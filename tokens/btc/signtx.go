@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
@@ -16,11 +15,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
-)
-
-const (
-	retryGetSignStatusCount    = 70
-	retryGetSignStatusInterval = 10 * time.Second
 )
 
 func (b *Bridge) verifyTransactionWithArgs(tx *txauthor.AuthoredTx, args *tokens.BuildTxArgs) error {
@@ -230,34 +224,16 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	}
 	jsondata, _ := json.Marshal(args)
 	msgContext := []string{string(jsondata)}
-	log.Info("=========="+b.ChainConfig.BlockChain+" DcrmSignTransaction start"+" ==========", "msgContext", msgContext)
-	rpcAddr, keyID, err := dcrm.DoSign(cfgFromPublicKey, msgHash, msgContext)
+
+	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "msgContext", msgContext, "txid", args.SwapID)
+	keyID, rsv, err := dcrm.DoSign(cfgFromPublicKey, msgHash, msgContext)
 	if err != nil {
 		return nil, err
 	}
-	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
-	time.Sleep(retryGetSignStatusInterval)
+	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction finished", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
 
-	var signStatus *dcrm.SignStatus
-	i := 0
-	for ; i < retryGetSignStatusCount; i++ {
-		signStatus, err = dcrm.GetSignStatus(keyID, rpcAddr)
-		if err == nil {
-			if len(signStatus.Rsv) != len(msgHash) {
-				return nil, fmt.Errorf("get sign status require %v rsv but have %v (keyID = %v)", len(msgHash), len(signStatus.Rsv), keyID)
-			}
-			rsv = signStatus.Rsv
-			break
-		}
-		switch err {
-		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
-			return nil, err
-		}
-		log.Warn("retry get sign status as error", "err", err, "txid", args.SwapID, "keyID", keyID, "bridge", args.Identifier, "swaptype", args.SwapType.String())
-		time.Sleep(retryGetSignStatusInterval)
-	}
-	if i == retryGetSignStatusCount || len(rsv) == 0 {
-		return nil, errors.New("get sign status failed")
+	if len(rsv) != len(msgHash) {
+		return nil, fmt.Errorf("get sign status require %v rsv but have %v (keyID = %v)", len(msgHash), len(rsv), keyID)
 	}
 
 	rsv, err = b.adjustRsvOrders(rsv, msgHash, cfgFromPublicKey)
@@ -265,7 +241,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 		return nil, err
 	}
 
-	log.Trace(b.ChainConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
+	log.Trace(b.ChainConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "txid", args.SwapID, "rsv", rsv)
 	return rsv, nil
 }
 

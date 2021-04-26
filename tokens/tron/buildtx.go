@@ -8,16 +8,16 @@ import (
 	"github.com/fbsobreira/gotron-sdk/pkg/proto/core"
 	proto "github.com/golang/protobuf/proto"
 
-	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/common"
-	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 )
 
 var (
-	SwapinFeeLimit int64 = 300000000 // 300 TRX
-	TransferTRXLimit int64 = 300000000 // 300 TRX
+	SwapinFeeLimit        int64 = 300000000 // 300 TRX
+	TransferTRXLimit      int64 = 300000000 // 300 TRX
 	TransferTRC20FeeLimit int64 = 300000000 // 300 TRX
 
 	ExtraExpiration int64 = 900000 // 15 min
@@ -35,7 +35,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		rawtx, decodeErr := hex.DecodeString(args.Extra.TronExtra.RawTx)
 		if decodeErr != nil {
 			return nil, decodeErr
-		} 
+		}
 
 		var coretx core.Transaction
 		unmarshalErr := proto.Unmarshal(rawtx, &coretx)
@@ -92,7 +92,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 				amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, false)
 				args.To = tokenCfg.ContractAddress
 				//  transfer trc20
-				rawTx, err =  b.BuildTRC20Transfer(args.From, args.Bind, args.To, amount)
+				rawTx, err = b.BuildTRC20Transfer(args.From, args.Bind, args.To, amount)
 				if err == nil {
 					txmsg, _ := proto.Marshal(rawTx.(*core.Transaction))
 					args.Extra = &tokens.AllExtras{

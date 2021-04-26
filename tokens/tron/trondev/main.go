@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/grpc"
 	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/grpc"
 
 	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
 	"github.com/fbsobreira/gotron-sdk/pkg/client"
@@ -192,12 +192,12 @@ func GetTransaction() {
 	txlog := txinfo.GetLog()
 	fmt.Printf("Transaction log length: %v\n", len(txlog))
 	/*
-	fmt.Printf("Transaction log: %v\n", txlog[0])
-	fmt.Printf("Transaction log address: %v\n", tronaddress.Address(append([]byte{0x41}, txlog[0].GetAddress()...))) // 合约地址
-	fmt.Printf("Transaction log topics: %X\n", txlog[0].GetTopics()[0]) // trc20TransferEventSignature DDF252AD1BE2C89B69C2B068FC378DAA952BA7F163C4A11628F55A4DF523B3EF
-	fmt.Printf("Transaction log topics: %X\n", txlog[0].GetTopics()[1]) // from
-	fmt.Printf("Transaction log topics: %X\n", txlog[0].GetTopics()[2]) // to
-	fmt.Printf("Transaction log data: %X\n", txlog[0].GetData())
+		fmt.Printf("Transaction log: %v\n", txlog[0])
+		fmt.Printf("Transaction log address: %v\n", tronaddress.Address(append([]byte{0x41}, txlog[0].GetAddress()...))) // 合约地址
+		fmt.Printf("Transaction log topics: %X\n", txlog[0].GetTopics()[0]) // trc20TransferEventSignature DDF252AD1BE2C89B69C2B068FC378DAA952BA7F163C4A11628F55A4DF523B3EF
+		fmt.Printf("Transaction log topics: %X\n", txlog[0].GetTopics()[1]) // from
+		fmt.Printf("Transaction log topics: %X\n", txlog[0].GetTopics()[2]) // to
+		fmt.Printf("Transaction log data: %X\n", txlog[0].GetData())
 	*/
 
 	divide()

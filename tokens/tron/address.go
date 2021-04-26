@@ -8,8 +8,8 @@ import (
 	tronaddress "github.com/fbsobreira/gotron-sdk/pkg/address"
 	troncommon "github.com/fbsobreira/gotron-sdk/pkg/common"
 
-	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
 
 // IsValidAddress check address

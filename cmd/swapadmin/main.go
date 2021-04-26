@@ -28,6 +28,7 @@ func initApp() {
 		blacklistCommand,
 		reverifyCommand,
 		reswapCommand,
+		replaceswapCommand,
 		manualCommand,
 		setnonceCommand,
 		addpairCommand,

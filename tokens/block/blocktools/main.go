@@ -7,11 +7,11 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"github.com/anyswap/CrossChain-Bridge/common"
 )
 
 func main() {

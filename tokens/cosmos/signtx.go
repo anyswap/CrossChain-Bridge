@@ -82,7 +82,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	var rsv string
 	i := 0
 	for ; i < retryGetSignStatusCount; i++ {
-		signStatus, err2 := dcrm.GetSignStatus(keyID, rpcAddr)
+		signStatus, err2 := dcrm.GetSignStatus(keyID[0], rpcAddr)
 		if err2 == nil {
 			if len(signStatus.Rsv) != 1 {
 				return nil, "", fmt.Errorf("get sign status require one rsv but have %v (keyID = %v)", len(signStatus.Rsv), keyID)
@@ -108,7 +108,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 
 	if len(signature) != crypto.SignatureLength {
 		log.Error("DcrmSignTransaction wrong length of signature")
-		return nil, "", errors.New("wrong signature of keyID " + keyID)
+		return nil, "", errors.New("wrong signature of keyID " + keyID[0])
 	}
 
 	// pub

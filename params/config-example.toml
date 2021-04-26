@@ -1,5 +1,7 @@
 # a short string to identify the bridge
 Identifier = "BTC2ETH"
+# if users should register their address before swapping
+MustRegisterAccount = false
 
 # administrators who can do admin work like maintain blacklist etc.
 Admins = [
@@ -25,6 +27,9 @@ AllowedOrigins = []
 [Oracle]
 # post swap register RPC requests to this server
 ServerAPIAddress = "http://127.0.0.1:11556/rpc"
+
+[Extra]
+MinReserveFee = "10000000000000000"
 
 # customize fees in building btc transaction (btc only)
 [BtcExtra]
@@ -55,10 +60,23 @@ Confirmations = 0 # suggest >= 6 for Mainnet
 InitialHeight = 0
 # whether enable scan blocks and register swaps
 EnableScan = false
+# whether enable scan txs in pool
+EnableScanPool = false
+# whether scan transaction receipt logs
+ScanReceipt = false
+# max gas price fluct percent
+MaxGasPriceFluctPercent = 10
+# wait time to replace swapout match tx
+WaitTimeToReplace = 900
+# max replace swap count
+MaxReplaceCount = 20
+# enable replace swap job
+EnableReplaceSwap = false
 
 # source blockchain gateway config
 [SrcGateway]
 APIAddress = ["http://47.107.50.83:3002"]
+APIAddressExt = ["http://47.107.50.83:3000"]
 
 # dest chain config
 [DestChain]
@@ -70,10 +88,23 @@ Confirmations = 0 # suggest >= 30 for Mainnet
 InitialHeight = 0
 # whether enable scan blocks and register swaps
 EnableScan = false
+# whether enable scan txs in pool
+EnableScanPool = false
+# whether scan transaction receipt logs
+ScanReceipt = false
+# max gas price fluct percent
+MaxGasPriceFluctPercent = 10
+# wait time to replace swapin match tx
+WaitTimeToReplace = 900
+# max replace swap count
+MaxReplaceCount = 20
+# enable replace swap job
+EnableReplaceSwap = false
 
 # dest blockchain gateway config
 [DestGateway]
 APIAddress = ["http://5.189.139.168:8018"]
+APIAddressExt = ["http://5.189.139.168:8000"]
 
 # DCRM config
 [Dcrm]

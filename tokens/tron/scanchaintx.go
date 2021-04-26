@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	step int = 100
-	longSleep = time.Second * 2
-	shortSleep = time.Millisecond * 500
+	step       int = 100
+	longSleep      = time.Second * 2
+	shortSleep     = time.Millisecond * 500
 
 	maxScanHeight          = uint64(100)
 	retryIntervalInScanJob = 3 * time.Second

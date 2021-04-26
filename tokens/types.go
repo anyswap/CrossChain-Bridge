@@ -28,17 +28,25 @@ type BtcExtraConfig struct {
 
 // ChainConfig struct
 type ChainConfig struct {
-	BlockChain    string
-	NetID         string
-	Confirmations *uint64
-	InitialHeight *uint64
-	EnableScan    bool
+	BlockChain     string
+	NetID          string
+	Confirmations  *uint64
+	InitialHeight  *uint64
+	EnableScan     bool
+	EnableScanPool bool
+	ScanReceipt    bool `json:",omitempty"`
+
+	MaxGasPriceFluctPercent uint64 `json:",omitempty"`
+	WaitTimeToReplace       int64  // seconds
+	MaxReplaceCount         int
+	EnableReplaceSwap       bool
 }
 
 // GatewayConfig struct
 type GatewayConfig struct {
-	APIAddress []string
-	Extras     *GatewayExtras
+	APIAddress    []string
+	APIAddressExt []string
+	Extras        *GatewayExtras
 }
 
 // GatewayExtras struct
@@ -87,6 +95,8 @@ type TokenConfig struct {
 	MinimumSwapFee         *float64
 	PlusGasPricePercentage uint64 `json:",omitempty"`
 	DisableSwap            bool
+	IsDelegateContract     bool
+	DelegateToken          string `json:",omitempty"`
 
 	DefaultGasLimit uint64 `json:",omitempty"`
 
@@ -190,13 +200,13 @@ type TxSwapInfo struct {
 
 // TxStatus struct
 type TxStatus struct {
-	Receipt         interface{} `json:"receipt,omitempty"`
-	PrioriFinalized bool        `json:"priori_finalized,omitempty"`
-	CustomeCheckStable func(uint64)bool
-	Confirmations   uint64      `json:"confirmations"`
-	BlockHeight     uint64      `json:"block_height"`
-	BlockHash       string      `json:"block_hash"`
-	BlockTime       uint64      `json:"block_time"`
+	Receipt            interface{} `json:"receipt,omitempty"`
+	PrioriFinalized    bool        `json:"priori_finalized,omitempty"`
+	CustomeCheckStable func(uint64) bool
+	Confirmations      uint64 `json:"confirmations"`
+	BlockHeight        uint64 `json:"block_height"`
+	BlockHash          string `json:"block_hash"`
+	BlockTime          uint64 `json:"block_time"`
 }
 
 // SwapInfo struct
@@ -247,8 +257,8 @@ func (args *BuildTxArgs) GetTxNonce() uint64 {
 
 // AllExtras struct
 type AllExtras struct {
-	BtcExtra *BtcExtraArgs `json:"btcExtra,omitempty"`
-	EthExtra *EthExtraArgs `json:"ethExtra,omitempty"`
+	BtcExtra  *BtcExtraArgs  `json:"btcExtra,omitempty"`
+	EthExtra  *EthExtraArgs  `json:"ethExtra,omitempty"`
 	TronExtra *TronExtraArgs `json:"tronExtra,omitempty"`
 }
 
@@ -357,6 +367,14 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if isSrc && c.IsProxyErc20() && c.ContractCodeHash == "" {
 		return errors.New("token must config 'ContractCodeHash' for ProxyERC20 in source chain")
 	}
+	if c.IsDelegateContract {
+		if c.ContractAddress == "" {
+			return errors.New("token must config 'ContractAddress' if 'IsDelegateContract' is true")
+		}
+		if c.DelegateToken != "" && !common.IsHexAddress(c.DelegateToken) {
+			return errors.New("wrong 'DelegateToken' address")
+		}
+	}
 	// calc value and store
 	c.CalcAndStoreValue()
 	err := c.LoadDcrmAddressPrivateKey()
@@ -368,11 +386,12 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 
 // CalcAndStoreValue calc and store value (minus duplicate calculation)
 func (c *TokenConfig) CalcAndStoreValue() {
-	c.maxSwap = ToBits(*c.MaximumSwap, *c.Decimals)
-	c.minSwap = ToBits(*c.MinimumSwap, *c.Decimals)
+	smallBiasValue := 0.0001
+	c.maxSwap = ToBits(*c.MaximumSwap+smallBiasValue, *c.Decimals)
+	c.minSwap = ToBits(*c.MinimumSwap-smallBiasValue, *c.Decimals)
 	c.maxSwapFee = ToBits(*c.MaximumSwapFee, *c.Decimals)
 	c.minSwapFee = ToBits(*c.MinimumSwapFee, *c.Decimals)
-	c.bigValThreshhold = ToBits(*c.BigValueThreshold, *c.Decimals)
+	c.bigValThreshhold = ToBits(*c.BigValueThreshold+smallBiasValue, *c.Decimals)
 }
 
 // GetDcrmAddressPrivateKey get private key
