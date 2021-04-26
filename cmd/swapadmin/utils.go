@@ -24,7 +24,9 @@ func adminCall(method string, params []string) (result interface{}, err error) {
 	if err != nil {
 		return "", err
 	}
-	err = client.RPCPost(&result, swapServer, "swap.AdminCall", rawTx)
+	timeout := 300
+	reqID := 1010
+	err = client.RPCPostWithTimeoutAndID(&result, timeout, reqID, swapServer, "swap.AdminCall", rawTx)
 	return result, err
 }
 
