@@ -124,7 +124,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 
 	rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)
 
-	log.Trace("build raw tx", "pairID", args.PairID, "identifier", args.Identifier,
+	log.Info("build raw tx", "pairID", args.PairID, "identifier", args.Identifier,
 		"swapID", args.SwapID, "swapType", args.SwapType,
 		"bind", args.Bind, "originValue", args.OriginValue,
 		"from", args.From, "to", to.String(), "value", value, "nonce", nonce,

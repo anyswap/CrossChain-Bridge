@@ -45,6 +45,7 @@ func startReplaceSwapinJob() {
 		if err != nil {
 			logWorkerError("replace", "find swapins error", err)
 		}
+		logWorker("replace", "find swapins to replace", "count", len(res))
 		for _, swap := range res {
 			processReplaceSwap(swap, true)
 		}
@@ -63,6 +64,7 @@ func startReplaceSwapoutJob() {
 		if err != nil {
 			logWorkerError("replace", "find swapouts error", err)
 		}
+		logWorker("replace", "find swapouts to replace", "count", len(res))
 		for _, swap := range res {
 			processReplaceSwap(swap, false)
 		}
@@ -117,6 +119,7 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) {
 }
 
 func dispatchReplaceTask(swap *mongodb.MgoSwapResult) {
+	logWorker("replace", "dispatch task", "swap", swap)
 	pairID := strings.ToLower(swap.PairID)
 	pairCfg := tokens.GetTokenPairConfig(pairID)
 	isSwapin := tokens.SwapType(swap.SwapType) == tokens.SwapinType
@@ -158,6 +161,7 @@ func doReplaceSwap(swap *mongodb.MgoSwapResult) {
 		logWorkerWarn("replace", "not nonce support chain", "isSwapin", isSwapin)
 		return
 	}
+	logWorker("replace", "process task", "swap", swap)
 
 	var txHash string
 	var err error
