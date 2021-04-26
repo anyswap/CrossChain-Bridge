@@ -112,7 +112,7 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) {
 	if len(swap.OldSwapTxs) > maxReplaceCount {
 		return
 	}
-	if getSepTimeInFind(waitTimeToReplace) < swap.InitTime {
+	if getSepTimeInFind(waitTimeToReplace) < swap.Timestamp {
 		return
 	}
 	dispatchReplaceTask(swap)
