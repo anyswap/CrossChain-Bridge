@@ -270,7 +270,7 @@ func FindSwapResultsToReplace(status SwapStatus, septime int64, isSwapin bool) (
 	}
 	result := make([]*MgoSwapResult, 0, 20)
 	q := collection.Find(bson.M{"$and": queries}).Sort("inittime").Limit(maxCountOfResults)
-	err := q.All(result)
+	err := q.All(&result)
 	return result, mgoError(err)
 }
 
