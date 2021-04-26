@@ -46,7 +46,6 @@ func adjustGatewayOrderImpl(isSrc bool) {
 	weightedAPIs.Reverse() // reverse as iter in reverse order in the above
 	weightedAPIs = weightedAPIs.Sort()
 	gateway.APIAddress = weightedAPIs.GetStrings()
-	tokens.SetLatestBlockHeight(maxHeight, isSrc)
 	if isSrc {
 		logWorker("gateway", "adjust source gateways", "result", weightedAPIs)
 	} else {

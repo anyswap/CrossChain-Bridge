@@ -104,10 +104,14 @@ func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
 // GetTransactionByHash call eth_getTransactionByHash
 func (b *Bridge) GetTransactionByHash(txHash string) (*types.RPCTransaction, error) {
 	gateway := b.GatewayConfig
-	var result *types.RPCTransaction
-	var err error
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
+	return getTransactionByHash(txHash, gateway.APIAddress)
+}
+
+func getTransactionByHash(txHash string, urls []string) (result *types.RPCTransaction, err error) {
+	if len(urls) == 0 {
+		return nil, errEmptyURLs
+	}
+	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionByHash", txHash)
 		if err == nil && result != nil {
 			return result, nil
