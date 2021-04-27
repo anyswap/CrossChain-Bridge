@@ -11,18 +11,17 @@ import (
 var (
 	clientIdentifier string
 	gitCommit        string
+	gitDate          string
 )
 
 // NewApp creates an app with sane defaults.
-func NewApp(identifier, gitcommit, usage string) *cli.App {
+func NewApp(identifier, gitcommit, gitdate, usage string) *cli.App {
 	clientIdentifier = identifier
 	gitCommit = gitcommit
+	gitDate = gitdate
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
-	app.Version = params.VersionWithMeta
-	if len(gitCommit) >= 8 {
-		app.Version += "-" + gitCommit[:8]
-	}
+	app.Version = params.VersionWithCommit(gitCommit, gitDate)
 	app.Usage = usage
 	return app
 }

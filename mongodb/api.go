@@ -203,7 +203,7 @@ func findSwapsWithStatus(collection *mgo.Collection, status SwapStatus, septime 
 }
 
 func findSwapsOrSwapResultsWithStatus(result interface{}, collection *mgo.Collection, status SwapStatus, septime int64) error {
-	qtime := bson.M{"inittime": bson.M{"$gte": septime}}
+	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qtime, qstatus}
 	q := collection.Find(bson.M{"$and": queries}).Sort("inittime").Limit(maxCountOfResults)
@@ -218,7 +218,7 @@ func findSwapsWithPairIDAndStatus(pairID string, collection *mgo.Collection, sta
 func findSwapsOrSwapResultsWithPairIDAndStatus(result interface{}, pairID string, collection *mgo.Collection, status SwapStatus, septime int64) error {
 	pairID = strings.ToLower(pairID)
 	qpair := bson.M{"pairid": pairID}
-	qtime := bson.M{"inittime": bson.M{"$gte": septime}}
+	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qpair, qtime, qstatus}
 	q := collection.Find(bson.M{"$and": queries}).Sort("inittime").Limit(maxCountOfResults)
@@ -261,7 +261,7 @@ func FindSwapinResults(address, pairID string, offset, limit int) ([]*MgoSwapRes
 func FindSwapResultsToReplace(status SwapStatus, septime int64, isSwapin bool) ([]*MgoSwapResult, error) {
 	qstatus := bson.M{"status": status}
 	qheight := bson.M{"swapheight": 0}
-	qtime := bson.M{"inittime": bson.M{"$gte": septime}}
+	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
 	queries := []bson.M{qstatus, qheight, qtime}
 	var collection *mgo.Collection
 	if isSwapin {
@@ -271,7 +271,7 @@ func FindSwapResultsToReplace(status SwapStatus, septime int64, isSwapin bool) (
 	}
 	result := make([]*MgoSwapResult, 0, 20)
 	q := collection.Find(bson.M{"$and": queries}).Sort("inittime").Limit(maxCountOfResults)
-	err := q.All(result)
+	err := q.All(&result)
 	return result, mgoError(err)
 }
 

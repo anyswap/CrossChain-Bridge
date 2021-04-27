@@ -341,8 +341,11 @@ func GetLatestScanInfo(isSrc bool) (*LatestScanInfo, error) {
 	return mongodb.FindLatestScanInfo(isSrc)
 }
 
-// RegisterAddress register address
+// RegisterAddress register address for ETH like chain
 func RegisterAddress(address string) (*PostResult, error) {
+	if !params.MustRegisterAccount() {
+		return &SuccessPostResult, nil
+	}
 	address = strings.ToLower(address)
 	err := mongodb.AddRegisteredAddress(address)
 	if err != nil {

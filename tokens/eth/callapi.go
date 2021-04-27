@@ -243,15 +243,23 @@ func getMaxPoolNonce(account common.Address, height string, urls []string) (maxN
 }
 
 // SuggestPrice call eth_gasPrice
-func (b *Bridge) SuggestPrice() (*big.Int, error) {
+func (b *Bridge) SuggestPrice() (maxGasPrice *big.Int, err error) {
 	gateway := b.GatewayConfig
 	if len(gateway.APIAddressExt) > 0 {
-		maxGasPrice, err := getMaxGasPrice(gateway.APIAddressExt)
-		if err == nil {
-			return maxGasPrice, nil
-		}
+		maxGasPrice, err = getMaxGasPrice(gateway.APIAddressExt)
 	}
-	return getMaxGasPrice(gateway.APIAddress)
+	maxGasPrice2, err2 := getMaxGasPrice(gateway.APIAddress)
+	if err2 == nil {
+		if maxGasPrice == nil || maxGasPrice2.Cmp(maxGasPrice) > 0 {
+			maxGasPrice = maxGasPrice2
+		}
+	} else {
+		err = err2
+	}
+	if maxGasPrice != nil {
+		return maxGasPrice, nil
+	}
+	return nil, err
 }
 
 func getMaxGasPrice(urls []string) (maxGasPrice *big.Int, err error) {
