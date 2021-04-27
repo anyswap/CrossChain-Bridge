@@ -248,7 +248,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 		return nil
 	}
 	for _, r := range cres {
-		if new(big.Int).SetBytes(r).Int64() != 1 {
+		if len(r) > 0 && new(big.Int).SetBytes(r).Int64() != 1 {
 			return nil
 		}
 	}
