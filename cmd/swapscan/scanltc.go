@@ -251,6 +251,7 @@ func (scanner *ltcSwapScanner) loopGetBlockHash(height uint64) string {
 	}
 }
 
+// nolint:dupl // in diff sub command
 func (scanner *ltcSwapScanner) scanBlock(job, height uint64, cache bool) {
 	blockHash := scanner.loopGetBlockHash(height)
 	if cache && ltcCachedBlocks.isScanned(blockHash) {

@@ -273,6 +273,7 @@ func (scanner *btcSwapScanner) loopGetBlockHash(height uint64) string {
 	}
 }
 
+// nolint:dupl // in diff sub command
 func (scanner *btcSwapScanner) scanBlock(job, height uint64, cache bool) {
 	blockHash := scanner.loopGetBlockHash(height)
 	if cache && btcCachedBlocks.isScanned(blockHash) {

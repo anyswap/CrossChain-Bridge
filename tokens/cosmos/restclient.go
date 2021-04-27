@@ -262,6 +262,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 
 // GetAccountNumber gets account number, a series number of account on a cosmos state
 // call rest api "/auth/accounts/"
+// nolint:dupl // allow
 func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
@@ -307,6 +308,7 @@ func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 
 // GetPoolNonce gets account sequence
 // call rest api "/auth/accounts/"
+// nolint:dupl // allow
 func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
@@ -352,6 +354,7 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 
 // SearchTxsHash searches tx in range of blocks
 // call rest api "/txs?..."
+// nolint:dupl // allow
 func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 	txs := make([]string, 0)
 	var limit = 100
@@ -438,6 +441,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 
 // SearchTxs searches tx in range of blocks
 // call rest api "/txs?..."
+// nolint:dupl // allow
 func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 	txs := make([]sdk.TxResponse, 0)
 	var limit = 100

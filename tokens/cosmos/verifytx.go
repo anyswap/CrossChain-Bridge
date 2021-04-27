@@ -44,6 +44,7 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	return nil, nil
 }
 
+// nolint:dupl // allow
 func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
 	swapInfos = make([]*tokens.TxSwapInfo, 0)
 	swapInfoMap := make(map[string][]*tokens.TxSwapInfo)
@@ -178,6 +179,7 @@ func (b *Bridge) getPairID(coin sdk.Coin) (string, error) {
 	return "", NotSupportedCoinErr
 }
 
+// nolint:dupl // allow
 func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
 	txid := strings.ToLower(txHash)
 	tx, err := b.GetTransaction(txHash)

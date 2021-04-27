@@ -42,6 +42,7 @@ func DoSignOne(signPubkey, msgHash, msgContext string) (keyID string, rsvs []str
 }
 
 // DoSign dcrm sign msgHash with context msgContext
+// nolint:dupl // pass
 func DoSign(signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
 	if !params.IsDcrmEnabled() {
 		return "", nil, errors.New("dcrm sign is disabled")
@@ -137,6 +138,7 @@ func DoSignED25519One(signPubkey, msgHash, msgContext string) (rpcAddr string, r
 }
 
 // DoSign dcrm sign msgHash with context msgContext
+// nolint:dupl // allow
 func DoSignED25519(signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
 	if !params.IsDcrmEnabled() {
 		return "", nil, errors.New("dcrm sign is disabled")
@@ -175,6 +177,7 @@ func DoSignED25519(signPubkey string, msgHash, msgContext []string) (keyID strin
 	return "", nil, err
 }
 
+// nolint:dupl // pass
 func doSignED25519Impl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
 	nonce, err := GetSignNonce(dcrmNode.dcrmUser.String(), dcrmNode.dcrmRPCAddress)
 	if err != nil {
