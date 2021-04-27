@@ -5,34 +5,139 @@ import (
 	"math/big"
 
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
+	"github.com/giangnamnabka/btcd/rpcclient"
+	"github.com/giangnamnabka/btcd/chaincfg/chainhash"
 )
+
+// FullnodeClient is a fullnode client
+type FullnodeClient struct {
+	*rpcclient.Client
+	Address string
+	Closer  func()
+}
+
+type Client struct {
+	FClients         []FullnodeClient
+}
+
+// GetClient returns new Client
+func (b *Bridge) GetClient() *Client {
+	cfg := b.GetGatewayConfig()
+	if cfg.Extras == nil || cfg.Extras.ColxExtra == nil {
+		return nil
+	}
+
+	clis := make([]FullnodeClient, 0)
+	for _, args := range cfg.Extras.ColxExtra.FullnodeAPIs {
+		connCfg := &rpcclient.ConnConfig{
+			Host:         args.APIAddress,
+			User:         args.RPCUser,
+			Pass:         args.RPCPassword,
+			HTTPPostMode: args.HTTPPostMode,            // Bitcoin core only supports HTTP POST mode
+			DisableTLS:   args.DisableTLS, // Bitcoin core does not provide TLS by default
+		}
+
+		client, err := rpcclient.New(connCfg, nil)
+		if err != nil {
+			continue
+		}
+
+		cli := FullnodeClient{
+			Client:  client,
+			Address: connCfg.Host,
+			Closer:  client.Shutdown,
+		}
+		clis = append(clis, cli)
+	}
+
+	return &Client{
+		FClients:         cclis,
+	}
+}
 
 // GetLatestBlockNumberOf impl
 func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
-	return electrs.GetLatestBlockNumberOf(apiAddress)
+	cli := b.GetClient()
+	for _, ccli := range cli.FClients {
+		if ccli.Address == apiAddress {
+			number, err := ccli.GetBlockCount()
+			ccli.Closer()
+			return uint64(number), err
+		}
+		ccli.Closer()
+	}
+	return 0, nil
 }
 
 // GetLatestBlockNumber impl
-func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
-	return electrs.GetLatestBlockNumber(b)
+func (b *Bridge) GetLatestBlockNumber() (blocknumber uint64, err error) {
+	cli := b.GetClient()
+	errs := make([]error, 0)
+	for _, ccli := range cli.FClients {
+		number, err0 := ccli.GetBlockCount()
+		if err0 == nil {
+			ccli.Closer()
+			return uint64(number), nil
+		}
+		errs = append(errs, err0)
+		ccli.Closer()
+	}
+	err = fmt.Errorf("%+v", errs)
+	return
 }
 
 // GetTransactionByHash impl
 func (b *Bridge) GetTransactionByHash(txHash string) (*electrs.ElectTx, error) {
-	result, err := electrs.GetTransactionByHash(b, txHash)
-	if err == nil {
-		*result = *b.ToCOLXTx(result)
+	cli := b.GetClient()
+	errs := make([]error, 0)
+	hash, err := chainhash.NewHashFromStr(txHash)
+	if err != nil {
+		return
 	}
-	return result, err
+	for _, ccli := range cli.FClients {
+		tx, err0 := ccli.GetRawTransactionVerbose(hash)
+		if err0 == nil {
+			ccli.Closer()
+			etx = ConvertTx(tx)
+			return
+		}
+		errs = append(errs, err0)
+		ccli.Closer()
+	}
+	err = fmt.Errorf("%+v", errs)
+	return
 }
 
 // GetElectTransactionStatus impl
-func (b *Bridge) GetElectTransactionStatus(txHash string) (*electrs.ElectTxStatus, error) {
-	return electrs.GetElectTransactionStatus(b, txHash)
+func (b *Bridge) GetElectTransactionStatus(txHash string) (txstatus *electrs.ElectTxStatus, err error) {
+	cli := b.GetClient()
+	errs := make([]error, 0)
+	hash, err := chainhash.NewHashFromStr(txHash)
+	if err != nil {
+		return
+	}
+	for _, ccli := range cli.FClients {
+		txraw, err0 := ccli.GetRawTransactionVerbose(hash)
+		if err0 == nil {
+			ccli.Closer()
+			txstatus = TxStatus(txraw)
+			if h := txstatus.BlockHash; h != nil {
+				if blk, err1 := b.GetBlock(*h); err1 == nil {
+					*txstatus.BlockHeight = uint64(*blk.Height)
+				}
+			}
+			return
+		}
+		errs = append(errs, err0)
+		ccli.Closer()
+	}
+	err = fmt.Errorf("%+v", errs)
+	return
 }
 
 // FindUtxos impl
 func (b *Bridge) FindUtxos(addr string) ([]*electrs.ElectUtxo, error) {
+	// ListUnspent
 	btcaddr, cvterr := b.ConvertCOLXAddress(addr, "")
 	if cvterr == nil {
 		addr = btcaddr.String()

@@ -51,6 +51,7 @@ type GatewayConfig struct {
 // GatewayExtras struct
 type GatewayExtras struct {
 	BlockExtra *BlockExtraArgs
+	ColxExtra *ColxExtraArgs
 }
 
 // BlockExtraArgs struct
@@ -64,6 +65,20 @@ type BlocknetCoreAPIArgs struct {
 	APIAddress  string
 	RPCUser     string
 	RPCPassword string
+	DisableTLS  bool
+}
+
+// ColxExtraArgs struct
+type ColxExtraArgs struct {
+	FullnodeAPIs         []ColxCoreAPIArgs
+}
+
+// ColxCoreAPIArgs struct
+type ColxCoreAPIArgs struct {
+	APIAddress  string
+	RPCUser     string
+	RPCPassword string
+	HTTPPostMode bool
 	DisableTLS  bool
 }
 
