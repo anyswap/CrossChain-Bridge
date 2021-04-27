@@ -207,3 +207,15 @@ func isTransactionOnChain(bridge tokens.NonceSetter, txHash string) bool {
 	blockHeight, _ := bridge.GetTxBlockInfo(txHash)
 	return blockHeight > 0
 }
+
+func isSwapResultTxOnChain(bridge tokens.NonceSetter, res *mongodb.MgoSwapResult) bool {
+	if isTransactionOnChain(bridge, res.SwapTx) {
+		return true
+	}
+	for _, tx := range res.OldSwapTxs {
+		if isTransactionOnChain(bridge, tx) {
+			return true
+		}
+	}
+	return false
+}
