@@ -262,6 +262,8 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
+	swapNonce := args.GetTxNonce()
+
 	var signedTx interface{}
 	var txHash string
 	tokenCfg := resBridge.GetTokenConfig(pairID)
@@ -280,7 +282,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
 		SwapType:  swapType,
-		SwapNonce: args.GetTxNonce(),
+		SwapNonce: swapNonce,
 	}
 	err = updateSwapResult(txid, pairID, bind, matchTx)
 	if err != nil {
@@ -294,5 +296,11 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	return sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin, false)
+	err = sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
+	if err == nil {
+		if nonceSetter, ok := resBridge.(tokens.NonceSetter); ok {
+			nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
+		}
+	}
+	return err
 }
