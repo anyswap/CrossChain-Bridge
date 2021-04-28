@@ -240,10 +240,14 @@ func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
 		return tokens.ErrTxWithWrongValue
 	}
-	return b.checkSwapinBindAddress(swapInfo.Bind)
+	token := b.GetTokenConfig(swapInfo.PairID)
+	if token == nil {
+		return tokens.ErrUnknownPairID
+	}
+	return b.checkSwapinBindAddress(swapInfo.Bind, token.AllowSwapinFromContract)
 }
 
-func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
+func (b *Bridge) checkSwapinBindAddress(bindAddr string, allowContractAddress bool) error {
 	if !tokens.DstBridge.IsValidAddress(bindAddr) {
 		log.Warn("wrong bind address in swapin", "bind", bindAddr)
 		return tokens.ErrTxWithWrongMemo
@@ -251,13 +255,15 @@ func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
 	if params.MustRegisterAccount() && !tools.IsAddressRegistered(bindAddr) {
 		return tokens.ErrTxSenderNotRegistered
 	}
-	isContract, err := b.IsContractAddress(bindAddr)
-	if err != nil {
-		log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)
-		return tokens.ErrRPCQueryError
-	}
-	if isContract {
-		return tokens.ErrBindAddrIsContract
+	if !allowContractAddress {
+		isContract, err := b.IsContractAddress(bindAddr)
+		if err != nil {
+			log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)
+			return tokens.ErrRPCQueryError
+		}
+		if isContract {
+			return tokens.ErrBindAddrIsContract
+		}
 	}
 	return nil
 }
