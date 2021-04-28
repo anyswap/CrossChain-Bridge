@@ -245,7 +245,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 	}
 
 	rsrcres := tx.GetReceipt().GetResult()
-	if rsrcres != core.Transaction_Result_SUCCESS {
+	if rsrcres != core.Transaction_Result_SUCCESS && rsrcres != core.Transaction_Result_DEFAULT {
 		return nil
 	}
 
