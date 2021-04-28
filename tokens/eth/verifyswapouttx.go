@@ -321,7 +321,7 @@ func parseSwapoutToBtcTxLogs(logs []*types.RPCLog) (bind string, value *big.Int,
 }
 
 func parseTxInputEncodedData(encData []byte) (bind string, value *big.Int, err error) {
-	if isMbtcSwapout() {
+	if isMbtcSwapout() || tokens.IsSwapoutToStringAddress {
 		return parseSwapoutToBtcEncodedData(encData, true)
 	}
 

@@ -14,6 +14,8 @@ var (
 	collLatestScanInfo    *mgo.Collection
 	collRegisteredAddress *mgo.Collection
 	collBlacklist         *mgo.Collection
+	collSwapAgreement     *mgo.Collection
+	collSolanaScannedTx   *mgo.Collection
 	collLatestSwapNonces  *mgo.Collection
 )
 
@@ -32,6 +34,8 @@ func deinintCollections() {
 	collLatestScanInfo = database.C(tbLatestScanInfo)
 	collRegisteredAddress = database.C(tbRegisteredAddress)
 	collBlacklist = database.C(tbBlacklist)
+	collSwapAgreement = database.C(tbSwapAgreement)
+	collSolanaScannedTx = database.C(tbSolanaScannedTx)
 	collLatestSwapNonces = database.C(tbLatestSwapNonces)
 }
 
@@ -45,6 +49,8 @@ func initCollections() {
 	initCollection(tbLatestScanInfo, &collLatestScanInfo)
 	initCollection(tbRegisteredAddress, &collRegisteredAddress)
 	initCollection(tbBlacklist, &collBlacklist)
+	initCollection(tbSwapAgreement, &collSwapAgreement)
+	initCollection(tbSolanaScannedTx, &collSolanaScannedTx)
 	initCollection(tbLatestSwapNonces, &collLatestSwapNonces, "address")
 
 	initDefaultValue()

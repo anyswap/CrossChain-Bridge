@@ -10,10 +10,14 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/block"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+	"github.com/anyswap/CrossChain-Bridge/tokens/cosmos"
 	"github.com/anyswap/CrossChain-Bridge/tokens/etc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
+	"github.com/anyswap/CrossChain-Bridge/tokens/solana"
+	"github.com/anyswap/CrossChain-Bridge/tokens/terra"
+	"github.com/anyswap/CrossChain-Bridge/tokens/tron"
 )
 
 // NewCrossChainBridge new bridge according to chain name
@@ -32,6 +36,14 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return eth.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "COSMOS"):
+		return cosmos.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "TERRA"):
+		return terra.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "SOLANA"):
+		return solana.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "TRON"):
+		return tron.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
 		return nil
@@ -57,6 +69,12 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge = NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
 
+	BlockChain := strings.ToUpper(srcChain.BlockChain)
+	switch BlockChain {
+	case "COSMOS", "TERRA":
+		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).BeforeConfig()
+	}
+
 	tokens.SrcBridge.SetChainAndGateway(srcChain, srcGateway)
 	log.Info("Init bridge source", "source", srcID, "gateway", srcGateway)
 
@@ -66,7 +84,6 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.IsDcrmDisabled = cfg.Dcrm.Disable
 	tokens.LoadTokenPairsConfig(true)
 
-	BlockChain := strings.ToUpper(srcChain.BlockChain)
 	switch BlockChain {
 	case "BITCOIN":
 		btc.Init(cfg.BtcExtra)
@@ -74,6 +91,8 @@ func InitCrossChainBridge(isServer bool) {
 		ltc.Init(cfg.BtcExtra)
 	case "BLOCK":
 		block.Init(cfg.BtcExtra)
+	case "COSMOS", "TERRA":
+		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).AfterConfig()
 	}
 
 	dcrm.Init(cfg.Dcrm, isServer)

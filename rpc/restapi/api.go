@@ -237,3 +237,53 @@ func GetRegisteredAddress(w http.ResponseWriter, r *http.Request) {
 	res, err := swapapi.GetRegisteredAddress(address)
 	writeResponse(w, res, err)
 }
+
+/*
+// AddSwapAgreement handler
+func AddSwapAgreement(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var obj = make(map[string]interface{})
+	for k, v := range vars {
+		var x interface{}
+		err := json.Unmarshal([]byte(v), &x)
+		if err != nil {
+			x = v
+		}
+		obj[k] = x
+	}
+	res, err := swapapi.AddSwapAgreement(obj)
+	writeResponse(w, res, err)
+}
+
+// CancelSwapAgreement handler
+func CancelSwapAgreement(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	pkey := vars["pkey"]
+	res, err := swapapi.CancelSwapAgreement(pkey)
+	writeResponse(w, res, err)
+}
+
+// UpdateSwapAgreement handler
+func UpdateSwapAgreement(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var obj = make(map[string]interface{})
+	for k, v := range vars {
+		var x interface{}
+		err := json.Unmarshal([]byte(v), &x)
+		if err != nil {
+			x = v
+		}
+		obj[k] = x
+	}
+	res, err := swapapi.UpdateSwapAgreement(obj)
+	writeResponse(w, res, err)
+}
+
+// GetSwapAgreement handler
+func GetSwapAgreement(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	pkey := vars["pkey"]
+	res, err := swapapi.GetSwapAgreement(pkey)
+	writeResponse(w, res, err)
+}
+*/

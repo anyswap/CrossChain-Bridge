@@ -23,6 +23,9 @@ type LatestScanInfo = mongodb.MgoLatestScanInfo
 // RegisteredAddress type alias
 type RegisteredAddress = mongodb.MgoRegisteredAddress
 
+// SwapAgreement type alias
+type SwapAgreement = tokens.SwapAgreement
+
 // ServerInfo server info
 type ServerInfo struct {
 	Identifier          string

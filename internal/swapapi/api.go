@@ -2,6 +2,7 @@ package swapapi
 
 import (
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"time"
 
@@ -358,4 +359,60 @@ func RegisterAddress(address string) (*PostResult, error) {
 func GetRegisteredAddress(address string) (*RegisteredAddress, error) {
 	address = strings.ToLower(address)
 	return mongodb.FindRegisteredAddress(address)
+}
+
+// AddSwapAgreement add swapin agreement
+func AddSwapAgreement(args map[string]interface{}) (*PostResult, error) {
+	agreement, err := tokens.AgreementFromArgs(args)
+	if err != nil {
+		return nil, err
+	}
+	bz, err := tokens.TokenCDC.MarshalJSON(agreement)
+	if err != nil {
+		return nil, err
+	}
+	err = mongodb.AddSwapAgreement(agreement.Type(), agreement.Key(), fmt.Sprintf("%X", bz))
+	if err != nil {
+		return nil, err
+	}
+	return &SuccessPostResult, nil
+}
+
+// CancelSwapAgreement cancel swapin agreement
+func CancelSwapAgreement(pkey string) (*PostResult, error) {
+	err := mongodb.CancelSwapAgreement(pkey)
+	if err != nil {
+		return nil, err
+	}
+	return &SuccessPostResult, nil
+}
+
+func UpdateSwapAgreement(args map[string]interface{}) (*PostResult, error) {
+	agreement, err := tokens.AgreementFromArgs(args)
+	if err != nil {
+		return nil, err
+	}
+	bz, err := tokens.TokenCDC.MarshalJSON(agreement)
+	if err != nil {
+		return nil, err
+	}
+	err = mongodb.UpdateSwapAgreement(agreement.Type(), agreement.Key(), fmt.Sprintf("%X", bz))
+	if err != nil {
+		return nil, err
+	}
+	return &SuccessPostResult, nil
+}
+
+// GetSwapAgreement get swapin agreement
+func GetSwapAgreement(pkey string) (SwapAgreement, error) {
+	mp, err := mongodb.FindSwapAgreement(pkey)
+	if err != nil {
+		return nil, err
+	}
+	return ConvertMgoSwapAgreementToSwapAgreement(mp)
+}
+
+// GetLatestScannedSolanaTxid api
+func GetLatestScannedSolanaTxid(address string) string {
+	return mongodb.FindLatestSolanaTxid(address)
 }

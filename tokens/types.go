@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"math/big"
@@ -67,6 +68,13 @@ type BlocknetCoreAPIArgs struct {
 	DisableTLS  bool
 }
 
+type KeyType string
+
+const (
+	ECDSAKeyType   KeyType = "ecdsa"
+	ED25519KeyType KeyType = "ed25519"
+)
+
 // TokenConfig struct
 type TokenConfig struct {
 	ID                     string `json:",omitempty"`
@@ -93,11 +101,14 @@ type TokenConfig struct {
 	DefaultGasLimit         uint64 `json:",omitempty"`
 	AllowSwapinFromContract bool   `json:",omitempty"`
 
+	PrivateKeyType KeyType `json:"ecdsa"`
+
 	// use private key address instead
-	DcrmAddressKeyStore string `json:"-"`
-	DcrmAddressPassword string `json:"-"`
-	DcrmAddressKeyFile  string `json:"-"`
-	dcrmAddressPriKey   *ecdsa.PrivateKey
+	DcrmAddressKeyStore      string `json:"-"`
+	DcrmAddressPassword      string `json:"-"`
+	DcrmAddressKeyFile       string `json:"-"`
+	dcrmAddressPriKey        *ecdsa.PrivateKey
+	dcrmAddressED25519PriKey *ed25519.PrivateKey
 
 	// calced value
 	maxSwap          *big.Int
@@ -105,6 +116,8 @@ type TokenConfig struct {
 	maxSwapFee       *big.Int
 	minSwapFee       *big.Int
 	bigValThreshhold *big.Int
+
+	Unit string // Cosmos coin unit denom
 }
 
 // IsErc20 return if token is erc20
@@ -115,6 +128,16 @@ func (c *TokenConfig) IsErc20() bool {
 // IsProxyErc20 return if token is proxy contract of erc20
 func (c *TokenConfig) IsProxyErc20() bool {
 	return strings.EqualFold(c.ID, "ProxyERC20")
+}
+
+// IsTrc20 return if token is trc20
+func (c *TokenConfig) IsTrc20() bool {
+	return strings.EqualFold(c.ID, "ERC20") || strings.EqualFold(c.ID, "TRC20") || c.IsProxyErc20() || c.IsProxyTrc20()
+}
+
+// IsProxyTrc20 return if token is proxy contract of trc20
+func (c *TokenConfig) IsProxyTrc20() bool {
+	return strings.EqualFold(c.ID, "ProxyTRC20")
 }
 
 // SwapType type
@@ -178,11 +201,13 @@ type TxSwapInfo struct {
 
 // TxStatus struct
 type TxStatus struct {
-	Receipt       interface{} `json:"receipt,omitempty"`
-	Confirmations uint64      `json:"confirmations"`
-	BlockHeight   uint64      `json:"block_height"`
-	BlockHash     string      `json:"block_hash"`
-	BlockTime     uint64      `json:"block_time"`
+	Receipt            interface{} `json:"receipt,omitempty"`
+	PrioriFinalized    bool        `json:"priori_finalized,omitempty"`
+	CustomeCheckStable func(uint64) int
+	Confirmations      uint64 `json:"confirmations"`
+	BlockHeight        uint64 `json:"block_height"`
+	BlockHash          string `json:"block_hash"`
+	BlockTime          uint64 `json:"block_time"`
 }
 
 // SwapInfo struct
@@ -193,6 +218,11 @@ type SwapInfo struct {
 	TxType     SwapTxType `json:"txtype,omitempty"`
 	Bind       string     `json:"bind,omitempty"`
 	Identifier string     `json:"identifier,omitempty"`
+}
+
+type Marshalable interface {
+	MarshalJSON() ([]byte, error)
+	UnmarshalJSON(data []byte) error
 }
 
 // BuildTxArgs struct
@@ -210,8 +240,11 @@ type BuildTxArgs struct {
 // GetExtraArgs get extra args
 func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 	return &BuildTxArgs{
-		SwapInfo: args.SwapInfo,
-		Extra:    args.Extra,
+		SwapInfo:    args.SwapInfo,
+		From:        args.From,
+		To:          args.To,
+		OriginValue: args.OriginValue,
+		Extra:       args.Extra,
 	}
 }
 
@@ -225,8 +258,9 @@ func (args *BuildTxArgs) GetTxNonce() uint64 {
 
 // AllExtras struct
 type AllExtras struct {
-	BtcExtra *BtcExtraArgs `json:"btcExtra,omitempty"`
-	EthExtra *EthExtraArgs `json:"ethExtra,omitempty"`
+	BtcExtra  *BtcExtraArgs  `json:"btcExtra,omitempty"`
+	EthExtra  *EthExtraArgs  `json:"ethExtra,omitempty"`
+	TronExtra *TronExtraArgs `json:"tronExtra,omitempty"`
 }
 
 // EthExtraArgs struct
@@ -247,6 +281,11 @@ type BtcExtraArgs struct {
 	RelayFeePerKb     *int64         `json:"relayFeePerKb,omitempty"`
 	ChangeAddress     *string        `json:"-"`
 	PreviousOutPoints []*BtcOutPoint `json:"previousOutPoints,omitempty"`
+}
+
+// TronExtraArgs struct
+type TronExtraArgs struct {
+	RawTx string `json:"rawTx,omitempty"`
 }
 
 // P2shAddressInfo struct
@@ -359,6 +398,11 @@ func (c *TokenConfig) CalcAndStoreValue() {
 // GetDcrmAddressPrivateKey get private key
 func (c *TokenConfig) GetDcrmAddressPrivateKey() *ecdsa.PrivateKey {
 	return c.dcrmAddressPriKey
+}
+
+// GetDcrmAddressED25519PrivateKey get private key
+func (c *TokenConfig) GetDcrmAddressED25519PrivateKey() *ed25519.PrivateKey {
+	return c.dcrmAddressED25519PriKey
 }
 
 // LoadDcrmAddressPrivateKey load private key

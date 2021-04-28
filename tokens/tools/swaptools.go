@@ -1,7 +1,9 @@
 package tools
 
 import (
+	"encoding/hex"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
@@ -180,6 +182,31 @@ func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
 	return ""
 }
 
+// GetLatestScannedSolanaTxid get latest scanned solana txid
+func GetLatestScannedSolanaTxid(address string) string {
+	if mongodb.HasSession() {
+		return mongodb.FindLatestSolanaTxid(address)
+	}
+	var result = ""
+	for {
+		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetLatestScannedSolanaTxid", address)
+		if err == nil {
+			txid := result
+			log.Info("GetLatestScannedSolanaTxid", "txid", txid)
+			return txid
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+// UpdateLatestScannedSolanaTxid updates latest scanned solana txid
+func UpdateLatestScannedSolanaTxid(address, txid string) error {
+	if dcrm.IsSwapServer() {
+		return mongodb.UpdateLatestSolanaTxid(address, txid)
+	}
+	return nil
+}
+
 // GetLatestScanHeight get latest scanned block height
 func GetLatestScanHeight(isSrc bool) uint64 {
 	if mongodb.HasSession() {
@@ -241,4 +268,30 @@ func IsAddressRegistered(address string) bool {
 		time.Sleep(retryRPCInterval)
 	}
 	return false
+}
+
+// GetSwapAgreement find swapin agreement
+func GetSwapAgreement(pkey string) (tokens.SwapAgreement, error) {
+	mp, err := mongodb.FindSwapAgreement(pkey)
+	if err != nil {
+		return nil, err
+	}
+	return ConvertMgoSwapAgreementToSwapAgreement(mp)
+}
+
+// ConvertMgoSwapAgreementToSwapAgreement convert
+func ConvertMgoSwapAgreementToSwapAgreement(mp *mongodb.MgoSwapAgreement) (tokens.SwapAgreement, error) {
+	bz, err := hex.DecodeString(mp.Value)
+	if err != nil {
+		return nil, err
+	}
+	var p tokens.SwapAgreement
+	err = tokens.TokenCDC.UnmarshalJSON(bz, &p)
+	if err != nil {
+		return nil, err
+	}
+	if strings.EqualFold(p.Type(), mp.Type) == false {
+		return nil, errors.New("Swapin agreement type not match")
+	}
+	return p, nil
 }

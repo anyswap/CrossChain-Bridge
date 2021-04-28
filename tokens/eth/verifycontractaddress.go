@@ -7,6 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
@@ -133,7 +134,7 @@ func (b *Bridge) VerifyMbtcContractAddress(contract string) (err error) {
 
 // InitExtCodeParts init extended code parts
 func InitExtCodeParts() {
-	InitExtCodePartsWithFlag(isMbtcSwapout())
+	InitExtCodePartsWithFlag(tokens.IsSwapoutToStringAddress)
 }
 
 // InitExtCodePartsWithFlag init extended code parts with flag

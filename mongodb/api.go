@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -692,7 +693,50 @@ func FindRegisteredAddress(key string) (*MgoRegisteredAddress, error) {
 	return &result, nil
 }
 
-// ---------------------- latest swap nonces -----------------------------
+// AddSwapAgreement add swapin agreement
+func AddSwapAgreement(ptype, pkey, pvalue string) error {
+	mp := &MgoSwapAgreement{
+		Type:      ptype,
+		Key:       pkey,
+		Value:     pvalue,
+		Cancelled: false,
+	}
+	err := collSwapAgreement.Insert(mp)
+	if err == nil {
+		log.Info("mongodb add swapin agreement", "key", mp.Key)
+	} else {
+		log.Debug("mongodb add swapin agreement", "key", mp.Key, "err", err)
+	}
+	return mgoError(err)
+}
+
+// CancelSwapAgreement cancels a swapin agreement
+func CancelSwapAgreement(key string) error {
+	err := collSwapAgreement.UpdateId(key, bson.M{"cancelled": true})
+	if err != nil {
+		log.Debug("mongodb cancelled swapin agreement", "key", key, "err", err)
+		return mgoError(err)
+	}
+	log.Debug("mongodb cancelled swapin agreement", "key", key)
+	return nil
+}
+
+// UpdateSwapAgreement update swapin agreement
+func UpdateSwapAgreement(ptype, pkey, pvalue string) error {
+	mp := &MgoSwapAgreement{
+		Type:      ptype,
+		Key:       pkey,
+		Value:     pvalue,
+		Cancelled: false,
+	}
+	err := collSwapAgreement.UpdateId(pkey, bson.M{"$set": mp})
+	if err == nil {
+		log.Info("mongodb update swapin agreement", "key", mp.Key)
+	} else {
+		log.Debug("mongodb update swapin agreement", "key", mp.Key, "err", err)
+	}
+	return err
+}
 
 func getSwapNonceKey(address string, isSwapin bool) string {
 	return strings.ToLower(fmt.Sprintf("%v:%v", address, isSwapin))
@@ -737,6 +781,36 @@ func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err err
 		log.Warn("mongodb update swap nonce failed", "address", address, "nonce", nonce, "isSwapin", isSwapin, "err", err)
 	}
 	return mgoError(err)
+}
+
+// FindSwapAgreement finds swapin agreement
+func FindSwapAgreement(key string) (*MgoSwapAgreement, error) {
+	var result MgoSwapAgreement
+	err := collSwapAgreement.FindId(key).One(&result)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+	if result.Cancelled {
+		return nil, mgoError(errors.New("Swapin agreement is cancelled"))
+	}
+	return &result, nil
+}
+
+// FindLatestSolanaTxid finds latest solana txid
+func FindLatestSolanaTxid(address string) string {
+	key := strings.ToLower(address)
+	var result MgoSolanaScannedTx
+	err := collSolanaScannedTx.FindId(key).One(&result)
+	if err != nil {
+		return ""
+	}
+	return result.Txid
+}
+
+func UpdateLatestSolanaTxid(addess, txid string) error {
+	key := strings.ToLower(addess)
+	_, err := collSolanaScannedTx.UpsertId(key, MgoSolanaScannedTx{key, txid})
+	return err
 }
 
 // FindLatestSwapNonce find

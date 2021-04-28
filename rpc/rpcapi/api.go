@@ -283,3 +283,48 @@ func (s *RPCAPI) GetRegisteredAddress(r *http.Request, address *string, result *
 	}
 	return err
 }
+
+type SwapAgreementArgs map[string](interface{})
+
+// AddSwapAgreement api
+func (s *RPCAPI) AddSwapAgreement(r *http.Request, args *SwapAgreementArgs, result *swapapi.PostResult) error {
+	res, err := swapapi.AddSwapAgreement(*args)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+// CancelSwapAgreement api
+func (s *RPCAPI) CancelSwapAgreement(r *http.Request, pkey *string, result *swapapi.PostResult) error {
+	res, err := swapapi.CancelSwapAgreement(*pkey)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+// UpdateSwapAgreement api
+func (s *RPCAPI) UpdateSwapAgreement(r *http.Request, args *SwapAgreementArgs, result *swapapi.PostResult) error {
+	res, err := swapapi.UpdateSwapAgreement(*args)
+	if err == nil && res != nil {
+		*result = *res
+	}
+	return err
+}
+
+// GetSwapAgreement api
+func (s *RPCAPI) GetSwapAgreement(r *http.Request, pkey *string, result *swapapi.SwapAgreement) error {
+	res, err := swapapi.GetSwapAgreement(*pkey)
+	if err == nil && res != nil {
+		*result = res
+	}
+	return err
+}
+
+// GetLatestScanInfo api
+func (s *RPCAPI) GetLatestScannedSolanaTxid(r *http.Request, address *string, result *string) error {
+	res := swapapi.GetLatestScannedSolanaTxid(*address)
+	*result = res
+	return nil
+}

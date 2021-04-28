@@ -131,6 +131,101 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 	return keyID, rsvs, err
 }
 
+// DoSignED25519One dcrm sign single msgHash with context msgContext
+func DoSignED25519One(signPubkey, msgHash, msgContext string) (rpcAddr string, result []string, err error) {
+	return DoSignED25519(signPubkey, []string{msgHash}, []string{msgContext})
+}
+
+// DoSign dcrm sign msgHash with context msgContext
+func DoSignED25519(signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
+	if !params.IsDcrmEnabled() {
+		return "", nil, errors.New("dcrm sign is disabled")
+	}
+	log.Debug("dcrm DoSign", "msgHash", msgHash, "msgContext", msgContext)
+	if signPubkey == "" {
+		return "", nil, errors.New("dcrm sign with empty public key")
+	}
+	var pingOk bool
+	for retry := 0; retry < retrySignCount; retry++ {
+		for _, dcrmNode := range allInitiatorNodes {
+			if err = pingDcrmNode(dcrmNode); err != nil {
+				continue
+			}
+			pingOk = true
+			signGroupsCount := int64(len(dcrmNode.signGroups))
+			// randomly pick first subgroup to sign
+			randIndex, _ := rand.Int(rand.Reader, big.NewInt(signGroupsCount))
+			startIndex := randIndex.Int64()
+			i := startIndex
+			for {
+				keyID, rsvs, err = doSignED25519Impl(dcrmNode, i, signPubkey, msgHash, msgContext)
+				if err == nil {
+					return keyID, rsvs, nil
+				}
+				i = (i + 1) % signGroupsCount
+				if i == startIndex {
+					break
+				}
+			}
+		}
+	}
+	if !pingOk {
+		err = errors.New("dcrm sign ping dcrm node failed")
+	}
+	return "", nil, err
+}
+
+func doSignED25519Impl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
+	nonce, err := GetSignNonce(dcrmNode.dcrmUser.String(), dcrmNode.dcrmRPCAddress)
+	if err != nil {
+		return "", nil, err
+	}
+	txdata := SignData{
+		TxType:     "SIGN",
+		PubKey:     signPubkey,
+		MsgHash:    msgHash,
+		MsgContext: msgContext,
+		Keytype:    "ED25519",
+		GroupID:    dcrmNode.signGroups[signGroupIndex],
+		ThresHold:  dcrmThreshold,
+		Mode:       dcrmMode,
+		TimeStamp:  common.NowMilliStr(),
+	}
+	payload, _ := json.Marshal(txdata)
+	rawTX, err := BuildDcrmRawTx(nonce, payload, dcrmNode.keyWrapper)
+	if err != nil {
+		return "", nil, err
+	}
+
+	rpcAddr := dcrmNode.dcrmRPCAddress
+	keyID, err = Sign(rawTX, rpcAddr)
+	if err != nil {
+		return "", nil, err
+	}
+
+	time.Sleep(retryGetSignStatusInterval)
+	var signStatus *SignStatus
+	i := 0
+	for ; i < retryGetSignStatusCount; i++ {
+		signStatus, err = GetSignStatus(keyID, rpcAddr)
+		if err == nil {
+			rsvs = signStatus.Rsv
+			break
+		}
+		switch err {
+		case ErrGetSignStatusFailed, ErrGetSignStatusTimeout:
+			return "", nil, err
+		}
+		log.Warn("retry get sign status as error", "keyID", keyID, "err", err)
+		time.Sleep(retryGetSignStatusInterval)
+	}
+	if i == retryGetSignStatusCount || len(rsvs) == 0 {
+		return "", nil, errors.New("get sign status failed")
+	}
+
+	return keyID, rsvs, err
+}
+
 // BuildDcrmRawTx build dcrm raw tx
 func BuildDcrmRawTx(nonce uint64, payload []byte, keyWrapper *keystore.Key) (string, error) {
 	tx := types.NewTransaction(

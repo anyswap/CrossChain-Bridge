@@ -10,6 +10,8 @@ const (
 	tbLatestScanInfo    string = "LatestScanInfo"
 	tbRegisteredAddress string = "RegisteredAddress"
 	tbBlacklist         string = "Blacklist"
+	tbSwapAgreement     string = "SwapAgreement"
+	tbSolanaScannedTx   string = "SolanaScannedTx"
 	tbLatestSwapNonces  string = "LatestSwapNonces"
 
 	keyOfSrcLatestScanInfo string = "srclatest"
@@ -106,6 +108,20 @@ type MgoBlackAccount struct {
 	Address   string `bson:"address"`
 	PairID    string `bson:"pairid"`
 	Timestamp int64  `bson:"timestamp"`
+}
+
+// MgoSwapAgreement is hex encoded swapagreement
+type MgoSwapAgreement struct {
+	Key       string `bson:"_id"`
+	Type      string `bson:"type"`
+	Value     string `bson:"value"`
+	Cancelled bool   `bson:"cancelled"`
+}
+
+// MgoSolanaScannedTx is MgoSolanaScannedTx
+type MgoSolanaScannedTx struct {
+	Address string `bson:"_id"`
+	Txid    string `bson:"txid"`
 }
 
 // MgoLatestSwapNonce latest swap nonce
