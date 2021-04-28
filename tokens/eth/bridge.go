@@ -62,14 +62,17 @@ func (b *Bridge) VerifyChainID() {
 		err     error
 	)
 
-	for {
+	for i := 0; i < 5; i++ {
 		chainID, err = b.GetSignerChainID()
 		if err == nil {
 			break
 		}
 		log.Errorf("can not get gateway chainID. %v", err)
 		log.Println("retry query gateway", b.GatewayConfig.APIAddress)
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
+	}
+	if err != nil {
+		log.Fatal("get chain ID failed", "err", err)
 	}
 
 	panicMismatchChainID := func() {
@@ -148,18 +151,15 @@ func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) error {
 	}
 
 	if tokenCfg.IsErc20() {
-		for {
-			decimals, err := b.GetErc20Decimals(tokenCfg.ContractAddress)
-			if err == nil {
-				if decimals != configedDecimals {
-					return fmt.Errorf("invalid decimals for %v, want %v but configed %v", tokenCfg.Symbol, decimals, configedDecimals)
-				}
-				log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals)
-				break
-			}
+		decimals, err := b.GetErc20Decimals(tokenCfg.ContractAddress)
+		if err != nil {
 			log.Error("get erc20 decimals failed", "err", err)
-			time.Sleep(3 * time.Second)
+			return err
 		}
+		if decimals != configedDecimals {
+			return fmt.Errorf("invalid decimals for %v, want %v but configed %v", tokenCfg.Symbol, decimals, configedDecimals)
+		}
+		log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals)
 	}
 	return nil
 }
