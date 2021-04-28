@@ -698,6 +698,16 @@ func getSwapNonceKey(address string, isSwapin bool) string {
 	return strings.ToLower(fmt.Sprintf("%v:%v", address, isSwapin))
 }
 
+// UpdateLatestSwapinNonce update
+func UpdateLatestSwapinNonce(address string, nonce uint64) error {
+	return UpdateLatestSwapNonce(address, true, nonce)
+}
+
+// UpdateLatestSwapoutNonce update
+func UpdateLatestSwapoutNonce(address string, nonce uint64) error {
+	return UpdateLatestSwapNonce(address, false, nonce)
+}
+
 // UpdateLatestSwapNonce update
 func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err error) {
 	key := getSwapNonceKey(address, isSwapin)
@@ -719,12 +729,12 @@ func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err err
 			"swapnonce": nonce,
 			"timestamp": time.Now().Unix(),
 		}
-		err = collLatestSwapNonces.UpdateId(key, updates)
+		err = collLatestSwapNonces.UpdateId(key, bson.M{"$set": updates})
 	}
 	if err == nil {
-		log.Info("mongodb update swap nonce success", "key", key, "nonce", nonce)
+		log.Info("mongodb update swap nonce success", "address", address, "nonce", nonce, "isSwapin", isSwapin)
 	} else {
-		log.Debug("mongodb update swap nonce failed", "key", key, "nonce", nonce, "err", err)
+		log.Warn("mongodb update swap nonce failed", "address", address, "nonce", nonce, "isSwapin", isSwapin, "err", err)
 	}
 	return mgoError(err)
 }

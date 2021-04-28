@@ -59,10 +59,10 @@ func (b *Bridge) IncreaseNonce(pairID string, value uint64) {
 	account := strings.ToLower(tokenCfg.DcrmAddress)
 	if b.IsSrcEndpoint() {
 		b.SwapoutNonce[account] += value
-		_ = mongodb.UpdateLatestSwapNonce(account, false, b.SwapoutNonce[account])
+		_ = mongodb.UpdateLatestSwapoutNonce(account, b.SwapoutNonce[account])
 	} else {
 		b.SwapinNonce[account] += value
-		_ = mongodb.UpdateLatestSwapNonce(account, true, b.SwapinNonce[account])
+		_ = mongodb.UpdateLatestSwapinNonce(account, b.SwapinNonce[account])
 	}
 }
 
@@ -73,5 +73,5 @@ func (b *Bridge) InitNonces(nonces map[string]uint64) {
 	} else {
 		b.SwapinNonce = nonces
 	}
-	log.Info("init swap nonces finished", "isSrc", b.IsSrcEndpoint(), "nonces", nonces)
+	log.Info("init swap nonces finished", "isSwapin", !b.IsSrcEndpoint(), "nonces", nonces)
 }
