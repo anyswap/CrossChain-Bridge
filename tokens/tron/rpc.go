@@ -243,16 +243,11 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 	if tx.Result != core.TransactionInfo_SUCESS {
 		return nil
 	}
-	cres := tx.GetContractResult()
-	if len(cres) < 1 {
+
+	rsrcres := tx.GetReceipt().GetResult()
+	if rsrcres != core.Transaction_Result_SUCCESS {
 		return nil
 	}
-	for _, r := range cres {
-		if len(r) > 0 && new(big.Int).SetBytes(r).Int64() != 1 {
-			return nil
-		}
-	}
-
 
 	status.Receipt = tx
 	status.PrioriFinalized = false
