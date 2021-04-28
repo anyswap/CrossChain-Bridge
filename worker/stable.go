@@ -7,6 +7,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
+	"github.com/anyswap/CrossChain-Bridge/log"
 )
 
 var (
@@ -89,7 +90,8 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 
 func getSwapTxStatus(resBridge tokens.CrossChainBridge, swap *mongodb.MgoSwapResult) *tokens.TxStatus {
 	txStatus := resBridge.GetTransactionStatus(swap.SwapTx)
-	if txStatus != nil && txStatus.BlockHeight > 0 {
+	//if txStatus != nil && txStatus.BlockHeight > 0 {
+	if txStatus != nil {
 		return txStatus
 	}
 	for _, oldSwapTx := range swap.OldSwapTxs {
@@ -109,6 +111,23 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	oldSwapTx := swap.SwapTx
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)
 	txStatus := getSwapTxStatus(resBridge, swap)
+	if txStatus.CustomeCheckStable != nil {
+		// Custome check stable logic
+		// For blockchains like Tron, which can tell tx is conditionally finailized
+		// but only cannot provide an Eth style RPCTxReceipt
+		switch txStatus.CustomeCheckStable(*resBridge.GetChainConfig().Confirmations) {
+		case 0:
+			// stable
+			return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
+		case  1:
+			// fail
+			return markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
+		default:
+			// unstable
+			return nil
+		}
+		return nil
+	} 
 	if txStatus == nil || txStatus.BlockHeight == 0 {
 		if swap.SwapHeight == 0 {
 			return processUpdateSwapHeight(resBridge, swap)
@@ -118,15 +137,6 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	if txStatus != nil && txStatus.PrioriFinalized {
 		// For blockchains like Cosmos, which can tell tx is finailized at this stage
 		return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
-	}
-	if txStatus.CustomeCheckStable != nil {
-		// Custome check stable logic
-		// For blockchains like Tron, which can tell tx is conditionally finailized
-		// but only cannot provide an Eth style RPCTxReceipt
-		if txStatus.CustomeCheckStable(*resBridge.GetChainConfig().Confirmations) {
-			return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
-		}
-		return nil
 	}
 
 	if swap.SwapHeight != 0 {

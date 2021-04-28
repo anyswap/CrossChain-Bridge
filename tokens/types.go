@@ -202,7 +202,7 @@ type TxSwapInfo struct {
 type TxStatus struct {
 	Receipt            interface{} `json:"receipt,omitempty"`
 	PrioriFinalized    bool        `json:"priori_finalized,omitempty"`
-	CustomeCheckStable func(uint64) bool
+	CustomeCheckStable func(uint64) int
 	Confirmations      uint64 `json:"confirmations"`
 	BlockHeight        uint64 `json:"block_height"`
 	BlockHash          string `json:"block_hash"`

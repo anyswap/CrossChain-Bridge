@@ -240,13 +240,31 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 		cli.Stop()
 	}
 
-	if tx.Result != core.TransactionInfo_SUCESS {
+	if tx == nil {
+		if tx1, err1 := b.GetTransaction(txHash); err1 != nil {
+			tx2, ok1 := tx1.(core.Transaction)
+			if !ok1 || tx2.GetRet()[0].GetRet() != core.Transaction_Result_SUCESS {
+				status.CustomeCheckStable = func(confirmations uint64) int {
+					return 1
+				}
+				return
+			}
+		}
 		return nil
+	}
+	if tx.Result != core.TransactionInfo_SUCESS {
+		status.CustomeCheckStable = func(confirmations uint64) int {
+			return 1
+		}
+		return
 	}
 
 	rsrcres := tx.GetReceipt().GetResult()
 	if rsrcres != core.Transaction_Result_SUCCESS && rsrcres != core.Transaction_Result_DEFAULT {
-		return nil
+		status.CustomeCheckStable = func(confirmations uint64) int {
+			return 1
+		}
+		return
 	}
 
 	status.Receipt = tx
@@ -257,8 +275,14 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 	if latest, err := b.GetLatestBlockNumber(); err == nil {
 		status.Confirmations = latest - status.BlockHeight
 	}
-	status.CustomeCheckStable = func(confirmations uint64) bool {
-		return status.Confirmations >= confirmations
+	status.CustomeCheckStable = func(confirmations uint64) int {
+		if status.Receipt == nil {
+			return 1 // fail
+		}
+		if status.Confirmations >= confirmations {
+			return 0 // stable
+		}
+		return 2 // unstable
 	}
 	return
 }
