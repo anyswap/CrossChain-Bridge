@@ -53,56 +53,67 @@ func AddSwapJob(pairCfg *tokens.TokenPairConfig) {
 
 func startSwapinSwapJob(pairID string) {
 	logWorker("swap", "start swapin swap job")
+	processSwapins(pairID, mongodb.TxProcessing)
 	for {
-		res, err := findSwapinsToSwap(pairID)
-		if err != nil {
-			logWorkerError("swapin", "find swapins error", err)
-		}
-		if len(res) > 0 {
-			logWorker("swapin", "find swapins to swap", "count", len(res))
-		}
-		for _, swap := range res {
-			err = processSwapinSwap(swap)
-			switch err {
-			case nil, errAlreadySwapped:
-			default:
-				logWorkerError("swapin", "process swapin swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
-			}
-		}
+		processSwapins(pairID, mongodb.TxNotSwapped)
 		restInJob(restIntervalInDoSwapJob)
 	}
 }
 
 func startSwapoutSwapJob(pairID string) {
 	logWorker("swapout", "start swapout swap job")
+	processSwapouts(pairID, mongodb.TxProcessing)
 	for {
-		res, err := findSwapoutsToSwap(pairID)
-		if err != nil {
-			logWorkerError("swapout", "find swapouts error", err)
-		}
-		if len(res) > 0 {
-			logWorker("swapout", "find swapouts to swap", "count", len(res))
-		}
-		for _, swap := range res {
-			err = processSwapoutSwap(swap)
-			switch err {
-			case nil, errAlreadySwapped:
-			default:
-				logWorkerError("swapout", "process swapout swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
-			}
-		}
+		processSwapouts(pairID, mongodb.TxNotSwapped)
 		restInJob(restIntervalInDoSwapJob)
 	}
 }
 
-func findSwapinsToSwap(pairID string) ([]*mongodb.MgoSwap, error) {
-	status := mongodb.TxNotSwapped
+func processSwapins(pairID string, status mongodb.SwapStatus) {
+	swapins, err := findSwapinsToSwap(pairID, status)
+	if err != nil {
+		logWorkerError("swapin", "find swapins error", err)
+		return
+	}
+	if len(swapins) == 0 {
+		return
+	}
+	logWorker("swapin", "find swapins to swap", "count", len(swapins))
+	for _, swap := range swapins {
+		err := processSwapinSwap(swap)
+		switch err {
+		case nil, errAlreadySwapped:
+		default:
+			logWorkerError("swapin", "process swapin swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
+		}
+	}
+}
+
+func processSwapouts(pairID string, status mongodb.SwapStatus) {
+	swapouts, err := findSwapoutsToSwap(pairID, status)
+	if err != nil {
+		logWorkerError("swapout", "find swapouts error", err)
+	}
+	if len(swapouts) == 0 {
+		return
+	}
+	logWorker("swapout", "find swapouts to swap", "count", len(swapouts))
+	for _, swap := range swapouts {
+		err := processSwapoutSwap(swap)
+		switch err {
+		case nil, errAlreadySwapped:
+		default:
+			logWorkerError("swapout", "process swapout swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
+		}
+	}
+}
+
+func findSwapinsToSwap(pairID string, status mongodb.SwapStatus) ([]*mongodb.MgoSwap, error) {
 	septime := getSepTimeInFind(maxDoSwapLifetime)
 	return mongodb.FindSwapinsWithPairIDAndStatus(pairID, status, septime)
 }
 
-func findSwapoutsToSwap(pairID string) ([]*mongodb.MgoSwap, error) {
-	status := mongodb.TxNotSwapped
+func findSwapoutsToSwap(pairID string, status mongodb.SwapStatus) ([]*mongodb.MgoSwap, error) {
 	septime := getSepTimeInFind(maxDoSwapLifetime)
 	return mongodb.FindSwapoutsWithPairIDAndStatus(pairID, status, septime)
 }
@@ -184,6 +195,9 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		From:        toTokenCfg.DcrmAddress,
 		OriginValue: value,
 	}
+	if res.SwapNonce > 0 {
+		args.SetTxNonce(res.SwapNonce)
+	}
 
 	return dispatchSwapTask(args)
 }
@@ -260,11 +274,48 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 
 	rawTx, err := resBridge.BuildRawTransaction(args)
 	if err != nil {
-		logWorkerError("doSwap", "build tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		logWorkerError("doSwap", "build tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
 	}
 
 	swapNonce := args.GetTxNonce()
+
+	// update swap nonce first
+	matchTx := &MatchTx{
+		SwapTx:    "",
+		SwapValue: tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
+		SwapType:  swapType,
+		SwapNonce: swapNonce,
+	}
+	err = updateSwapResult(txid, pairID, bind, matchTx)
+	if err != nil {
+		logWorkerError("doSwap", "update swap result nonce failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		return err
+	}
+
+	err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxProcessing, now(), "")
+	if err != nil {
+		logWorkerError("doSwap", "update swap status to prcessing failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		return err
+	}
+
+	if nonceSetter, ok := resBridge.(tokens.NonceSetter); ok {
+		nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
+	}
+
+	go func() {
+		err = signAndSendResultTx(resBridge, rawTx, args)
+	}()
+	return err
+}
+
+func signAndSendResultTx(resBridge tokens.CrossChainBridge, rawTx interface{}, args *tokens.BuildTxArgs) (err error) {
+	pairID := args.PairID
+	txid := args.SwapID
+	bind := args.Bind
+	swapType := args.SwapType
+
+	isSwapin := swapType == tokens.SwapinType
 
 	var signedTx interface{}
 	var txHash string
@@ -275,34 +326,22 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		signedTx, txHash, err = resBridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	}
 	if err != nil {
-		logWorkerError("doSwap", "sign tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		logWorkerError("doSwap", "sign tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
 	}
 
 	// update database before sending transaction
-	matchTx := &MatchTx{
-		SwapTx:    txHash,
-		SwapValue: tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
-		SwapType:  swapType,
-		SwapNonce: swapNonce,
-	}
-	err = updateSwapResult(txid, pairID, bind, matchTx)
+	err = updateSwapResultTx(txid, pairID, bind, txHash, isSwapin, mongodb.MatchTxNotStable)
 	if err != nil {
-		logWorkerError("doSwap", "update swap result failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		logWorkerError("doSwap", "update swap result swaptx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
 	}
 
 	err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxProcessed, now(), "")
 	if err != nil {
-		logWorkerError("doSwap", "update swap status failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		logWorkerError("doSwap", "update swap status to prcessed failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
 	}
 
-	err = sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
-	if err == nil {
-		if nonceSetter, ok := resBridge.(tokens.NonceSetter); ok {
-			nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
-		}
-	}
-	return err
+	return sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
 }

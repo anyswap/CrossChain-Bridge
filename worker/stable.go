@@ -121,7 +121,7 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 			return nil
 		}
 		if swap.SwapTx != oldSwapTx {
-			_ = updateSwapTx(swap.TxID, swap.PairID, swap.Bind, swap.SwapTx, isSwapin)
+			_ = updateSwapResultTx(swap.TxID, swap.PairID, swap.Bind, swap.SwapTx, isSwapin, mongodb.KeepStatus)
 		}
 		if txStatus.Receipt != nil {
 			receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)

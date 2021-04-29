@@ -59,7 +59,8 @@ const (
 	BindAddrIsContract                      // 17
 	RPCQueryError                           // 18
 
-	KeepStatus = 255
+	TxProcessing = 128
+	KeepStatus   = 255
 )
 
 // CanManualMakePass can manual make pass
@@ -162,6 +163,8 @@ func (status SwapStatus) String() string {
 		return "BindAddrIsContract"
 	case RPCQueryError:
 		return "RPCQueryError"
+	case TxProcessing:
+		return "TxProcessing"
 	default:
 		return fmt.Sprintf("unknown swap status %d", status)
 	}
