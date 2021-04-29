@@ -7,7 +7,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
-	"github.com/anyswap/CrossChain-Bridge/log"
 )
 
 var (
@@ -118,15 +117,17 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 		switch txStatus.CustomeCheckStable(*resBridge.GetChainConfig().Confirmations) {
 		case 0:
 			// stable
+			logWorker("transaction is stable", "txid", swap.TxID)
 			return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 		case  1:
 			// fail
+			logWorker("transaction failed", "txid", swap.TxID)
 			return markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 		default:
 			// unstable
+			logWorker("transaction is unstable", "txid", swap.TxID)
 			return nil
 		}
-		return nil
 	} 
 	if txStatus == nil || txStatus.BlockHeight == 0 {
 		if swap.SwapHeight == 0 {
