@@ -106,7 +106,8 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 	nonce := res.SwapNonce
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
-			Identifier: params.GetReplaceIdentifier(),
+			//#Identifier: params.GetReplaceIdentifier(),
+			Identifier: params.GetIdentifier(),
 			PairID:     pairID,
 			SwapID:     txid,
 			SwapType:   swapType,
