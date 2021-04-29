@@ -7,6 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
@@ -173,11 +174,12 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	swapType := getSwapType(isSwapin)
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
-			PairID:   pairID,
-			SwapID:   txid,
-			SwapType: swapType,
-			TxType:   tokens.SwapTxType(swap.TxType),
-			Bind:     bind,
+			Identifier: params.GetIdentifier(),
+			PairID:     pairID,
+			SwapID:     txid,
+			SwapType:   swapType,
+			TxType:     tokens.SwapTxType(swap.TxType),
+			Bind:       bind,
 		},
 		From:        toTokenCfg.DcrmAddress,
 		OriginValue: value,

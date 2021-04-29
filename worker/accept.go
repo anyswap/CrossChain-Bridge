@@ -105,6 +105,7 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 	}
 	switch args.Identifier {
 	case params.GetIdentifier():
+	case params.GetReplaceIdentifier():
 	case tokens.AggregateIdentifier:
 		if btc.BridgeInstance == nil {
 			return tokens.ErrNoBtcBridge

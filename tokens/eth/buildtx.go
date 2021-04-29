@@ -21,7 +21,12 @@ var (
 )
 
 // BuildRawTransaction build raw tx
+// nolint:gocyclo // allow switch case
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
+	if args.SwapType != tokens.NoSwapType && args.Identifier == "" {
+		return nil, fmt.Errorf("build swaptx without identifier")
+	}
+
 	var input []byte
 	var tokenCfg *tokens.TokenConfig
 	if args.Input == nil {
@@ -101,10 +106,6 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		if !tokenCfg.IsErc20() {
 			value = tokens.CalcSwappedValue(pairID, args.OriginValue, false)
 		}
-	}
-
-	if args.SwapType != tokens.NoSwapType {
-		args.Identifier = params.GetIdentifier()
 	}
 
 	needValue := big.NewInt(0)

@@ -99,6 +99,11 @@ func GetIdentifier() string {
 	return GetConfig().Identifier
 }
 
+// GetReplaceIdentifier get identifier (to distiguish in dcrm accept)
+func GetReplaceIdentifier() string {
+	return GetConfig().Identifier + ":replaceswap"
+}
+
 // MustRegisterAccount flag
 func MustRegisterAccount() bool {
 	return GetConfig().MustRegisterAccount
