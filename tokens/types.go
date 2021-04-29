@@ -35,10 +35,11 @@ type ChainConfig struct {
 	EnableScanPool bool
 	ScanReceipt    bool `json:",omitempty"`
 
-	MaxGasPriceFluctPercent uint64 `json:",omitempty"`
-	WaitTimeToReplace       int64  // seconds
-	MaxReplaceCount         int
-	EnableReplaceSwap       bool
+	MaxGasPriceFluctPercent    uint64 `json:",omitempty"`
+	ReplacePlusGasPricePercent uint64 `json:",omitempty"`
+	WaitTimeToReplace          int64  // seconds
+	MaxReplaceCount            int
+	EnableReplaceSwap          bool
 }
 
 // GatewayConfig struct
@@ -270,6 +271,12 @@ func (c *ChainConfig) CheckConfig() error {
 	}
 	if c.InitialHeight == nil {
 		return errors.New("token must config 'InitialHeight'")
+	}
+	if c.MaxGasPriceFluctPercent > 100 {
+		return errors.New("'MaxGasPriceFluctPercent' is too large (>100)")
+	}
+	if c.ReplacePlusGasPricePercent > 100 {
+		return errors.New("'ReplacePlusGasPricePercent' is too large (>100)")
 	}
 	return nil
 }

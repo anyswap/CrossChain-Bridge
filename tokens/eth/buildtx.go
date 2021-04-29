@@ -162,7 +162,7 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 			return nil, err
 		}
 		if args.SwapType != tokens.NoSwapType {
-			err = b.adjustSwapGasPrice(args.PairID, extra)
+			err = b.adjustSwapGasPrice(args, extra)
 			if err != nil {
 				return nil, err
 			}
@@ -203,12 +203,15 @@ func (b *Bridge) getGasPrice() (price *big.Int, err error) {
 	return nil, err
 }
 
-func (b *Bridge) adjustSwapGasPrice(pairID string, extra *tokens.EthExtraArgs) error {
-	tokenCfg := b.GetTokenConfig(pairID)
+func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs) error {
+	tokenCfg := b.GetTokenConfig(args.PairID)
 	if tokenCfg == nil {
 		return tokens.ErrUnknownPairID
 	}
 	addPercent := tokenCfg.PlusGasPricePercentage
+	if args.Identifier == params.GetReplaceIdentifier() {
+		addPercent += b.ChainConfig.ReplacePlusGasPricePercent
+	}
 	if addPercent > 0 {
 		extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
 		extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
