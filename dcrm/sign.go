@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -17,10 +18,14 @@ import (
 )
 
 const (
-	pingCount                  = 3
-	retrySignCount             = 3
-	retryGetSignStatusCount    = 70
-	retryGetSignStatusInterval = 10 * time.Second
+	pingCount   = 3
+	signTimeout = 120 * time.Second
+)
+
+var (
+	errSignTimerTimeout = errors.New("sign timer timeout")
+
+	signTimer = time.NewTimer(signTimeout)
 )
 
 func pingDcrmNode(nodeInfo *NodeInfo) (err error) {
@@ -50,13 +55,11 @@ func DoSign(signPubkey string, msgHash, msgContext []string) (keyID string, rsvs
 	if signPubkey == "" {
 		return "", nil, errors.New("dcrm sign with empty public key")
 	}
-	var pingOk bool
-	for retry := 0; retry < retrySignCount; retry++ {
+	for {
 		for _, dcrmNode := range allInitiatorNodes {
 			if err = pingDcrmNode(dcrmNode); err != nil {
 				continue
 			}
-			pingOk = true
 			signGroupsCount := int64(len(dcrmNode.signGroups))
 			// randomly pick first subgroup to sign
 			randIndex, _ := rand.Int(rand.Reader, big.NewInt(signGroupsCount))
@@ -73,11 +76,8 @@ func DoSign(signPubkey string, msgHash, msgContext []string) (keyID string, rsvs
 				}
 			}
 		}
+		time.Sleep(2 * time.Second)
 	}
-	if !pingOk {
-		err = errors.New("dcrm sign ping dcrm node failed")
-	}
-	return "", nil, err
 }
 
 func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
@@ -108,27 +108,46 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 		return "", nil, err
 	}
 
-	time.Sleep(retryGetSignStatusInterval)
+	rsvs, err = getSignResult(keyID, rpcAddr)
+	if err != nil {
+		return "", nil, err
+	}
+	return keyID, rsvs, nil
+}
+
+func getSignResult(keyID, rpcAddr string) (rsvs []string, err error) {
+	log.Info("start get sign status", "keyID", keyID)
 	var signStatus *SignStatus
 	i := 0
-	for ; i < retryGetSignStatusCount; i++ {
-		signStatus, err = GetSignStatus(keyID, rpcAddr)
-		if err == nil {
-			rsvs = signStatus.Rsv
-			break
+	signTimer.Reset(signTimeout)
+LOOP_GET_SIGN_STATUS:
+	for {
+		i++
+		select {
+		case <-signTimer.C:
+			if err == nil {
+				err = errSignTimerTimeout
+			}
+			break LOOP_GET_SIGN_STATUS
+		default:
+			signStatus, err = GetSignStatus(keyID, rpcAddr)
+			if err == nil {
+				rsvs = signStatus.Rsv
+				break LOOP_GET_SIGN_STATUS
+			}
+			switch err {
+			case ErrGetSignStatusFailed, ErrGetSignStatusTimeout:
+				break LOOP_GET_SIGN_STATUS
+			}
 		}
-		switch err {
-		case ErrGetSignStatusFailed, ErrGetSignStatusTimeout:
-			return "", nil, err
-		}
-		log.Warn("retry get sign status as error", "keyID", keyID, "err", err)
-		time.Sleep(retryGetSignStatusInterval)
+		time.Sleep(1 * time.Second)
 	}
-	if i == retryGetSignStatusCount || len(rsvs) == 0 {
-		return "", nil, errors.New("get sign status failed")
+	if len(rsvs) == 0 || err != nil {
+		log.Info("get sign status failed", "keyID", keyID, "retryCount", i, "err", err)
+		return nil, fmt.Errorf("sign failed: %w", err)
 	}
-
-	return keyID, rsvs, err
+	log.Info("get sign status success", "keyID", keyID, "retryCount", i)
+	return rsvs, nil
 }
 
 // BuildDcrmRawTx build dcrm raw tx
