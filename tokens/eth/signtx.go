@@ -43,9 +43,10 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	if err != nil {
 		return nil, "", err
 	}
-	gasPrice, err := b.getGasPrice()
+	gasPrice, err := b.getGasPrice(args)
 	if err == nil && args.Extra.EthExtra.GasPrice.Cmp(gasPrice) < 0 {
 		args.Extra.EthExtra.GasPrice = gasPrice
+		tx.SetGasPrice(gasPrice)
 	}
 	signer := b.Signer
 	msgHash := signer.Hash(tx)

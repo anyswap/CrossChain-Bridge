@@ -6,7 +6,6 @@ import (
 	"sync/atomic"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
-	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/anyswap/CrossChain-Bridge/tools/rlp"
 	"golang.org/x/crypto/sha3"
 )
@@ -124,21 +123,6 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	if err := dec.UnmarshalJSON(input); err != nil {
 		return err
 	}
-
-	withSignature := dec.V.Sign() != 0 || dec.R.Sign() != 0 || dec.S.Sign() != 0
-	if withSignature {
-		var V byte
-		if isProtectedV(dec.V) {
-			chainID := deriveChainID(dec.V).Uint64()
-			V = byte(dec.V.Uint64() - 35 - 2*chainID)
-		} else {
-			V = byte(dec.V.Uint64() - 27)
-		}
-		if !crypto.ValidateSignatureValues(V, dec.R, dec.S, false) {
-			return ErrInvalidSig
-		}
-	}
-
 	*tx = Transaction{data: dec}
 	return nil
 }
@@ -151,6 +135,9 @@ func (tx *Transaction) Gas() uint64 { return tx.data.GasLimit }
 
 // GasPrice tx gas price
 func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.data.Price) }
+
+// SetGasPrice tx gas price
+func (tx *Transaction) SetGasPrice(gasPrice *big.Int) { tx.data.Price.Set(gasPrice) }
 
 // Value tx value
 func (tx *Transaction) Value() *big.Int { return new(big.Int).Set(tx.data.Amount) }
