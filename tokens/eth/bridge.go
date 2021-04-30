@@ -125,18 +125,28 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
 }
 
 func (b *Bridge) verifyDelegateContract(tokenCfg *tokens.TokenConfig) error {
-	if tokenCfg.DelegateToken == "" {
-		return nil
+	if !b.IsSrcEndpoint() {
+		// keccak256 'proxyToken()' is '0x4faaefae'
+		res, err := b.CallContract(tokenCfg.ContractAddress, common.FromHex("0x4faaefae"), "latest")
+		if err != nil {
+			return err
+		}
+		proxyToken := common.HexToAddress(res)
+		if common.HexToAddress(tokenCfg.DelegateToken) != proxyToken {
+			return fmt.Errorf("mismatch 'DelegateToken', has %v, want %v", tokenCfg.DelegateToken, proxyToken.String())
+		}
 	}
-	// keccak256 'proxyToken()' is '0x4faaefae'
-	res, err := b.CallContract(tokenCfg.ContractAddress, common.FromHex("0x4faaefae"), "latest")
+
+	decimals, err := b.GetErc20Decimals(tokenCfg.DelegateToken)
 	if err != nil {
+		log.Error("get delegate erc20 decimals failed", "token", tokenCfg.DelegateToken, "err", err)
 		return err
 	}
-	proxyToken := common.HexToAddress(res)
-	if common.HexToAddress(tokenCfg.DelegateToken) != proxyToken {
-		return fmt.Errorf("mismatch 'DelegateToken', has %v, want %v", tokenCfg.DelegateToken, proxyToken.String())
+	configedDecimals := *tokenCfg.Decimals
+	if decimals != configedDecimals {
+		return fmt.Errorf("invalid decimals for %v, want %v but configed %v", tokenCfg.Symbol, decimals, configedDecimals)
 	}
+	log.Info(tokenCfg.Symbol+" verify delegate decimals success", "decimals", configedDecimals)
 	return nil
 }
 

@@ -352,8 +352,8 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 		if c.ContractAddress == "" {
 			return errors.New("token must config 'ContractAddress' if 'IsDelegateContract' is true")
 		}
-		if c.DelegateToken != "" && !common.IsHexAddress(c.DelegateToken) {
-			return errors.New("wrong 'DelegateToken' address")
+		if c.DelegateToken == "" {
+			return errors.New("token must config 'DelegateToken' if 'IsDelegateContract' is true")
 		}
 	}
 	// calc value and store

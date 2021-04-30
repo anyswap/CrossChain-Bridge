@@ -160,10 +160,12 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 		}
 		// check destination contract address
 		dstContract := strings.ToLower(tokenPair.DestToken.ContractAddress)
-		if _, exist := dstContractsMap[dstContract]; exist {
-			return fmt.Errorf("duplicate destination contract '%v'", tokenPair.DestToken.ContractAddress)
+		if !tokenPair.SrcToken.IsDelegateContract {
+			if _, exist := dstContractsMap[dstContract]; exist {
+				return fmt.Errorf("duplicate destination contract '%v'", tokenPair.DestToken.ContractAddress)
+			}
+			dstContractsMap[dstContract] = struct{}{}
 		}
-		dstContractsMap[dstContract] = struct{}{}
 		// check config
 		err = tokenPair.CheckConfig()
 		if err != nil {
