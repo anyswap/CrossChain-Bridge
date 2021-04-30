@@ -98,7 +98,7 @@ func processSwapins(pairID string, status mongodb.SwapStatus) {
 	for _, swap := range swapins {
 		err := processSwapinSwap(swap)
 		switch err {
-		case nil, errAlreadySwapped:
+		case nil, errAlreadySwapped, tokens.ErrSwapIsClosed:
 		default:
 			logWorkerError("swapin", "process swapin swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
 		}
@@ -117,7 +117,7 @@ func processSwapouts(pairID string, status mongodb.SwapStatus) {
 	for _, swap := range swapouts {
 		err := processSwapoutSwap(swap)
 		switch err {
-		case nil, errAlreadySwapped:
+		case nil, errAlreadySwapped, tokens.ErrSwapIsClosed:
 		default:
 			logWorkerError("swapout", "process swapout swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
 		}
@@ -180,7 +180,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	}
 	if fromTokenCfg.DisableSwap {
 		logWorkerTrace("swap", "swap is disabled", "pairID", pairID, "isSwapin", isSwapin)
-		return nil
+		return tokens.ErrSwapIsClosed
 	}
 	isBlacked, err := isSwapInBlacklist(res)
 	if err != nil {

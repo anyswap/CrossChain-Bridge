@@ -56,7 +56,7 @@ func startSwapoutVerifyJob() {
 			for _, swap := range res {
 				err = processSwapoutVerify(swap)
 				switch err {
-				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound, tokens.ErrSwapIsClosed:
 				default:
 					logWorkerError("verify", "process swapout verify error", err, "txid", swap.TxID)
 				}
@@ -131,7 +131,7 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 	resultStatus := mongodb.MatchTxEmpty
 
 	switch err {
-	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+	case tokens.ErrTxNotStable, tokens.ErrTxNotFound, tokens.ErrSwapIsClosed:
 		return err
 	case nil:
 		status := mongodb.TxNotSwapped

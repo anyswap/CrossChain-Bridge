@@ -20,6 +20,7 @@ var (
 	ErrBuildSwapTxInWrongEndpoint    = errors.New("build swap in/out tx in wrong endpoint")
 	ErrTxBeforeInitialHeight         = errors.New("transaction before initial block height")
 	ErrAddressIsInBlacklist          = errors.New("address is in black list")
+	ErrSwapIsClosed                  = errors.New("swap is closed")
 
 	ErrTodo = errors.New("developing: TODO")
 

@@ -165,6 +165,8 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 				return fmt.Errorf("duplicate destination contract '%v'", tokenPair.DestToken.ContractAddress)
 			}
 			dstContractsMap[dstContract] = struct{}{}
+		} else if !tokenPair.DestToken.DisableSwap {
+			return fmt.Errorf("must close withdraw if is delegate swapin")
 		}
 		// check config
 		err = tokenPair.CheckConfig()
