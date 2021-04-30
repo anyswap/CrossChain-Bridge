@@ -16,11 +16,26 @@ var (
 	swapinTaskChanMap  = make(map[string]chan *tokens.BuildTxArgs)
 	swapoutTaskChanMap = make(map[string]chan *tokens.BuildTxArgs)
 
+	maxSwapRoutineCount = uint64(20)
+	signSwapTxChan      chan *signContent
+
 	errAlreadySwapped = errors.New("already swapped")
 )
 
+type signContent struct {
+	rawTx interface{}
+	args  *tokens.BuildTxArgs
+}
+
 // StartSwapJob swap job
 func StartSwapJob() {
+	maxRoutines := params.GetConfig().MaxSwapRoutineCount
+	if maxRoutines > 0 {
+		maxSwapRoutineCount = maxRoutines
+	}
+	signSwapTxChan = make(chan *signContent, maxSwapRoutineCount)
+	go doSignSwapTxs()
+
 	swapinNonces, swapoutNonces := mongodb.LoadAllSwapNonces()
 	if srcNonceSetter != nil {
 		srcNonceSetter.InitNonces(swapoutNonces)
@@ -28,6 +43,7 @@ func StartSwapJob() {
 	if dstNonceSetter != nil {
 		dstNonceSetter.InitNonces(swapinNonces)
 	}
+
 	for _, pairCfg := range tokens.GetTokenPairsConfig() {
 		AddSwapJob(pairCfg)
 	}
@@ -306,27 +322,34 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
 	}
 
-	go func() {
-		err = signAndSendResultTx(resBridge, rawTx, args)
-	}()
+	signSwapTxChan <- &signContent{rawTx, args} // producer of sign
 	return err
 }
 
-func signAndSendResultTx(resBridge tokens.CrossChainBridge, rawTx interface{}, args *tokens.BuildTxArgs) (err error) {
+func doSignSwapTxs() { // consumer of sign
+	for {
+		sc := <-signSwapTxChan
+		_ = signAndSendResultTx(sc)
+	}
+}
+
+func signAndSendResultTx(sc *signContent) (err error) {
+	args := sc.args
 	pairID := args.PairID
 	txid := args.SwapID
 	bind := args.Bind
 	swapType := args.SwapType
 
 	isSwapin := swapType == tokens.SwapinType
+	resBridge := tokens.GetCrossChainBridge(!isSwapin)
 
 	var signedTx interface{}
 	var txHash string
 	tokenCfg := resBridge.GetTokenConfig(pairID)
 	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
-		signedTx, txHash, err = resBridge.SignTransaction(rawTx, pairID)
+		signedTx, txHash, err = resBridge.SignTransaction(sc.rawTx, pairID)
 	} else {
-		signedTx, txHash, err = resBridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+		signedTx, txHash, err = resBridge.DcrmSignTransaction(sc.rawTx, args.GetExtraArgs())
 	}
 	if err != nil {
 		logWorkerError("doSwap", "sign tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)

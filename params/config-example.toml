@@ -1,5 +1,7 @@
 # a short string to identify the bridge
 Identifier = "BTC2ETH"
+# max number of go routines to process swaps
+MaxSwapRoutineCount = 20
 # if users should register their address before swapping
 MustRegisterAccount = false
 

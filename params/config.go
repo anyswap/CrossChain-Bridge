@@ -27,6 +27,7 @@ var (
 // ServerConfig config items (decode from toml file)
 type ServerConfig struct {
 	Identifier          string
+	MaxSwapRoutineCount uint64           `toml:",omitempty" json:",omitempty"`
 	MustRegisterAccount bool             `toml:",omitempty" json:",omitempty"`
 	MongoDB             *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
 	APIServer           *APIServerConfig `toml:",omitempty" json:",omitempty"`
