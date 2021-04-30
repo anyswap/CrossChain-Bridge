@@ -209,8 +209,11 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, extra *tokens.EthE
 		return tokens.ErrUnknownPairID
 	}
 	addPercent := tokenCfg.PlusGasPricePercentage
-	if args.Identifier == params.GetReplaceIdentifier() {
-		addPercent += b.ChainConfig.ReplacePlusGasPricePercent
+	if args.ReplaceNum > 0 {
+		addPercent += args.ReplaceNum * b.ChainConfig.ReplacePlusGasPricePercent
+	}
+	if addPercent > tokens.MaxPlusGasPricePercentage {
+		addPercent = tokens.MaxPlusGasPricePercentage
 	}
 	if addPercent > 0 {
 		extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))

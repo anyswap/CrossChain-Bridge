@@ -103,6 +103,11 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 		return "", fmt.Errorf("wrong value %v", res.Value)
 	}
 
+	replaceNum := uint64(len(res.OldSwapTxs))
+	if replaceNum == 0 {
+		replaceNum++
+	}
+
 	nonce := res.SwapNonce
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
@@ -116,6 +121,7 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 		},
 		From:        tokenCfg.DcrmAddress,
 		OriginValue: value,
+		ReplaceNum:  replaceNum,
 		Extra: &tokens.AllExtras{
 			EthExtra: &tokens.EthExtraArgs{
 				GasPrice: gasPrice,

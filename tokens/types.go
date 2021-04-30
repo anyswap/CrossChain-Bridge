@@ -206,6 +206,7 @@ type BuildTxArgs struct {
 	Memo        string     `json:"memo,omitempty"`
 	Input       *[]byte    `json:"input,omitempty"`
 	Extra       *AllExtras `json:"extra,omitempty"`
+	ReplaceNum  uint64     `json:"replaceNum,omitempty"`
 }
 
 // GetExtraArgs get extra args
@@ -326,8 +327,7 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if *c.SwapFeeRate == 0.0 && *c.MinimumSwapFee > 0.0 {
 		return errors.New("wrong token config, MinimumSwapFee should be 0 if SwapFeeRate is 0")
 	}
-	maxPlusGasPricePercentage := uint64(10000)
-	if c.PlusGasPricePercentage > maxPlusGasPricePercentage {
+	if c.PlusGasPricePercentage > MaxPlusGasPricePercentage {
 		return errors.New("too large 'PlusGasPricePercentage' value")
 	}
 	if c.BigValueThreshold == nil {
