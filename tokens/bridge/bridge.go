@@ -33,7 +33,7 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return eth.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
-	case strings.HasPrefix(blockChainIden, "COLOSSUS"):
+	case strings.HasPrefix(blockChainIden, "COLOSSUS") || strings.HasPrefix(blockChainIden, "COLX"):
 		return colx.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
@@ -78,7 +78,7 @@ func InitCrossChainBridge(isServer bool) {
 	case "BLOCK":
 		block.Init(cfg.BtcExtra)
 	case "COLX":
-		block.Init(cfg.BtcExtra)
+		colx.Init(cfg.BtcExtra)
 	}
 
 	dcrm.Init(cfg.Dcrm, isServer)

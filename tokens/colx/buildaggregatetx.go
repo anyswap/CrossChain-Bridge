@@ -17,10 +17,21 @@ func (b *Bridge) BuildAggregateTransaction(relayFeePerKb int64, addrs []string, 
 		return nil, fmt.Errorf("call BuildAggregateTransaction: count of addrs (%v) is not equal to count of utxos (%v)", len(addrs), len(utxos))
 	}
 
-	txOuts, err := b.getTxOutputs("", nil, tokens.AggregateMemo)
+	pkscript, err := b.GetPayToAddrScript(cfgUtxoAggregateToAddress)
 	if err != nil {
 		return nil, err
 	}
+	txOut0 := b.NewTxOut(int64(cfgUtxoAggregateMinValue), pkscript)
+
+	txOuts1, err := b.getTxOutputs("", nil, tokens.AggregateMemo)
+	if err != nil {
+		return nil, err
+	}
+
+	txOuts := make([]*wireTxOutType, 0)
+
+	txOuts = append(txOuts, txOut0)
+	txOuts = append(txOuts, txOuts1...)
 
 	inputSource := func(target colxAmountType) (total colxAmountType, inputs []*wireTxInType, inputValues []colxAmountType, scripts [][]byte, err error) {
 		return b.getUtxosFromElectUtxos(target, addrs, utxos)
@@ -65,11 +76,14 @@ func (b *Bridge) getUtxosFromElectUtxos(target colxAmountType, addrs []string, u
 
 		address := addrs[i]
 		if b.IsP2shAddress(address) {
+			log.Info("请注意 !!! IsP2shAddress", "address", address)
 			bindAddr := tools.GetP2shBindAddress(address)
+			log.Info("请注意 !!! IsP2shAddress", "bind", bindAddr)
 			if bindAddr == "" {
 				continue
 			}
 			p2shAddr, _, _ := b.GetP2shAddress(bindAddr)
+			log.Info("请注意 !!! IsP2shAddress", "p2shAddr", p2shAddr)
 			if p2shAddr != address {
 				log.Warn("wrong registered p2sh address", "have", address, "bind", bindAddr, "want", p2shAddr)
 				continue
@@ -96,6 +110,7 @@ func (b *Bridge) getUtxosFromElectUtxos(target colxAmountType, addrs []string, u
 		log.Warn("getUtxos total %v < target %v", total, target)
 	}
 
+	log.Info("请注意 !!!", "scripts", scripts)
 	return total, inputs, inputValues, scripts, nil
 }
 

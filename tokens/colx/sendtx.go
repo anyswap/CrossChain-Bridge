@@ -20,6 +20,7 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 	if tx == nil {
 		return "", tokens.ErrWrongRawTx
 	}
+	log.Info("请注意, SendTransaction", "tx", signedTx)
 
 	buf := bytes.NewBuffer(make([]byte, 0, tx.SerializeSize()))
 	err = tx.Serialize(buf)

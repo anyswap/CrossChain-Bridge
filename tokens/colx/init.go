@@ -7,16 +7,16 @@ import (
 )
 
 var (
-	cfgMinRelayFee       int64  = 400
-	cfgMinRelayFeePerKb  int64  = 2000
-	cfgMaxRelayFeePerKb  int64  = 500000
-	cfgPlusFeePercentage uint64 = 0
-	cfgEstimateFeeBlocks        = 6
+	cfgMinRelayFee       int64  = 300000000
+	cfgMinRelayFeePerKb  int64  = 100000000
+	cfgMaxRelayFeePerKb  int64  = 1000000000
+	cfgPlusFeePercentage uint64 = 20
+	cfgEstimateFeeBlocks        = 3
 
 	cfgFromPublicKey string
 
-	cfgUtxoAggregateMinCount  = 20
-	cfgUtxoAggregateMinValue  = uint64(1000000)
+	cfgUtxoAggregateMinCount  = 1
+	cfgUtxoAggregateMinValue  = uint64(100000000)
 	cfgUtxoAggregateToAddress string
 )
 
@@ -55,7 +55,7 @@ func initFromPublicKey() {
 func initRelayFee(btcExtra *tokens.BtcExtraConfig) {
 	if btcExtra.MinRelayFee > 0 {
 		cfgMinRelayFee = btcExtra.MinRelayFee
-		maxMinRelayFee, _ := newAmount(0.001)
+		maxMinRelayFee, _ := newAmount(5)
 		minRelayFee := colxAmountType(cfgMinRelayFee)
 		if minRelayFee > maxMinRelayFee {
 			log.Fatal("BtcMinRelayFee is too large", "value", minRelayFee, "max", maxMinRelayFee)

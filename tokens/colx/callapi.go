@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
@@ -82,6 +83,7 @@ func (b *Bridge) GetOutspend(txHash string, vout uint32) (*electrs.ElectOutspend
 
 // PostTransaction impl
 func (b *Bridge) PostTransaction(txHex string) (txHash string, err error) {
+	log.Info("!!!!!! 请注意", "txHex", txHex)
 	return electrs.PostTransaction(b, txHex)
 }
 
@@ -113,7 +115,8 @@ func (b *Bridge) GetBlockTransactions(blockHash string, startIndex uint32) ([]*e
 
 // EstimateFeePerKb impl
 func (b *Bridge) EstimateFeePerKb(blocks int) (int64, error) {
-	return electrs.EstimateFeePerKb(b, blocks)
+	//return electrs.EstimateFeePerKb(b, blocks)
+	return int64(500000000), nil
 }
 
 // GetBalance impl

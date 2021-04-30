@@ -15,6 +15,7 @@ func (b *Bridge) VerifyP2shTransaction(pairID, txHash, bindAddress string, allow
 }
 
 func (b *Bridge) verifyP2shSwapinTx(pairID, txHash, bindAddress string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+	log.Info("!!!!!! verifyP2shSwapinTx")
 	tokenCfg := b.GetTokenConfig(pairID)
 	if tokenCfg == nil {
 		return nil, tokens.ErrUnknownPairID
@@ -23,8 +24,10 @@ func (b *Bridge) verifyP2shSwapinTx(pairID, txHash, bindAddress string, allowUns
 	swapInfo.PairID = pairID    // PairID
 	swapInfo.Hash = txHash      // Hash
 	swapInfo.Bind = bindAddress // Bind
+	log.Info("!!!!!! 111111 verifyP2shSwapinTx", "bindAddress", bindAddress)
 	p2shAddress, _, err := b.GetP2shAddress(bindAddress)
 	if err != nil {
+		log.Info("!!!!!! 222222 verifyP2shSwapinTx", "err", err, "p2shAddress", p2shAddress)
 		return swapInfo, tokens.ErrWrongP2shBindAddress
 	}
 	if !allowUnstable && !b.checkStable(txHash) {
@@ -46,6 +49,7 @@ func (b *Bridge) verifyP2shSwapinTx(pairID, txHash, bindAddress string, allowUns
 		swapInfo.Timestamp = *txStatus.BlockTime // Timestamp
 	}
 	value, _, rightReceiver := b.GetReceivedValue(tx.Vout, p2shAddress, p2shType)
+	log.Info("!!!!!! verifyP2shSwapinTx", "value", value, "rightReceiver", rightReceiver)
 	if !rightReceiver {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
