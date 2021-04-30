@@ -245,7 +245,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 			tx2, ok1 := tx1.(core.Transaction)
 			if !ok1 || tx2.GetRet()[0].GetRet() != core.Transaction_Result_SUCESS {
 				status.CustomeCheckStable = func(confirmations uint64) int {
-					return 1
+					return 2
 				}
 				return
 			}
