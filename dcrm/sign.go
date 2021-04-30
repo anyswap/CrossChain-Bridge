@@ -24,8 +24,6 @@ const (
 
 var (
 	errSignTimerTimeout = errors.New("sign timer timeout")
-
-	signTimer = time.NewTimer(signTimeout)
 )
 
 func pingDcrmNode(nodeInfo *NodeInfo) (err error) {
@@ -119,7 +117,8 @@ func getSignResult(keyID, rpcAddr string) (rsvs []string, err error) {
 	log.Info("start get sign status", "keyID", keyID)
 	var signStatus *SignStatus
 	i := 0
-	signTimer.Reset(signTimeout)
+	signTimer := time.NewTimer(signTimeout)
+	defer signTimer.Stop()
 LOOP_GET_SIGN_STATUS:
 	for {
 		i++
