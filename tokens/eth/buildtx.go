@@ -157,15 +157,9 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 		extra = args.Extra.EthExtra
 	}
 	if extra.GasPrice == nil {
-		extra.GasPrice, err = b.getGasPrice()
+		extra.GasPrice, err = b.getGasPrice(args)
 		if err != nil {
 			return nil, err
-		}
-		if args.SwapType != tokens.NoSwapType {
-			err = b.adjustSwapGasPrice(args, extra)
-			if err != nil {
-				return nil, err
-			}
 		}
 	}
 	if extra.Nonce == nil {
@@ -192,21 +186,32 @@ func (b *Bridge) getDefaultGasLimit(pairID string) (gasLimit uint64) {
 	return gasLimit
 }
 
-func (b *Bridge) getGasPrice() (price *big.Int, err error) {
+func (b *Bridge) getGasPrice(args *tokens.BuildTxArgs) (price *big.Int, err error) {
 	for i := 0; i < retryRPCCount; i++ {
 		price, err = b.SuggestPrice()
 		if err == nil {
-			return price, nil
+			break
 		}
 		time.Sleep(retryRPCInterval)
 	}
-	return nil, err
+	if err != nil {
+		return nil, err
+	}
+	if args != nil && args.SwapType != tokens.NoSwapType {
+		price, err = b.adjustSwapGasPrice(args, price)
+		if err != nil {
+			return nil, err
+		}
+	}
+	latestGasPrice = price
+	return price, err
 }
 
-func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs) error {
+// args and oldGasPrice should be read only
+func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.Int) (newGasPrice *big.Int, err error) {
 	tokenCfg := b.GetTokenConfig(args.PairID)
 	if tokenCfg == nil {
-		return tokens.ErrUnknownPairID
+		return nil, tokens.ErrUnknownPairID
 	}
 	addPercent := tokenCfg.PlusGasPricePercentage
 	if args.ReplaceNum > 0 {
@@ -215,9 +220,10 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, extra *tokens.EthE
 	if addPercent > tokens.MaxPlusGasPricePercentage {
 		addPercent = tokens.MaxPlusGasPricePercentage
 	}
+	newGasPrice = new(big.Int).Set(oldGasPrice) // clone from old
 	if addPercent > 0 {
-		extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
-		extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
+		newGasPrice.Mul(newGasPrice, big.NewInt(int64(100+addPercent)))
+		newGasPrice.Div(newGasPrice, big.NewInt(100))
 	}
 	maxGasPriceFluctPercent := b.ChainConfig.MaxGasPriceFluctPercent
 	if maxGasPriceFluctPercent > 0 {
@@ -226,13 +232,12 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, extra *tokens.EthE
 			maxFluct.Mul(maxFluct, new(big.Int).SetUint64(maxGasPriceFluctPercent))
 			maxFluct.Div(maxFluct, big.NewInt(100))
 			minGasPrice := new(big.Int).Sub(latestGasPrice, maxFluct)
-			if extra.GasPrice.Cmp(minGasPrice) < 0 {
-				extra.GasPrice = minGasPrice
+			if newGasPrice.Cmp(minGasPrice) < 0 {
+				newGasPrice = minGasPrice
 			}
 		}
-		latestGasPrice = extra.GasPrice
 	}
-	return nil
+	return newGasPrice, nil
 }
 
 func (b *Bridge) getAccountNonce(pairID, from string, swapType tokens.SwapType) (nonceptr *uint64, err error) {
