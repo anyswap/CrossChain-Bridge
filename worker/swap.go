@@ -22,11 +22,11 @@ var (
 // StartSwapJob swap job
 func StartSwapJob() {
 	swapinNonces, swapoutNonces := mongodb.LoadAllSwapNonces()
-	if nonceSetter, ok := tokens.DstBridge.(tokens.NonceSetter); ok {
-		nonceSetter.InitNonces(swapinNonces)
+	if srcNonceSetter != nil {
+		srcNonceSetter.InitNonces(swapoutNonces)
 	}
-	if nonceSetter, ok := tokens.SrcBridge.(tokens.NonceSetter); ok {
-		nonceSetter.InitNonces(swapoutNonces)
+	if dstNonceSetter != nil {
+		dstNonceSetter.InitNonces(swapinNonces)
 	}
 	for _, pairCfg := range tokens.GetTokenPairsConfig() {
 		AddSwapJob(pairCfg)
@@ -204,6 +204,9 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 
 func preventDoubleSwap(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	if res.SwapTx != "" || res.Status != mongodb.MatchTxEmpty || res.SwapHeight != 0 || len(res.OldSwapTxs) > 0 {
+		if res.Status == mongodb.TxProcessing {
+			doReplaceSwap(res)
+		}
 		_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, mongodb.TxProcessed, now(), "")
 		return errAlreadySwapped
 	}

@@ -4,10 +4,23 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/bridge"
 )
 
 const interval = 10 * time.Millisecond
+
+var (
+	srcNonceSetter tokens.NonceSetter
+	dstNonceSetter tokens.NonceSetter
+)
+
+func getNonceSetter(isSwapin bool) tokens.NonceSetter {
+	if isSwapin {
+		return dstNonceSetter
+	}
+	return srcNonceSetter
+}
 
 // StartWork start swap server work
 func StartWork(isServer bool) {
@@ -15,6 +28,9 @@ func StartWork(isServer bool) {
 
 	client.InitHTTPClient()
 	bridge.InitCrossChainBridge(isServer)
+
+	srcNonceSetter, _ = tokens.SrcBridge.(tokens.NonceSetter)
+	dstNonceSetter, _ = tokens.DstBridge.(tokens.NonceSetter)
 
 	go StartScanJob(isServer)
 	time.Sleep(interval)

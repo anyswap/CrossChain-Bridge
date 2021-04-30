@@ -12,9 +12,6 @@ var (
 	defWaitTimeToReplace = int64(900) // seconds
 	defMaxReplaceCount   = 20
 
-	srcNonceSetter tokens.NonceSetter
-	dstNonceSetter tokens.NonceSetter
-
 	// key is signer address
 	swapinReplaceChanMap  = make(map[string]chan *mongodb.MgoSwapResult)
 	swapoutReplaceChanMap = make(map[string]chan *mongodb.MgoSwapResult)
@@ -22,14 +19,11 @@ var (
 
 // StartReplaceJob replace job
 func StartReplaceJob() {
-	var ok bool
-	dstNonceSetter, ok = tokens.DstBridge.(tokens.NonceSetter)
-	if ok {
+	if dstNonceSetter != nil {
 		go startReplaceSwapinJob()
 	}
 
-	srcNonceSetter, ok = tokens.SrcBridge.(tokens.NonceSetter)
-	if ok {
+	if srcNonceSetter != nil {
 		go startReplaceSwapoutJob()
 	}
 }
@@ -145,13 +139,6 @@ func processReplaceSwapTask(swapChan <-chan *mongodb.MgoSwapResult) {
 		swap := <-swapChan
 		doReplaceSwap(swap)
 	}
-}
-
-func getNonceSetter(isSwapin bool) tokens.NonceSetter {
-	if isSwapin {
-		return dstNonceSetter
-	}
-	return srcNonceSetter
 }
 
 func doReplaceSwap(swap *mongodb.MgoSwapResult) {
