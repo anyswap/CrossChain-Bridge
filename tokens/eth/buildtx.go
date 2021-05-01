@@ -203,7 +203,6 @@ func (b *Bridge) getGasPrice(args *tokens.BuildTxArgs) (price *big.Int, err erro
 			return nil, err
 		}
 	}
-	latestGasPrice = price
 	return price, err
 }
 
@@ -227,7 +226,7 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 	}
 	maxGasPriceFluctPercent := b.ChainConfig.MaxGasPriceFluctPercent
 	if maxGasPriceFluctPercent > 0 {
-		if latestGasPrice != nil {
+		if latestGasPrice != nil && newGasPrice.Cmp(latestGasPrice) < 0 {
 			maxFluct := new(big.Int).Set(latestGasPrice)
 			maxFluct.Mul(maxFluct, new(big.Int).SetUint64(maxGasPriceFluctPercent))
 			maxFluct.Div(maxFluct, big.NewInt(100))
@@ -235,6 +234,9 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 			if newGasPrice.Cmp(minGasPrice) < 0 {
 				newGasPrice = minGasPrice
 			}
+		}
+		if args.ReplaceNum == 0 { // exclude replace situation
+			latestGasPrice = newGasPrice
 		}
 	}
 	return newGasPrice, nil
