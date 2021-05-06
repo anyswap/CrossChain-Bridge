@@ -226,6 +226,14 @@ func preventDoubleSwap(res *mongodb.MgoSwapResult, isSwapin bool) error {
 		_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, mongodb.TxProcessed, now(), "")
 		return errAlreadySwapped
 	}
+	switch res.Status {
+	case mongodb.TxWithBigValue,
+		mongodb.TxWithWrongMemo,
+		mongodb.BindAddrIsContract,
+		mongodb.TxWithWrongValue:
+		_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, res.Status, now(), "")
+		return fmt.Errorf("forbid doswap for swap with status %v", res.Status.String())
+	}
 	return nil
 }
 

@@ -93,5 +93,8 @@ func processPassBigValSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		return err
 	}
 
-	return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxNotSwapped, now(), "")
+	if isSwapin {
+		return mongodb.PassSwapinBigValue(txid, pairID, bind)
+	}
+	return mongodb.PassSwapoutBigValue(txid, pairID, bind)
 }

@@ -142,6 +142,11 @@ func processReplaceSwapTask(swapChan <-chan *mongodb.MgoSwapResult) {
 }
 
 func doReplaceSwap(swap *mongodb.MgoSwapResult) {
+	if swap.SwapTx == "" ||
+		swap.Status != mongodb.MatchTxNotStable ||
+		swap.SwapHeight != 0 {
+		return
+	}
 	isSwapin := tokens.SwapType(swap.SwapType) == tokens.SwapinType
 	nonceSetter := getNonceSetter(isSwapin)
 	if nonceSetter == nil {
