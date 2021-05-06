@@ -433,6 +433,9 @@ func getStatusesFromStr(status string) []SwapStatus {
 	parts := strings.Split(status, ",")
 	result := make([]SwapStatus, 0, len(parts))
 	for _, part := range parts {
+		if part == "" {
+			continue
+		}
 		num, err := common.GetUint64FromStr(part)
 		if err == nil {
 			result = append(result, SwapStatus(num))

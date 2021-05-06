@@ -128,7 +128,6 @@ func getHistoryParams(r *http.Request) (address, pairID string, offset, limit in
 
 	address = vars["address"]
 	pairID = vars["pairid"]
-	status = vars["status"]
 
 	offsetStr, exist := vals["offset"]
 	if exist {
@@ -144,6 +143,11 @@ func getHistoryParams(r *http.Request) (address, pairID string, offset, limit in
 		if err != nil {
 			return address, pairID, offset, limit, status, err
 		}
+	}
+
+	statusStr, exist := vals["status"]
+	if exist {
+		status = statusStr[0]
 	}
 
 	return address, pairID, offset, limit, status, nil

@@ -129,7 +129,7 @@ func processHistoryLimit(limit int) int {
 
 // GetSwapinHistory api
 func GetSwapinHistory(address, pairID string, offset, limit int, status string) ([]*SwapInfo, error) {
-	log.Debug("[api] receive GetSwapinHistory", "address", address, "pairID", pairID, "offset", offset, "limit", limit)
+	log.Debug("[api] receive GetSwapinHistory", "address", address, "pairID", pairID, "offset", offset, "limit", limit, "status", status)
 	limit = processHistoryLimit(limit)
 	result, err := mongodb.FindSwapinResults(address, pairID, offset, limit, status)
 	if err != nil {
