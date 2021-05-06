@@ -312,14 +312,18 @@ func checkAddTokenPairsConfig(pairConfig *TokenPairConfig) (err error) {
 	}
 	srcContract := strings.ToLower(pairConfig.SrcToken.ContractAddress)
 	if srcContract == "" {
-		return fmt.Errorf("source contract address is empty")
+		return fmt.Errorf("source contract address is empty, need restart program")
+	}
+	isDelegateSwapin := pairConfig.SrcToken.IsDelegateContract
+	if isDelegateSwapin && !pairConfig.DestToken.DisableSwap {
+		return fmt.Errorf("must close withdraw if is delegate swapin")
 	}
 	dstContract := strings.ToLower(pairConfig.DestToken.ContractAddress)
 	for _, tokenPair := range tokenPairsConfig {
 		if strings.EqualFold(srcContract, tokenPair.SrcToken.ContractAddress) {
 			return fmt.Errorf("source contract '%v' already exist", srcContract)
 		}
-		if strings.EqualFold(dstContract, tokenPair.DestToken.ContractAddress) {
+		if !isDelegateSwapin && strings.EqualFold(dstContract, tokenPair.DestToken.ContractAddress) {
 			return fmt.Errorf("destination contract '%v' already exist", dstContract)
 		}
 	}
