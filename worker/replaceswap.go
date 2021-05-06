@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sync"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
@@ -21,6 +22,8 @@ var (
 	errBuildTxFailed      = errors.New("build tx failed")
 	errSignTxFailed       = errors.New("sign tx failed")
 	errUpdateOldTxsFailed = errors.New("update old swaptxs failed")
+
+	updateOldSwapTxsLock sync.Mutex
 )
 
 // ReplaceSwapin api
@@ -145,7 +148,7 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 		return "", errSignTxFailed
 	}
 
-	err = replaceSwapResult(res, txHash, isSwapin)
+	err = replaceSwapResult(txid, pairID, bind, txHash, isSwapin)
 	if err != nil {
 		return "", errUpdateOldTxsFailed
 	}
@@ -153,32 +156,35 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 	return txHash, err
 }
 
-func replaceSwapResult(swapResult *mongodb.MgoSwapResult, txHash string, isSwapin bool) (err error) {
-	txid := swapResult.TxID
-	pairID := swapResult.PairID
-	bind := swapResult.Bind
-	var oldSwapTxs []string
-	if len(swapResult.OldSwapTxs) > 0 {
-		var existsInOld bool
-		for _, oldSwapTx := range swapResult.OldSwapTxs {
+func replaceSwapResult(txid, pairID, bind, txHash string, isSwapin bool) (err error) {
+	updateOldSwapTxsLock.Lock()
+	defer updateOldSwapTxsLock.Unlock()
+
+	res, err := mongodb.FindSwapResult(isSwapin, txid, pairID, bind)
+	if err != nil {
+		return err
+	}
+
+	oldSwapTxs := res.OldSwapTxs
+	if len(oldSwapTxs) > 0 {
+		for _, oldSwapTx := range oldSwapTxs {
 			if oldSwapTx == txHash {
-				existsInOld = true
-				break
+				return nil
 			}
 		}
-		if !existsInOld {
-			oldSwapTxs = swapResult.OldSwapTxs
-			oldSwapTxs = append(oldSwapTxs, txHash)
+		oldSwapTxs = append(oldSwapTxs, txHash)
+	} else {
+		if txHash == res.SwapTx {
+			return nil
 		}
-	} else if swapResult.SwapTx != "" && txHash != swapResult.SwapTx {
-		oldSwapTxs = []string{swapResult.SwapTx, txHash}
+		oldSwapTxs = []string{res.SwapTx, txHash}
 	}
-	swapType := tokens.SwapType(swapResult.SwapType).String()
+	swapType := tokens.SwapType(res.SwapType).String()
 	err = updateOldSwapTxs(txid, pairID, bind, oldSwapTxs, isSwapin)
 	if err != nil {
-		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", swapResult.SwapNonce)
+		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", res.SwapNonce)
 	} else {
-		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", swapResult.SwapNonce)
+		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", res.SwapNonce)
 	}
 	return err
 }
