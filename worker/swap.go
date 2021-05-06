@@ -219,8 +219,8 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 }
 
 func preventDoubleSwap(res *mongodb.MgoSwapResult, isSwapin bool) error {
-	if res.SwapTx != "" || res.Status != mongodb.MatchTxEmpty || res.SwapHeight != 0 || len(res.OldSwapTxs) > 0 {
-		if res.Status == mongodb.TxProcessing {
+	if res.SwapTx != "" || res.SwapHeight != 0 || len(res.OldSwapTxs) > 0 {
+		if res.Status == mongodb.TxProcessing && res.SwapTx != "" {
 			doReplaceSwap(res)
 		}
 		_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, mongodb.TxProcessed, now(), "")
