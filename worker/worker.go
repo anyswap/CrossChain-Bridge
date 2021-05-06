@@ -57,5 +57,8 @@ func StartWork(isServer bool) {
 	go StartReplaceJob()
 	time.Sleep(interval)
 
+	go StartPassBigValueJob()
+	time.Sleep(interval)
+
 	go StartAggregateJob()
 }
