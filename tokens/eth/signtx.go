@@ -45,6 +45,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	}
 	gasPrice, err := b.getGasPrice(args)
 	if err == nil && args.Extra.EthExtra.GasPrice.Cmp(gasPrice) < 0 {
+		log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction update gas price", "txid", args.SwapID, "oldGasPrice", args.Extra.EthExtra.GasPrice, "newGasPrice", gasPrice)
 		args.Extra.EthExtra.GasPrice = gasPrice
 		tx.SetGasPrice(gasPrice)
 	}

@@ -346,14 +346,17 @@ func signAndSendResultTx(sc *signContent) (err error) {
 	var signedTx interface{}
 	var txHash string
 	tokenCfg := resBridge.GetTokenConfig(pairID)
-	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
-		signedTx, txHash, err = resBridge.SignTransaction(sc.rawTx, pairID)
-	} else {
-		signedTx, txHash, err = resBridge.DcrmSignTransaction(sc.rawTx, args.GetExtraArgs())
-	}
-	if err != nil {
-		logWorkerError("doSwap", "sign tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
-		return err
+	for i := 1; ; i++ { // retry sign until success
+		if tokenCfg.GetDcrmAddressPrivateKey() != nil {
+			signedTx, txHash, err = resBridge.SignTransaction(sc.rawTx, pairID)
+		} else {
+			signedTx, txHash, err = resBridge.DcrmSignTransaction(sc.rawTx, args.GetExtraArgs())
+		}
+		if err == nil {
+			break
+		}
+		logWorkerError("doSwap", "sign tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "signCount", i)
+		restInJob(retrySignInterval)
 	}
 
 	// update database before sending transaction
