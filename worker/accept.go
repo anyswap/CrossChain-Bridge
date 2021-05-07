@@ -60,7 +60,10 @@ func acceptSign() {
 				continue
 			}
 			agreeResult := "AGREE"
-			err := verifySignInfo(info)
+			args, err := getBuildTxArgsFromMsgContext(info)
+			if err == nil {
+				err = verifySignInfo(info, args)
+			}
 			switch err {
 			case errIdentifierMismatch,
 				errInitiatorMismatch,
@@ -73,15 +76,14 @@ func acceptSign() {
 				continue
 			}
 			if err != nil {
-				logWorkerError("accept", "DISAGREE sign", err, "keyID", keyID)
+				logWorkerError("accept", "DISAGREE sign", err, "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
 				agreeResult = "DISAGREE"
 			}
-			logWorker("accept", "dcrm DoAcceptSign", "keyID", keyID, "result", agreeResult)
 			res, err := dcrm.DoAcceptSign(keyID, agreeResult, info.MsgHash, info.MsgContext)
 			if err != nil {
-				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res)
+				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
 			} else {
-				logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult)
+				logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
 				addAcceptSignHistory(keyID, agreeResult, info.MsgHash, info.MsgContext)
 			}
 		}
@@ -89,20 +91,25 @@ func acceptSign() {
 	}
 }
 
-func verifySignInfo(signInfo *dcrm.SignInfoData) error {
+func getBuildTxArgsFromMsgContext(signInfo *dcrm.SignInfoData) (*tokens.BuildTxArgs, error) {
+	msgContext := signInfo.MsgContext
+	if len(msgContext) != 1 {
+		return nil, errWrongMsgContext
+	}
+	var args tokens.BuildTxArgs
+	err := json.Unmarshal([]byte(msgContext[0]), &args)
+	if err != nil {
+		return nil, errWrongMsgContext
+	}
+	return &args, nil
+}
+
+func verifySignInfo(signInfo *dcrm.SignInfoData, args *tokens.BuildTxArgs) error {
 	if !params.IsDcrmInitiator(signInfo.Account) {
 		return errInitiatorMismatch
 	}
 	msgHash := signInfo.MsgHash
 	msgContext := signInfo.MsgContext
-	if len(msgContext) != 1 {
-		return errWrongMsgContext
-	}
-	var args tokens.BuildTxArgs
-	err := json.Unmarshal([]byte(msgContext[0]), &args)
-	if err != nil {
-		return errWrongMsgContext
-	}
 	switch args.Identifier {
 	case params.GetIdentifier():
 	case params.GetReplaceIdentifier():
@@ -111,12 +118,12 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 			return tokens.ErrNoBtcBridge
 		}
 		logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
-		return btc.BridgeInstance.VerifyAggregateMsgHash(msgHash, &args)
+		return btc.BridgeInstance.VerifyAggregateMsgHash(msgHash, args)
 	default:
 		return errIdentifierMismatch
 	}
 	logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
-	return rebuildAndVerifyMsgHash(msgHash, &args)
+	return rebuildAndVerifyMsgHash(msgHash, args)
 }
 
 func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
