@@ -14,6 +14,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
+	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
 // NewCrossChainBridge new bridge according to chain name
@@ -62,6 +63,9 @@ func InitCrossChainBridge(isServer bool) {
 
 	tokens.DstBridge.SetChainAndGateway(dstChain, dstGateway)
 	log.Info("Init bridge destation", "dest", dstID, "gateway", dstGateway)
+
+	tools.AdjustGatewayOrder(true)
+	tools.AdjustGatewayOrder(false)
 
 	tokens.IsDcrmDisabled = cfg.Dcrm.Disable
 	tokens.LoadTokenPairsConfig(true)

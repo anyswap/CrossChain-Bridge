@@ -242,3 +242,32 @@ func IsAddressRegistered(address string) bool {
 	}
 	return false
 }
+
+// AdjustGatewayOrder adjust gateway order by block height
+func AdjustGatewayOrder(isSrc bool) {
+	// use block number as weight
+	var weightedAPIs WeightedStringSlice
+	bridge := tokens.GetCrossChainBridge(isSrc)
+	gateway := bridge.GetGatewayConfig()
+	length := len(gateway.APIAddress)
+	if length < 2 {
+		return
+	}
+	maxHeight := uint64(0)
+	for i := length; i > 0; i-- { // query in reverse order
+		apiAddress := gateway.APIAddress[i-1]
+		height, _ := bridge.GetLatestBlockNumberOf(apiAddress)
+		weightedAPIs = weightedAPIs.Add(apiAddress, height)
+		if height > maxHeight {
+			maxHeight = height
+		}
+	}
+	weightedAPIs.Reverse() // reverse as iter in reverse order in the above
+	weightedAPIs = weightedAPIs.Sort()
+	gateway.APIAddress = weightedAPIs.GetStrings()
+	if isSrc {
+		log.Info("adjust source gateways", "result", weightedAPIs)
+	} else {
+		log.Info("adjust dest gateways", "result", weightedAPIs)
+	}
+}
