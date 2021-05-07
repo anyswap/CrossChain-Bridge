@@ -211,10 +211,10 @@ func ManualManageSwap(txid, pairID, bind, memo string, isSwapin, isPass bool) er
 		return err
 	}
 	if isPass {
-		if swap.Status.CanManualMakePass() {
-			return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotSwapped, time.Now().Unix(), memo)
+		if swap.Status == TxWithBigValue {
+			return passBigValue(txid, pairID, bind, isSwapin)
 		}
-		if swap.Status.CanReverify() {
+		if swap.Status.CanReverify() || swap.Status == ManualMakeFail {
 			return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotStable, time.Now().Unix(), memo)
 		}
 	} else if swap.Status.CanManualMakeFail() {
