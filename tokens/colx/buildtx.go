@@ -100,6 +100,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		extra.RelayFeePerKb = &relayFee
 		relayFeePerKb = colxAmountType(relayFee)
 	}
+	relayFeePerKb = 0
 
 	txOuts, err := b.getTxOutputs(to, amount, memo)
 	if err != nil {

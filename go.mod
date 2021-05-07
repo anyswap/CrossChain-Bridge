@@ -12,7 +12,7 @@ require (
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/giangnamnabka/btcd v0.21.0-beta.0.20210422182616-7cc8292ed1fd
+	github.com/giangnamnabka/btcd v0.21.0-beta.0.20210425211148-6b9fe474f6d7
 	github.com/giangnamnabka/btcutil v1.0.3-0.20210422183801-1e4dd2b8f1ba
 	github.com/giangnamnabka/btcwallet/wallet/txauthor v1.0.1-0.20210422185028-3bf95367dc20
 	github.com/giangnamnabka/btcwallet/wallet/txrules v1.0.1-0.20210422185028-3bf95367dc20
