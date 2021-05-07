@@ -211,7 +211,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		From:        toTokenCfg.DcrmAddress,
 		OriginValue: value,
 	}
-	if res.SwapNonce > 0 {
+	if res.SwapNonce > 0 && (swap.Status == mongodb.TxProcessing || res.Status != mongodb.MatchTxEmpty) {
 		args.SetTxNonce(res.SwapNonce)
 	}
 
