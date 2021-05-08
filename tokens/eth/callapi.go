@@ -21,11 +21,7 @@ func (b *Bridge) GetLatestBlockNumberOf(url string) (latest uint64, err error) {
 	var result string
 	err = client.RPCPost(&result, url, "eth_blockNumber")
 	if err == nil {
-		latest, err = common.GetUint64FromStr(result)
-		if err == nil {
-			tokens.CmpAndSetLatestBlockHeight(latest, b.IsSrcEndpoint())
-		}
-		return latest, err
+		return common.GetUint64FromStr(result)
 	}
 	return 0, err
 }

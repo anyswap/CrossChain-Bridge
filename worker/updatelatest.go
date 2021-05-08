@@ -31,9 +31,6 @@ func adjustGatewayOrderImpl(isSrc bool) {
 	bridge := tokens.GetCrossChainBridge(isSrc)
 	gateway := bridge.GetGatewayConfig()
 	length := len(gateway.APIAddress)
-	if length < 2 {
-		return
-	}
 	maxHeight := uint64(0)
 	for i := length; i > 0; i-- { // query in reverse order
 		apiAddress := gateway.APIAddress[i-1]
@@ -43,6 +40,7 @@ func adjustGatewayOrderImpl(isSrc bool) {
 			maxHeight = height
 		}
 	}
+	tokens.CmpAndSetLatestBlockHeight(maxHeight, isSrc)
 	weightedAPIs.Reverse() // reverse as iter in reverse order in the above
 	weightedAPIs = weightedAPIs.Sort()
 	gateway.APIAddress = weightedAPIs.GetStrings()
