@@ -407,36 +407,14 @@ func (b *Bridge) CallContract(contract string, data hexutil.Bytes, blockNumber s
 // GetBalance call eth_getBalance
 func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 	gateway := b.GatewayConfig
-	minBalance, err := getMinBalance(account, gateway.APIAddressExt)
-	minBalance2, err2 := getMinBalance(account, gateway.APIAddress)
-	if err2 == nil {
-		if minBalance == nil || minBalance2.Cmp(minBalance) < 0 {
-			minBalance = minBalance2
-		}
-	} else {
-		err = err2
-	}
-	if minBalance != nil {
-		return minBalance, nil
-	}
-	return nil, err
-}
-
-func getMinBalance(account string, urls []string) (minBalance *big.Int, err error) {
-	if len(urls) == 0 {
-		return nil, errEmptyURLs
-	}
 	var result hexutil.Big
-	for _, url := range urls {
+	var err error
+	for _, apiAddress := range gateway.APIAddress {
+		url := apiAddress
 		err = client.RPCPost(&result, url, "eth_getBalance", account, "latest")
 		if err == nil {
-			if minBalance == nil || result.ToInt().Cmp(minBalance) < 0 {
-				minBalance = result.ToInt()
-			}
+			return result.ToInt(), nil
 		}
-	}
-	if minBalance != nil {
-		return minBalance, nil
 	}
 	return nil, err
 }
