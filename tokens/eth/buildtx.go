@@ -123,6 +123,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		if err == nil || args.SwapType == tokens.NoSwapType {
 			break
 		}
+		log.Warn("check balance failed", "account", args.From, "needValue", needValue, "err", err)
 		time.Sleep(10 * time.Second)
 	}
 	if err != nil {
