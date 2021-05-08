@@ -13,7 +13,6 @@ import (
 // MatchTx struct
 type MatchTx struct {
 	SwapTx     string
-	OldSwapTxs []string
 	SwapHeight uint64
 	SwapTime   uint64
 	SwapValue  string
@@ -69,7 +68,6 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 	}
 	if mtx.SwapHeight == 0 {
 		updates.SwapTx = mtx.SwapTx
-		updates.OldSwapTxs = mtx.OldSwapTxs
 		updates.SwapValue = mtx.SwapValue
 		updates.SwapNonce = mtx.SwapNonce
 		updates.SwapHeight = 0
@@ -217,7 +215,7 @@ func verifySwapTransaction(bridge tokens.CrossChainBridge, pairID, txid, bind st
 	return swapInfo, err
 }
 
-func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin, isReplace bool) (err error) {
+func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin bool) (err error) {
 	var (
 		txHash              string
 		retrySendTxCount    = 3
@@ -238,12 +236,6 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		logWorkerError("sendtx", "update swap status to TxSwapFailed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
 		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
-		return err
 	}
-	if !isReplace {
-		if nonceSetter, ok := bridge.(tokens.NonceSetter); ok {
-			nonceSetter.IncreaseNonce(pairID, 1)
-		}
-	}
-	return nil
+	return err
 }
