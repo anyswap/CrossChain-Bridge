@@ -118,7 +118,13 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
 	}
-	err = b.checkBalance("", args.From, needValue)
+	for { // loop and block if balance is not enough in swapping
+		err = b.checkBalance("", args.From, needValue)
+		if err == nil || args.SwapType == tokens.NoSwapType {
+			break
+		}
+		time.Sleep(10 * time.Second)
+	}
 	if err != nil {
 		return nil, err
 	}
