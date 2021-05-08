@@ -108,7 +108,6 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 		return "", nil, err
 	}
 
-	time.Sleep(retryGetSignStatusInterval)
 	var signStatus *SignStatus
 	i := 0
 	for ; i < retryGetSignStatusCount; i++ {

@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -111,7 +112,7 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	txStatus := getSwapTxStatus(resBridge, swap)
 	if txStatus == nil || txStatus.BlockHeight == 0 {
 		if swap.SwapHeight == 0 {
-			return processUpdateSwapHeight(resBridge, swap)
+			return processUpdateSwapHeight(resBridge, swap, isSwapin)
 		}
 		return nil
 	}
@@ -140,7 +141,7 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	return updateSwapResultHeight(swap, txStatus.BlockHeight, txStatus.BlockTime, swap.SwapTx != oldSwapTx)
 }
 
-func processUpdateSwapHeight(resBridge tokens.CrossChainBridge, swap *mongodb.MgoSwapResult) (err error) {
+func processUpdateSwapHeight(resBridge tokens.CrossChainBridge, swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	nonceSetter, ok := resBridge.(tokens.NonceSetter)
 	if !ok {
 		return nil
@@ -160,6 +161,19 @@ func processUpdateSwapHeight(resBridge tokens.CrossChainBridge, swap *mongodb.Mg
 		}
 	}
 	if blockHeight == 0 {
+		pairID := swap.PairID
+		tokenCfg := resBridge.GetTokenConfig(pairID)
+		if tokenCfg == nil {
+			return fmt.Errorf("no token config for pairID '%v'", pairID)
+		}
+		nonce, err := nonceSetter.GetPoolNonce(tokenCfg.DcrmAddress, "latest")
+		if err != nil {
+			return errGetNonceFailed
+		}
+		if nonce > swap.SwapNonce {
+			_ = markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
+			return errSwapNoncePassed
+		}
 		return nil
 	}
 	return updateSwapResultHeight(swap, blockHeight, blockTime, swap.SwapTx != oldSwapTx)
