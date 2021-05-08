@@ -164,29 +164,26 @@ func doReplaceSwap(swap *mongodb.MgoSwapResult) {
 			txHash, err = ReplaceSwapout(swap.TxID, swap.PairID, swap.Bind, "")
 		}
 		if txHash != "" {
-			waitTimeToReplace, _ := getReplaceConfigs(isSwapin)
-			if checkTxIsPacked(nonceSetter, txHash, waitTimeToReplace/5+1) {
-				return
-			}
-		} else {
-			switch err {
-			case errSwapTxWithHeight,
-				errSwapTxIsOnChain,
-				errWrongResultStatus,
-				errSwapNoncePassed:
-				logWorkerTrace("replace", "jump swap", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "err", err)
-				return
-			case errSwapWithoutSwapTx:
-			default:
-				logWorkerTrace("replace", "replace swap error", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "err", err)
-			}
-			time.Sleep(60 * time.Second)
+			checkTxIsPacked(nonceSetter, txHash)
+			return
 		}
+		switch err {
+		case errSwapTxWithHeight,
+			errSwapTxIsOnChain,
+			errWrongResultStatus,
+			errSwapNoncePassed:
+			logWorkerTrace("replace", "jump swap", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "err", err)
+			return
+		case errSwapWithoutSwapTx:
+		default:
+			logWorkerTrace("replace", "replace swap error", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "err", err)
+		}
+		time.Sleep(60 * time.Second)
 	}
 }
 
-func checkTxIsPacked(bridge tokens.NonceSetter, txHash string, loopCount int64) bool {
-	for i := int64(0); i < loopCount; i++ {
+func checkTxIsPacked(bridge tokens.NonceSetter, txHash string) bool {
+	for i := int64(0); i < 30; i++ {
 		if isTransactionOnChain(bridge, txHash) {
 			return true
 		}

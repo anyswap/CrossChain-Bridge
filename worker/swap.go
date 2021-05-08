@@ -268,7 +268,7 @@ func dispatchSwapTask(args *tokens.BuildTxArgs) error {
 	default:
 		return fmt.Errorf("wrong swap type '%v'", args.SwapType.String())
 	}
-	logWorker("doSwap", "dispatch swap task", "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swapType", args.SwapType.String(), "value", args.OriginValue)
+	logWorker("doSwap", "dispatch swap task", "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swapType", args.SwapType.String(), "value", args.OriginValue, "oldNonce", args.GetTxNonce())
 	return nil
 }
 
@@ -303,7 +303,11 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	logWorker("doSwap", "start to process", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "value", originValue)
+	if res.SwapNonce > 0 {
+		args.SetTxNonce(res.SwapNonce)
+	}
+
+	logWorker("doSwap", "start to process", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "value", originValue, "oldNonce", args.GetTxNonce())
 
 	rawTx, err := resBridge.BuildRawTransaction(args)
 	if err != nil {
