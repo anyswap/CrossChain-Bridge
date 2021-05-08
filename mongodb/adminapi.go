@@ -73,8 +73,19 @@ func passBigValue(txid, pairID, bind string, isSwapin bool) error {
 	if err != nil {
 		return err
 	}
-	if swap.Status != TxWithBigValue {
-		return fmt.Errorf("swap status is %v, not big value status %v", swap.Status.String(), TxWithBigValue.String())
+	res, err := FindSwapResult(isSwapin, txid, pairID, bind)
+	if err != nil {
+		return err
+	}
+	if swap.Status != TxWithBigValue && res.Status != TxWithBigValue {
+		return fmt.Errorf("swap status is (%v, %v), not big value status %v", swap.Status.String(), res.Status.String(), TxWithBigValue.String())
+	}
+	if res.SwapTx != "" || res.SwapHeight != 0 || len(res.OldSwapTxs) > 0 {
+		return fmt.Errorf("already swapped with swaptx %v", res.SwapTx)
+	}
+	err = UpdateSwapResultStatus(isSwapin, txid, pairID, bind, MatchTxEmpty, time.Now().Unix(), "")
+	if err != nil {
+		return err
 	}
 	return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotSwapped, time.Now().Unix(), "")
 }
@@ -200,10 +211,10 @@ func ManualManageSwap(txid, pairID, bind, memo string, isSwapin, isPass bool) er
 		return err
 	}
 	if isPass {
-		if swap.Status.CanManualMakePass() {
-			return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotSwapped, time.Now().Unix(), memo)
+		if swap.Status == TxWithBigValue {
+			return passBigValue(txid, pairID, bind, isSwapin)
 		}
-		if swap.Status.CanReverify() {
+		if swap.Status.CanReverify() || swap.Status == ManualMakeFail {
 			return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotStable, time.Now().Unix(), memo)
 		}
 	} else if swap.Status.CanManualMakeFail() {

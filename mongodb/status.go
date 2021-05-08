@@ -62,16 +62,6 @@ const (
 	KeepStatus = 255
 )
 
-// CanManualMakePass can manual make pass
-func (status SwapStatus) CanManualMakePass() bool {
-	switch status {
-	case TxWithBigValue:
-		return true
-	default:
-		return false
-	}
-}
-
 // CanManualMakeFail can manual make fail
 func (status SwapStatus) CanManualMakeFail() bool {
 	switch status {
@@ -101,7 +91,6 @@ func (status SwapStatus) CanReverify() bool {
 		TxWithBigValue,
 		TxSenderNotRegistered,
 		SwapInBlacklist,
-		ManualMakeFail,
 		TxIncompatible,
 		BindAddrIsContract,
 		RPCQueryError:
