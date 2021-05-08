@@ -367,12 +367,22 @@ func (b *Bridge) GetSignerChainID() (*big.Int, error) {
 }
 
 // GetCode call eth_getCode
-func (b *Bridge) GetCode(contract string) ([]byte, error) {
+func (b *Bridge) GetCode(contract string) (code []byte, err error) {
 	gateway := b.GatewayConfig
+	code, err = getCode(contract, gateway.APIAddress)
+	if err != nil && len(gateway.APIAddressExt) > 0 {
+		return getCode(contract, gateway.APIAddressExt)
+	}
+	return code, err
+}
+
+func getCode(contract string, urls []string) ([]byte, error) {
+	if len(urls) == 0 {
+		return nil, errEmptyURLs
+	}
 	var result hexutil.Bytes
 	var err error
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
+	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getCode", contract, "latest")
 		if err == nil {
 			return []byte(result), nil
