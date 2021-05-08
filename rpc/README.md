@@ -169,9 +169,11 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 查询换进置换历史，支持分页，从 offset (默认0) 开始选取前 limit (默认20) 项
 
+`status` 为状态码通过逗号的拼接字符串，默认为空。
+
 ##### 参数：
 ```shell
-[{"address":"账户地址", "pairid":"交易对", "offset":offset, "limit":limit}]
+[{"address":"账户地址", "pairid":"交易对", "offset":offset, "limit":limit, "status":"9,10"}]
 ```
 
 address 为 all 表示所有历史
@@ -187,9 +189,11 @@ limit 最大值为 100
 
 查询换出置换历史，支持分页，从 offset (默认0) 开始选取前 limit (默认20) 项
 
+`status` 为状态码通过逗号的拼接字符串，默认为空。
+
 ##### 参数：
 ```shell
-[{"address":"账户地址", "pairid":"交易对", "offset":offset, "limit":limit}]
+[{"address":"账户地址", "pairid":"交易对", "offset":offset, "limit":limit, "status":"9,10"}]
 ```
 
 address 为 all 表示所有历史
@@ -275,23 +279,23 @@ limit 最大值为 100
 
 查询换出置换，txid 为销毁交易哈希
 
-### GET /swapin/history/{pairid}/{address}?offset=0&limit=20
+### GET /swapin/history/{pairid}/{address}?offset=0&limit=20&&status=9,10
 
 查询换进置换历史，支持分页，addess 为账户地址
 
 pairid 为 all 表示所有交易对  
-address 为 all 表示所有账户
+address 为 all 表示所有账户  
+limit 最大值为 100  
+`status` 为状态码通过逗号的拼接字符串，默认为空。
 
-limit 最大值为 100
-
-### GET /swapout/history/{pairid}/{address}?offset=0&limit=20
+### GET /swapout/history/{pairid}/{address}?offset=0&limit=20&&status=9,10
 
 查询换出置换历史，支持分页，addess 为账户地址
 
 pairid 为 all 表示所有交易对  
-address 为 all 表示所有账户
-
-limit 最大值为 100
+address 为 all 表示所有账户  
+limit 最大值为 100  
+`status` 为状态码通过逗号的拼接字符串，默认为空。
 
 ### POST /swapin/post/{pairid}/{txid}
 

@@ -122,7 +122,7 @@ func GetSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-func getHistoryParams(r *http.Request) (address, pairID string, offset, limit int, err error) {
+func getHistoryParams(r *http.Request) (address, pairID string, offset, limit int, status string, err error) {
 	vars := mux.Vars(r)
 	vals := r.URL.Query()
 
@@ -133,7 +133,7 @@ func getHistoryParams(r *http.Request) (address, pairID string, offset, limit in
 	if exist {
 		offset, err = common.GetIntFromStr(offsetStr[0])
 		if err != nil {
-			return address, pairID, offset, limit, err
+			return address, pairID, offset, limit, status, err
 		}
 	}
 
@@ -141,31 +141,36 @@ func getHistoryParams(r *http.Request) (address, pairID string, offset, limit in
 	if exist {
 		limit, err = common.GetIntFromStr(limitStr[0])
 		if err != nil {
-			return address, pairID, offset, limit, err
+			return address, pairID, offset, limit, status, err
 		}
 	}
 
-	return address, pairID, offset, limit, nil
+	statusStr, exist := vals["status"]
+	if exist {
+		status = statusStr[0]
+	}
+
+	return address, pairID, offset, limit, status, nil
 }
 
 // SwapinHistoryHandler handler
 func SwapinHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	address, pairID, offset, limit, err := getHistoryParams(r)
+	address, pairID, offset, limit, status, err := getHistoryParams(r)
 	if err != nil {
 		writeResponse(w, nil, err)
 	} else {
-		res, err := swapapi.GetSwapinHistory(address, pairID, offset, limit)
+		res, err := swapapi.GetSwapinHistory(address, pairID, offset, limit, status)
 		writeResponse(w, res, err)
 	}
 }
 
 // SwapoutHistoryHandler handler
 func SwapoutHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	address, pairID, offset, limit, err := getHistoryParams(r)
+	address, pairID, offset, limit, status, err := getHistoryParams(r)
 	if err != nil {
 		writeResponse(w, nil, err)
 	} else {
-		res, err := swapapi.GetSwapoutHistory(address, pairID, offset, limit)
+		res, err := swapapi.GetSwapoutHistory(address, pairID, offset, limit, status)
 		writeResponse(w, res, err)
 	}
 }

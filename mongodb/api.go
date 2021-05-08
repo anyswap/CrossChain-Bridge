@@ -252,8 +252,8 @@ func FindSwapinResultsWithStatus(status SwapStatus, septime int64) ([]*MgoSwapRe
 }
 
 // FindSwapinResults find swapin history results
-func FindSwapinResults(address, pairID string, offset, limit int) ([]*MgoSwapResult, error) {
-	return findSwapResults(collSwapinResult, address, pairID, offset, limit)
+func FindSwapinResults(address, pairID string, offset, limit int, status string) ([]*MgoSwapResult, error) {
+	return findSwapResults(collSwapinResult, address, pairID, offset, limit, status)
 }
 
 // FindSwapResultsToReplace find swap results to replace
@@ -312,8 +312,8 @@ func FindSwapoutResultsWithStatus(status SwapStatus, septime int64) ([]*MgoSwapR
 }
 
 // FindSwapoutResults find swapout history results
-func FindSwapoutResults(address, pairID string, offset, limit int) ([]*MgoSwapResult, error) {
-	return findSwapResults(collSwapoutResult, address, pairID, offset, limit)
+func FindSwapoutResults(address, pairID string, offset, limit int, status string) ([]*MgoSwapResult, error) {
+	return findSwapResults(collSwapoutResult, address, pairID, offset, limit, status)
 }
 
 // GetCountOfSwapoutResults get count of swapout results
@@ -430,7 +430,22 @@ func findSwapResultsWithStatus(collection *mgo.Collection, status SwapStatus, se
 	return result, err
 }
 
-func findSwapResults(collection *mgo.Collection, address, pairID string, offset, limit int) ([]*MgoSwapResult, error) {
+func getStatusesFromStr(status string) []SwapStatus {
+	parts := strings.Split(status, ",")
+	result := make([]SwapStatus, 0, len(parts))
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		num, err := common.GetUint64FromStr(part)
+		if err == nil {
+			result = append(result, SwapStatus(num))
+		}
+	}
+	return result
+}
+
+func findSwapResults(collection *mgo.Collection, address, pairID string, offset, limit int, status string) ([]*MgoSwapResult, error) {
 	pairID = strings.ToLower(pairID)
 	result := make([]*MgoSwapResult, 0, 20)
 
@@ -445,6 +460,16 @@ func findSwapResults(collection *mgo.Collection, address, pairID string, offset,
 			address = strings.ToLower(address)
 		}
 		queries = append(queries, bson.M{"from": address})
+	}
+
+	filterStatuses := getStatusesFromStr(status)
+	if len(filterStatuses) > 0 {
+		if len(filterStatuses) == 1 {
+			queries = append(queries, bson.M{"status": filterStatuses[0]})
+		} else {
+			qstatus := bson.M{"status": bson.M{"$in": filterStatuses}}
+			queries = append(queries, qstatus)
+		}
 	}
 
 	var q *mgo.Query
