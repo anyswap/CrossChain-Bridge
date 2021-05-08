@@ -71,6 +71,7 @@ type BlocknetCoreAPIArgs struct {
 // ColxExtraArgs struct
 type ColxExtraArgs struct {
 	FullnodeAPIs         []ColxCoreAPIArgs
+	ChainzAPIKeys []string
 }
 
 // ColxCoreAPIArgs struct

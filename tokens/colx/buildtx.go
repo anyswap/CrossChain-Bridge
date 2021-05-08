@@ -441,7 +441,7 @@ func (b *Bridge) NewUnsignedTransaction(outputs []*wireTxOutType, relayFeePerKb 
 		}
 
 		// Add inputs to lockedUtxos so that other transactions wont reuse them
-		for _, txin := range unsignedTransaction.TxIn  {
+		for _, txin := range unsignedTransaction.TxIn {
 			inputtxhash := txin.PreviousOutPoint.Hash.String()
 			inputvout := int(txin.PreviousOutPoint.Index)
 			b.LockUtxo(inputtxhash, inputvout)

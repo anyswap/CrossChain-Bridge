@@ -10,22 +10,22 @@ import (
 )
 
 var lockedUtxos map[utxokey]int = make(map[utxokey]int)
-var unlockConds map[utxokey](func()bool) = make(map[utxokey](func()bool))
+var unlockConds map[utxokey](func() bool) = make(map[utxokey](func() bool))
 var utxoLock sync.RWMutex
 
 type utxokey struct {
 	txhash string
-	vout int
+	vout   int
 }
 
 var (
 	ErrUtxoLocked = fmt.Errorf("[Locked utxo] Utxo is already locked")
-	ErrNotLocked = fmt.Errorf("[Locked utxo] Utxo is not locked")
+	ErrNotLocked  = fmt.Errorf("[Locked utxo] Utxo is not locked")
 )
 
 func (b *Bridge) IsUtxoLocked(txhash string, vout int) bool {
 	txhash = strings.ToUpper(txhash)
-	key := utxokey{txhash:txhash, vout:vout}
+	key := utxokey{txhash: txhash, vout: vout}
 	return b.isUtxoLocked(key)
 }
 
@@ -46,9 +46,9 @@ func (b *Bridge) LockUtxo(txhash string, vout int) error {
 	return b.LockUtxoWithCond(txhash, vout, defaultUnlockCond)
 }
 
-func (b *Bridge) LockUtxoWithCond(txhash string, vout int, cond func()bool) error {
+func (b *Bridge) LockUtxoWithCond(txhash string, vout int, cond func() bool) error {
 	txhash = strings.ToUpper(txhash)
-	key := utxokey{txhash:txhash, vout:vout}
+	key := utxokey{txhash: txhash, vout: vout}
 	return b.lockUtxo(key, cond)
 }
 
@@ -62,7 +62,7 @@ func after(seconds int64) func() bool {
 	}
 }
 
-func (b *Bridge) lockUtxo(key utxokey, cond func()bool) error {
+func (b *Bridge) lockUtxo(key utxokey, cond func() bool) error {
 	if b.isUtxoLocked(key) {
 		return ErrUtxoLocked
 	}
@@ -75,7 +75,7 @@ func (b *Bridge) lockUtxo(key utxokey, cond func()bool) error {
 
 func (b *Bridge) UnlockUtxo(txhash string, vout int) {
 	txhash = strings.ToUpper(txhash)
-	key := utxokey{txhash:txhash, vout:vout}
+	key := utxokey{txhash: txhash, vout: vout}
 	b.unlockUtxo(key)
 }
 
@@ -86,13 +86,13 @@ func (b *Bridge) unlockUtxo(key utxokey) {
 	delete(unlockConds, key)
 }
 
-func (b *Bridge) SetUnlockUtxoCond(txhash string, vout int, cond func()bool) error {
+func (b *Bridge) SetUnlockUtxoCond(txhash string, vout int, cond func() bool) error {
 	txhash = strings.ToUpper(txhash)
-	key := utxokey{txhash:txhash, vout:vout}
+	key := utxokey{txhash: txhash, vout: vout}
 	return b.setUnlockUtxoCond(key, cond)
 }
 
-func (b *Bridge) setUnlockUtxoCond (key utxokey, cond func()bool) error {
+func (b *Bridge) setUnlockUtxoCond(key utxokey, cond func() bool) error {
 	utxoLock.Lock()
 	defer utxoLock.Lock()
 	if b.isUtxoLocked(key) == false {

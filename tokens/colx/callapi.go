@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"net/http"
 	"sort"
-	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/giangnamnabka/btcd/btcjson"
@@ -25,7 +24,7 @@ type CoreClient struct {
 // Client struct
 type Client struct {
 	CClients         []CoreClient
-	UTXOAPIAddresses []string
+	ChainzAPIKeys []string
 	id               *int
 }
 
@@ -56,12 +55,12 @@ func (b *Bridge) GetClient() *Client {
 	}
 
 	cfg := b.GetGatewayConfig()
-	if cfg.Extras == nil || cfg.Extras.BlockExtra == nil {
+	if cfg.Extras == nil || cfg.Extras.ColxExtra == nil {
 		return nil
 	}
 
 	if len(cclis) == 0 {
-		for _, args := range cfg.Extras.BlockExtra.CoreAPIs {
+		for _, args := range cfg.Extras.ColxExtra.FullnodeAPIs {
 			connCfg := &rpcclient.ConnConfig{
 				Host:         args.APIAddress,
 				User:         args.RPCUser,
@@ -86,7 +85,7 @@ func (b *Bridge) GetClient() *Client {
 
 	blockClient = &Client{
 		CClients:         cclis,
-		UTXOAPIAddresses: cfg.Extras.BlockExtra.UTXOAPIAddresses,
+		ChainzAPIKeys: cfg.Extras.ColxExtra.ChainzAPIKeys,
 	}
 	return blockClient
 }
@@ -170,41 +169,18 @@ func (b *Bridge) GetElectTransactionStatus(txHash string) (txstatus *electrs.Ele
 // FindUtxos impl
 func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) {
 	cli := b.GetClient()
-
-	currentHeight, err := b.GetLatestBlockNumber()
-	if err != nil {
-		return nil, err
-	}
+	cfg := b.GetChainConfig()
 
 	errs := make([]error, 0)
-	for _, url := range cli.UTXOAPIAddresses {
-		res := struct {
-			Utxos []ChainzUnspent `json:"utxos"`
-		}{}
-
-		err0 := callChainzUnspent(url, addr, &res)
+	for _, key := range cli.ChainzAPIKeys {
+		cutxos, err0 := getChainzUtxo(addr, key)
 
 		if err0 == nil {
-			for _, cutxo := range res.Utxos {
-				value := uint64(cutxo.Value * 1e8)
-
+			for _, cutxo := range cutxos.UnspentOutputs {
 				status := &electrs.ElectTxStatus{
-					BlockHeight: &cutxo.BlockNumber,
+					Confirmed: new(bool),
 				}
-
-				confirmed := false
-				if currentHeight-cutxo.BlockNumber > 6 {
-					confirmed = true
-				}
-				status.Confirmed = &confirmed
-
-				if blkhash, err1 := b.GetBlockHash(cutxo.BlockNumber); err1 != nil {
-					status.BlockHash = &blkhash
-					if blk, err2 := b.GetBlock(blkhash); err2 != nil {
-						status.BlockTime = new(uint64)
-						*status.BlockTime = uint64(*blk.Timestamp)
-					}
-				}
+				*status.Confirmed = uint64(cutxo.Confirmations) > *cfg.Confirmations
 
 				utxo := &electrs.ElectUtxo{
 					Txid:   new(string),
@@ -212,9 +188,9 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 					Value:  new(uint64),
 					Status: new(electrs.ElectTxStatus),
 				}
-				*utxo.Txid = cutxo.Txhash
-				*utxo.Vout = cutxo.Vout
-				*utxo.Value = value
+				*utxo.Txid = cutxo.TxHash
+				*utxo.Vout = uint32(cutxo.TxOutN)
+				*utxo.Value = uint64(cutxo.Value)
 				utxo.Status = status
 				utxos = append(utxos, utxo)
 			}
@@ -227,37 +203,47 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 	return utxos, err
 }
 
-// callChainzUnspent
-func callChainzUnspent(url, addr string, result interface{}) error {
+// getChainzUtxo
+func getChainzUtxo(addr, key string) (ChainzUtxos, error) {
 	client := &http.Client{}
-	// TODO
-	var data = strings.NewReader("")
-	req, err := http.NewRequest("POST", url, data)
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://chainz.cryptoid.info/colx/api.dws?q=unspent&active=%s&key=%s", addr, key), nil)
 	if err != nil {
-		return err
+		return ChainzUtxos{}, err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:81.0) Gecko/20100101 Firefox/81.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("TE", "Trailers")
+	req.Header.Set("Cookie", "cf_clearance=b639cc1208c4a9a1fa3a3dd8447fb2c53a20a0ad-1620455942-0-150; _ga=GA1.2.643865580.1607584926; __cfduid=d1cf9da8870917d990cd918c3e076228e1620455942; cf_chl_2=5b343c42b8f7c7e; cf_chl_prog=x9")
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return ChainzUtxos{}, err
 	}
 	defer resp.Body.Close()
 	bodyText, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return ChainzUtxos{}, err
 	}
-	resp.Body.Close()
-	err = json.Unmarshal(bodyText, &result)
-	return err
+	cutxos := ChainzUtxos{}
+	err = json.Unmarshal(bodyText, &cutxos)
+	return cutxos, err
 }
 
-// ChainzUnspent struct
-type ChainzUnspent struct {
-	Address     string  `json:"address"`
-	Txhash      string  `json:"Txhash"`
-	Vout        uint32  `json:"Vout"`
-	BlockNumber uint64  `json:"block_number"`
-	Value       float64 `json:"value"`
+// ChainzUtxos struct
+type ChainzUtxos struct {
+	UnspentOutputs []ChainzUtxo `json:"unspent_outputs"`
+}
+
+// ChainzUtxo
+type ChainzUtxo struct {
+	TxHash string `json:"tx_hash"`
+	TxOutN int64 `json:"tx_ouput_n"`
+	Value int64 `json:"value"`
+	Confirmations int64 `json:"confirmations"`
+	Script string `json:"script"`
+	Addr string `json:"addr"`
 }
 
 // GetPoolTxidList impl
