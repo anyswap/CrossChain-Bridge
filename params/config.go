@@ -154,6 +154,13 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 			log.Fatalf("LoadConfig error (toml DecodeFile): %v", err)
 		}
 
+		if isServer {
+			config.Oracle = nil
+		} else {
+			config.MongoDB = nil
+			config.APIServer = nil
+		}
+
 		SetConfig(config)
 		var bs []byte
 		if log.JSONFormat {

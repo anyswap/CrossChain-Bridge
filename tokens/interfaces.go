@@ -36,6 +36,7 @@ var (
 	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
 	ErrUnknownPairID        = errors.New("unknown pair ID")
 	ErrBindAddressMismatch  = errors.New("bind address mismatch")
+	ErrRPCQueryError        = errors.New("rpc query error")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
@@ -45,7 +46,6 @@ var (
 	ErrTxSenderNotRegistered = errors.New("tx sender not registered")
 	ErrTxIncompatible        = errors.New("tx incompatible")
 	ErrBindAddrIsContract    = errors.New("bind address is contract")
-	ErrRPCQueryError         = errors.New("rpc query error")
 )
 
 // ShouldRegisterSwapForError return true if this error should record in database
@@ -59,7 +59,6 @@ func ShouldRegisterSwapForError(err error) bool {
 	case errors.Is(err, ErrTxSenderNotRegistered):
 	case errors.Is(err, ErrTxIncompatible):
 	case errors.Is(err, ErrBindAddrIsContract):
-	case errors.Is(err, ErrRPCQueryError):
 	default:
 		return false
 	}

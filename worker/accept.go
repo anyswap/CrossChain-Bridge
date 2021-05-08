@@ -68,7 +68,8 @@ func acceptSign() {
 				tokens.ErrUnknownPairID,
 				tokens.ErrNoBtcBridge,
 				tokens.ErrTxNotStable,
-				tokens.ErrTxNotFound:
+				tokens.ErrTxNotFound,
+				tokens.ErrRPCQueryError:
 				logWorkerTrace("accept", "ignore sign", "keyID", keyID, "err", err)
 				continue
 			}
