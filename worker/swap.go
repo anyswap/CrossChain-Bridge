@@ -211,8 +211,14 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		From:        toTokenCfg.DcrmAddress,
 		OriginValue: value,
 	}
-	if res.SwapNonce > 0 && (swap.Status == mongodb.TxProcessing || res.Status != mongodb.MatchTxEmpty) {
+	if res.SwapNonce > 0 {
 		args.SetTxNonce(res.SwapNonce)
+	}
+
+	err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxProcessing, now(), "")
+	if err != nil {
+		logWorkerError("doSwap", "update swap status to prcessing failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		return err
 	}
 
 	return dispatchSwapTask(args)
@@ -317,12 +323,6 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	err = updateSwapResult(txid, pairID, bind, matchTx)
 	if err != nil {
 		logWorkerError("doSwap", "update swap result nonce failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
-		return err
-	}
-
-	err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxProcessing, now(), "")
-	if err != nil {
-		logWorkerError("doSwap", "update swap status to prcessing failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
 	}
 
