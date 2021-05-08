@@ -29,5 +29,26 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 	txHex := hex.EncodeToString(buf.Bytes())
 	log.Info("Bridge send tx", "hash", tx.TxHash())
 
-	return b.PostTransaction(txHex)
+	txHash, err = b.PostTransaction(txHex)
+	if err == nil {
+		for _, txin := range tx.TxIn {
+			inputtxhash := txin.PreviousOutPoint.Hash.String()
+			inputvout := int(txin.PreviousOutPoint.Index)
+			cond := func() bool {
+				status, getstatuserr := b.GetElectTransactionStatus(txHash)
+				if getstatuserr == nil && *status.Confirmed == true {
+					return true
+				}
+				return false
+			}
+			b.SetUnlockUtxoCond(inputtxhash, inputvout, cond)
+		}
+	} else {
+		for _, txin := range tx.TxIn  {
+			inputtxhash := txin.PreviousOutPoint.Hash.String()
+			inputvout := int(txin.PreviousOutPoint.Index)
+			b.UnlockUtxo(inputtxhash, inputvout)
+		}
+	}
+	return
 }
