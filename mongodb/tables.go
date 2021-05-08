@@ -110,7 +110,7 @@ type MgoBlackAccount struct {
 
 // MgoLatestSwapNonce latest swap nonce
 type MgoLatestSwapNonce struct {
-	Key       string `bson:"_id"` // address + swaptype
+	Key       string `bson:"_id"` // address + isswapin
 	Address   string `bson:"address"`
 	IsSwapin  bool   `bson:"isswapin"`
 	SwapNonce uint64 `bson:"swapnonce"`

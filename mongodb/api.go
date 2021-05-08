@@ -399,6 +399,7 @@ func updateSwapResultStatus(collection *mgo.Collection, txid, pairID, bind strin
 		updates["oldswaptxs"] = nil
 		updates["swapheight"] = 0
 		updates["swaptime"] = 0
+		updates["swapnonce"] = 0
 	}
 	err := collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
 	isSwapin := isSwapin(collection)
@@ -711,7 +712,7 @@ func UpdateLatestSwapoutNonce(address string, nonce uint64) error {
 // UpdateLatestSwapNonce update
 func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err error) {
 	key := getSwapNonceKey(address, isSwapin)
-	oldItem, _ := FindLatestSwapNonce(address, isSwapin)
+	oldItem, _ := FindLatestSwapNonce(key)
 	if oldItem != nil && oldItem.SwapNonce >= nonce {
 		return nil // only increase
 	}
@@ -726,6 +727,8 @@ func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err err
 		err = collLatestSwapNonces.Insert(ma)
 	} else {
 		updates := bson.M{
+			"address":   strings.ToLower(address),
+			"isswapin":  isSwapin,
 			"swapnonce": nonce,
 			"timestamp": time.Now().Unix(),
 		}
@@ -740,9 +743,9 @@ func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err err
 }
 
 // FindLatestSwapNonce find
-func FindLatestSwapNonce(address string, isSwapin bool) (*MgoLatestSwapNonce, error) {
+func FindLatestSwapNonce(key string) (*MgoLatestSwapNonce, error) {
 	var result MgoLatestSwapNonce
-	err := collLatestSwapNonces.FindId(getSwapNonceKey(address, isSwapin)).One(&result)
+	err := collLatestSwapNonces.FindId(key).One(&result)
 	if err != nil {
 		return nil, mgoError(err)
 	}
@@ -756,11 +759,16 @@ func LoadAllSwapNonces() (swapinNonces, swapoutNonces map[string]uint64) {
 	var result MgoLatestSwapNonce
 	iter := collLatestSwapNonces.Find(nil).Iter()
 	for iter.Next(&result) {
+		address := result.Address
+		if address == "" {
+			continue
+		}
 		if result.IsSwapin {
-			swapinNonces[result.Address] = result.SwapNonce
+			swapinNonces[address] = result.SwapNonce
 		} else {
-			swapoutNonces[result.Address] = result.SwapNonce
+			swapoutNonces[address] = result.SwapNonce
 		}
 	}
+	log.Info("load swap nonces finished", "swapinNonces", swapinNonces, "swapoutNonces", swapoutNonces)
 	return swapinNonces, swapoutNonces
 }
