@@ -85,7 +85,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 
 func (b *Bridge) signTxWithSignature(tx *types.Transaction, signature []byte, signerAddr common.Address) (*types.Transaction, error) {
 	signer := b.Signer
-	vPos := crypto.SignatureLength
+	vPos := crypto.SignatureLength - 1
 	for i := 0; i < 2; i++ {
 		signedTx, err := tx.WithSignature(signer, signature)
 		if err != nil {
