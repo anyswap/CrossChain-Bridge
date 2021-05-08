@@ -11,7 +11,7 @@ var (
 	restIntervalInVerifyJob = 3 * time.Second
 
 	maxDoSwapLifetime       = int64(7 * 24 * 3600)
-	restIntervalInDoSwapJob = 10 * time.Second
+	restIntervalInDoSwapJob = 60 * time.Second
 
 	maxStableLifetime       = int64(7 * 24 * 3600)
 	restIntervalInStableJob = 10 * time.Second
