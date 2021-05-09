@@ -32,7 +32,7 @@ func startSwapinVerifyJob() {
 			for _, swap := range res {
 				err = processSwapinVerify(swap)
 				switch err {
-				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound, tokens.ErrSwapIsClosed:
+				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound, tokens.ErrUnknownPairID, tokens.ErrSwapIsClosed:
 				default:
 					logWorkerError("verify", "process swapin verify error", err, "txid", swap.TxID)
 				}
@@ -56,7 +56,7 @@ func startSwapoutVerifyJob() {
 			for _, swap := range res {
 				err = processSwapoutVerify(swap)
 				switch err {
-				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound, tokens.ErrSwapIsClosed:
+				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound, tokens.ErrUnknownPairID, tokens.ErrSwapIsClosed:
 				default:
 					logWorkerError("verify", "process swapout verify error", err, "txid", swap.TxID)
 				}
@@ -105,6 +105,16 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	txid := swap.TxID
 	bind := swap.Bind
 	bridge := tokens.GetCrossChainBridge(isSwapin)
+
+	fromTokenCfg := bridge.GetTokenConfig(pairID)
+	if fromTokenCfg == nil {
+		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "isSwapin", isSwapin)
+		return tokens.ErrUnknownPairID
+	}
+	if fromTokenCfg.DisableSwap {
+		logWorkerTrace("swap", "swap is disabled", "pairID", pairID, "isSwapin", isSwapin)
+		return tokens.ErrSwapIsClosed
+	}
 
 	swapInfo, err := verifySwapTransaction(bridge, pairID, txid, bind, tokens.SwapTxType(swap.TxType))
 	if swapInfo == nil {
