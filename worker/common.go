@@ -242,3 +242,14 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 	}
 	return err
 }
+
+// loop until success
+func assignSwapNonce(nonceSetter tokens.NonceSetter, pairID, dcrmAddress string) uint64 {
+	for {
+		nonce, err := nonceSetter.GetPoolNonce(dcrmAddress, "pending")
+		if err == nil {
+			return nonceSetter.AdjustNonce(pairID, nonce)
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
