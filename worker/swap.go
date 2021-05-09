@@ -211,15 +211,16 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		SwapType:  swapType,
 	}
 
+	// NOTE: only assign 'nonceSetter' when no swap nonce is saved in db
+	var nonceSetter tokens.NonceSetter
 	if res.SwapNonce > 0 {
 		args.SetTxNonce(res.SwapNonce)
 	} else {
 		resBridge := tokens.GetCrossChainBridge(!isSwapin)
-		nonceSetter, ok := resBridge.(tokens.NonceSetter)
-		if ok {
+		nonceSetter, _ = resBridge.(tokens.NonceSetter)
+		if nonceSetter != nil {
 			swapNonce := assignSwapNonce(nonceSetter, pairID, dcrmAddress)
-			matchTx.SwapNonce = swapNonce             // update swap nonce first
-			nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
+			matchTx.SwapNonce = swapNonce // update swap nonce first
 			args.SetTxNonce(swapNonce)
 		}
 	}
@@ -228,6 +229,11 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	if err != nil {
 		logWorkerError("swap", "update swap result", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
+	}
+
+	if nonceSetter != nil {
+		// update after previous swap nonce is saved in db
+		nonceSetter.SetNonce(pairID, matchTx.SwapNonce+1) // increase for next usage
 	}
 
 	err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxProcessing, now(), "")
