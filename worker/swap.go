@@ -3,6 +3,7 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -20,6 +21,7 @@ var (
 	signSwapTxChan      chan *signContent
 
 	errAlreadySwapped = errors.New("already swapped")
+	errDBError        = errors.New("database error")
 )
 
 type signContent struct {
@@ -98,7 +100,12 @@ func processSwapins(pairID string, status mongodb.SwapStatus) {
 	for _, swap := range swapins {
 		err := processSwapinSwap(swap)
 		switch err {
-		case nil, errAlreadySwapped, tokens.ErrSwapIsClosed:
+		case nil,
+			errAlreadySwapped,
+			errDBError,
+			tokens.ErrUnknownPairID,
+			tokens.ErrAddressIsInBlacklist,
+			tokens.ErrSwapIsClosed:
 		default:
 			logWorkerError("swapin", "process swapin swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
 		}
@@ -117,7 +124,12 @@ func processSwapouts(pairID string, status mongodb.SwapStatus) {
 	for _, swap := range swapouts {
 		err := processSwapoutSwap(swap)
 		switch err {
-		case nil, errAlreadySwapped, tokens.ErrSwapIsClosed:
+		case nil,
+			errAlreadySwapped,
+			errDBError,
+			tokens.ErrUnknownPairID,
+			tokens.ErrAddressIsInBlacklist,
+			tokens.ErrSwapIsClosed:
 		default:
 			logWorkerError("swapout", "process swapout swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
 		}
@@ -137,11 +149,13 @@ func findSwapoutsToSwap(pairID string, status mongodb.SwapStatus) ([]*mongodb.Mg
 func isSwapInBlacklist(swap *mongodb.MgoSwapResult) (isBlacked bool, err error) {
 	isBlacked, err = mongodb.QueryBlacklist(swap.From, swap.PairID)
 	if err != nil {
+		logWorkerTrace("swap", "query blacklist failed", "err", err)
 		return isBlacked, err
 	}
 	if !isBlacked && swap.Bind != swap.From {
 		isBlacked, err = mongodb.QueryBlacklist(swap.Bind, swap.PairID)
 		if err != nil {
+			logWorkerTrace("swap", "query blacklist failed", "err", err)
 			return isBlacked, err
 		}
 	}
@@ -173,29 +187,9 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 
 	logWorker("swap", "start process swap", "pairID", pairID, "txid", txid, "bind", bind, "status", swap.Status, "isSwapin", isSwapin, "value", res.Value)
 
-	fromTokenCfg, toTokenCfg := tokens.GetTokenConfigsByDirection(pairID, isSwapin)
-	if fromTokenCfg == nil || toTokenCfg == nil {
-		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "isSwapin", isSwapin)
-		return nil
-	}
-	if fromTokenCfg.DisableSwap {
-		logWorkerTrace("swap", "swap is disabled", "pairID", pairID, "isSwapin", isSwapin)
-		return tokens.ErrSwapIsClosed
-	}
-	isBlacked, err := isSwapInBlacklist(res)
+	value, dcrmAddress, err := checkSwapResult(res, isSwapin)
 	if err != nil {
 		return err
-	}
-	if isBlacked {
-		logWorkerTrace("swap", "address is in blacklist", "txid", txid, "bind", bind, "isSwapin", isSwapin)
-		err = tokens.ErrAddressIsInBlacklist
-		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.SwapInBlacklist, now(), err.Error())
-		return nil
-	}
-
-	value, err := common.GetBigIntFromStr(res.Value)
-	if err != nil {
-		return fmt.Errorf("wrong value %v", res.Value)
 	}
 
 	swapType := getSwapType(isSwapin)
@@ -208,7 +202,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 			TxType:     tokens.SwapTxType(swap.TxType),
 			Bind:       bind,
 		},
-		From:        toTokenCfg.DcrmAddress,
+		From:        dcrmAddress,
 		OriginValue: value,
 	}
 	if res.SwapNonce > 0 {
@@ -224,10 +218,43 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	return dispatchSwapTask(args)
 }
 
+func checkSwapResult(res *mongodb.MgoSwapResult, isSwapin bool) (value *big.Int, dcrmAddress string, err error) {
+	pairID := res.PairID
+	txid := res.TxID
+	bind := res.Bind
+
+	fromTokenCfg, toTokenCfg := tokens.GetTokenConfigsByDirection(pairID, isSwapin)
+	if fromTokenCfg == nil || toTokenCfg == nil {
+		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "isSwapin", isSwapin)
+		return nil, "", tokens.ErrUnknownPairID
+	}
+	if fromTokenCfg.DisableSwap {
+		logWorkerTrace("swap", "swap is disabled", "pairID", pairID, "isSwapin", isSwapin)
+		return nil, "", tokens.ErrSwapIsClosed
+	}
+	isBlacked, err := isSwapInBlacklist(res)
+	if err != nil {
+		return nil, "", errDBError
+	}
+	if isBlacked {
+		logWorkerTrace("swap", "address is in blacklist", "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		err = tokens.ErrAddressIsInBlacklist
+		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.SwapInBlacklist, now(), err.Error())
+		return nil, "", err
+	}
+
+	value, err = common.GetBigIntFromStr(res.Value)
+	if err != nil {
+		return nil, "", fmt.Errorf("wrong value %v", res.Value)
+	}
+
+	return value, toTokenCfg.DcrmAddress, nil
+}
+
 func preventDoubleSwap(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	if res.SwapTx != "" || res.SwapHeight != 0 || len(res.OldSwapTxs) > 0 {
 		if res.Status == mongodb.TxProcessing && res.SwapTx != "" {
-			doReplaceSwap(res)
+			go doReplaceSwap(res)
 		}
 		_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, mongodb.TxProcessed, now(), "")
 		return errAlreadySwapped
