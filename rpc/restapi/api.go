@@ -45,6 +45,12 @@ func TokenPairInfoHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// NonceInfoHandler handler
+func NonceInfoHandler(w http.ResponseWriter, r *http.Request) {
+	res, err := swapapi.GetNonceInfo()
+	writeResponse(w, res, err)
+}
+
 // StatisticsHandler handler
 func StatisticsHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

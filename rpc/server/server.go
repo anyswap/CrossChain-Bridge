@@ -48,6 +48,7 @@ func StartAPIServer() {
 	}()
 }
 
+// nolint:funlen // put together handle func
 func initRouter() *mux.Router {
 	r := mux.NewRouter()
 
@@ -58,6 +59,7 @@ func initRouter() *mux.Router {
 	r.Handle("/rpc", rpcserver)
 	r.HandleFunc("/serverinfo", restapi.ServerInfoHandler).Methods("GET")
 	r.HandleFunc("/versioninfo", restapi.VersionInfoHandler).Methods("GET")
+	r.HandleFunc("/nonceinfo", restapi.NonceInfoHandler).Methods("GET")
 	r.HandleFunc("/pairinfo/{pairid}", restapi.TokenPairInfoHandler).Methods("GET")
 	r.HandleFunc("/statistics/{pairid}", restapi.StatisticsHandler).Methods("GET")
 	r.HandleFunc("/swapin/post/{pairid}/{txid}", restapi.PostSwapinHandler).Methods("POST")
@@ -83,6 +85,7 @@ func initRouter() *mux.Router {
 
 	r.HandleFunc("/serverinfo", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/versioninfo", warnHandler).Methods(methodsExcluesGet...)
+	r.HandleFunc("/nonceinfo", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/pairinfo/{pairid}", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/statistics/{pairid}", warnHandler).Methods(methodsExcluesGet...)
 	r.HandleFunc("/swapin/post/{pairid}/{txid}", warnHandler).Methods(methodsExcluesPost...)

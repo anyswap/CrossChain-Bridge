@@ -57,6 +57,15 @@ func GetTokenPairInfo(pairID string) (*tokens.TokenPairConfig, error) {
 	return pairCfg, nil
 }
 
+// GetNonceInfo api
+func GetNonceInfo() (*SwapNonceInfo, error) {
+	swapinNonces, swapoutNonces := mongodb.LoadAllSwapNonces()
+	return &SwapNonceInfo{
+		SwapinNonces:  swapinNonces,
+		SwapoutNonces: swapoutNonces,
+	}, nil
+}
+
 // GetSwapStatistics api
 func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
 	log.Debug("[api] receive GetSwapStatistics", "pairID", pairID)

@@ -63,3 +63,9 @@ type SwapInfo struct {
 	Memo          string     `json:"memo"`
 	Confirmations uint64     `json:"confirmations"`
 }
+
+// SwapNonceInfo swap nonce info
+type SwapNonceInfo struct {
+	SwapinNonces  map[string]uint64 `json:"swapinNonces"`
+	SwapoutNonces map[string]uint64 `json:"swapoutNonces"`
+}
