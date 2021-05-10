@@ -75,7 +75,9 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 		if isSwapResultTxOnChain(nonceSetter, res) {
 			return nil, nil, errSwapTxIsOnChain
 		}
-		_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
+		if res.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
+			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
+		}
 		return nil, nil, errSwapNoncePassed
 	}
 

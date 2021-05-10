@@ -13,6 +13,8 @@ import (
 var (
 	swapinStableStarter  sync.Once
 	swapoutStableStarter sync.Once
+
+	treatAsNoncePassedInterval = int64(300) // seconds
 )
 
 // StartStableJob stable job
@@ -170,7 +172,8 @@ func processUpdateSwapHeight(resBridge tokens.CrossChainBridge, swap *mongodb.Mg
 		if err != nil {
 			return errGetNonceFailed
 		}
-		if nonce > swap.SwapNonce {
+		if nonce > swap.SwapNonce &&
+			swap.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
 			_ = markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 			return errSwapNoncePassed
 		}
