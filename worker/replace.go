@@ -2,7 +2,6 @@ package worker
 
 import (
 	"strings"
-	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -11,6 +10,8 @@ import (
 var (
 	defWaitTimeToReplace = int64(900) // seconds
 	defMaxReplaceCount   = 20
+
+	minTimeIntervalToReplace = int64(300) // seconds
 
 	// key is signer address
 	swapinReplaceChanMap  = make(map[string]chan *mongodb.MgoSwapResult)
@@ -106,7 +107,10 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) {
 	if len(swap.OldSwapTxs) > maxReplaceCount {
 		return
 	}
-	if getSepTimeInFind(waitTimeToReplace) < swap.Timestamp {
+	if getSepTimeInFind(waitTimeToReplace)*1000 < swap.InitTime { // init time is milli seconds
+		return
+	}
+	if getSepTimeInFind(minTimeIntervalToReplace) < swap.Timestamp {
 		return
 	}
 	dispatchReplaceTask(swap)
@@ -155,41 +159,16 @@ func doReplaceSwap(swap *mongodb.MgoSwapResult) {
 	}
 	logWorker("replace", "process task", "swap", swap)
 
-	var txHash string
 	var err error
-	for {
-		if isSwapin {
-			txHash, err = ReplaceSwapin(swap.TxID, swap.PairID, swap.Bind, "")
-		} else {
-			txHash, err = ReplaceSwapout(swap.TxID, swap.PairID, swap.Bind, "")
-		}
-		if txHash != "" {
-			checkTxIsPacked(nonceSetter, txHash)
-			return
-		}
-		switch err {
-		case errSwapTxWithHeight,
-			errSwapTxIsOnChain,
-			errWrongResultStatus,
-			errSwapNoncePassed:
-			logWorkerTrace("replace", "jump swap", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "err", err)
-			return
-		case errSwapWithoutSwapTx:
-		default:
-			logWorkerTrace("replace", "replace swap error", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "err", err)
-		}
-		time.Sleep(60 * time.Second)
+	if isSwapin {
+		_, err = ReplaceSwapin(swap.TxID, swap.PairID, swap.Bind, "")
+	} else {
+		_, err = ReplaceSwapout(swap.TxID, swap.PairID, swap.Bind, "")
 	}
-}
 
-func checkTxIsPacked(bridge tokens.NonceSetter, txHash string) bool {
-	for i := int64(0); i < 30; i++ {
-		if isTransactionOnChain(bridge, txHash) {
-			return true
-		}
-		time.Sleep(5 * time.Second)
+	if err != nil {
+		logWorkerTrace("replace", "replace swap error", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "err", err)
 	}
-	return false
 }
 
 func isTransactionOnChain(bridge tokens.NonceSetter, txHash string) bool {

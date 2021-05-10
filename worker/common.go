@@ -223,12 +223,16 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		txHash              string
 		retrySendTxCount    = 3
 		retrySendTxInterval = 1 * time.Second
+		needUpdateHeight    bool
 	)
 	for i := 0; i < retrySendTxCount; i++ {
 		txHash, err = bridge.SendTransaction(signedTx)
 		if txHash != "" {
+			if err == nil {
+				needUpdateHeight = true
+			}
 			if tx, _ := bridge.GetTransaction(txHash); tx != nil {
-				logWorker("sendtx", "send tx success", "txHash", txHash)
+				logWorker("sendtx", "send tx success", "txid", txid, "bind", bind, "isSwapin", isSwapin, "txHash", txHash)
 				err = nil
 				break
 			}
@@ -236,11 +240,40 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		time.Sleep(retrySendTxInterval)
 	}
 	if err != nil {
-		logWorkerError("sendtx", "update swap status to TxSwapFailed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
-		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
-		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
+		logWorkerError("sendtx", "send tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		return err
 	}
-	return err
+
+	if !needUpdateHeight {
+		return nil
+	}
+
+	nonceSetter, _ := bridge.(tokens.NonceSetter)
+	if nonceSetter == nil {
+		return nil
+	}
+
+	// update swap result tx height in goroutine
+	go func() {
+		var blockHeight, blockTime uint64
+		for i := int64(0); i < 10; i++ {
+			blockHeight, blockTime = nonceSetter.GetTxBlockInfo(txHash)
+			if blockHeight > 0 {
+				break
+			}
+			time.Sleep(5 * time.Second)
+		}
+		if blockHeight > 0 {
+			matchTx := &MatchTx{
+				SwapTx:     txHash,
+				SwapHeight: blockHeight,
+				SwapTime:   blockTime,
+			}
+			_ = updateSwapResult(txid, pairID, bind, matchTx)
+		}
+	}()
+
+	return nil
 }
 
 // loop until success

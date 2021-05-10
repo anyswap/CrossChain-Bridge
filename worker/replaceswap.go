@@ -19,11 +19,14 @@ var (
 	errSwapTxIsOnChain    = errors.New("swaptx exist in chain")
 	errGetNonceFailed     = errors.New("get nonce failed")
 	errSwapNoncePassed    = errors.New("can not replace swap with old nonce")
+	errSwapNonceTooBig    = errors.New("forbid replace swap with too big nonce than latest")
 	errBuildTxFailed      = errors.New("build tx failed")
 	errSignTxFailed       = errors.New("sign tx failed")
 	errUpdateOldTxsFailed = errors.New("update old swaptxs failed")
 
 	updateOldSwapTxsLock sync.Mutex
+
+	maxDistanceOfSwapNonce = uint64(5)
 )
 
 // ReplaceSwapin api
@@ -71,11 +74,16 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 	if err != nil {
 		return nil, nil, errGetNonceFailed
 	}
+	if res.SwapNonce > nonce+maxDistanceOfSwapNonce {
+		return nil, nil, errSwapNonceTooBig
+	}
 	if nonce > res.SwapNonce {
 		if isSwapResultTxOnChain(nonceSetter, res) {
 			return nil, nil, errSwapTxIsOnChain
 		}
-		_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
+		if res.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
+			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
+		}
 		return nil, nil, errSwapNoncePassed
 	}
 

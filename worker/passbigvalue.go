@@ -5,6 +5,10 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
+const (
+	minTimeIntervalToPassBigValue = int64(300) // seconds
+)
+
 // StartPassBigValueJob pass big value job
 func StartPassBigValueJob() {
 	go startPassBigValSwapinJob()
@@ -80,6 +84,9 @@ func processPassBigValSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		return nil
 	}
 	if swap.InitTime > getSepTimeInFind(passBigValueTimeRequired)*1000 { // init time is milli seconds
+		return nil
+	}
+	if getSepTimeInFind(minTimeIntervalToPassBigValue) < swap.Timestamp {
 		return nil
 	}
 
