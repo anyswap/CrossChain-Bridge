@@ -24,7 +24,11 @@ func getNonceSetter(isSwapin bool) tokens.NonceSetter {
 
 // StartWork start swap server work
 func StartWork(isServer bool) {
-	logWorker("worker", "start server worker")
+	if isServer {
+		logWorker("worker", "start server worker")
+	} else {
+		logWorker("worker", "start oracle worker")
+	}
 
 	client.InitHTTPClient()
 	bridge.InitCrossChainBridge(isServer)

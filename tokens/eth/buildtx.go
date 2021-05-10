@@ -120,7 +120,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 	}
 	for { // loop and block if balance is not enough in swapping
 		err = b.checkBalance("", args.From, needValue)
-		if err == nil || args.SwapType == tokens.NoSwapType {
+		if err == nil || !params.IsSwapServer || args.SwapType == tokens.NoSwapType {
 			break
 		}
 		log.Warn("check balance failed", "account", args.From, "needValue", needValue, "err", err)

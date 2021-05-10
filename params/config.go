@@ -20,6 +20,9 @@ var (
 	serverConfig      *ServerConfig
 	loadConfigStarter sync.Once
 
+	// IsSwapServer if true then it's swap server, otherwise it's swap oracle
+	IsSwapServer bool
+
 	// ServerAPIAddress server api address
 	ServerAPIAddress string
 )
