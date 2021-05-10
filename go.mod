@@ -12,11 +12,11 @@ require (
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/giangnamnabka/btcd v0.21.0-beta.0.20210425211148-6b9fe474f6d7
-	github.com/giangnamnabka/btcutil v1.0.3-0.20210422183801-1e4dd2b8f1ba
-	github.com/giangnamnabka/btcwallet/wallet/txauthor v1.0.1-0.20210422185028-3bf95367dc20
-	github.com/giangnamnabka/btcwallet/wallet/txrules v1.0.1-0.20210422185028-3bf95367dc20
-	github.com/giangnamnabka/btcwallet/wallet/txsizes v1.0.1-0.20210422185028-3bf95367dc20
+	github.com/giangnamnabka/btcd v0.21.0-beta.0.20210510094638-1354d7f1a2de
+	github.com/giangnamnabka/btcutil v1.0.3-0.20210509081240-f80751d24cbd
+	github.com/giangnamnabka/btcwallet/wallet/txauthor v1.0.1-0.20210509084829-845f970dd639
+	github.com/giangnamnabka/btcwallet/wallet/txrules v1.0.1-0.20210509084829-845f970dd639
+	github.com/giangnamnabka/btcwallet/wallet/txsizes v1.0.1-0.20210509084829-845f970dd639
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/rpc v1.2.0
@@ -37,5 +37,6 @@ require (
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c
+	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 )
