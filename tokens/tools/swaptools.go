@@ -128,8 +128,8 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 		return
 	}
 	isServer := dcrm.IsSwapServer()
-	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid)
 	bind := swapInfo.Bind
+	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid, "bind", bind)
 	if isServer {
 		var memo string
 		if verifyError != nil {

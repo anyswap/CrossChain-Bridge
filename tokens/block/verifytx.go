@@ -91,6 +91,9 @@ func (b *Bridge) verifySwapinTx(pairID, txHash string, allowUnstable bool) (*tok
 	if tokenCfg == nil {
 		return nil, tokens.ErrUnknownPairID
 	}
+	if tokenCfg.DisableSwap {
+		return nil, tokens.ErrSwapIsClosed
+	}
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash

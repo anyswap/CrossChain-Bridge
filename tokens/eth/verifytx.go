@@ -92,6 +92,10 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, tokens.ErrUnknownPairID
 	}
 
+	if token.DisableSwap {
+		return swapInfo, tokens.ErrSwapIsClosed
+	}
+
 	if token.IsErc20() {
 		return b.verifyErc20SwapinTx(pairID, txHash, allowUnstable, token)
 	}
