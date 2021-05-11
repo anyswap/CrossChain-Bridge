@@ -38,8 +38,8 @@ func (b *Bridge) isUtxoLocked(key utxokey) bool {
 	return false
 }
 
-// defaultUnlockCond unlock utxo after 3 days
-var defaultUnlockCond = after(3600 * 72)
+// defaultUnlockCond unlock utxo after 5 days
+var defaultUnlockCond = after(3600 * 120)
 
 func (b *Bridge) LockUtxo(txhash string, vout int) error {
 	// Use default unlock cond
