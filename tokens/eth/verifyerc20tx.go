@@ -22,6 +22,10 @@ func (b *Bridge) verifyErc20SwapinTx(pairID, txHash string, allowUnstable bool, 
 		return swapInfo, err
 	}
 
+	if token.IsDelegateContract && receipt == nil {
+		return swapInfo, tokens.ErrTxNotFound
+	}
+
 	if !allowUnstable || receipt != nil {
 		err = b.verifyErc20SwapinTxReceipt(swapInfo, receipt, token)
 	} else {

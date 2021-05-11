@@ -165,11 +165,11 @@ func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
 	if b.IsSrc && !(tokenCfg.IsErc20() || tokenCfg.IsProxyErc20() || tokenCfg.IsDelegateContract) {
 		return fmt.Errorf("source token %v is not ERC20, ProxyERC20 or delegated", contractAddr)
 	}
-	if tokenCfg.IsDelegateContract && !tokenCfg.IsAnyswapAdapter {
+	if tokenCfg.IsDelegateContract && !tokenCfg.IsAnyswapAdapter && !b.IsSrc {
 		// keccak256 'proxyToken()' is '0x4faaefae'
 		res, err := b.CallContract(contractAddr, common.FromHex("0x4faaefae"), "latest")
 		if err != nil {
-			return err
+			return fmt.Errorf("get proxyToken of %v failed, %v", contractAddr, err)
 		}
 		proxyToken := common.HexToAddress(res)
 		if common.HexToAddress(tokenCfg.DelegateToken) != proxyToken {
