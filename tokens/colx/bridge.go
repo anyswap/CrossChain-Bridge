@@ -42,6 +42,7 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
 	b.VerifyChainConfig()
 	b.InitLatestBlockNumber()
+	go b.StartMonitLockedUtxo()
 }
 
 // VerifyChainConfig verify chain config

@@ -269,6 +269,9 @@ func (b *Bridge) selectUtxos(from string, target colxAmountType) (total colxAmou
 	)
 
 	for _, utxo := range utxos {
+		if b.IsUtxoLocked(*utxo.Txid, int(*utxo.Vout)) == true {
+			continue
+		}
 		value := colxAmountType(*utxo.Value)
 		if !isValidValue(value) {
 			continue
@@ -435,6 +438,13 @@ func (b *Bridge) NewUnsignedTransaction(outputs []*wireTxOutType, relayFeePerKb 
 				unsignedTransaction.TxOut = outputs
 				changeIndex = l
 			}
+		}
+
+		// Add inputs to lockedUtxos so that other transactions wont reuse them
+		for _, txin := range unsignedTransaction.TxIn {
+			inputtxhash := txin.PreviousOutPoint.Hash.String()
+			inputvout := int(txin.PreviousOutPoint.Index)
+			b.LockUtxo(inputtxhash, inputvout)
 		}
 
 		return &txauthor.AuthoredTx{
