@@ -138,7 +138,7 @@ func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) error {
 	if checkToken != "" {
 		decimals, err := b.GetErc20Decimals(checkToken)
 		if err != nil {
-			log.Error("get erc20 decimals failed", "err", err)
+			log.Error("get erc20 decimals failed", "address", checkToken, "err", err)
 			return err
 		}
 		if decimals != configedDecimals {
