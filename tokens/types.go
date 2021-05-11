@@ -89,6 +89,7 @@ type TokenConfig struct {
 	DisableSwap            bool
 	IsDelegateContract     bool
 	DelegateToken          string `json:",omitempty"`
+	IsAnyswapAdapter       bool   `json:",omitempty"`
 
 	DefaultGasLimit         uint64 `json:",omitempty"`
 	AllowSwapinFromContract bool   `json:",omitempty"`
@@ -287,7 +288,7 @@ func (c *ChainConfig) CheckConfig() error {
 }
 
 // CheckConfig check token config
-//nolint:gocyclo // keep TokenConfig check as whole
+//nolint:funlen,gocyclo // keep TokenConfig check as whole
 func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.Decimals == nil {
 		return errors.New("token must config 'Decimals'")
@@ -335,19 +336,34 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if !isSrc && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for destination chain")
 	}
-	if isSrc && c.IsErc20() && c.ContractAddress == "" {
+	if c.IsErc20() && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
 	}
-	if isSrc && c.IsProxyErc20() && c.ContractCodeHash == "" {
-		return errors.New("token must config 'ContractCodeHash' for ProxyERC20 in source chain")
+	if c.IsProxyErc20() {
+		if !isSrc {
+			return errors.New("token ProxyERC20 is only support in source chain")
+		}
+		if c.ContractAddress == "" {
+			return errors.New("token ProxyERC20 must config 'ContractAddress'")
+		}
+		if c.ContractCodeHash == "" {
+			return errors.New("token ProxyERC20 must config 'ContractCodeHash'")
+		}
+	} else if c.ContractCodeHash != "" {
+		return errors.New("token forbid config 'ContractCodeHash' if it's not ProxyERC20")
 	}
 	if c.IsDelegateContract {
 		if c.ContractAddress == "" {
 			return errors.New("token must config 'ContractAddress' if 'IsDelegateContract' is true")
 		}
-		if c.DelegateToken != "" && !common.IsHexAddress(c.DelegateToken) {
+		if c.DelegateToken == "" || !common.IsHexAddress(c.DelegateToken) {
 			return errors.New("wrong 'DelegateToken' address")
 		}
+		if c.IsProxyErc20() {
+			return errors.New("token can not be both IsDelegateContract and ProxyERC20")
+		}
+	} else if c.DelegateToken != "" {
+		return errors.New("token forbid config 'DelegateToken' if 'IsDelegateContract' is false")
 	}
 	// calc value and store
 	c.CalcAndStoreValue()

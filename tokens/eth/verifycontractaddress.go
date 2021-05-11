@@ -126,9 +126,9 @@ func (b *Bridge) VerifyErc20ContractAddress(contract, codeHash string, isProxy b
 	return nil
 }
 
-// VerifyMbtcContractAddress verify mbtc contract
-func (b *Bridge) VerifyMbtcContractAddress(contract string) (err error) {
-	return b.VerifyContractCode(contract, ExtCodeParts, erc20CodeParts)
+// VerifyAnyswapContractAddress verify anyswap contract
+func (b *Bridge) VerifyAnyswapContractAddress(contract string) (err error) {
+	return b.VerifyContractCode(contract, ExtCodeParts)
 }
 
 // InitExtCodeParts init extended code parts
