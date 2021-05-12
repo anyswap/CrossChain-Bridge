@@ -339,6 +339,11 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.IsErc20() && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
 	}
+	if c.AllowSwapinFromContract {
+		if !isSrc || !c.IsErc20() {
+			return errors.New("only source ERC20 token allow swapin from contract")
+		}
+	}
 	if c.IsProxyErc20() {
 		if !isSrc {
 			return errors.New("token ProxyERC20 is only support in source chain")
