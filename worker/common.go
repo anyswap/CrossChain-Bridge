@@ -17,7 +17,6 @@ type MatchTx struct {
 	SwapTime   uint64
 	SwapValue  string
 	SwapType   tokens.SwapType
-	SwapNonce  uint64
 }
 
 func addInitialSwapResult(swapInfo *tokens.TxSwapInfo, status mongodb.SwapStatus, isSwapin bool) (err error) {
@@ -69,7 +68,6 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 	if mtx.SwapHeight == 0 {
 		updates.SwapTx = mtx.SwapTx
 		updates.SwapValue = mtx.SwapValue
-		updates.SwapNonce = mtx.SwapNonce
 		updates.SwapHeight = 0
 		updates.SwapTime = 0
 	} else {
@@ -92,13 +90,13 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 			"txid", txid, "pairID", pairID, "bind", bind,
 			"swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight,
 			"swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue,
-			"swaptype", mtx.SwapType, "swapnonce", mtx.SwapNonce)
+			"swaptype", mtx.SwapType)
 	} else {
 		logWorker("update", "updateSwapResult",
 			"txid", txid, "pairID", pairID, "bind", bind,
 			"swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight,
 			"swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue,
-			"swaptype", mtx.SwapType, "swapnonce", mtx.SwapNonce)
+			"swaptype", mtx.SwapType)
 	}
 	return err
 }
@@ -238,4 +236,32 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
 	}
 	return err
+}
+
+func assignSwapNonce(res *mongodb.MgoSwapResult, isSwapin bool) (swapNonce uint64, err error) {
+	resBridge := tokens.GetCrossChainBridge(!isSwapin)
+	nonceSetter, ok := resBridge.(tokens.NonceSetter)
+	if !ok {
+		return 0, nil // ignore bridge which does not support nonce
+	}
+	pairID := res.PairID
+	tokenCfg := resBridge.GetTokenConfig(pairID)
+	if tokenCfg != nil {
+		return 0, tokens.ErrUnknownPairID
+	}
+	dcrmAddress := tokenCfg.DcrmAddress
+	for { // looop until success
+		swapNonce, err = nonceSetter.GetPoolNonce(dcrmAddress, "pending")
+		if err == nil {
+			swapNonce = nonceSetter.AdjustNonce(pairID, swapNonce)
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+	err = mongodb.AssginSwapNonce(isSwapin, res.TxID, res.PairID, res.Bind, swapNonce)
+	if err != nil {
+		return 0, err
+	}
+	nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
+	return swapNonce, nil
 }

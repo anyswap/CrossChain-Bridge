@@ -183,6 +183,17 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		OriginValue: value,
 	}
 
+	swapNonce := res.SwapNonce
+	if swapNonce == 0 {
+		swapNonce, err = assignSwapNonce(res, isSwapin)
+		if err != nil {
+			return err
+		}
+	}
+	if swapNonce > 0 {
+		args.SetTxNonce(swapNonce)
+	}
+
 	return dispatchSwapTask(args)
 }
 
@@ -262,19 +273,18 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	if res.SwapNonce > 0 {
-		args.SetTxNonce(res.SwapNonce)
+	swapNonce := args.GetTxNonce()
+	if swapNonce != res.SwapNonce {
+		return fmt.Errorf("swap nonce mismatch, in args %v, in db %v", swapNonce, res.SwapNonce)
 	}
 
-	logWorker("doSwap", "start to process", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "value", originValue, "oldNonce", args.GetTxNonce())
+	logWorker("doSwap", "start to process", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "value", originValue, "swapNonce", swapNonce)
 
 	rawTx, err := resBridge.BuildRawTransaction(args)
 	if err != nil {
 		logWorkerError("doSwap", "build tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
 	}
-
-	swapNonce := args.GetTxNonce()
 
 	var signedTx interface{}
 	var txHash string
@@ -289,14 +299,11 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	swapTxNonce := args.GetTxNonce()
-
 	// update database before sending transaction
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
 		SwapType:  swapType,
-		SwapNonce: swapTxNonce,
 	}
 	err = updateSwapResult(txid, pairID, bind, matchTx)
 	if err != nil {
@@ -310,11 +317,5 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	err = sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
-	if err == nil {
-		if nonceSetter, ok := resBridge.(tokens.NonceSetter); ok {
-			nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
-		}
-	}
-	return err
+	return sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
 }
