@@ -19,8 +19,8 @@ import (
 const (
 	pingCount                  = 3
 	retrySignCount             = 3
-	retryGetSignStatusCount    = 70
-	retryGetSignStatusInterval = 10 * time.Second
+	retryGetSignStatusCount    = 40
+	retryGetSignStatusInterval = 3 * time.Second
 )
 
 func pingDcrmNode(nodeInfo *NodeInfo) (err error) {

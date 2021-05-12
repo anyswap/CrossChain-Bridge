@@ -18,6 +18,8 @@ var (
 
 	maxReplaceSwapLifetime       = int64(7 * 24 * 3600)
 	restIntervalInReplaceSwapJob = 300 * time.Second
+
+	retrySignInterval = 3 * time.Second
 )
 
 func now() int64 {
