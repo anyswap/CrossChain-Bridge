@@ -67,6 +67,9 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 		}
 		pairID := swapInfo.PairID
 		bind := swapInfo.Bind
+		if bind == "" { // must have non empty bind address
+			return
+		}
 		if IsSwapExist(txid, pairID, bind, isSwapin) {
 			return
 		}

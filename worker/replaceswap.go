@@ -13,8 +13,6 @@ import (
 )
 
 var (
-	errSwapWithoutSwapTx  = errors.New("swap without swaptx")
-	errWrongResultStatus  = errors.New("swap result status is not 'MatchTxNotStable'")
 	errSwapTxWithHeight   = errors.New("swaptx with block height")
 	errSwapTxIsOnChain    = errors.New("swaptx exist in chain")
 	errGetNonceFailed     = errors.New("get nonce failed")
@@ -44,12 +42,6 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 	res, err := mongodb.FindSwapResult(isSwapin, txid, pairID, bind)
 	if err != nil {
 		return nil, nil, err
-	}
-	if res.SwapTx == "" {
-		return nil, nil, errSwapWithoutSwapTx
-	}
-	if res.Status != mongodb.MatchTxNotStable {
-		return nil, nil, errWrongResultStatus
 	}
 	if res.SwapHeight != 0 {
 		return nil, nil, errSwapTxWithHeight
@@ -172,7 +164,11 @@ func replaceSwapResult(txid, pairID, bind, txHash string, isSwapin bool) (err er
 		if txHash == res.SwapTx {
 			return nil
 		}
-		oldSwapTxs = []string{res.SwapTx, txHash}
+		if res.SwapTx == "" {
+			oldSwapTxs = []string{txHash}
+		} else {
+			oldSwapTxs = []string{res.SwapTx, txHash}
+		}
 	}
 	swapType := tokens.SwapType(res.SwapType).String()
 	err = updateOldSwapTxs(txid, pairID, bind, oldSwapTxs, isSwapin)
