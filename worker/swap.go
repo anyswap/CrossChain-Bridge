@@ -30,11 +30,13 @@ func StartSwapJob() {
 	for _, pairCfg := range tokens.GetTokenPairsConfig() {
 		AddSwapJob(pairCfg)
 	}
+
+	go startSwapinSwapJob()
+	go startSwapoutSwapJob()
 }
 
 // AddSwapJob add swap job
 func AddSwapJob(pairCfg *tokens.TokenPairConfig) {
-	pairID := strings.ToLower(pairCfg.PairID)
 	swapinDcrmAddr := strings.ToLower(pairCfg.DestToken.DcrmAddress)
 	if _, exist := swapinTaskChanMap[swapinDcrmAddr]; !exist {
 		swapinTaskChanMap[swapinDcrmAddr] = make(chan *tokens.BuildTxArgs, swapChanSize)
@@ -45,15 +47,12 @@ func AddSwapJob(pairCfg *tokens.TokenPairConfig) {
 		swapoutTaskChanMap[swapoutDcrmAddr] = make(chan *tokens.BuildTxArgs, swapChanSize)
 		go processSwapTask(swapoutTaskChanMap[swapoutDcrmAddr])
 	}
-
-	go startSwapinSwapJob(pairID)
-	go startSwapoutSwapJob(pairID)
 }
 
-func startSwapinSwapJob(pairID string) {
+func startSwapinSwapJob() {
 	logWorker("swap", "start swapin swap job")
 	for {
-		res, err := findSwapinsToSwap(pairID)
+		res, err := findSwapinsToSwap()
 		if err != nil {
 			logWorkerError("swapin", "find swapins error", err)
 		}
@@ -72,10 +71,10 @@ func startSwapinSwapJob(pairID string) {
 	}
 }
 
-func startSwapoutSwapJob(pairID string) {
+func startSwapoutSwapJob() {
 	logWorker("swapout", "start swapout swap job")
 	for {
-		res, err := findSwapoutsToSwap(pairID)
+		res, err := findSwapoutsToSwap()
 		if err != nil {
 			logWorkerError("swapout", "find swapouts error", err)
 		}
@@ -94,16 +93,16 @@ func startSwapoutSwapJob(pairID string) {
 	}
 }
 
-func findSwapinsToSwap(pairID string) ([]*mongodb.MgoSwap, error) {
+func findSwapinsToSwap() ([]*mongodb.MgoSwap, error) {
 	status := mongodb.TxNotSwapped
 	septime := getSepTimeInFind(maxDoSwapLifetime)
-	return mongodb.FindSwapinsWithPairIDAndStatus(pairID, status, septime)
+	return mongodb.FindSwapinsWithStatus(status, septime)
 }
 
-func findSwapoutsToSwap(pairID string) ([]*mongodb.MgoSwap, error) {
+func findSwapoutsToSwap() ([]*mongodb.MgoSwap, error) {
 	status := mongodb.TxNotSwapped
 	septime := getSepTimeInFind(maxDoSwapLifetime)
-	return mongodb.FindSwapoutsWithPairIDAndStatus(pairID, status, septime)
+	return mongodb.FindSwapoutsWithStatus(status, septime)
 }
 
 func isSwapInBlacklist(swap *mongodb.MgoSwapResult) (isBlacked bool, err error) {
