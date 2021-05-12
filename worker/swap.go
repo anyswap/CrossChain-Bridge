@@ -185,7 +185,11 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 
 	swapNonce := res.SwapNonce
 	if swapNonce == 0 {
-		swapNonce, err = assignSwapNonce(res, isSwapin)
+		if isSwapin {
+			swapNonce, err = assignSwapinNonce(res)
+		} else {
+			swapNonce, err = assignSwapoutNonce(res)
+		}
 		if err != nil {
 			return err
 		}

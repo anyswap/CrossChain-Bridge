@@ -275,8 +275,8 @@ func FindSwapResultsToReplace(status SwapStatus, septime int64, isSwapin bool) (
 	return result, mgoError(err)
 }
 
-// AssginSwapNonce assign swap nonce
-func AssginSwapNonce(isSwapin bool, txid, pairID, bind string, swapNonce uint64) error {
+// AssignSwapNonce assign swap nonce
+func AssignSwapNonce(isSwapin bool, txid, pairID, bind string, swapNonce uint64) error {
 	updateResultLock.Lock()
 	defer updateResultLock.Unlock()
 

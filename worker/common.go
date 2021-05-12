@@ -3,11 +3,17 @@ package worker
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+)
+
+var (
+	assignSwapinNonceLock  sync.Mutex
+	assignSwapoutNonceLock sync.Mutex
 )
 
 // MatchTx struct
@@ -238,6 +244,34 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 	return err
 }
 
+func assignSwapinNonce(res *mongodb.MgoSwapResult) (swapNonce uint64, err error) {
+	isSwapin := true
+	resBridge := tokens.GetCrossChainBridge(!isSwapin)
+	_, ok := resBridge.(tokens.NonceSetter)
+	if !ok {
+		return 0, nil // ignore bridge which does not support nonce
+	}
+
+	assignSwapinNonceLock.Lock()
+	defer assignSwapinNonceLock.Unlock()
+
+	return assignSwapNonce(res, isSwapin)
+}
+
+func assignSwapoutNonce(res *mongodb.MgoSwapResult) (swapNonce uint64, err error) {
+	isSwapin := false
+	resBridge := tokens.GetCrossChainBridge(!isSwapin)
+	_, ok := resBridge.(tokens.NonceSetter)
+	if !ok {
+		return 0, nil // ignore bridge which does not support nonce
+	}
+
+	assignSwapoutNonceLock.Lock()
+	defer assignSwapoutNonceLock.Unlock()
+
+	return assignSwapNonce(res, isSwapin)
+}
+
 func assignSwapNonce(res *mongodb.MgoSwapResult, isSwapin bool) (swapNonce uint64, err error) {
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)
 	nonceSetter, ok := resBridge.(tokens.NonceSetter)
@@ -258,7 +292,7 @@ func assignSwapNonce(res *mongodb.MgoSwapResult, isSwapin bool) (swapNonce uint6
 		}
 		time.Sleep(1 * time.Second)
 	}
-	err = mongodb.AssginSwapNonce(isSwapin, res.TxID, pairID, res.Bind, swapNonce)
+	err = mongodb.AssignSwapNonce(isSwapin, res.TxID, pairID, res.Bind, swapNonce)
 	if err != nil {
 		return 0, err
 	}
