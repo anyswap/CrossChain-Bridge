@@ -96,9 +96,13 @@ func getReplaceConfigs(isSwapin bool) (waitTimeToReplace int64, maxReplaceCount 
 }
 
 func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) {
-	if swap.SwapTx == "" ||
-		swap.Status != mongodb.MatchTxNotStable ||
-		swap.SwapHeight != 0 {
+	if swap.SwapNonce == 0 || swap.SwapHeight != 0 {
+		return
+	}
+	switch swap.Status {
+	case mongodb.MatchTxEmpty:
+	case mongodb.MatchTxNotStable:
+	default:
 		return
 	}
 	waitTimeToReplace, maxReplaceCount := getReplaceConfigs(isSwapin)

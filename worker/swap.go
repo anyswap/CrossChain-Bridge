@@ -194,6 +194,12 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		args.SetTxNonce(swapNonce)
 	}
 
+	err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxProcessed, now(), "")
+	if err != nil {
+		logWorkerError("doSwap", "update swap status failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		return err
+	}
+
 	return dispatchSwapTask(args)
 }
 
@@ -311,12 +317,6 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	err = updateSwapResult(txid, pairID, bind, matchTx)
 	if err != nil {
 		logWorkerError("doSwap", "update swap result failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
-		return err
-	}
-
-	err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxProcessed, now(), "")
-	if err != nil {
-		logWorkerError("doSwap", "update swap status failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
 	}
 

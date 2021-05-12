@@ -246,7 +246,7 @@ func assignSwapNonce(res *mongodb.MgoSwapResult, isSwapin bool) (swapNonce uint6
 	}
 	pairID := res.PairID
 	tokenCfg := resBridge.GetTokenConfig(pairID)
-	if tokenCfg != nil {
+	if tokenCfg == nil {
 		return 0, tokens.ErrUnknownPairID
 	}
 	dcrmAddress := tokenCfg.DcrmAddress
@@ -258,7 +258,7 @@ func assignSwapNonce(res *mongodb.MgoSwapResult, isSwapin bool) (swapNonce uint6
 		}
 		time.Sleep(1 * time.Second)
 	}
-	err = mongodb.AssginSwapNonce(isSwapin, res.TxID, res.PairID, res.Bind, swapNonce)
+	err = mongodb.AssginSwapNonce(isSwapin, res.TxID, pairID, res.Bind, swapNonce)
 	if err != nil {
 		return 0, err
 	}
