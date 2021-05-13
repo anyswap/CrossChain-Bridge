@@ -27,8 +27,9 @@ func mgoError(err error) error {
 
 // mongodb special errors
 var (
-	ErrItemNotFound = newError(-32002, "mgoError: Item not found")
-	ErrItemIsDup    = newError(-32003, "mgoError: Item is duplicate")
-	ErrSwapNotFound = newError(-32011, "mgoError: Swap is not found")
-	ErrWrongKey     = newError(-32012, "mgoError: Wrong key")
+	ErrItemNotFound      = newError(-32002, "mgoError: Item not found")
+	ErrItemIsDup         = newError(-32003, "mgoError: Item is duplicate")
+	ErrSwapNotFound      = newError(-32011, "mgoError: Swap is not found")
+	ErrWrongKey          = newError(-32012, "mgoError: Wrong key")
+	ErrForbidUpdateNonce = newError(-32013, "mgoError: Forbid update swap nonce")
 )

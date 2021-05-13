@@ -243,7 +243,6 @@ func processHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
 			SwapTx:    history.matchTx,
 			SwapValue: tokens.CalcSwappedValue(pairID, history.value, isSwapin).String(),
 			SwapType:  swapType,
-			SwapNonce: history.nonce,
 		}
 		_ = updateSwapResult(txid, pairID, bind, matchTx)
 		logWorker("swap", "ignore swapped swap", "txid", txid, "pairID", pairID, "bind", bind, "matchTx", history.matchTx, "isSwapin", isSwapin)

@@ -20,7 +20,8 @@ const (
 )
 
 var (
-	retryLock sync.Mutex
+	retryLock        sync.Mutex
+	updateResultLock sync.Mutex
 )
 
 // --------------- swapin and swapout uniform --------------------------------
@@ -371,14 +372,24 @@ func updateSwapResult(collection *mgo.Collection, txid, pairID, bind string, ite
 	if items.SwapType != 0 {
 		updates["swaptype"] = items.SwapType
 	}
-	if items.SwapNonce != 0 {
-		updates["swapnonce"] = items.SwapNonce
-	}
 	if items.Memo != "" {
 		updates["memo"] = items.Memo
 	} else if items.Status == MatchTxNotStable {
 		updates["memo"] = ""
 	}
+	if items.SwapNonce != 0 {
+		updateResultLock.Lock()
+		defer updateResultLock.Unlock()
+		swapRes, err := findSwapResult(collection, txid, pairID, bind)
+		if err != nil {
+			return err
+		}
+		if swapRes.SwapNonce != 0 {
+			return ErrForbidUpdateNonce
+		}
+		updates["swapnonce"] = items.SwapNonce
+	}
+
 	err := collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
 	if err == nil {
 		log.Info("mongodb update swap result", "txid", txid, "pairID", pairID, "bind", bind, "updates", updates, "isSwapin", isSwapin(collection))
@@ -399,6 +410,7 @@ func updateSwapResultStatus(collection *mgo.Collection, txid, pairID, bind strin
 		updates["oldswaptxs"] = nil
 		updates["swapheight"] = 0
 		updates["swaptime"] = 0
+		updates["swapnonce"] = 0
 	}
 	err := collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
 	isSwapin := isSwapin(collection)
