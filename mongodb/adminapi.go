@@ -218,6 +218,7 @@ func ManualManageSwap(txid, pairID, bind, memo string, isSwapin, isPass bool) er
 			return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotStable, time.Now().Unix(), memo)
 		}
 	} else if swap.Status.CanManualMakeFail() {
+		_ = UpdateSwapResultStatus(isSwapin, txid, pairID, bind, ManualMakeFail, time.Now().Unix(), memo)
 		return UpdateSwapStatus(isSwapin, txid, pairID, bind, ManualMakeFail, time.Now().Unix(), memo)
 	}
 	return fmt.Errorf("swap status is %v, can not operate. txid=%v pairID=%v bind=%v isSwapin=%v isPass=%v", swap.Status.String(), txid, pairID, bind, isSwapin, isPass)

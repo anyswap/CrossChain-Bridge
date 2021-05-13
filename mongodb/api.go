@@ -299,7 +299,13 @@ func AssignSwapNonce(isSwapin bool, txid, pairID, bind string, swapNonce uint64)
 		"swapnonce": swapNonce,
 		"timestamp": time.Now().Unix(),
 	}
-	return collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
+	err = collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
+	if err == nil {
+		log.Info("mongodb update swap nonce success", "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin, "nonce", swapNonce)
+	} else {
+		log.Warn("mongodb update swap nonce failed", "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin, "nonce", swapNonce, "err", err)
+	}
+	return mgoError(err)
 }
 
 // GetCountOfSwapinResults get count of swapin results
