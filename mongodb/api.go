@@ -275,39 +275,6 @@ func FindSwapResultsToReplace(status SwapStatus, septime int64, isSwapin bool) (
 	return result, mgoError(err)
 }
 
-// AssignSwapNonce assign swap nonce
-func AssignSwapNonce(isSwapin bool, txid, pairID, bind string, swapNonce uint64) error {
-	updateResultLock.Lock()
-	defer updateResultLock.Unlock()
-
-	var collection *mgo.Collection
-	if isSwapin {
-		collection = collSwapinResult
-	} else {
-		collection = collSwapoutResult
-	}
-
-	swapRes, err := findSwapResult(collection, txid, pairID, bind)
-	if err != nil {
-		return err
-	}
-	if swapRes.SwapNonce != 0 {
-		return ErrForbidUpdateNonce
-	}
-
-	updates := bson.M{
-		"swapnonce": swapNonce,
-		"timestamp": time.Now().Unix(),
-	}
-	err = collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
-	if err == nil {
-		log.Info("mongodb update swap nonce success", "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin, "nonce", swapNonce)
-	} else {
-		log.Warn("mongodb update swap nonce failed", "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin, "nonce", swapNonce, "err", err)
-	}
-	return mgoError(err)
-}
-
 // GetCountOfSwapinResults get count of swapin results
 func GetCountOfSwapinResults(pairID string) (int, error) {
 	return getCount(collSwapinResult, pairID)
@@ -409,6 +376,19 @@ func updateSwapResult(collection *mgo.Collection, txid, pairID, bind string, ite
 		updates["memo"] = items.Memo
 	} else if items.Status == MatchTxNotStable {
 		updates["memo"] = ""
+	}
+	if items.SwapNonce != 0 {
+		updateResultLock.Lock()
+		defer updateResultLock.Unlock()
+		swapRes, err := findSwapResult(collection, txid, pairID, bind)
+		if err != nil {
+			return err
+		}
+		if swapRes.SwapNonce != 0 {
+			log.Error("forbid update swap nonce again", "old", swapRes.SwapNonce, "new", items.SwapNonce)
+			return ErrForbidUpdateNonce
+		}
+		updates["swapnonce"] = items.SwapNonce
 	}
 	err := collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
 	if err == nil {

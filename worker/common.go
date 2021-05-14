@@ -3,17 +3,11 @@ package worker
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
-)
-
-var (
-	assignSwapinNonceLock  sync.Mutex
-	assignSwapoutNonceLock sync.Mutex
 )
 
 // MatchTx struct
@@ -23,6 +17,7 @@ type MatchTx struct {
 	SwapTime   uint64
 	SwapValue  string
 	SwapType   tokens.SwapType
+	SwapNonce  uint64
 }
 
 func addInitialSwapResult(swapInfo *tokens.TxSwapInfo, status mongodb.SwapStatus, isSwapin bool) (err error) {
@@ -74,9 +69,11 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 	if mtx.SwapHeight == 0 {
 		updates.SwapTx = mtx.SwapTx
 		updates.SwapValue = mtx.SwapValue
+		updates.SwapNonce = mtx.SwapNonce
 		updates.SwapHeight = 0
 		updates.SwapTime = 0
 	} else {
+		updates.SwapNonce = mtx.SwapNonce
 		updates.SwapHeight = mtx.SwapHeight
 		updates.SwapTime = mtx.SwapTime
 		if mtx.SwapTx != "" {
@@ -96,13 +93,13 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 			"txid", txid, "pairID", pairID, "bind", bind,
 			"swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight,
 			"swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue,
-			"swaptype", mtx.SwapType)
+			"swaptype", mtx.SwapType, "swapnonce", mtx.SwapNonce)
 	} else {
 		logWorker("update", "updateSwapResult",
 			"txid", txid, "pairID", pairID, "bind", bind,
 			"swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight,
 			"swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue,
-			"swaptype", mtx.SwapType)
+			"swaptype", mtx.SwapType, "swapnonce", mtx.SwapNonce)
 	}
 	return err
 }
@@ -219,9 +216,8 @@ func verifySwapTransaction(bridge tokens.CrossChainBridge, pairID, txid, bind st
 	return swapInfo, err
 }
 
-func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin bool) (err error) {
+func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin bool) (txHash string, err error) {
 	var (
-		txHash              string
 		retrySendTxCount    = 3
 		retrySendTxInterval = 1 * time.Second
 	)
@@ -237,65 +233,7 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		time.Sleep(retrySendTxInterval)
 	}
 	if err != nil {
-		logWorkerError("sendtx", "update swap status to TxSwapFailed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
-		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
-		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
+		logWorkerError("sendtx", "send tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "txHash", txHash)
 	}
-	return err
-}
-
-func assignSwapinNonce(res *mongodb.MgoSwapResult) (swapNonce uint64, err error) {
-	isSwapin := true
-	resBridge := tokens.GetCrossChainBridge(!isSwapin)
-	_, ok := resBridge.(tokens.NonceSetter)
-	if !ok {
-		return 0, nil // ignore bridge which does not support nonce
-	}
-
-	assignSwapinNonceLock.Lock()
-	defer assignSwapinNonceLock.Unlock()
-
-	return assignSwapNonce(res, isSwapin)
-}
-
-func assignSwapoutNonce(res *mongodb.MgoSwapResult) (swapNonce uint64, err error) {
-	isSwapin := false
-	resBridge := tokens.GetCrossChainBridge(!isSwapin)
-	_, ok := resBridge.(tokens.NonceSetter)
-	if !ok {
-		return 0, nil // ignore bridge which does not support nonce
-	}
-
-	assignSwapoutNonceLock.Lock()
-	defer assignSwapoutNonceLock.Unlock()
-
-	return assignSwapNonce(res, isSwapin)
-}
-
-func assignSwapNonce(res *mongodb.MgoSwapResult, isSwapin bool) (swapNonce uint64, err error) {
-	resBridge := tokens.GetCrossChainBridge(!isSwapin)
-	nonceSetter, ok := resBridge.(tokens.NonceSetter)
-	if !ok {
-		return 0, nil // ignore bridge which does not support nonce
-	}
-	pairID := res.PairID
-	tokenCfg := resBridge.GetTokenConfig(pairID)
-	if tokenCfg == nil {
-		return 0, tokens.ErrUnknownPairID
-	}
-	dcrmAddress := tokenCfg.DcrmAddress
-	for { // looop until success
-		swapNonce, err = nonceSetter.GetPoolNonce(dcrmAddress, "pending")
-		if err == nil {
-			swapNonce = nonceSetter.AdjustNonce(pairID, swapNonce)
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-	err = mongodb.AssignSwapNonce(isSwapin, res.TxID, pairID, res.Bind, swapNonce)
-	if err != nil {
-		return 0, err
-	}
-	nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
-	return swapNonce, nil
+	return txHash, err
 }
