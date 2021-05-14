@@ -236,8 +236,6 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 	}
 	if err != nil {
 		logWorkerError("sendtx", "update swap status to TxSwapFailed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
-		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
-		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
 		return err
 	}
 	if !isReplace {
