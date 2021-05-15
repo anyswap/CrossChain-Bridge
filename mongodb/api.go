@@ -404,7 +404,8 @@ func updateSwapResultStatus(collection *mgo.Collection, txid, pairID, bind strin
 	updates := bson.M{"status": status, "timestamp": timestamp}
 	if memo != "" {
 		updates["memo"] = memo
-	} else if status == MatchTxEmpty {
+	}
+	if status == Reswapping {
 		updates["memo"] = ""
 		updates["swaptx"] = ""
 		updates["oldswaptxs"] = nil

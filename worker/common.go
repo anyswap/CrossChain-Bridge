@@ -232,6 +232,9 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		}
 		time.Sleep(retrySendTxInterval)
 	}
+	if txHash != "" {
+		addSwapHistory(isSwapin, txid, bind, txHash)
+	}
 	if err != nil {
 		logWorkerError("sendtx", "send tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "txHash", txHash)
 	}

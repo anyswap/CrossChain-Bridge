@@ -139,7 +139,7 @@ func reswap(txid, pairID, bind, forceOpt string, isSwapin bool) error {
 	}
 
 	log.Info("[reswap] update status to TxNotSwapped to retry", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swapResult.SwapTx)
-	err = UpdateSwapResultStatus(isSwapin, txid, pairID, bind, MatchTxEmpty, time.Now().Unix(), "")
+	err = UpdateSwapResultStatus(isSwapin, txid, pairID, bind, Reswapping, time.Now().Unix(), "")
 	if err != nil {
 		return err
 	}

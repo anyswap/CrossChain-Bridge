@@ -58,6 +58,7 @@ const (
 	BindAddrIsContract                      // 17
 
 	KeepStatus = 255
+	Reswapping = 256
 )
 
 // CanManualMakeFail can manual make fail
@@ -146,6 +147,8 @@ func (status SwapStatus) String() string {
 		return "ManualMakeFail"
 	case BindAddrIsContract:
 		return "BindAddrIsContract"
+	case Reswapping:
+		return "Reswapping"
 	default:
 		return fmt.Sprintf("unknown swap status %d", status)
 	}
