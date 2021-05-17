@@ -809,3 +809,34 @@ func LoadAllSwapNonces() (swapinNonces, swapoutNonces map[string]uint64) {
 	log.Info("load swap nonces finished", "swapinNonces", swapinNonces, "swapoutNonces", swapoutNonces)
 	return swapinNonces, swapoutNonces
 }
+
+// ---------------------- swap hisitory -----------------------------
+
+// AddSwapHistory add
+func AddSwapHistory(isSwapin bool, txid, bind, swaptx string) error {
+	item := &MgoSwapHistory{
+		Key:      bson.NewObjectId(),
+		IsSwapin: isSwapin,
+		TxID:     txid,
+		Bind:     bind,
+		SwapTx:   swaptx,
+	}
+	err := collSwapHistory.Insert(item)
+	if err == nil {
+		log.Info("mongodb add swap history success", "txid", txid, "bind", bind, "isSwapin", isSwapin)
+	} else {
+		log.Debug("mongodb add swap history failed", "txid", txid, "bind", bind, "isSwapin", isSwapin, "err", err)
+	}
+	return mgoError(err)
+}
+
+// GetSwapHistory get
+func GetSwapHistory(isSwapin bool, txid, bind string) ([]*MgoSwapHistory, error) {
+	qtxid := bson.M{"txid": txid}
+	qbind := bson.M{"bind": bind}
+	qisswapin := bson.M{"isswapin": isSwapin}
+	queries := []bson.M{qtxid, qbind, qisswapin}
+	result := make([]*MgoSwapHistory, 0, 20)
+	err := collSwapHistory.Find(bson.M{"$and": queries}).All(&result)
+	return result, mgoError(err)
+}

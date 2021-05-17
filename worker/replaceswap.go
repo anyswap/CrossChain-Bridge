@@ -20,6 +20,7 @@ var (
 	errBuildTxFailed      = errors.New("build tx failed")
 	errSignTxFailed       = errors.New("sign tx failed")
 	errUpdateOldTxsFailed = errors.New("update old swaptxs failed")
+	errNotNonceSupport    = errors.New("not nonce support bridge")
 
 	updateOldSwapTxsLock sync.Mutex
 )
@@ -49,7 +50,7 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 	bridge := tokens.GetCrossChainBridge(!isSwapin)
 	nonceSetter, ok := bridge.(tokens.NonceSetter)
 	if !ok {
-		return nil, nil, errors.New("not nonce support bridge")
+		return nil, nil, errNotNonceSupport
 	}
 	if isSwapResultTxOnChain(nonceSetter, res) {
 		return nil, nil, errSwapTxIsOnChain
@@ -71,6 +72,10 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
 		}
 		return nil, nil, errSwapNoncePassed
+	}
+	err = preventReplaceswapByHistory(res, isSwapin)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return swap, res, nil
@@ -177,4 +182,24 @@ func replaceSwapResult(txid, pairID, bind, txHash string, isSwapin bool) (err er
 		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", res.SwapNonce)
 	}
 	return err
+}
+
+func preventReplaceswapByHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
+	swapHistories, _ := mongodb.GetSwapHistory(isSwapin, res.TxID, res.Bind)
+	if len(swapHistories) == 0 {
+		return nil
+	}
+	resBridge := tokens.GetCrossChainBridge(!isSwapin)
+	nonceSetter, ok := resBridge.(tokens.NonceSetter)
+	if !ok {
+		return errNotNonceSupport
+	}
+	for _, swaphist := range swapHistories {
+		if isTransactionOnChain(nonceSetter, swaphist.SwapTx) {
+			logWorkerError("[replace]", "forbid replace by history", errSwapTxIsOnChain,
+				"isSwapin", isSwapin, "txid", res.TxID, "bind", res.Bind, "swaptx", swaphist.SwapTx)
+			return errSwapTxIsOnChain
+		}
+	}
+	return nil
 }

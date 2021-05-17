@@ -10,6 +10,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 var (
@@ -207,10 +208,44 @@ func preventReswap(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	if res.Status != mongodb.Reswapping {
 		history := getSwapHistory(isSwapin, res.TxID, res.Bind)
 		if history != nil {
-			logWorkerError("[doSwap]", "forbid reswap", errAlreadySwapped, "isSwapin", history.isSwapin, "txid", history.txid, "bind", history.bind, "swaptx", history.matchTx)
+			logWorkerError("[doSwap]", "forbid reswap by cache", errAlreadySwapped,
+				"isSwapin", history.isSwapin, "txid", history.txid, "bind", history.bind, "swaptx", history.matchTx)
 			_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, mongodb.TxProcessed, now(), "")
 			return errAlreadySwapped
 		}
+	}
+	return preventReswapByHistory(res, isSwapin)
+}
+
+func preventReswapByHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
+	swapHistories, _ := mongodb.GetSwapHistory(isSwapin, res.TxID, res.Bind)
+	if len(swapHistories) == 0 {
+		return nil
+	}
+	var alreadySwapped bool
+	if res.Status != mongodb.Reswapping {
+		alreadySwapped = true
+	} else {
+		resBridge := tokens.GetCrossChainBridge(!isSwapin)
+		for _, swaphist := range swapHistories {
+			txStatus := resBridge.GetTransactionStatus(swaphist.SwapTx)
+			if txStatus.Receipt != nil {
+				receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
+				if ok && *receipt.Status == 1 {
+					alreadySwapped = true
+					break
+				}
+			} else if txStatus != nil && txStatus.BlockHeight > 0 {
+				alreadySwapped = true
+				break
+			}
+		}
+	}
+	if alreadySwapped {
+		logWorkerError("[doSwap]", "forbid reswap by history", errAlreadySwapped,
+			"isSwapin", isSwapin, "txid", res.TxID, "bind", res.Bind, "history", swapHistories)
+		_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, mongodb.TxProcessed, now(), "")
+		return errAlreadySwapped
 	}
 	return nil
 }
@@ -340,7 +375,7 @@ type swapInfo struct {
 	matchTx  string
 }
 
-func addSwapHistory(isSwapin bool, txid, bind string, matchTx string) {
+func addSwapHistory(isSwapin bool, txid, bind, matchTx string) {
 	// Create the new item as its own ring
 	item := ring.New(1)
 	item.Value = &swapInfo{

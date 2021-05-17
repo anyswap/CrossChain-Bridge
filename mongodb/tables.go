@@ -1,5 +1,9 @@
 package mongodb
 
+import (
+	"gopkg.in/mgo.v2/bson"
+)
+
 const (
 	tbSwapins           string = "Swapins"
 	tbSwapouts          string = "Swapouts"
@@ -11,6 +15,7 @@ const (
 	tbRegisteredAddress string = "RegisteredAddress"
 	tbBlacklist         string = "Blacklist"
 	tbLatestSwapNonces  string = "LatestSwapNonces"
+	tbSwapHistory       string = "SwapHistory"
 
 	keyOfSrcLatestScanInfo string = "srclatest"
 	keyOfDstLatestScanInfo string = "dstlatest"
@@ -115,4 +120,13 @@ type MgoLatestSwapNonce struct {
 	IsSwapin  bool   `bson:"isswapin"`
 	SwapNonce uint64 `bson:"swapnonce"`
 	Timestamp int64  `bson:"timestamp"`
+}
+
+// MgoSwapHistory swap history
+type MgoSwapHistory struct {
+	Key      bson.ObjectId `bson:"_id"`
+	IsSwapin bool          `bson:"isswapin"`
+	TxID     string        `bson:"txid"`
+	Bind     string        `bson:"bind"`
+	SwapTx   string        `bson:"swaptx"`
 }
