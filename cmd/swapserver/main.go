@@ -61,6 +61,7 @@ func swapserver(ctx *cli.Context) error {
 		return fmt.Errorf("invalid command: %q", ctx.Args().Get(0))
 	}
 	exitCh := make(chan struct{})
+	params.IsSwapServer = true
 	configFile := utils.GetConfigFilePath(ctx)
 	config := params.LoadConfig(configFile, true)
 

@@ -78,7 +78,7 @@ func (b *Bridge) getUtxosFromElectUtxos(target btcAmountType, addrs []string, ut
 	}
 
 	if total < target {
-		log.Warn("getUtxos total %v < target %v", total, target)
+		log.Warnf("getUtxos total %v < target %v", total, target)
 	}
 
 	return total, inputs, inputValues, scripts, nil

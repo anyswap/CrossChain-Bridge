@@ -60,8 +60,8 @@ github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239/go.mod h1:Gdwt2ce0
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/felixge/httpsnoop v1.0.1 h1:lvB5Jl89CsZtGIWuTcDM1E/vkVs49/Ml7JJe07l8SPQ=
 github.com/felixge/httpsnoop v1.0.1/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
-github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9 h1:xPJfIdoA/Ux4kbKtV7L2h0Z10eHo0AeKAg/2YxYRA98=
-github.com/fsn-dev/fsn-go-sdk v0.0.0-20201127063150-d66d045799f9/go.mod h1:MtL34MP65N4fVCkYHlaXabn0mKKVOZZL2hRRS7L16ak=
+github.com/fsn-dev/fsn-go-sdk v0.0.0-20210430081410-a6b17c99c3ea h1:Mo1kciOw84BO/KmGZmF+27vgHo2UftsiSUrvLppmWiE=
+github.com/fsn-dev/fsn-go-sdk v0.0.0-20210430081410-a6b17c99c3ea/go.mod h1:MtL34MP65N4fVCkYHlaXabn0mKKVOZZL2hRRS7L16ak=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=

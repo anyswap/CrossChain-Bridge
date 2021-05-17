@@ -21,16 +21,20 @@ func NewNonceSetterBase() *NonceSetterBase {
 	}
 }
 
-// SetNonce set nonce directly
+// SetNonce set nonce directly always increase
 func (b *Bridge) SetNonce(pairID string, value uint64) {
 	tokenCfg := b.GetTokenConfig(pairID)
 	account := strings.ToLower(tokenCfg.DcrmAddress)
 	if b.IsSrcEndpoint() {
-		b.SwapoutNonce[account] = value
-		_ = mongodb.UpdateLatestSwapoutNonce(account, value)
+		if b.SwapoutNonce[account] < value {
+			b.SwapoutNonce[account] = value
+			_ = mongodb.UpdateLatestSwapoutNonce(account, value)
+		}
 	} else {
-		b.SwapinNonce[account] = value
-		_ = mongodb.UpdateLatestSwapinNonce(account, value)
+		if b.SwapinNonce[account] < value {
+			b.SwapinNonce[account] = value
+			_ = mongodb.UpdateLatestSwapinNonce(account, value)
+		}
 	}
 }
 

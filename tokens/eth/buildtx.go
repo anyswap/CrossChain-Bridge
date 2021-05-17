@@ -21,7 +21,12 @@ var (
 )
 
 // BuildRawTransaction build raw tx
+// nolint:gocyclo // allow switch case
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
+	if args.SwapType != tokens.NoSwapType && args.Identifier == "" {
+		return nil, fmt.Errorf("build swaptx without identifier")
+	}
+
 	var input []byte
 	var tokenCfg *tokens.TokenConfig
 	if args.Input == nil {
@@ -101,10 +106,6 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		if !tokenCfg.IsErc20() {
 			value = tokens.CalcSwappedValue(pairID, args.OriginValue, false)
 		}
-	}
-
-	if args.SwapType != tokens.NoSwapType {
-		args.Identifier = params.GetIdentifier()
 	}
 
 	needValue := big.NewInt(0)
@@ -213,6 +214,12 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 		return nil, tokens.ErrUnknownPairID
 	}
 	addPercent := tokenCfg.PlusGasPricePercentage
+	if args.ReplaceNum > 0 {
+		addPercent += args.ReplaceNum * b.ChainConfig.ReplacePlusGasPricePercent
+	}
+	if addPercent > tokens.MaxPlusGasPricePercentage {
+		addPercent = tokens.MaxPlusGasPricePercentage
+	}
 	newGasPrice = new(big.Int).Set(oldGasPrice) // clone from old
 	if addPercent > 0 {
 		newGasPrice.Mul(newGasPrice, big.NewInt(int64(100+addPercent)))
@@ -229,7 +236,9 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 				newGasPrice = minGasPrice
 			}
 		}
-		latestGasPrice = newGasPrice
+		if args.ReplaceNum == 0 { // exclude replace situation
+			latestGasPrice = newGasPrice
+		}
 	}
 	return newGasPrice, nil
 }

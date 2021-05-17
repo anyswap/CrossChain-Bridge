@@ -19,6 +19,10 @@ var (
 	maxReplaceSwapLifetime       = int64(7 * 24 * 3600)
 	restIntervalInReplaceSwapJob = 300 * time.Second
 
+	maxPassBigValueLifetime     = int64(7 * 24 * 3600)
+	restIntervalInPassBigValJob = 300 * time.Second
+	passBigValueTimeRequired    = int64(12 * 3600) // seconds
+
 	retrySignInterval = 3 * time.Second
 )
 

@@ -11,6 +11,10 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
+const (
+	minTimeIntervalToReswap = int64(300) // seconds
+)
+
 // --------------- blacklist --------------------------------
 
 func getBlacklistKey(address, pairID string) string {
@@ -166,18 +170,22 @@ func checkCanReswap(res *MgoSwapResult, forceOpt string, isSwapin bool) error {
 		return errors.New("swap without swaptx")
 	}
 	bridge := tokens.GetCrossChainBridge(!isSwapin)
-	isSwapTxExist := isSwapResultTxOnChain(bridge, res)
+	isSwapTxExist := isSwapResultTxExist(bridge, res)
 	if isSwapTxExist && res.Status != MatchTxFailed {
 		return errors.New("swaptx exist in chain or pool")
+	}
+	txStatus := bridge.GetTransactionStatus(res.SwapTx)
+	if txStatus != nil && txStatus.BlockHeight > 0 {
+		if res.Status != MatchTxFailed {
+			return errors.New("swaptx exist on chain and is not mark failed")
+		} else if !txStatus.IsSwapTxOnChainAndFailed(bridge.GetTokenConfig(res.PairID)) {
+			return fmt.Errorf("swap succeed with swaptx %v", res.SwapTx)
+		}
 	}
 	return checkReswapNonce(bridge, res, forceOpt)
 }
 
-func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, forceOpt string) (err error) {
-	const forceFlag = "--force"
-	if forceOpt == forceFlag {
-		return nil
-	}
+func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, _ /*forceOpt*/ string) (err error) {
 	nonceSetter, ok := bridge.(tokens.NonceSetter)
 	if !ok {
 		return nil
@@ -199,7 +207,10 @@ func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, forceO
 		time.Sleep(time.Second)
 	}
 	if nonce <= res.SwapNonce {
-		return errors.New("can not retry swap with lower nonce")
+		return errors.New("can not reswap with lower nonce")
+	}
+	if res.Timestamp+minTimeIntervalToReswap > time.Now().Unix() {
+		return errors.New("can not reswap in too short interval")
 	}
 	return nil
 }
@@ -224,17 +235,20 @@ func ManualManageSwap(txid, pairID, bind, memo string, isSwapin, isPass bool) er
 	return fmt.Errorf("swap status is %v, can not operate. txid=%v pairID=%v bind=%v isSwapin=%v isPass=%v", swap.Status.String(), txid, pairID, bind, isSwapin, isPass)
 }
 
-func isTransactionOnChain(bridge tokens.CrossChainBridge, txHash string) bool {
+func isTransactionExist(bridge tokens.CrossChainBridge, txHash string) bool {
+	if txHash == "" {
+		return false
+	}
 	tx, err := bridge.GetTransaction(txHash)
 	return err == nil && tx != nil
 }
 
-func isSwapResultTxOnChain(bridge tokens.CrossChainBridge, res *MgoSwapResult) bool {
-	if isTransactionOnChain(bridge, res.SwapTx) {
+func isSwapResultTxExist(bridge tokens.CrossChainBridge, res *MgoSwapResult) bool {
+	if isTransactionExist(bridge, res.SwapTx) {
 		return true
 	}
 	for _, tx := range res.OldSwapTxs {
-		if isTransactionOnChain(bridge, tx) {
+		if isTransactionExist(bridge, tx) {
 			return true
 		}
 	}

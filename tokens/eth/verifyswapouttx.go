@@ -22,6 +22,10 @@ func (b *Bridge) verifySwapoutTxWithPairID(pairID, txHash string, allowUnstable 
 		return swapInfo, tokens.ErrUnknownPairID
 	}
 
+	if token.DisableSwap {
+		return swapInfo, tokens.ErrSwapIsClosed
+	}
+
 	receipt, err := b.getReceipt(swapInfo, allowUnstable)
 	if err != nil {
 		return swapInfo, err

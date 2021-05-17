@@ -11,9 +11,6 @@ var (
 	defWaitTimeToReplace = int64(900) // seconds
 	defMaxReplaceCount   = 20
 
-	srcNonceSetter tokens.NonceSetter
-	dstNonceSetter tokens.NonceSetter
-
 	// key is signer address
 	swapinReplaceChanMap  = make(map[string]chan *mongodb.MgoSwapResult)
 	swapoutReplaceChanMap = make(map[string]chan *mongodb.MgoSwapResult)
@@ -21,14 +18,11 @@ var (
 
 // StartReplaceJob replace job
 func StartReplaceJob() {
-	var ok bool
-	dstNonceSetter, ok = tokens.DstBridge.(tokens.NonceSetter)
-	if ok {
+	if dstNonceSetter != nil {
 		go startReplaceSwapinJob()
 	}
 
-	srcNonceSetter, ok = tokens.SrcBridge.(tokens.NonceSetter)
-	if ok {
+	if srcNonceSetter != nil {
 		go startReplaceSwapoutJob()
 	}
 }
@@ -150,14 +144,10 @@ func processReplaceSwapTask(swapChan <-chan *mongodb.MgoSwapResult) {
 	}
 }
 
-func getNonceSetter(isSwapin bool) tokens.NonceSetter {
-	if isSwapin {
-		return dstNonceSetter
-	}
-	return srcNonceSetter
-}
-
 func doReplaceSwap(swap *mongodb.MgoSwapResult) {
+	if swap.SwapNonce == 0 || swap.SwapHeight != 0 {
+		return
+	}
 	isSwapin := tokens.SwapType(swap.SwapType) == tokens.SwapinType
 	nonceSetter := getNonceSetter(isSwapin)
 	if nonceSetter == nil {
@@ -181,6 +171,9 @@ func doReplaceSwap(swap *mongodb.MgoSwapResult) {
 }
 
 func isTransactionOnChain(bridge tokens.NonceSetter, txHash string) bool {
+	if txHash == "" {
+		return false
+	}
 	blockHeight, _ := bridge.GetTxBlockInfo(txHash)
 	return blockHeight > 0
 }

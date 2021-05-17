@@ -7,7 +7,6 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 var (
@@ -124,18 +123,10 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 			return nil
 		}
 		if swap.SwapTx != oldSwapTx {
-			_ = updateSwapTx(swap.TxID, swap.PairID, swap.Bind, swap.SwapTx, isSwapin)
+			_ = updateSwapResultTx(swap.TxID, swap.PairID, swap.Bind, swap.SwapTx, isSwapin, mongodb.KeepStatus)
 		}
-		if txStatus.Receipt != nil {
-			receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-			txFailed := !ok || receipt == nil || *receipt.Status != 1
-			token := resBridge.GetTokenConfig(swap.PairID)
-			if !txFailed && token != nil && token.ContractAddress != "" && len(receipt.Logs) == 0 {
-				txFailed = true
-			}
-			if txFailed {
-				return markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
-			}
+		if txStatus.IsSwapTxOnChainAndFailed(resBridge.GetTokenConfig(swap.PairID)) {
+			return markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 		}
 		return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 	}
@@ -148,6 +139,7 @@ func processUpdateSwapHeight(resBridge tokens.CrossChainBridge, swap *mongodb.Mg
 	if !ok {
 		return nil
 	}
+
 	oldSwapTx := swap.SwapTx
 	blockHeight, blockTime := nonceSetter.GetTxBlockInfo(swap.SwapTx)
 	if blockHeight == 0 {

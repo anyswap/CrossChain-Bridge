@@ -20,6 +20,9 @@ var (
 	serverConfig      *ServerConfig
 	loadConfigStarter sync.Once
 
+	// IsSwapServer if true then it's swap server, otherwise it's swap oracle
+	IsSwapServer bool
+
 	// ServerAPIAddress server api address
 	ServerAPIAddress string
 )
@@ -97,6 +100,11 @@ func GetAPIPort() int {
 // GetIdentifier get identifier (to distiguish in dcrm accept)
 func GetIdentifier() string {
 	return GetConfig().Identifier
+}
+
+// GetReplaceIdentifier get identifier (to distiguish in dcrm accept)
+func GetReplaceIdentifier() string {
+	return GetConfig().Identifier + ":replaceswap"
 }
 
 // MustRegisterAccount flag
