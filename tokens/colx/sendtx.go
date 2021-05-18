@@ -43,14 +43,6 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 			}
 			_ = b.SetUnlockUtxoCond(inputtxhash, inputvout, cond)
 		}
-	} else {
-		/*
-			for _, txin := range tx.TxIn {
-				inputtxhash := txin.PreviousOutPoint.Hash.String()
-				inputvout := int(txin.PreviousOutPoint.Index)
-				b.UnlockUtxo(inputtxhash, inputvout)
-			}
-		*/
-	}
+	} 
 	return
 }
