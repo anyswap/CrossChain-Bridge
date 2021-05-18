@@ -22,8 +22,9 @@ var (
 	swapinTaskChanMap  = make(map[string]chan *tokens.BuildTxArgs)
 	swapoutTaskChanMap = make(map[string]chan *tokens.BuildTxArgs)
 
-	errAlreadySwapped = errors.New("already swapped")
-	errDBError        = errors.New("database error")
+	errAlreadySwapped     = errors.New("already swapped")
+	errDBError            = errors.New("database error")
+	errSendTxWithDiffHash = errors.New("send tx with different hash")
 )
 
 // StartSwapJob swap job
@@ -357,13 +358,13 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	swapNonce := args.GetTxNonce()
 
 	var signedTx interface{}
-	var txHash string
+	var signTxHash string
 	tokenCfg := resBridge.GetTokenConfig(pairID)
 	for i := 1; i <= 3; i++ { // with retry
 		if tokenCfg.GetDcrmAddressPrivateKey() != nil {
-			signedTx, txHash, err = resBridge.SignTransaction(rawTx, pairID)
+			signedTx, signTxHash, err = resBridge.SignTransaction(rawTx, pairID)
 		} else {
-			signedTx, txHash, err = resBridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+			signedTx, signTxHash, err = resBridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 		}
 		if err == nil {
 			break
@@ -377,7 +378,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 
 	// update database before sending transaction
 	matchTx := &MatchTx{
-		SwapTx:    txHash,
+		SwapTx:    signTxHash,
 		SwapValue: tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
 		SwapType:  swapType,
 		SwapNonce: swapNonce,
@@ -394,9 +395,13 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	txHash, err = sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
+	txHash, err := sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
 	if err == nil {
 		logWorker("doSwap", "send tx success", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash)
+		if txHash != signTxHash {
+			logWorkerError("doSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash, "signTxHash", signTxHash)
+			_ = replaceSwapResult(txid, pairID, bind, txHash, isSwapin)
+		}
 		if nonceSetter, ok := resBridge.(tokens.NonceSetter); ok {
 			nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
 		}

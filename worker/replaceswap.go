@@ -151,21 +151,27 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 		return "", errBuildTxFailed
 	}
 	var signedTx interface{}
+	var signTxHash string
 	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
-		signedTx, txHash, err = bridge.SignTransaction(rawTx, pairID)
+		signedTx, signTxHash, err = bridge.SignTransaction(rawTx, pairID)
 	} else {
-		signedTx, txHash, err = bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+		signedTx, signTxHash, err = bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 	}
 	if err != nil {
 		logWorkerError("replaceSwap", "sign tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return "", errSignTxFailed
 	}
 
-	err = replaceSwapResult(txid, pairID, bind, txHash, isSwapin)
+	err = replaceSwapResult(txid, pairID, bind, signTxHash, isSwapin)
 	if err != nil {
 		return "", errUpdateOldTxsFailed
 	}
-	return sendSignedTransaction(bridge, signedTx, txid, pairID, bind, isSwapin)
+	txHash, err = sendSignedTransaction(bridge, signedTx, txid, pairID, bind, isSwapin)
+	if err == nil && txHash != signTxHash {
+		logWorkerError("replaceSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", nonce, "txHash", txHash, "signTxHash", signTxHash)
+		_ = replaceSwapResult(txid, pairID, bind, txHash, isSwapin)
+	}
+	return txHash, err
 }
 
 func replaceSwapResult(txid, pairID, bind, txHash string, isSwapin bool) (err error) {
