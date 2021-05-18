@@ -100,7 +100,6 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		extra.RelayFeePerKb = &relayFee
 		relayFeePerKb = colxAmountType(relayFee)
 	}
-	relayFeePerKb = 0
 
 	txOuts, err := b.getTxOutputs(to, amount, memo)
 	if err != nil {
@@ -269,7 +268,7 @@ func (b *Bridge) selectUtxos(from string, target colxAmountType) (total colxAmou
 	)
 
 	for _, utxo := range utxos {
-		if b.IsUtxoLocked(*utxo.Txid, int(*utxo.Vout)) == true {
+		if b.IsUtxoLocked(*utxo.Txid, int(*utxo.Vout)) {
 			continue
 		}
 		value := colxAmountType(*utxo.Value)
@@ -444,7 +443,7 @@ func (b *Bridge) NewUnsignedTransaction(outputs []*wireTxOutType, relayFeePerKb 
 		for _, txin := range unsignedTransaction.TxIn {
 			inputtxhash := txin.PreviousOutPoint.Hash.String()
 			inputvout := int(txin.PreviousOutPoint.Index)
-			b.LockUtxo(inputtxhash, inputvout)
+			_ = b.LockUtxo(inputtxhash, inputvout)
 		}
 
 		return &txauthor.AuthoredTx{

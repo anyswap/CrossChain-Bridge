@@ -32,10 +32,7 @@ func (b *Bridge) IsUtxoLocked(txhash string, vout int) bool {
 func (b *Bridge) isUtxoLocked(key utxokey) bool {
 	utxoLock.RLock()
 	defer utxoLock.RUnlock()
-	if lockedUtxos[key] == 1 {
-		return true
-	}
-	return false
+	return (lockedUtxos[key] == 1)
 }
 
 // defaultUnlockCond unlock utxo after 5 days
@@ -55,10 +52,7 @@ func (b *Bridge) LockUtxoWithCond(txhash string, vout int, cond func() bool) err
 func after(seconds int64) func() bool {
 	deadline := time.Now().Unix() + seconds
 	return func() bool {
-		if time.Now().Unix() >= deadline {
-			return true
-		}
-		return false
+		return time.Now().Unix() >= deadline 
 	}
 }
 
@@ -95,7 +89,7 @@ func (b *Bridge) SetUnlockUtxoCond(txhash string, vout int, cond func() bool) er
 func (b *Bridge) setUnlockUtxoCond(key utxokey, cond func() bool) error {
 	utxoLock.Lock()
 	defer utxoLock.Lock()
-	if b.isUtxoLocked(key) == false {
+	if !b.isUtxoLocked(key) {
 		return ErrNotLocked
 	}
 	unlockConds[key] = cond
@@ -107,7 +101,7 @@ func (b *Bridge) StartMonitLockedUtxo() {
 	for {
 		log.Debug("Check locked utxos", "number locked", len(lockedUtxos))
 		for key, cond := range unlockConds {
-			if cond() == true {
+			if cond() {
 				log.Debug("Unlock utxo", "key", key)
 				b.unlockUtxo(key)
 			}
