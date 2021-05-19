@@ -20,6 +20,7 @@ const (
 
 // Bridge eth bridge
 type Bridge struct {
+	Inherit interface{}
 	*tokens.CrossChainBridgeBase
 	*NonceSetterBase
 	Signer        types.Signer

@@ -25,7 +25,9 @@ type Bridge struct {
 
 // NewCrossChainBridge new fsn bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	return &Bridge{Bridge: eth.NewCrossChainBridge(isSrc)}
+	bridge := &Bridge{Bridge: eth.NewCrossChainBridge(isSrc)}
+	bridge.Inherit = bridge
+	return bridge
 }
 
 // SetChainAndGateway set token and gateway config
