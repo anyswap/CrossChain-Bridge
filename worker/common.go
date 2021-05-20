@@ -13,7 +13,6 @@ import (
 // MatchTx struct
 type MatchTx struct {
 	SwapTx     string
-	OldSwapTxs []string
 	SwapHeight uint64
 	SwapTime   uint64
 	SwapValue  string
@@ -69,7 +68,6 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 	}
 	if mtx.SwapHeight == 0 {
 		updates.SwapTx = mtx.SwapTx
-		updates.OldSwapTxs = mtx.OldSwapTxs
 		updates.SwapValue = mtx.SwapValue
 		updates.SwapNonce = mtx.SwapNonce
 		updates.SwapHeight = 0
