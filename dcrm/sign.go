@@ -19,8 +19,8 @@ import (
 const (
 	pingCount                  = 3
 	retrySignCount             = 3
-	retryGetSignStatusCount    = 70
-	retryGetSignStatusInterval = 10 * time.Second
+	retryGetSignStatusCount    = 120
+	retryGetSignStatusInterval = 1 * time.Second
 )
 
 func pingDcrmNode(nodeInfo *NodeInfo) (err error) {
@@ -108,7 +108,6 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 		return "", nil, err
 	}
 
-	time.Sleep(retryGetSignStatusInterval)
 	var signStatus *SignStatus
 	i := 0
 	for ; i < retryGetSignStatusCount; i++ {
