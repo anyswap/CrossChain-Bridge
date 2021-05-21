@@ -14,6 +14,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
+	"github.com/anyswap/CrossChain-Bridge/tokens/okex"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
@@ -31,6 +32,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return etc.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "ETHEREUM"):
 		return eth.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "OKEX"):
+		return okex.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
 	default:
