@@ -35,6 +35,7 @@ type ChainConfig struct {
 	EnableScanPool bool
 	ScanReceipt    bool `json:",omitempty"`
 
+	BaseGasPrice               string `json:",omitempty"`
 	MaxGasPriceFluctPercent    uint64 `json:",omitempty"`
 	ReplacePlusGasPricePercent uint64 `json:",omitempty"`
 	WaitTimeToReplace          int64  // seconds
@@ -204,6 +205,7 @@ type BuildTxArgs struct {
 	To          string     `json:"to,omitempty"`
 	Value       *big.Int   `json:"value,omitempty"`
 	OriginValue *big.Int   `json:"originValue,omitempty"`
+	SwapValue   *big.Int   `json:"swapvalue,omitempty"`
 	Memo        string     `json:"memo,omitempty"`
 	Input       *[]byte    `json:"input,omitempty"`
 	Extra       *AllExtras `json:"extra,omitempty"`
@@ -236,6 +238,14 @@ func (args *BuildTxArgs) SetTxNonce(nonce uint64) {
 		extra = args.Extra.EthExtra
 	}
 	extra.Nonce = &nonce
+}
+
+// GetTxGasPrice get tx gas price
+func (args *BuildTxArgs) GetTxGasPrice() *big.Int {
+	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.GasPrice != nil {
+		return args.Extra.EthExtra.GasPrice
+	}
+	return nil
 }
 
 // AllExtras struct
@@ -291,6 +301,11 @@ func (c *ChainConfig) CheckConfig() error {
 	}
 	if c.ReplacePlusGasPricePercent > 100 {
 		return errors.New("'ReplacePlusGasPricePercent' is too large (>100)")
+	}
+	if c.BaseGasPrice != "" {
+		if _, err := common.GetBigIntFromStr(c.BaseGasPrice); err != nil {
+			return errors.New("wrong 'BaseGasPrice'")
+		}
 	}
 	return nil
 }

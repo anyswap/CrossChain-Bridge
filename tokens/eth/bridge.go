@@ -46,6 +46,15 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 func (b *Bridge) Init() {
 	InitExtCodeParts()
 	b.InitLatestBlockNumber()
+
+	if b.ChainConfig.BaseGasPrice != "" {
+		gasPrice, err := common.GetBigIntFromStr(b.ChainConfig.BaseGasPrice)
+		if err != nil {
+			log.Crit("wrong chain config 'BaseGasPrice'", "BaseGasPrice", b.ChainConfig.BaseGasPrice, "err", err)
+		}
+		baseGasPrice = gasPrice
+	}
+	log.Info("init base gas price", "baseGasPrice", baseGasPrice, "isSrc", b.IsSrc, "chainID", b.SignerChainID)
 }
 
 // VerifyChainID verify chain id

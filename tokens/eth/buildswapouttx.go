@@ -21,6 +21,11 @@ func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) 
 		return errors.New("can not swapout to empty or invalid address")
 	}
 	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, false)
+	amount, err = b.adjustSwapValue(args, amount)
+	if err != nil {
+		return err
+	}
+	args.SwapValue = amount
 
 	input := PackDataWithFuncHash(funcHash, address, amount)
 	args.Input = &input // input

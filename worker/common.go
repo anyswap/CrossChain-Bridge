@@ -123,6 +123,7 @@ func updateSwapResultHeight(swap *mongodb.MgoSwapResult, blockHeight, blockTime 
 	updates.SwapTime = blockTime
 	if updateSwapTx {
 		updates.SwapTx = swap.SwapTx
+		updates.SwapValue = swap.SwapValue
 	}
 	txid := swap.TxID
 	pairID := swap.PairID
@@ -161,10 +162,11 @@ func updateSwapTimestamp(txid, pairID, bind string, isSwapin bool) (err error) {
 	return err
 }
 
-func updateSwapResultTx(txid, pairID, bind, swapTx string, isSwapin bool, status mongodb.SwapStatus) (err error) {
+func updateSwapResultTx(txid, pairID, bind, swapTx, swapValue string, isSwapin bool, status mongodb.SwapStatus) (err error) {
 	updates := &mongodb.SwapResultUpdateItems{
 		Status:    status,
 		SwapTx:    swapTx,
+		SwapValue: swapValue,
 		Timestamp: now(),
 	}
 	if isSwapin {
@@ -180,12 +182,16 @@ func updateSwapResultTx(txid, pairID, bind, swapTx string, isSwapin bool, status
 	return err
 }
 
-func updateOldSwapTxs(txid, pairID, bind, swapTx string, oldSwapTxs []string, isSwapin bool) (err error) {
+func updateOldSwapTxs(txid, pairID, bind, swapTx string, oldSwapTxs, oldSwapVals []string, isSwapin bool) (err error) {
+	if len(oldSwapTxs) != len(oldSwapVals) {
+		return fmt.Errorf("update old swaptxs with different count of values")
+	}
 	updates := &mongodb.SwapResultUpdateItems{
-		Status:     mongodb.KeepStatus,
-		SwapTx:     swapTx,
-		OldSwapTxs: oldSwapTxs,
-		Timestamp:  now(),
+		Status:      mongodb.KeepStatus,
+		SwapTx:      swapTx,
+		OldSwapTxs:  oldSwapTxs,
+		OldSwapVals: oldSwapVals,
+		Timestamp:   now(),
 	}
 	if isSwapin {
 		err = mongodb.UpdateSwapinResult(txid, pairID, bind, updates)

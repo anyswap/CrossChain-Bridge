@@ -76,6 +76,7 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 			return nil, nil, errSwapTxIsOnChain
 		}
 		if res.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
+			logWorkerWarn("[replace]", "mark swap result failed", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swaptime", res.Timestamp, "nowtime", now())
 			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
 		}
 		return nil, nil, errSwapNoncePassed
@@ -162,19 +163,23 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 		return "", errSignTxFailed
 	}
 
-	err = replaceSwapResult(txid, pairID, bind, signTxHash, isSwapin)
+	swapValue := ""
+	if args.SwapValue != nil {
+		swapValue = args.SwapValue.String()
+	}
+	err = replaceSwapResult(txid, pairID, bind, signTxHash, swapValue, isSwapin)
 	if err != nil {
 		return "", errUpdateOldTxsFailed
 	}
 	txHash, err = sendSignedTransaction(bridge, signedTx, txid, pairID, bind, isSwapin)
 	if err == nil && txHash != signTxHash {
 		logWorkerError("replaceSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", nonce, "txHash", txHash, "signTxHash", signTxHash)
-		_ = replaceSwapResult(txid, pairID, bind, txHash, isSwapin)
+		_ = replaceSwapResult(txid, pairID, bind, txHash, swapValue, isSwapin)
 	}
 	return txHash, err
 }
 
-func replaceSwapResult(txid, pairID, bind, txHash string, isSwapin bool) (err error) {
+func replaceSwapResult(txid, pairID, bind, txHash, swapValue string, isSwapin bool) (err error) {
 	updateOldSwapTxsLock.Lock()
 	defer updateOldSwapTxsLock.Unlock()
 
@@ -184,6 +189,7 @@ func replaceSwapResult(txid, pairID, bind, txHash string, isSwapin bool) (err er
 	}
 
 	oldSwapTxs := res.OldSwapTxs
+	oldSwapVals := res.OldSwapVals
 	if len(oldSwapTxs) > 0 {
 		for _, oldSwapTx := range oldSwapTxs {
 			if oldSwapTx == txHash {
@@ -191,22 +197,25 @@ func replaceSwapResult(txid, pairID, bind, txHash string, isSwapin bool) (err er
 			}
 		}
 		oldSwapTxs = append(oldSwapTxs, txHash)
+		oldSwapVals = append(oldSwapVals, swapValue)
 	} else {
 		if txHash == res.SwapTx {
 			return nil
 		}
 		if res.SwapTx == "" {
 			oldSwapTxs = []string{txHash}
+			oldSwapVals = []string{swapValue}
 		} else {
 			oldSwapTxs = []string{res.SwapTx, txHash}
+			oldSwapVals = []string{res.SwapValue, swapValue}
 		}
 	}
 	swapType := tokens.SwapType(res.SwapType).String()
-	err = updateOldSwapTxs(txid, pairID, bind, txHash, oldSwapTxs, isSwapin)
+	err = updateOldSwapTxs(txid, pairID, bind, txHash, oldSwapTxs, oldSwapVals, isSwapin)
 	if err != nil {
-		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", res.SwapNonce)
+		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", res.SwapNonce, "swapValue", swapValue)
 	} else {
-		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", res.SwapNonce)
+		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", res.SwapNonce, "swapValue", swapValue)
 	}
 	return err
 }

@@ -333,7 +333,6 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	txid := args.SwapID
 	bind := args.Bind
 	swapType := args.SwapType
-	originValue := args.OriginValue
 
 	isSwapin := swapType == tokens.SwapinType
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)
@@ -347,7 +346,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	logWorker("doSwap", "start to process", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "value", originValue)
+	logWorker("doSwap", "start to process", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "value", args.OriginValue)
 
 	rawTx, err := resBridge.BuildRawTransaction(args)
 	if err != nil {
@@ -379,9 +378,13 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	// update database before sending transaction
 	matchTx := &MatchTx{
 		SwapTx:    signTxHash,
-		SwapValue: tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
 		SwapType:  swapType,
 		SwapNonce: swapNonce,
+	}
+	if args.SwapValue != nil {
+		matchTx.SwapValue = args.SwapValue.String()
+	} else {
+		matchTx.SwapValue = tokens.CalcSwappedValue(pairID, args.OriginValue, isSwapin).String()
 	}
 	err = updateSwapResult(txid, pairID, bind, matchTx)
 	if err != nil {
@@ -400,7 +403,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		logWorker("doSwap", "send tx success", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash)
 		if txHash != signTxHash {
 			logWorkerError("doSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash, "signTxHash", signTxHash)
-			_ = replaceSwapResult(txid, pairID, bind, txHash, isSwapin)
+			_ = replaceSwapResult(txid, pairID, bind, txHash, matchTx.SwapValue, isSwapin)
 		}
 		if nonceSetter, ok := resBridge.(tokens.NonceSetter); ok {
 			nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage

@@ -38,6 +38,7 @@ var (
 	ErrUnknownPairID        = errors.New("unknown pair ID")
 	ErrBindAddressMismatch  = errors.New("bind address mismatch")
 	ErrRPCQueryError        = errors.New("rpc query error")
+	ErrWrongSwapValue       = errors.New("wrong swap value")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")

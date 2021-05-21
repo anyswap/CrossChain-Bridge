@@ -18,6 +18,7 @@ var (
 
 	minReserveFee  *big.Int
 	latestGasPrice *big.Int
+	baseGasPrice   *big.Int
 )
 
 // BuildRawTransaction build raw tx
@@ -25,6 +26,11 @@ var (
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	if args.SwapType != tokens.NoSwapType && args.Identifier == "" {
 		return nil, fmt.Errorf("build swaptx without identifier")
+	}
+
+	extra, err := b.setDefaults(args)
+	if err != nil {
+		return nil, err
 	}
 
 	var input []byte
@@ -72,11 +78,6 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		}
 	}
 
-	extra, err := b.setDefaults(args)
-	if err != nil {
-		return nil, err
-	}
-
 	return b.buildTx(args, extra, input)
 }
 
@@ -105,6 +106,11 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		}
 		if !tokenCfg.IsErc20() {
 			value = tokens.CalcSwappedValue(pairID, args.OriginValue, false)
+			value, err = b.adjustSwapValue(args, value)
+			if err != nil {
+				return nil, err
+			}
+			args.SwapValue = value
 		}
 	}
 
@@ -202,6 +208,13 @@ func (b *Bridge) getGasPrice(args *tokens.BuildTxArgs) (price *big.Int, err erro
 		price, err = b.adjustSwapGasPrice(args, price)
 		if err != nil {
 			return nil, err
+		}
+	}
+	if baseGasPrice != nil {
+		maxGasPrice := new(big.Int).Mul(baseGasPrice, big.NewInt(10))
+		if price.Cmp(maxGasPrice) > 0 {
+			log.Info("gas price exceeds upper bound", "baseGasPrice", baseGasPrice, "maxGasPrice", maxGasPrice, "price", price)
+			price = maxGasPrice
 		}
 	}
 	return price, err
