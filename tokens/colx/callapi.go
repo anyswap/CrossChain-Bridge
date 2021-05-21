@@ -113,7 +113,7 @@ func (b *Bridge) GetBlockTransactions(blockHash string, startIndex uint32) ([]*e
 
 // EstimateFeePerKb impl
 func (b *Bridge) EstimateFeePerKb(blocks int) (int64, error) {
-	//return electrs.EstimateFeePerKb(b, blocks)
+	//#return electrs.EstimateFeePerKb(b, blocks)
 	return int64(100100000), nil
 }
 
