@@ -1,7 +1,6 @@
 package eth
 
 import (
-	"errors"
 	"math/big"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -11,32 +10,32 @@ import (
 
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
 func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) (err error) {
-	pairID := args.PairID
-	token := b.GetTokenConfig(pairID)
+	token := b.GetTokenConfig(args.PairID)
 	if token == nil {
 		return tokens.ErrUnknownPairID
 	}
-	funcHash := getSwapinFuncHash()
-	txHash := common.HexToHash(args.SwapID)
-	address := common.HexToAddress(args.Bind)
-	if address == (common.Address{}) || !common.IsHexAddress(args.Bind) {
-		log.Warn("swapin to wrong address", "address", args.Bind)
-		return errors.New("can not swapin to empty or invalid address")
+
+	receiver := common.HexToAddress(args.Bind)
+	if receiver == (common.Address{}) || !common.IsHexAddress(args.Bind) {
+		log.Warn("swapin to wrong address", "receiver", args.Bind)
+		return errInvalidReceiverAddress
 	}
-	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, true)
-	amount, err = b.adjustSwapValue(args, amount)
+
+	swapValue := tokens.CalcSwappedValue(args.PairID, args.OriginValue, true)
+	swapValue, err = b.adjustSwapValue(args, swapValue)
 	if err != nil {
 		return err
 	}
-	args.SwapValue = amount
+	args.SwapValue = swapValue // swap value
 
-	input := PackDataWithFuncHash(funcHash, txHash, address, amount)
-	args.Input = &input // input
-
+	funcHash := getSwapinFuncHash()
+	txHash := common.HexToHash(args.SwapID)
+	input := PackDataWithFuncHash(funcHash, txHash, receiver, swapValue)
+	args.Input = &input             // input
 	args.To = token.ContractAddress // to
 
 	if token.IsDelegateContract && !token.IsAnyswapAdapter {
-		return b.checkBalance(token.DelegateToken, token.ContractAddress, amount)
+		return b.checkBalance(token.DelegateToken, token.ContractAddress, swapValue)
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -19,13 +20,34 @@ var (
 	minReserveFee  *big.Int
 	latestGasPrice *big.Int
 	baseGasPrice   *big.Int
+
+	errEmptyIdentifier       = errors.New("build swaptx without identifier")
+	errNonEmptyInputData     = errors.New("build swap tx with non-empty input data")
+	errNoSenderSpecified     = errors.New("build swaptx without specify sender")
+	errNonzeroValueSpecified = errors.New("build swap tx with non-zero value")
 )
 
+func (b *Bridge) buildNonswapTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
+	extra, err := b.setDefaults(args)
+	if err != nil {
+		return nil, err
+	}
+	var input []byte
+	if args.Input != nil {
+		input = *args.Input
+	}
+	return b.buildTx(args, extra, input)
+}
+
 // BuildRawTransaction build raw tx
-// nolint:gocyclo // allow switch case
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
-	if args.SwapType != tokens.NoSwapType && args.Identifier == "" {
-		return nil, fmt.Errorf("build swaptx without identifier")
+	if args.SwapType == tokens.NoSwapType {
+		return b.buildNonswapTx(args)
+	}
+
+	err = b.checkBuildTxArgs(args)
+	if err != nil {
+		return nil, err
 	}
 
 	extra, err := b.setDefaults(args)
@@ -34,59 +56,51 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	}
 
 	var input []byte
-	var tokenCfg *tokens.TokenConfig
-	if args.Input == nil {
-		if args.SwapType != tokens.NoSwapType {
-			pairID := args.PairID
-			tokenCfg = b.GetTokenConfig(pairID)
-			if tokenCfg == nil {
-				return nil, tokens.ErrUnknownPairID
-			}
-			if args.From == "" {
-				args.From = tokenCfg.DcrmAddress // from
-			}
+
+	switch args.SwapType {
+	case tokens.SwapinType:
+		err = b.buildSwapinTxInput(args)
+		if err != nil {
+			return nil, err
 		}
-		switch args.SwapType {
-		case tokens.SwapinType:
-			if b.IsSrc {
-				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
-			}
-			err = b.buildSwapinTxInput(args)
-			if err != nil {
-				return nil, err
-			}
-			input = *args.Input
-		case tokens.SwapoutType:
-			if !b.IsSrc {
-				return nil, tokens.ErrBuildSwapTxInWrongEndpoint
-			}
-			if tokenCfg.IsErc20() {
-				err = b.buildErc20SwapoutTxInput(args)
-				if err != nil {
-					return nil, err
-				}
-				input = *args.Input
-			} else {
-				args.To = args.Bind
-				input = b.getUnlockCoinMemo(args)
-			}
-		}
-	} else {
 		input = *args.Input
-		if args.SwapType != tokens.NoSwapType {
-			return nil, fmt.Errorf("forbid build raw swap tx with input data")
+	case tokens.SwapoutType:
+		err = b.buildSwapoutTxInput(args)
+		if err != nil {
+			return nil, err
 		}
+		input = *args.Input
 	}
 
 	return b.buildTx(args, extra, input)
 }
 
-func (b *Bridge) getUnlockCoinMemo(args *tokens.BuildTxArgs) (input []byte) {
-	isContract, err := b.IsContractAddress(args.Bind)
-	if err == nil && !isContract {
-		input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
+func (b *Bridge) checkBuildTxArgs(args *tokens.BuildTxArgs) error {
+	if args.Identifier == "" {
+		return errEmptyIdentifier
 	}
-	return input
+	if args.Input != nil {
+		return errNonEmptyInputData
+	}
+	if args.From == "" {
+		return errNoSenderSpecified
+	}
+	if args.Value != nil && args.Value.Sign() != 0 {
+		return errNonzeroValueSpecified
+	}
+
+	switch args.SwapType {
+	case tokens.SwapinType:
+		if b.IsSrc {
+			return tokens.ErrBuildSwapTxInWrongEndpoint
+		}
+	case tokens.SwapoutType:
+		if !b.IsSrc {
+			return tokens.ErrBuildSwapTxInWrongEndpoint
+		}
+	}
+
+	return nil
 }
 
 func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, input []byte) (rawTx interface{}, err error) {
@@ -97,22 +111,6 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		gasLimit = *extra.Gas
 		gasPrice = extra.GasPrice
 	)
-
-	if args.SwapType == tokens.SwapoutType {
-		pairID := args.PairID
-		tokenCfg := b.GetTokenConfig(pairID)
-		if tokenCfg == nil {
-			return nil, tokens.ErrUnknownPairID
-		}
-		if !tokenCfg.IsErc20() {
-			value = tokens.CalcSwappedValue(pairID, args.OriginValue, false)
-			value, err = b.adjustSwapValue(args, value)
-			if err != nil {
-				return nil, err
-			}
-			args.SwapValue = value
-		}
-	}
 
 	needValue := big.NewInt(0)
 	if value != nil && value.Sign() > 0 {
