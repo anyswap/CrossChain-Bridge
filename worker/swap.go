@@ -86,13 +86,13 @@ func processSwapins(status mongodb.SwapStatus) {
 	logWorker("swapin", "find swapins to swap", "status", status, "count", len(swapins))
 	for _, swap := range swapins {
 		err := processSwapinSwap(swap)
-		switch err {
-		case nil,
-			errAlreadySwapped,
-			errDBError,
-			tokens.ErrUnknownPairID,
-			tokens.ErrAddressIsInBlacklist,
-			tokens.ErrSwapIsClosed:
+		switch {
+		case err == nil,
+			errors.Is(err, errAlreadySwapped),
+			errors.Is(err, errDBError),
+			errors.Is(err, tokens.ErrUnknownPairID),
+			errors.Is(err, tokens.ErrAddressIsInBlacklist),
+			errors.Is(err, tokens.ErrSwapIsClosed):
 		default:
 			logWorkerError("swapin", "process swapin swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
 		}
@@ -110,13 +110,13 @@ func processSwapouts(status mongodb.SwapStatus) {
 	logWorker("swapout", "find swapouts to swap", "status", status, "count", len(swapouts))
 	for _, swap := range swapouts {
 		err := processSwapoutSwap(swap)
-		switch err {
-		case nil,
-			errAlreadySwapped,
-			errDBError,
-			tokens.ErrUnknownPairID,
-			tokens.ErrAddressIsInBlacklist,
-			tokens.ErrSwapIsClosed:
+		switch {
+		case err == nil,
+			errors.Is(err, errAlreadySwapped),
+			errors.Is(err, errDBError),
+			errors.Is(err, tokens.ErrUnknownPairID),
+			errors.Is(err, tokens.ErrAddressIsInBlacklist),
+			errors.Is(err, tokens.ErrSwapIsClosed):
 		default:
 			logWorkerError("swapout", "process swapout swap error", err, "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind)
 		}
@@ -248,6 +248,7 @@ func preventReswap(res *mongodb.MgoSwapResult, isSwapin bool) error {
 		mongodb.TxWithWrongValue:
 		_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, res.Status, now(), "")
 		return fmt.Errorf("forbid doswap for swap with status %v", res.Status.String())
+	default:
 	}
 	if res.Status != mongodb.Reswapping {
 		history := getSwapHistory(isSwapin, res.TxID, res.Bind)
@@ -320,8 +321,9 @@ func processSwapTask(swapChan <-chan *tokens.BuildTxArgs) {
 	for {
 		args := <-swapChan
 		err := doSwap(args)
-		switch err {
-		case nil, errAlreadySwapped:
+		switch {
+		case err == nil,
+			errors.Is(err, errAlreadySwapped):
 		default:
 			logWorkerError("doSwap", "process failed", err, "pairID", args.PairID, "txid", args.SwapID, "swapType", args.SwapType.String(), "value", args.OriginValue)
 		}

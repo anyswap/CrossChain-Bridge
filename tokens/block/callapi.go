@@ -1,6 +1,7 @@
 package block
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -233,7 +234,7 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 func callCloudchains(url, reqdata string, result interface{}) error {
 	client := &http.Client{}
 	var data = strings.NewReader(reqdata)
-	req, err := http.NewRequest("POST", url, data)
+	req, err := http.NewRequestWithContext(context.Background(), "POST", url, data)
 	if err != nil {
 		return err
 	}
@@ -242,12 +243,16 @@ func callCloudchains(url, reqdata string, result interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	bodyText, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	err = json.Unmarshal(bodyText, &result)
 	return err
 }

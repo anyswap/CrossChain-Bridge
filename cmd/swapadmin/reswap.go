@@ -11,7 +11,6 @@ import (
 const (
 	swapinOp  = "swapin"
 	swapoutOp = "swapout"
-	forceFlag = "--force"
 )
 
 var (
@@ -19,7 +18,7 @@ var (
 		Action:    reswap,
 		Name:      "reswap",
 		Usage:     "admin reswap",
-		ArgsUsage: "<swapin|swapout> <txid> <pairID> <bind> [--force]",
+		ArgsUsage: "<swapin|swapout> <txid> <pairID> <bind>",
 		Description: `
 admin reswap swap
 `,
@@ -30,7 +29,7 @@ admin reswap swap
 func reswap(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
 	method := "reswap"
-	if !(ctx.NArg() == 4 || ctx.NArg() == 5) {
+	if ctx.NArg() != 4 {
 		_ = cli.ShowCommandHelp(ctx, method)
 		fmt.Println()
 		return fmt.Errorf("invalid arguments: %q", ctx.Args())
@@ -49,14 +48,6 @@ func reverifyOrReswap(ctx *cli.Context, method string) error {
 	pairID := ctx.Args().Get(2)
 	bind := ctx.Args().Get(3)
 
-	var forceOpt string
-	if ctx.NArg() > 4 {
-		forceOpt = ctx.Args().Get(4)
-		if forceOpt != forceFlag {
-			return fmt.Errorf("wrong force flag %v, must be %v", forceOpt, forceFlag)
-		}
-	}
-
 	switch operation {
 	case swapinOp, swapoutOp:
 	default:
@@ -64,12 +55,7 @@ func reverifyOrReswap(ctx *cli.Context, method string) error {
 	}
 
 	params := []string{operation, txid, pairID, bind}
-	if forceOpt != "" {
-		params = append(params, forceOpt)
-		log.Printf("admin %v: %v %v %v %v %v", method, operation, txid, pairID, bind, forceOpt)
-	} else {
-		log.Printf("admin %v: %v %v %v %v", method, operation, txid, pairID, bind)
-	}
+	log.Printf("admin %v: %v %v %v %v", method, operation, txid, pairID, bind)
 
 	result, err := adminCall(method, params)
 

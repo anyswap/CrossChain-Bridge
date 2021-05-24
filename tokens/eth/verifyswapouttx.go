@@ -2,6 +2,7 @@ package eth
 
 import (
 	"bytes"
+	"errors"
 	"math/big"
 	"strings"
 
@@ -64,7 +65,7 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 
 	bindAddress, value, err := parseSwapoutTxLogs(receipt.Logs, token.ContractAddress)
 	if err != nil {
-		if err != tokens.ErrSwapoutLogNotFound {
+		if !errors.Is(err, tokens.ErrSwapoutLogNotFound) {
 			log.Debug(b.ChainConfig.BlockChain+" parseSwapoutTxLogs fail", "tx", swapInfo.Hash, "err", err)
 		}
 		return err
@@ -101,7 +102,7 @@ func (b *Bridge) verifySwapoutRawTx(swapInfo *tokens.TxSwapInfo, token *tokens.T
 	input := (*[]byte)(tx.Payload)
 	bindAddress, value, err := ParseSwapoutTxInput(input)
 	if err != nil {
-		if err != tokens.ErrTxFuncHashMismatch {
+		if !errors.Is(err, tokens.ErrTxFuncHashMismatch) {
 			log.Debug(b.ChainConfig.BlockChain+" ParseSwapoutTxInput fail", "tx", txHash, "err", err)
 		}
 		return err
@@ -149,7 +150,7 @@ func (b *Bridge) verifySwapoutTxWithReceipt(commonInfo *tokens.TxSwapInfo, recei
 
 		bindAddress, value, err := parseSwapoutTxLogs(receipt.Logs, token.ContractAddress)
 		if err != nil {
-			if err != tokens.ErrSwapoutLogNotFound {
+			if !errors.Is(err, tokens.ErrSwapoutLogNotFound) {
 				log.Debug(b.ChainConfig.BlockChain+" parseSwapoutTxLogs fail", "tx", txHash, "err", err)
 			}
 			addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)
@@ -231,7 +232,7 @@ func (b *Bridge) verifySwapoutTxUnstable(txHash string) (swapInfos []*tokens.TxS
 		input := (*[]byte)(tx.Payload)
 		bindAddress, value, err := ParseSwapoutTxInput(input)
 		if err != nil {
-			if err != tokens.ErrTxFuncHashMismatch {
+			if !errors.Is(err, tokens.ErrTxFuncHashMismatch) {
 				log.Debug(b.ChainConfig.BlockChain+" parseSwapoutTxInput fail", "tx", txHash, "err", err)
 			}
 			addSwapInfoConsiderError(swapInfo, err, &swapInfos, &errs)

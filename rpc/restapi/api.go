@@ -128,55 +128,65 @@ func GetSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-func getHistoryParams(r *http.Request) (address, pairID string, offset, limit int, status string, err error) {
+type historyParams struct {
+	address string
+	pairID  string
+	offset  int
+	limit   int
+	status  string
+}
+
+func getHistoryParams(r *http.Request) (p *historyParams, err error) {
 	vars := mux.Vars(r)
 	vals := r.URL.Query()
 
-	address = vars["address"]
-	pairID = vars["pairid"]
+	p = &historyParams{}
+
+	p.address = vars["address"]
+	p.pairID = vars["pairid"]
 
 	offsetStr, exist := vals["offset"]
 	if exist {
-		offset, err = common.GetIntFromStr(offsetStr[0])
+		p.offset, err = common.GetIntFromStr(offsetStr[0])
 		if err != nil {
-			return address, pairID, offset, limit, status, err
+			return p, err
 		}
 	}
 
 	limitStr, exist := vals["limit"]
 	if exist {
-		limit, err = common.GetIntFromStr(limitStr[0])
+		p.limit, err = common.GetIntFromStr(limitStr[0])
 		if err != nil {
-			return address, pairID, offset, limit, status, err
+			return p, err
 		}
 	}
 
 	statusStr, exist := vals["status"]
 	if exist {
-		status = statusStr[0]
+		p.status = statusStr[0]
 	}
 
-	return address, pairID, offset, limit, status, nil
+	return p, nil
 }
 
 // SwapinHistoryHandler handler
 func SwapinHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	address, pairID, offset, limit, status, err := getHistoryParams(r)
+	p, err := getHistoryParams(r)
 	if err != nil {
 		writeResponse(w, nil, err)
 	} else {
-		res, err := swapapi.GetSwapinHistory(address, pairID, offset, limit, status)
+		res, err := swapapi.GetSwapinHistory(p.address, p.pairID, p.offset, p.limit, p.status)
 		writeResponse(w, res, err)
 	}
 }
 
 // SwapoutHistoryHandler handler
 func SwapoutHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	address, pairID, offset, limit, status, err := getHistoryParams(r)
+	p, err := getHistoryParams(r)
 	if err != nil {
 		writeResponse(w, nil, err)
 	} else {
-		res, err := swapapi.GetSwapoutHistory(address, pairID, offset, limit, status)
+		res, err := swapapi.GetSwapoutHistory(p.address, p.pairID, p.offset, p.limit, p.status)
 		writeResponse(w, res, err)
 	}
 }

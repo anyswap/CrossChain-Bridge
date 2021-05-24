@@ -70,6 +70,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 			return nil, err
 		}
 		input = *args.Input
+	default:
+		return nil, tokens.ErrUnknownSwapType
 	}
 
 	return b.buildTx(args, extra, input)
@@ -98,6 +100,8 @@ func (b *Bridge) checkBuildTxArgs(args *tokens.BuildTxArgs) error {
 		if !b.IsSrc {
 			return tokens.ErrBuildSwapTxInWrongEndpoint
 		}
+	default:
+		return tokens.ErrUnknownSwapType
 	}
 
 	return nil

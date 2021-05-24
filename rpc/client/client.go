@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -13,6 +14,7 @@ import (
 
 var (
 	httpClient *http.Client
+	httpCtx    = context.Background()
 )
 
 // InitHTTPClient init http client
@@ -47,7 +49,7 @@ func createHTTPClient() *http.Client {
 
 // HTTPGet http get
 func HTTPGet(url string, params, headers map[string]string, timeout int) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(httpCtx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +62,7 @@ func HTTPGet(url string, params, headers map[string]string, timeout int) (*http.
 
 // HTTPPost http post
 func HTTPPost(url string, body interface{}, params, headers map[string]string, timeout int) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	req, err := http.NewRequestWithContext(httpCtx, http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +78,7 @@ func HTTPPost(url string, body interface{}, params, headers map[string]string, t
 
 // HTTPRawPost http raw post
 func HTTPRawPost(url, body string, params, headers map[string]string, timeout int) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	req, err := http.NewRequestWithContext(httpCtx, http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err
 	}

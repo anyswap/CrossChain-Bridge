@@ -25,7 +25,9 @@ func RPCGetRequest(result interface{}, url string, params, headers map[string]st
 	if err != nil {
 		return fmt.Errorf("GET request error: %w (url: %v, params: %v)", err, url, params)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != 200 {
 		log.Trace("get rpc status error", "url", url, "status", resp.StatusCode)
@@ -61,8 +63,10 @@ func RPCRawGetRequest(url string, params, headers map[string]string, timeout int
 	if err != nil {
 		return "", fmt.Errorf("GET request error: %w (url: %v, params: %v)", err, url, params)
 	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
-	defer resp.Body.Close()
 	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
 	if err != nil {

@@ -2,6 +2,7 @@ package eth
 
 import (
 	"bytes"
+	"errors"
 	"math/big"
 	"strings"
 
@@ -59,7 +60,7 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.ContractAddress, token.DepositAddress)
 	if err != nil {
-		if err != tokens.ErrTxWithWrongReceiver {
+		if !errors.Is(err, tokens.ErrTxWithWrongReceiver) {
 			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", swapInfo.Hash, "err", err)
 		}
 		return err
@@ -92,7 +93,7 @@ func (b *Bridge) verifySwapinRawTx(swapInfo *tokens.TxSwapInfo, token *tokens.To
 	input := (*[]byte)(tx.Payload)
 	from, to, value, err := ParseErc20SwapinTxInput(input, token.DepositAddress)
 	if err != nil {
-		if err != tokens.ErrTxWithWrongReceiver {
+		if !errors.Is(err, tokens.ErrTxWithWrongReceiver) {
 			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", swapInfo.Hash, "err", err)
 		}
 		return err

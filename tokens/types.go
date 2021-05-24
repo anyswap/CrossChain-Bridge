@@ -421,7 +421,7 @@ func (c *TokenConfig) LoadDcrmAddressPrivateKey() error {
 	if c.DcrmAddressKeyFile != "" {
 		priKey, err := crypto.LoadECDSA(c.DcrmAddressKeyFile)
 		if err != nil {
-			return fmt.Errorf("wrong private key, %v", err)
+			return fmt.Errorf("wrong private key, %w", err)
 		}
 		c.dcrmAddressPriKey = priKey
 	} else if c.DcrmAddressKeyStore != "" {

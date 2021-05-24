@@ -80,7 +80,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	}
 	txHash, err = b.CalcTransactionHash(signedTx)
 	if err != nil {
-		return nil, "", fmt.Errorf("calc signed tx hash failed, %v", err)
+		return nil, "", fmt.Errorf("calc signed tx hash failed, %w", err)
 	}
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txid", args.SwapID, "txhash", txHash, "nonce", signedTx.Nonce())
 	return signedTx, txHash, nil
@@ -125,12 +125,12 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 
 	signedTx, err := types.SignTx(tx, b.Signer, privKey)
 	if err != nil {
-		return nil, "", fmt.Errorf("sign tx failed, %v", err)
+		return nil, "", fmt.Errorf("sign tx failed, %w", err)
 	}
 
 	txHash, err = b.CalcTransactionHash(signedTx)
 	if err != nil {
-		return nil, "", fmt.Errorf("calc signed tx hash failed, %v", err)
+		return nil, "", fmt.Errorf("calc signed tx hash failed, %w", err)
 	}
 	log.Info(b.ChainConfig.BlockChain+" SignTransaction success", "txhash", txHash, "nonce", signedTx.Nonce())
 	return signedTx, txHash, err

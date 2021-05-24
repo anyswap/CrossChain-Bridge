@@ -36,7 +36,7 @@ func (b *Bridge) GetP2shAddress(bindAddr string) (p2shAddress string, redeemScri
 	dcrmAddress := tokenCfg.DcrmAddress
 	address, err := b.DecodeAddress(dcrmAddress)
 	if err != nil {
-		return "", nil, fmt.Errorf("invalid dcrm address %v, %v", dcrmAddress, err)
+		return "", nil, fmt.Errorf("invalid dcrm address %v, %w", dcrmAddress, err)
 	}
 	pubKeyHash := address.ScriptAddress()
 	return b.getP2shAddressWithMemo(memo, pubKeyHash)

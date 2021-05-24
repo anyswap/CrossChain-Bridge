@@ -11,7 +11,6 @@ import (
 )
 
 // ConvertBTCAddress decode btc address and convert to COLX address
-// nolint:gocyclo // keep it
 func (b *Bridge) ConvertBTCAddress(addr, btcNet string) (address colxutil.Address, err error) {
 	var bchainConfig *bchaincfg.Params
 	switch btcNet {
@@ -36,7 +35,7 @@ func (b *Bridge) ConvertBTCAddress(addr, btcNet string) (address colxutil.Addres
 	// Switch on decoded length to determine the type.
 	decoded, netID, err := base58.CheckDecode(addr)
 	if err != nil {
-		if err == base58.ErrChecksum {
+		if errors.Is(err, base58.ErrChecksum) {
 			return nil, btcutil.ErrChecksumMismatch
 		}
 		return nil, errors.New("decoded address is of unknown format")

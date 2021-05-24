@@ -157,7 +157,7 @@ func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) error {
 		log.Info(tokenCfg.Symbol+" verify decimals success", "address", checkToken, "decimals", configedDecimals)
 
 		if err := b.VerifyErc20ContractAddress(checkToken, tokenCfg.ContractCodeHash, tokenCfg.IsProxyErc20()); err != nil {
-			return fmt.Errorf("wrong token address: %v, %v", checkToken, err)
+			return fmt.Errorf("wrong token address: %v, %w", checkToken, err)
 		}
 		log.Info("verify token address pass", "address", checkToken)
 	}
@@ -179,7 +179,7 @@ func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
 		// keccak256 'proxyToken()' is '0x4faaefae'
 		res, err := b.CallContract(contractAddr, common.FromHex("0x4faaefae"), "latest")
 		if err != nil {
-			return fmt.Errorf("get proxyToken of %v failed, %v", contractAddr, err)
+			return fmt.Errorf("get proxyToken of %v failed, %w", contractAddr, err)
 		}
 		proxyToken := common.HexToAddress(res)
 		if common.HexToAddress(tokenCfg.DelegateToken) != proxyToken {
@@ -189,7 +189,7 @@ func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsSrc {
 		err := b.VerifyAnyswapContractAddress(contractAddr)
 		if err != nil {
-			return fmt.Errorf("wrong anyswap contract address: %v, %v", contractAddr, err)
+			return fmt.Errorf("wrong anyswap contract address: %v, %w", contractAddr, err)
 		}
 	}
 	log.Info("verify contract address pass", "address", contractAddr)

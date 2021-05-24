@@ -25,7 +25,7 @@ func newWrongStatusError(subject, status, errInfo string) error {
 }
 
 func wrapPostError(method string, err error) error {
-	return fmt.Errorf("[post] %v error, %v", method, err)
+	return fmt.Errorf("[post] %v error, %w", method, err)
 }
 
 func httpPost(result interface{}, method string, params ...interface{}) error {
@@ -61,7 +61,7 @@ func GetSignNonce(dcrmUser, rpcAddr string) (uint64, error) {
 	}
 	bi, err := common.GetBigIntFromStr(result.Data.Result)
 	if err != nil {
-		return 0, fmt.Errorf("getSignNonce can't parse result as big int, %v", err)
+		return 0, fmt.Errorf("getSignNonce can't parse result as big int, %w", err)
 	}
 	return bi.Uint64(), nil
 }

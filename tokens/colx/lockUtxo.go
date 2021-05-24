@@ -9,8 +9,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 )
 
-var lockedUtxos map[utxokey]int = make(map[utxokey]int)
-var unlockConds map[utxokey]func() bool = make(map[utxokey]func() bool)
+var lockedUtxos = make(map[utxokey]int)
+var unlockConds = make(map[utxokey]func() bool)
 var utxoLock sync.RWMutex
 
 type utxokey struct {

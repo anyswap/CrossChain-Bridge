@@ -70,7 +70,7 @@ func (b *Bridge) ConvertBTCAddress(addr, btcNet string) (address ltcutil.Address
 	// Switch on decoded length to determine the type.
 	decoded, netID, err := base58.CheckDecode(addr)
 	if err != nil {
-		if err == base58.ErrChecksum {
+		if errors.Is(err, base58.ErrChecksum) {
 			return nil, btcutil.ErrChecksumMismatch
 		}
 		return nil, errors.New("decoded address is of unknown format")

@@ -10,7 +10,6 @@ import (
 )
 
 // ConvertCOLXAddress decode ltc address and convert to BTC address
-// nolint:gocyclo // keep it
 func (b *Bridge) ConvertCOLXAddress(addr, net string) (address btcutil.Address, err error) {
 	bchainConfig := &chaincfg.MainNetParams
 	cchainConfig := b.GetChainParams()
@@ -28,7 +27,7 @@ func (b *Bridge) ConvertCOLXAddress(addr, net string) (address btcutil.Address, 
 	// Switch on decoded length to determine the type.
 	decoded, netID, err := base58.CheckDecode(addr)
 	if err != nil {
-		if err == base58.ErrChecksum {
+		if errors.Is(err, base58.ErrChecksum) {
 			return nil, btcutil.ErrChecksumMismatch
 		}
 		return nil, errors.New("decoded address is of unknown format")

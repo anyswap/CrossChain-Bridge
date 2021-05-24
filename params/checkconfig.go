@@ -136,7 +136,7 @@ func (c *OracleConfig) CheckConfig() (err error) {
 		return errors.New("oracle must config 'ServerAPIAddress'")
 	}
 	var version string
-	for {
+	for i := 0; i < 5; i++ {
 		err = client.RPCPost(&version, ServerAPIAddress, "swap.GetVersionInfo")
 		if err == nil {
 			log.Info("oracle get server version info succeed", "version", version)

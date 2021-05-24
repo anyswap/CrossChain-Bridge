@@ -1,6 +1,8 @@
 package mongodb
 
 import (
+	"errors"
+
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -11,19 +13,19 @@ func GetStatusByTokenVerifyError(err error) SwapStatus {
 		return TxVerifyFailed
 	}
 	// TxNotStable status will be reverify at work/verify, add store in result table
-	switch err {
-	case nil,
-		tokens.ErrTxWithWrongMemo,
-		tokens.ErrTxWithWrongValue,
-		tokens.ErrBindAddrIsContract:
+	switch {
+	case err == nil,
+		errors.Is(err, tokens.ErrTxWithWrongMemo),
+		errors.Is(err, tokens.ErrTxWithWrongValue),
+		errors.Is(err, tokens.ErrBindAddrIsContract):
 		return TxNotStable
-	case tokens.ErrTxWithWrongReceipt:
+	case errors.Is(err, tokens.ErrTxWithWrongReceipt):
 		return TxVerifyFailed
-	case tokens.ErrTxSenderNotRegistered:
+	case errors.Is(err, tokens.ErrTxSenderNotRegistered):
 		return TxSenderNotRegistered
-	case tokens.ErrTxWithWrongSender:
+	case errors.Is(err, tokens.ErrTxWithWrongSender):
 		return TxWithWrongSender
-	case tokens.ErrTxIncompatible:
+	case errors.Is(err, tokens.ErrTxIncompatible):
 		return TxIncompatible
 	default:
 		log.Warn("[mongodb] maybe not considered tx verify error", "err", err)

@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"errors"
+
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -27,8 +29,10 @@ func startPassBigValSwapinJob() {
 		}
 		for _, swap := range res {
 			err = processPassBigValSwapin(swap)
-			switch err {
-			case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+			switch {
+			case err == nil,
+				errors.Is(err, tokens.ErrTxNotStable),
+				errors.Is(err, tokens.ErrTxNotFound):
 			default:
 				logWorkerError("passbigval", "process pass big value swapin error", err, "txid", swap.TxID)
 			}
@@ -49,8 +53,10 @@ func startPassBigValSwapoutJob() {
 		}
 		for _, swap := range res {
 			err = processPassBigValSwapout(swap)
-			switch err {
-			case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+			switch {
+			case err == nil,
+				errors.Is(err, tokens.ErrTxNotStable),
+				errors.Is(err, tokens.ErrTxNotFound):
 			default:
 				logWorkerError("passbigval", "process pass big value swapout error", err, "txid", swap.TxID)
 			}

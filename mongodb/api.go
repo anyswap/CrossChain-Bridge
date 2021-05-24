@@ -163,6 +163,7 @@ func updateSwapStatus(collection *mgo.Collection, txid, pairID, bind string, sta
 		switch status {
 		case TxVerifyFailed, TxSwapFailed:
 			printLog = log.Warn
+		default:
 		}
 		printLog("mongodb update swap status", "txid", txid, "pairID", pairID, "bind", bind, "status", status, "isSwapin", isSwapin(collection))
 	} else {

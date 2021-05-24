@@ -22,7 +22,9 @@ func AddTokenPairDynamically() {
 		log.Error("fsnotify.NewWatcher failed", "err", err)
 		return
 	}
-	defer watch.Close()
+	defer func() {
+		_ = watch.Close()
+	}()
 
 	err = watch.Add(pairsDir)
 	if err != nil {
@@ -64,9 +66,9 @@ func addTokenPair(fileName string) error {
 	if !strings.HasSuffix(fileName, ".toml") {
 		return nil
 	}
-	fileStat, err := os.Stat(fileName)
+	fileStat, _ := os.Stat(fileName)
 	// ignore if file is not exist, or is directory, or is empty file
-	if err != nil || fileStat.IsDir() || fileStat.Size() == 0 {
+	if fileStat == nil || fileStat.IsDir() || fileStat.Size() == 0 {
 		return nil
 	}
 	pairConfig, err := tokens.AddPairConfig(fileName)

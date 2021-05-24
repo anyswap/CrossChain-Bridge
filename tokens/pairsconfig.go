@@ -264,7 +264,7 @@ func loadTokenPairConfig(configFile string) (config *TokenPairConfig, err error)
 	}
 	config = &TokenPairConfig{}
 	if _, err := toml.DecodeFile(configFile, &config); err != nil {
-		return nil, fmt.Errorf("toml decode file error: %v", err)
+		return nil, fmt.Errorf("toml decode file error: %w", err)
 	}
 	var bs []byte
 	if log.JSONFormat {

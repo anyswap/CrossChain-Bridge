@@ -56,7 +56,7 @@ func QueryBlacklist(address, pairID string) (isBlacked bool, err error) {
 	if err == nil {
 		return true, nil
 	}
-	if err == mgo.ErrNotFound {
+	if errors.Is(err, mgo.ErrNotFound) {
 		return false, nil
 	}
 	return false, err
@@ -116,16 +116,16 @@ func reverifySwap(txid, pairID, bind string, isSwapin bool) error {
 }
 
 // Reswapin reswapin
-func Reswapin(txid, pairID, bind, forceOpt string) error {
-	return reswap(txid, pairID, bind, forceOpt, true)
+func Reswapin(txid, pairID, bind string) error {
+	return reswap(txid, pairID, bind, true)
 }
 
 // Reswapout reswapout
-func Reswapout(txid, pairID, bind, forceOpt string) error {
-	return reswap(txid, pairID, bind, forceOpt, false)
+func Reswapout(txid, pairID, bind string) error {
+	return reswap(txid, pairID, bind, false)
 }
 
-func reswap(txid, pairID, bind, forceOpt string, isSwapin bool) error {
+func reswap(txid, pairID, bind string, isSwapin bool) error {
 	swap, err := FindSwap(isSwapin, txid, pairID, bind)
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func reswap(txid, pairID, bind, forceOpt string, isSwapin bool) error {
 	if err != nil {
 		return err
 	}
-	err = checkCanReswap(swapResult, forceOpt, isSwapin)
+	err = checkCanReswap(swapResult, isSwapin)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func reswap(txid, pairID, bind, forceOpt string, isSwapin bool) error {
 	return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotSwapped, time.Now().Unix(), "")
 }
 
-func checkCanReswap(res *MgoSwapResult, forceOpt string, isSwapin bool) error {
+func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
 	swapType := tokens.SwapType(res.SwapType)
 	switch swapType {
 	case tokens.SwapinType:
@@ -182,10 +182,10 @@ func checkCanReswap(res *MgoSwapResult, forceOpt string, isSwapin bool) error {
 			return fmt.Errorf("swap succeed with swaptx %v", res.SwapTx)
 		}
 	}
-	return checkReswapNonce(bridge, res, forceOpt)
+	return checkReswapNonce(bridge, res)
 }
 
-func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, _ /*forceOpt*/ string) (err error) {
+func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult) (err error) {
 	nonceSetter, ok := bridge.(tokens.NonceSetter)
 	if !ok {
 		return nil

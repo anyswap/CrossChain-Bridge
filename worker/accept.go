@@ -64,15 +64,15 @@ func acceptSign() {
 			if err == nil {
 				err = verifySignInfo(info, args)
 			}
-			switch err {
-			case errIdentifierMismatch,
-				errInitiatorMismatch,
-				errWrongMsgContext,
-				tokens.ErrUnknownPairID,
-				tokens.ErrNoBtcBridge,
-				tokens.ErrTxNotStable,
-				tokens.ErrTxNotFound,
-				tokens.ErrRPCQueryError:
+			switch {
+			case errors.Is(err, errIdentifierMismatch),
+				errors.Is(err, errInitiatorMismatch),
+				errors.Is(err, errWrongMsgContext),
+				errors.Is(err, tokens.ErrUnknownPairID),
+				errors.Is(err, tokens.ErrNoBtcBridge),
+				errors.Is(err, tokens.ErrTxNotStable),
+				errors.Is(err, tokens.ErrTxNotFound),
+				errors.Is(err, tokens.ErrRPCQueryError):
 				logWorkerTrace("accept", "ignore sign", "keyID", keyID, "err", err)
 				continue
 			}

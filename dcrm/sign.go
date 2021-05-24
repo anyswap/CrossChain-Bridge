@@ -140,8 +140,9 @@ LOOP_GET_SIGN_STATUS:
 				rsvs = signStatus.Rsv
 				break LOOP_GET_SIGN_STATUS
 			}
-			switch err {
-			case ErrGetSignStatusFailed, ErrGetSignStatusTimeout:
+			switch {
+			case errors.Is(err, ErrGetSignStatusFailed),
+				errors.Is(err, ErrGetSignStatusTimeout):
 				break LOOP_GET_SIGN_STATUS
 			}
 		}

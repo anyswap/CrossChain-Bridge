@@ -1,6 +1,8 @@
 package mongodb
 
 import (
+	"errors"
+
 	rpcjson "github.com/gorilla/rpc/v2/json2"
 	"gopkg.in/mgo.v2"
 )
@@ -14,7 +16,7 @@ func newError(ec rpcjson.ErrorCode, message string) error {
 
 func mgoError(err error) error {
 	if err != nil {
-		if err == mgo.ErrNotFound {
+		if errors.Is(err, mgo.ErrNotFound) {
 			return ErrItemNotFound
 		}
 		if mgo.IsDup(err) {
