@@ -97,6 +97,16 @@ func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
 	return nil, err
 }
 
+// GetTransaction impl
+func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
+	gateway := b.GatewayConfig
+	tx, err = getTransactionByHash(txHash, gateway.APIAddress)
+	if err != nil {
+		tx, err = getTransactionByHash(txHash, gateway.APIAddressExt)
+	}
+	return tx, err
+}
+
 // GetTransactionByHash call eth_getTransactionByHash
 func (b *Bridge) GetTransactionByHash(txHash string) (*types.RPCTransaction, error) {
 	gateway := b.GatewayConfig
@@ -133,7 +143,7 @@ func (b *Bridge) GetPendingTransactions() (result []*types.RPCTransaction, err e
 }
 
 // GetTxBlockInfo impl
-func (b Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
+func (b *Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
 	var useExt bool
 	gateway := b.GatewayConfig
 	receipt, _, _ := getTransactionReceipt(txHash, gateway.APIAddress)

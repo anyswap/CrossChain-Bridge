@@ -136,7 +136,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 
 	log.Info("build raw tx", "pairID", args.PairID, "identifier", args.Identifier,
 		"swapID", args.SwapID, "swapType", args.SwapType,
-		"bind", args.Bind, "originValue", args.OriginValue,
+		"bind", args.Bind, "originValue", args.OriginValue, "swapValue", args.SwapValue,
 		"from", args.From, "to", to.String(), "value", value, "nonce", nonce,
 		"gasLimit", gasLimit, "gasPrice", gasPrice, "data", common.ToHex(input))
 

@@ -11,11 +11,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-// GetTransaction impl
-func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
-	return b.GetTransactionByHash(txHash)
-}
-
 // GetTransactionStatus impl
 func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	var txStatus tokens.TxStatus

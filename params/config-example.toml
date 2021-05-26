@@ -67,7 +67,7 @@ ScanReceipt = false
 # max gas price fluct percent
 MaxGasPriceFluctPercent = 10
 # extra added gas price percent for replace swap
-ReplacePlusGasPricePercent = 10
+ReplacePlusGasPricePercent = 1
 # wait time to replace swapout match tx
 WaitTimeToReplace = 900
 # max replace swap count
@@ -97,7 +97,7 @@ ScanReceipt = false
 # max gas price fluct percent
 MaxGasPriceFluctPercent = 10
 # extra added gas price percent for replace swap
-ReplacePlusGasPricePercent = 10
+ReplacePlusGasPricePercent = 1
 # wait time to replace swapin match tx
 WaitTimeToReplace = 900
 # max replace swap count
