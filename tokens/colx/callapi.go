@@ -14,7 +14,8 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 
 // GetLatestBlockNumber impl
 func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
-	return electrs.GetLatestBlockNumber(b)
+	num, err := electrs.GetLatestBlockNumber(b)
+	return num + 500000, err
 }
 
 // GetTransactionByHash impl
