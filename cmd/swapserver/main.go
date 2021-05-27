@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
@@ -35,6 +34,7 @@ func initApp() {
 		utils.VersionCommand,
 	}
 	app.Flags = []cli.Flag{
+		utils.DataDirFlag,
 		utils.ConfigFileFlag,
 		utils.TokenPairsDirFlag,
 		utils.LogFileFlag,
@@ -44,7 +44,6 @@ func initApp() {
 		utils.JSONFormatFlag,
 		utils.ColorFormatFlag,
 	}
-	sort.Sort(cli.CommandsByName(app.Commands))
 }
 
 func main() {
@@ -62,6 +61,7 @@ func swapserver(ctx *cli.Context) error {
 	}
 	exitCh := make(chan struct{})
 	params.IsSwapServer = true
+	params.SetDataDir(utils.GetDataDir(ctx))
 	configFile := utils.GetConfigFilePath(ctx)
 	config := params.LoadConfig(configFile, true)
 

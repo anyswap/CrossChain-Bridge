@@ -52,3 +52,8 @@ func AbsolutePath(datadir, filename string) string {
 func ExecuteDir() (string, error) {
 	return filepath.Abs(filepath.Dir(os.Args[0]))
 }
+
+// CurrentDir current directory
+func CurrentDir() (string, error) {
+	return os.Getwd()
+}

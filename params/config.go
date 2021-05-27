@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	defaultAPIPort      = 11556
-	defServerConfigFile = "config.toml"
+	defaultAPIPort = 11556
 )
 
 var (
+	locDataDir        string
 	serverConfig      *ServerConfig
 	loadConfigStarter sync.Once
 
@@ -146,12 +146,7 @@ func GetExtraConfig() *ExtraConfig {
 func LoadConfig(configFile string, isServer bool) *ServerConfig {
 	loadConfigStarter.Do(func() {
 		if configFile == "" {
-			// find config file in the execute directory (default).
-			dir, err := common.ExecuteDir()
-			if err != nil {
-				log.Fatalf("LoadConfig error (get ExecuteDir): %v", err)
-			}
-			configFile = common.AbsolutePath(dir, defServerConfigFile)
+			log.Fatalf("LoadConfig error: no config file specified")
 		}
 		log.Println("Config file is", configFile)
 		if !common.FileExist(configFile) {
@@ -197,4 +192,25 @@ func IsAdmin(account string) bool {
 		}
 	}
 	return false
+}
+
+// SetDataDir set data dir
+func SetDataDir(dir string) {
+	if dir == "" {
+		if !IsSwapServer {
+			log.Warn("suggest specify '--datadir' to enhance accept job")
+		}
+		return
+	}
+	currDir, err := common.CurrentDir()
+	if err != nil {
+		log.Fatal("get current dir failed", "err", err)
+	}
+	locDataDir = common.AbsolutePath(currDir, dir)
+	log.Info("set data dir success", "datadir", locDataDir)
+}
+
+// GetDataDir get data dir
+func GetDataDir() string {
+	return locDataDir
 }

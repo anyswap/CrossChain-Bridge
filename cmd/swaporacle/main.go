@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -32,6 +31,7 @@ func initApp() {
 		utils.VersionCommand,
 	}
 	app.Flags = []cli.Flag{
+		utils.DataDirFlag,
 		utils.ConfigFileFlag,
 		utils.TokenPairsDirFlag,
 		utils.LogFileFlag,
@@ -41,7 +41,6 @@ func initApp() {
 		utils.JSONFormatFlag,
 		utils.ColorFormatFlag,
 	}
-	sort.Sort(cli.CommandsByName(app.Commands))
 }
 
 func main() {
@@ -58,6 +57,7 @@ func swaporacle(ctx *cli.Context) error {
 		return fmt.Errorf("invalid command: %q", ctx.Args().Get(0))
 	}
 	exitCh := make(chan struct{})
+	params.SetDataDir(utils.GetDataDir(ctx))
 	configFile := utils.GetConfigFilePath(ctx)
 	params.LoadConfig(configFile, false)
 
