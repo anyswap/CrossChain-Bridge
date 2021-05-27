@@ -28,6 +28,7 @@ var (
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
 	errInitiatorMismatch  = errors.New("initiator mismatch")
 	errWrongMsgContext    = errors.New("wrong msg context")
+	errNonceMismatch      = errors.New("nonce mismatch")
 )
 
 // StartAcceptSignJob accept job
@@ -38,6 +39,8 @@ func StartAcceptSignJob() {
 	}
 	acceptSignStarter.Do(func() {
 		logWorker("accept", "start accept sign job")
+		openLeveldb()
+		defer closeLeveldb()
 		acceptSign()
 	})
 }
@@ -86,6 +89,7 @@ func acceptSign() {
 			} else {
 				logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
 				addAcceptSignHistory(keyID, agreeResult, info.MsgHash, info.MsgContext)
+				_ = AddAcceptRecord(args)
 			}
 		}
 		time.Sleep(waitInterval)
@@ -124,6 +128,10 @@ func verifySignInfo(signInfo *dcrm.SignInfoData, args *tokens.BuildTxArgs) error
 		return errIdentifierMismatch
 	}
 	logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
+	err := CheckAcceptRecord(args)
+	if err != nil {
+		return err
+	}
 	return rebuildAndVerifyMsgHash(msgHash, args)
 }
 
