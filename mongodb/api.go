@@ -378,7 +378,7 @@ func updateSwapResult(collection *mgo.Collection, txid, pairID, bind string, ite
 	} else if items.Status == MatchTxNotStable {
 		updates["memo"] = ""
 	}
-	if items.SwapNonce != 0 {
+	if items.SwapNonce != 0 || items.Status == MatchTxNotStable {
 		updateResultLock.Lock()
 		defer updateResultLock.Unlock()
 		swapRes, err := findSwapResult(collection, txid, pairID, bind)
@@ -389,7 +389,13 @@ func updateSwapResult(collection *mgo.Collection, txid, pairID, bind string, ite
 			log.Error("forbid update swap nonce again", "old", swapRes.SwapNonce, "new", items.SwapNonce)
 			return ErrForbidUpdateNonce
 		}
-		updates["swapnonce"] = items.SwapNonce
+		if swapRes.SwapTx != "" {
+			log.Error("forbid update swap tx again", "old", swapRes.SwapTx, "new", items.SwapTx)
+			return ErrForbidUpdateSwapTx
+		}
+		if items.SwapNonce != 0 {
+			updates["swapnonce"] = items.SwapNonce
+		}
 	}
 	err := collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
 	if err == nil {
