@@ -109,3 +109,8 @@ type NonceSetter interface {
 	AdjustNonce(pairID string, value uint64) (nonce uint64)
 	InitNonces(nonces map[string]uint64)
 }
+
+// ForkChecker fork checker interface
+type ForkChecker interface {
+	GetBlockHashOf(urls []string, height uint64) (hash string, err error)
+}

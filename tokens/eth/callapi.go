@@ -84,9 +84,10 @@ func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
 	gateway := b.GatewayConfig
 	var result *types.RPCBlock
 	var err error
+	blockNumber := types.ToBlockNumArg(number)
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress
-		err = client.RPCPost(&result, url, "eth_getBlockByNumber", types.ToBlockNumArg(number), false)
+		err = client.RPCPost(&result, url, "eth_getBlockByNumber", blockNumber, false)
 		if err == nil && result != nil {
 			return result, nil
 		}
@@ -95,6 +96,31 @@ func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
 		return nil, errors.New("block not found")
 	}
 	return nil, err
+}
+
+// GetBlockHash impl
+func (b *Bridge) GetBlockHash(height uint64) (hash string, err error) {
+	gateway := b.GatewayConfig
+	return b.GetBlockHashOf(gateway.APIAddress, height)
+}
+
+// GetBlockHashOf impl
+func (b *Bridge) GetBlockHashOf(urls []string, height uint64) (hash string, err error) {
+	if len(urls) == 0 {
+		return "", errEmptyURLs
+	}
+	blockNumber := types.ToBlockNumArg(new(big.Int).SetUint64(height))
+	var block *types.RPCBlock
+	for _, url := range urls {
+		err = client.RPCPost(&block, url, "eth_getBlockByNumber", blockNumber, false)
+		if err == nil && block != nil {
+			return block.Hash.Hex(), nil
+		}
+	}
+	if block == nil {
+		return "", errors.New("block not found")
+	}
+	return "", err
 }
 
 // GetTransaction impl

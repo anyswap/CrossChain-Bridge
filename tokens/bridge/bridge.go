@@ -70,6 +70,9 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge.SetChainAndGateway(dstChain, dstGateway)
 	log.Info("Init bridge destation", "dest", dstID, "gateway", dstGateway)
 
+	tokens.SrcStableConfirmations = *tokens.SrcBridge.GetChainConfig().Confirmations
+	tokens.DstStableConfirmations = *tokens.DstBridge.GetChainConfig().Confirmations
+
 	tools.AdjustGatewayOrder(true)
 	tools.AdjustGatewayOrder(false)
 

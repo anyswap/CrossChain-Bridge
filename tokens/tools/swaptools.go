@@ -271,4 +271,28 @@ func AdjustGatewayOrder(isSrc bool) {
 	} else {
 		log.Info("adjust dest gateways", "result", weightedAPIs)
 	}
+
+	if len(gateway.APIAddressExt) == 0 {
+		return
+	}
+
+	forkChecker, ok := bridge.(tokens.ForkChecker)
+	if !ok {
+		return
+	}
+
+	stableHeight := tokens.GetStableConfirmations(isSrc)
+	checkPointHeight := maxHeight
+	if maxHeight > stableHeight {
+		checkPointHeight = maxHeight - stableHeight
+	}
+	blockHash1, err1 := forkChecker.GetBlockHashOf(gateway.APIAddress, checkPointHeight)
+	blockHash2, err2 := forkChecker.GetBlockHashOf(gateway.APIAddressExt, checkPointHeight)
+	if err1 != nil || err2 != nil {
+		return
+	}
+	if blockHash1 != blockHash2 {
+		log.Fatal("check block hash failed", "blockHeight", checkPointHeight, "blockHash1", blockHash1, "blockHash2", blockHash2, "stable", stableHeight)
+	}
+	log.Info("check block hash success", "blockHeight", checkPointHeight, "blockHash", blockHash1, "latest", maxHeight)
 }

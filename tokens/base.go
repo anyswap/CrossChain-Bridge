@@ -26,6 +26,9 @@ var (
 	SrcLatestBlockHeight uint64
 	DstLatestBlockHeight uint64
 
+	SrcStableConfirmations uint64
+	DstStableConfirmations uint64
+
 	IsDcrmDisabled bool
 )
 
@@ -186,4 +189,12 @@ func CmpAndSetLatestBlockHeight(latest uint64, isSrc bool) {
 			DstLatestBlockHeight = latest
 		}
 	}
+}
+
+// GetStableConfirmations get stable confirmations
+func GetStableConfirmations(isSrc bool) uint64 {
+	if isSrc {
+		return SrcStableConfirmations
+	}
+	return DstStableConfirmations
 }
