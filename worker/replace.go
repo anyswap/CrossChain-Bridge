@@ -18,11 +18,11 @@ var (
 
 // StartReplaceJob replace job
 func StartReplaceJob() {
-	if dstNonceSetter != nil {
+	if tokens.DstNonceSetter != nil {
 		go startReplaceSwapinJob()
 	}
 
-	if srcNonceSetter != nil {
+	if tokens.SrcNonceSetter != nil {
 		go startReplaceSwapoutJob()
 	}
 }
@@ -149,7 +149,7 @@ func doReplaceSwap(swap *mongodb.MgoSwapResult) {
 		return
 	}
 	isSwapin := tokens.SwapType(swap.SwapType) == tokens.SwapinType
-	nonceSetter := getNonceSetter(isSwapin)
+	nonceSetter := tokens.GetNonceSetter(!isSwapin)
 	if nonceSetter == nil {
 		logWorkerWarn("replace", "not nonce support chain", "isSwapin", isSwapin)
 		return

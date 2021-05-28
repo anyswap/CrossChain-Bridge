@@ -23,6 +23,12 @@ var (
 	SrcBridge CrossChainBridge
 	DstBridge CrossChainBridge
 
+	SrcNonceSetter NonceSetter
+	DstNonceSetter NonceSetter
+
+	SrcForkChecker ForkChecker
+	DstForkChecker ForkChecker
+
 	SrcLatestBlockHeight uint64
 	DstLatestBlockHeight uint64
 
@@ -102,6 +108,22 @@ func GetCrossChainBridge(isSrc bool) CrossChainBridge {
 		return SrcBridge
 	}
 	return DstBridge
+}
+
+// GetNonceSetter get nonce setter of specified endpoint
+func GetNonceSetter(isSrc bool) NonceSetter {
+	if isSrc {
+		return SrcNonceSetter
+	}
+	return DstNonceSetter
+}
+
+// GetForkChecker get fork checker of specified endpoint
+func GetForkChecker(isSrc bool) ForkChecker {
+	if isSrc {
+		return SrcForkChecker
+	}
+	return DstForkChecker
 }
 
 // FromBits convert from bits

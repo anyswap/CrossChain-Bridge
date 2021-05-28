@@ -276,8 +276,8 @@ func AdjustGatewayOrder(isSrc bool) {
 		return
 	}
 
-	forkChecker, ok := bridge.(tokens.ForkChecker)
-	if !ok {
+	forkChecker := tokens.GetForkChecker(isSrc)
+	if forkChecker == nil {
 		return
 	}
 

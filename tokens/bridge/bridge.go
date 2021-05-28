@@ -70,6 +70,12 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge.SetChainAndGateway(dstChain, dstGateway)
 	log.Info("Init bridge destation", "dest", dstID, "gateway", dstGateway)
 
+	tokens.SrcNonceSetter, _ = tokens.SrcBridge.(tokens.NonceSetter)
+	tokens.DstNonceSetter, _ = tokens.DstBridge.(tokens.NonceSetter)
+
+	tokens.SrcForkChecker, _ = tokens.SrcBridge.(tokens.ForkChecker)
+	tokens.DstForkChecker, _ = tokens.DstBridge.(tokens.ForkChecker)
+
 	tokens.SrcStableConfirmations = *tokens.SrcBridge.GetChainConfig().Confirmations
 	tokens.DstStableConfirmations = *tokens.DstBridge.GetChainConfig().Confirmations
 

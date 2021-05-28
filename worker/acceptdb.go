@@ -50,9 +50,9 @@ func AddAcceptRecord(args *tokens.BuildTxArgs) (err error) {
 	key := []byte(getEthAcceptRecordKey(args, false))
 	err = lvldbHandle.Put(key, int64ToBytes(now()))
 	if err != nil {
-		log.Warn("add accept record failed", "key", key, "err", err)
+		log.Warn("add accept record failed", "key", string(key), "err", err)
 	} else {
-		log.Info("add accept record success", "key", key)
+		log.Info("add accept record success", "key", string(key))
 	}
 	return err
 }

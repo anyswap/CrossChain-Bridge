@@ -33,11 +33,11 @@ var (
 // StartSwapJob swap job
 func StartSwapJob() {
 	swapinNonces, swapoutNonces := mongodb.LoadAllSwapNonces()
-	if dstNonceSetter != nil {
-		dstNonceSetter.InitNonces(swapinNonces)
+	if tokens.DstNonceSetter != nil {
+		tokens.DstNonceSetter.InitNonces(swapinNonces)
 	}
-	if srcNonceSetter != nil {
-		srcNonceSetter.InitNonces(swapoutNonces)
+	if tokens.SrcNonceSetter != nil {
+		tokens.SrcNonceSetter.InitNonces(swapoutNonces)
 	}
 	for _, pairCfg := range tokens.GetTokenPairsConfig() {
 		AddSwapJob(pairCfg)
