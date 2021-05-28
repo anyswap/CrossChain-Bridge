@@ -1,17 +1,12 @@
 package block
 
 import (
-	"time"
-
-	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 )
 
 const (
 	redeemAggregateP2SHInputSize = 198
-	//utxoPageLimit                = 100
-	//aggInterval                  = 10 * time.Minute
 )
 
 /*var (
@@ -115,10 +110,7 @@ func (b *Bridge) ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool {
 
 // AggregateUtxos aggregate uxtos
 func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (string, error) {
-	relayFee, err := b.getRelayFeePerKb()
-	if err != nil {
-		return "", err
-	}
+	relayFee := b.getRelayFeePerKb()
 
 	authoredTx, err := b.BuildAggregateTransaction(relayFee, addrs, utxos)
 	if err != nil {
@@ -152,15 +144,7 @@ func (b *Bridge) AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (str
 	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
 		signedTx, txHash, err = b.SignTransaction(authoredTx, PairID)
 	} else {
-		maxRetryDcrmSignCount := 5
-		for i := 0; i < maxRetryDcrmSignCount; i++ {
-			signedTx, txHash, err = b.DcrmSignTransaction(authoredTx, args.GetExtraArgs())
-			if err == nil {
-				break
-			}
-			log.Warn("[aggregate] retry dcrm sign", "count", i+1, "err", err)
-			time.Sleep(time.Second)
-		}
+		signedTx, txHash, err = b.DcrmSignTransaction(authoredTx, args.GetExtraArgs())
 	}
 	if err != nil {
 		return "", err

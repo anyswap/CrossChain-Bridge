@@ -58,6 +58,8 @@ const (
 	ManualMakeFail                          // 16
 	BindAddrIsContract                      // 17
 	RPCQueryError                           // 18
+
+	KeepStatus = 255
 )
 
 // CanManualMakePass can manual make pass

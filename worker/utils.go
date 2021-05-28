@@ -15,6 +15,9 @@ var (
 
 	maxStableLifetime       = int64(7 * 24 * 3600)
 	restIntervalInStableJob = 10 * time.Second
+
+	maxReplaceSwapLifetime       = int64(7 * 24 * 3600)
+	restIntervalInReplaceSwapJob = 60 * time.Second
 )
 
 func now() int64 {

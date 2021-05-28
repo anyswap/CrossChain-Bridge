@@ -49,8 +49,7 @@ func (b *Bridge) VerifyChainID() {
 	)
 
 	for {
-		// call NetworkID instead of ChainID as ChainID may return 0x0 wrongly
-		chainID, err = b.NetworkID() // network id
+		chainID, err = b.GetSignerChainID()
 		if err == nil {
 			break
 		}
@@ -65,24 +64,43 @@ func (b *Bridge) VerifyChainID() {
 
 	switch networkID {
 	case netMainnet:
-		if chainID.Uint64() != 1 {
+		if chainID.Uint64() != 61 {
 			panicMismatchChainID()
 		}
-		chainID = big.NewInt(61)
 	case netKotti:
 		if chainID.Uint64() != 6 {
 			panicMismatchChainID()
 		}
 	case netMordor:
-		if chainID.Uint64() != 7 {
+		if chainID.Uint64() != 63 {
 			panicMismatchChainID()
 		}
-		chainID = big.NewInt(63)
 	default:
 		log.Fatalf("unsupported etc network %v", networkID)
 	}
 
+	b.SignerChainID = chainID
 	b.Signer = types.MakeSigner("EIP155", chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
+}
+
+// GetSignerChainID override
+func (b *Bridge) GetSignerChainID() (*big.Int, error) {
+	networkID, err := b.NetworkID()
+	if err != nil {
+		return nil, err
+	}
+	var chainID uint64
+	switch networkID.Uint64() {
+	case 1:
+		chainID = 61
+	case 6:
+		chainID = 6
+	case 7:
+		chainID = 63
+	default:
+		log.Fatalf("unsupported etc network %v", networkID)
+	}
+	return new(big.Int).SetUint64(chainID), nil
 }

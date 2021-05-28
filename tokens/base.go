@@ -131,12 +131,9 @@ func CalcSwappedValue(pairID string, value *big.Int, isSrc bool) *big.Int {
 		return value
 	}
 
-	swapValue := new(big.Float).SetInt(value)
-	swapFeeRate := new(big.Float).SetFloat64(*token.SwapFeeRate)
-	swapFeeFloat := new(big.Float).Mul(swapValue, swapFeeRate)
-
-	swapFee := big.NewInt(0)
-	swapFeeFloat.Int(swapFee)
+	feeRateMul1e18 := new(big.Int).SetUint64(uint64(*token.SwapFeeRate * 1e18))
+	swapFee := new(big.Int).Mul(value, feeRateMul1e18)
+	swapFee.Div(swapFee, big.NewInt(1e18))
 
 	if swapFee.Cmp(token.minSwapFee) < 0 {
 		swapFee = token.minSwapFee
@@ -156,5 +153,18 @@ func SetLatestBlockHeight(latest uint64, isSrc bool) {
 		SrcLatestBlockHeight = latest
 	} else {
 		DstLatestBlockHeight = latest
+	}
+}
+
+// CmpAndSetLatestBlockHeight cmp and set latest block height
+func CmpAndSetLatestBlockHeight(latest uint64, isSrc bool) {
+	if isSrc {
+		if latest > SrcLatestBlockHeight {
+			SrcLatestBlockHeight = latest
+		}
+	} else {
+		if latest > DstLatestBlockHeight {
+			DstLatestBlockHeight = latest
+		}
 	}
 }

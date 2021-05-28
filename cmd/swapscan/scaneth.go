@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -26,6 +27,16 @@ var (
 		Usage: "is swapout bind address string type",
 	}
 
+	scanReceiptFlag = &cli.BoolFlag{
+		Name:  "scanReceipt",
+		Usage: "scan transaction receipt",
+	}
+
+	isProxyFlag = &cli.BoolFlag{
+		Name:  "isProxy",
+		Usage: "is proxy contract",
+	}
+
 	scanEthCommand = &cli.Command{
 		Action:    scanEth,
 		Name:      "scaneth",
@@ -46,8 +57,12 @@ scan swap on eth
 			utils.StableHeightFlag,
 			utils.JobsFlag,
 			isSwapoutType2Flag,
+			scanReceiptFlag,
+			isProxyFlag,
 		},
 	}
+
+	logSwapoutTopic []byte
 )
 
 type ethSwapScanner struct {
@@ -62,6 +77,8 @@ type ethSwapScanner struct {
 	stableHeight     uint64
 	jobCount         uint64
 	isSwapoutType2   bool
+	scanReceipt      bool
+	isProxy          bool
 
 	client *ethclient.Client
 	ctx    context.Context
@@ -90,6 +107,8 @@ func scanEth(ctx *cli.Context) error {
 	scanner.stableHeight = ctx.Uint64(utils.StableHeightFlag.Name)
 	scanner.jobCount = ctx.Uint64(utils.JobsFlag.Name)
 	scanner.isSwapoutType2 = ctx.Bool(isSwapoutType2Flag.Name)
+	scanner.scanReceipt = ctx.Bool(scanReceiptFlag.Name)
+	scanner.isProxy = ctx.Bool(isProxyFlag.Name)
 
 	switch strings.ToLower(scanner.swapType) {
 	case "swapin":
@@ -107,6 +126,8 @@ func scanEth(ctx *cli.Context) error {
 		"depositAddress", scanner.depositAddresses,
 		"tokenAddress", scanner.tokenAddresses,
 		"pairID", scanner.pairIDs,
+		"scanReceipt", scanner.scanReceipt,
+		"isProxy", scanner.isProxy,
 		"start", scanner.startHeight,
 		"end", scanner.endHeight,
 		"stable", scanner.stableHeight,
@@ -184,6 +205,7 @@ func (scanner *ethSwapScanner) init() {
 	}
 
 	eth.InitExtCodePartsWithFlag(scanner.isSwapoutType2)
+	logSwapoutTopic = eth.ExtCodeParts["LogSwapoutTopic"]
 
 	for _, tokenAddr := range scanner.tokenAddresses {
 		if scanner.isSwapin && tokenAddr == "" {
@@ -199,15 +221,15 @@ func (scanner *ethSwapScanner) init() {
 		}
 		if scanner.isSwapin {
 			err = eth.VerifyErc20ContractCode(code)
-			if err != nil {
-				log.Warn("verify erc20 code failed. please ensure it's proxy contract of erc20", "contract", tokenAddr, "err", err)
-				err = nil // do not exit
-			}
 		} else {
 			err = eth.VerifySwapContractCode(code)
 		}
 		if err != nil {
-			log.Fatalf("wrong contract address '%v', %v", tokenAddr, err)
+			if scanner.isProxy {
+				log.Warn("verify contract code failed. please ensure it's proxy contract", "contract", tokenAddr, "err", err)
+			} else {
+				log.Fatalf("wrong contract address '%v', %v", tokenAddr, err)
+			}
 		}
 	}
 }
@@ -292,6 +314,10 @@ func (scanner *ethSwapScanner) loopGetLatestBlockNumber() uint64 {
 		log.Warn("get latest block number failed", "err", err)
 		time.Sleep(scanner.rpcInterval)
 	}
+}
+
+func (scanner *ethSwapScanner) getTxReceipt(txHash common.Hash) (*types.Receipt, error) {
+	return scanner.client.TransactionReceipt(scanner.ctx, txHash)
 }
 
 func (scanner *ethSwapScanner) loopGetBlock(height uint64) *types.Block {
@@ -402,13 +428,27 @@ func (scanner *ethSwapScanner) verifySwapinTx(tx *types.Transaction, depositAddr
 	return nil
 }
 
-func (scanner *ethSwapScanner) verifySwapoutTx(tx *types.Transaction, tokenAddress string) error {
-	if tx.To() == nil || !strings.EqualFold(tx.To().String(), tokenAddress) {
+func (scanner *ethSwapScanner) verifySwapoutTx(tx *types.Transaction, tokenAddress string) (err error) {
+	if tx.To() == nil {
 		return tokens.ErrTxWithWrongContract
 	}
 
-	input := tx.Data()
-	_, value, err := eth.ParseSwapoutTxInput(&input)
+	var receipt *types.Receipt
+	if scanner.scanReceipt {
+		receipt, _ = scanner.getTxReceipt(tx.Hash())
+	}
+
+	var value *big.Int
+	if receipt != nil {
+		value, err = parseSwapoutTxLogs(receipt.Logs, tokenAddress)
+	} else {
+		if !strings.EqualFold(tx.To().String(), tokenAddress) {
+			return tokens.ErrTxWithWrongContract
+		}
+
+		input := tx.Data()
+		_, value, err = eth.ParseSwapoutTxInput(&input)
+	}
 	if err != nil {
 		return err
 	}
@@ -418,6 +458,26 @@ func (scanner *ethSwapScanner) verifySwapoutTx(tx *types.Transaction, tokenAddre
 	}
 
 	return nil
+}
+
+func parseSwapoutTxLogs(logs []*types.Log, targetContract string) (value *big.Int, err error) {
+	for _, log := range logs {
+		if log.Removed {
+			continue
+		}
+		if !strings.EqualFold(log.Address.String(), targetContract) {
+			continue
+		}
+		if len(log.Topics) != 3 || log.Data == nil {
+			continue
+		}
+		if !bytes.Equal(log.Topics[0].Bytes(), logSwapoutTopic) {
+			continue
+		}
+		value = common.GetBigInt(log.Data, 0, 32)
+		return value, nil
+	}
+	return nil, tokens.ErrSwapoutLogNotFound
 }
 
 type cachedSacnnedBlocks struct {

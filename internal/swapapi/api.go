@@ -39,11 +39,12 @@ func GetServerInfo() (*ServerInfo, error) {
 		return nil, nil
 	}
 	return &ServerInfo{
-		Identifier: config.Identifier,
-		SrcChain:   config.SrcChain,
-		DestChain:  config.DestChain,
-		PairIDs:    tokens.GetAllPairIDs(),
-		Version:    params.VersionWithMeta,
+		Identifier:          config.Identifier,
+		MustRegisterAccount: config.MustRegisterAccount,
+		SrcChain:            config.SrcChain,
+		DestChain:           config.DestChain,
+		PairIDs:             tokens.GetAllPairIDs(),
+		Version:             params.VersionWithMeta,
 	}, nil
 }
 
@@ -117,11 +118,11 @@ func GetSwapout(txid, pairID, bindAddr *string) (*SwapInfo, error) {
 func processHistoryLimit(limit int) int {
 	switch {
 	case limit == 0:
-		limit = 20
+		limit = 20 // default
 	case limit > 100:
 		limit = 100
-	case limit < 0:
-		limit = 1
+	case limit < -100:
+		limit = -100
 	}
 	return limit
 }
@@ -151,14 +152,7 @@ func GetSwapoutHistory(address, pairID string, offset, limit int) ([]*SwapInfo, 
 // Swapin api
 func Swapin(txid, pairID *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapin", "txid", *txid, "pairID", *pairID)
-	txidstr := *txid
-	pairIDStr := *pairID
-	swapInfo, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr, true)
-	err = addSwapToDatabase(txidstr, tokens.SwapinTx, swapInfo, err)
-	if err != nil {
-		return nil, err
-	}
-	return &SuccessPostResult, nil
+	return swap(txid, pairID, true)
 }
 
 // RetrySwapin api
@@ -191,12 +185,34 @@ func RetrySwapin(txid, pairID *string) (*PostResult, error) {
 // Swapout api
 func Swapout(txid, pairID *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapout", "txid", *txid, "pairID", *pairID)
+	return swap(txid, pairID, false)
+}
+
+func swap(txid, pairID *string, isSwapin bool) (*PostResult, error) {
 	txidstr := *txid
 	pairIDStr := *pairID
-	swapInfo, err := tokens.DstBridge.VerifyTransaction(pairIDStr, txidstr, true)
-	err = addSwapToDatabase(txidstr, tokens.SwapoutTx, swapInfo, err)
+	bridge := tokens.GetCrossChainBridge(isSwapin)
+	swapInfo, err := bridge.VerifyTransaction(pairIDStr, txidstr, true)
+	if err != nil {
+		txStat := bridge.GetTransactionStatus(txidstr)
+		if txStat != nil && txStat.BlockHeight > 0 {
+			swapInfo, err = bridge.VerifyTransaction(pairIDStr, txidstr, false)
+		}
+	}
+	var txType tokens.SwapTxType
+	if isSwapin {
+		txType = tokens.SwapinTx
+	} else {
+		txType = tokens.SwapoutTx
+	}
+	err = addSwapToDatabase(txidstr, txType, swapInfo, err)
 	if err != nil {
 		return nil, err
+	}
+	if isSwapin {
+		log.Info("[api] receive swapin register", "txid", txidstr, "pairID", pairIDStr)
+	} else {
+		log.Info("[api] receive swapout register", "txid", txidstr, "pairID", pairIDStr)
 	}
 	return &SuccessPostResult, nil
 }

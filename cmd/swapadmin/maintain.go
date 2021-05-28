@@ -13,9 +13,10 @@ var (
 		Action:    maintain,
 		Name:      "maintain",
 		Usage:     "maintain deposit and withdraw switch",
-		ArgsUsage: "<open|close> <deposit|withdraw|both> <pairID>",
+		ArgsUsage: "<open|close> <deposit|withdraw|both> <pairID[,pairID]...>",
 		Description: `
-maintain service, open or close deposit and withdraw
+maintain service, open or close deposit and withdraw.
+pairIDs must be comma separated. pairIDs can be 'all'.
 `,
 		Flags: commonAdminFlags,
 	}

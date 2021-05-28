@@ -1,7 +1,6 @@
 package eth
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -17,7 +16,8 @@ var (
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
 
-	defReserveGasFee = big.NewInt(1e16) // 0.01 ETH
+	minReserveFee  *big.Int
+	latestGasPrice *big.Int
 )
 
 // BuildRawTransaction build raw tx
@@ -57,7 +57,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 				input = *args.Input
 			} else {
 				args.To = args.Bind
-				input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
+				input = b.getUnlockCoinMemo(args)
 			}
 		}
 	} else {
@@ -73,6 +73,14 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	}
 
 	return b.buildTx(args, extra, input)
+}
+
+func (b *Bridge) getUnlockCoinMemo(args *tokens.BuildTxArgs) (input []byte) {
+	isContract, err := b.IsContractAddress(args.Bind)
+	if err == nil && !isContract {
+		input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
+	}
+	return input
 }
 
 func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, input []byte) (rawTx interface{}, err error) {
@@ -99,30 +107,19 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		args.Identifier = params.GetIdentifier()
 	}
 
-	var balance *big.Int
-	for i := 0; i < retryRPCCount; i++ {
-		balance, err = b.GetBalance(args.From)
-		if err == nil {
-			break
-		}
-		time.Sleep(retryRPCInterval)
-	}
-	if err != nil {
-		log.Warn("get balance error", "from", args.From, "err", err)
-		return nil, fmt.Errorf("get balance error: %v", err)
-	}
 	needValue := big.NewInt(0)
 	if value != nil && value.Sign() > 0 {
 		needValue = value
 	}
 	if args.SwapType != tokens.NoSwapType {
-		needValue = new(big.Int).Add(needValue, defReserveGasFee)
+		needValue = new(big.Int).Add(needValue, getMinReserveFee())
 	} else {
 		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
 	}
-	if balance.Cmp(needValue) < 0 {
-		return nil, errors.New("not enough coin balance")
+	err = b.checkBalance("", args.From, needValue)
+	if err != nil {
+		return nil, err
 	}
 
 	rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)
@@ -134,6 +131,18 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		"gasLimit", gasLimit, "gasPrice", gasPrice, "data", common.ToHex(input))
 
 	return rawTx, nil
+}
+
+func getMinReserveFee() *big.Int {
+	if minReserveFee != nil {
+		return minReserveFee
+	}
+	if params.GetExtraConfig() == nil || params.GetExtraConfig().MinReserveFee == "" {
+		minReserveFee = big.NewInt(1e16) // default 0.01 ETH
+	} else {
+		minReserveFee, _ = new(big.Int).SetString(params.GetExtraConfig().MinReserveFee, 10)
+	}
+	return minReserveFee
 }
 
 func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraArgs, err error) {
@@ -152,15 +161,9 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 			return nil, err
 		}
 		if args.SwapType != tokens.NoSwapType {
-			pairID := args.PairID
-			tokenCfg := b.GetTokenConfig(pairID)
-			if tokenCfg == nil {
-				return nil, tokens.ErrUnknownPairID
-			}
-			addPercent := tokenCfg.PlusGasPricePercentage
-			if addPercent > 0 {
-				extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
-				extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
+			err = b.adjustSwapGasPrice(args.PairID, extra)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -199,6 +202,32 @@ func (b *Bridge) getGasPrice() (price *big.Int, err error) {
 	return nil, err
 }
 
+func (b *Bridge) adjustSwapGasPrice(pairID string, extra *tokens.EthExtraArgs) error {
+	tokenCfg := b.GetTokenConfig(pairID)
+	if tokenCfg == nil {
+		return tokens.ErrUnknownPairID
+	}
+	addPercent := tokenCfg.PlusGasPricePercentage
+	if addPercent > 0 {
+		extra.GasPrice.Mul(extra.GasPrice, big.NewInt(int64(100+addPercent)))
+		extra.GasPrice.Div(extra.GasPrice, big.NewInt(100))
+	}
+	maxGasPriceFluctPercent := b.ChainConfig.MaxGasPriceFluctPercent
+	if maxGasPriceFluctPercent > 0 {
+		if latestGasPrice != nil {
+			maxFluct := new(big.Int).Set(latestGasPrice)
+			maxFluct.Mul(maxFluct, new(big.Int).SetUint64(maxGasPriceFluctPercent))
+			maxFluct.Div(maxFluct, big.NewInt(100))
+			minGasPrice := new(big.Int).Sub(latestGasPrice, maxFluct)
+			if extra.GasPrice.Cmp(minGasPrice) < 0 {
+				extra.GasPrice = minGasPrice
+			}
+		}
+		latestGasPrice = extra.GasPrice
+	}
+	return nil
+}
+
 func (b *Bridge) getAccountNonce(pairID, from string, swapType tokens.SwapType) (nonceptr *uint64, err error) {
 	var nonce uint64
 	for i := 0; i < retryRPCCount; i++ {
@@ -220,58 +249,24 @@ func (b *Bridge) getAccountNonce(pairID, from string, swapType tokens.SwapType) 
 	return &nonce, nil
 }
 
-// build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
-func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
-	pairID := args.PairID
-	funcHash := getSwapinFuncHash()
-	txHash := common.HexToHash(args.SwapID)
-	address := common.HexToAddress(args.Bind)
-	if address == (common.Address{}) || !common.IsHexAddress(args.Bind) {
-		log.Warn("swapin to wrong address", "address", args.Bind)
-		return errors.New("can not swapin to empty or invalid address")
-	}
-	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, true)
-
-	input := PackDataWithFuncHash(funcHash, txHash, address, amount)
-	args.Input = &input // input
-
-	token := b.GetTokenConfig(pairID)
-	if token == nil {
-		return tokens.ErrUnknownPairID
-	}
-	args.To = token.ContractAddress // to
-	return nil
-}
-
-func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) {
-	pairID := args.PairID
-	funcHash := erc20CodeParts["transfer"]
-	address := common.HexToAddress(args.Bind)
-	if address == (common.Address{}) || !common.IsHexAddress(args.Bind) {
-		log.Warn("swapout to wrong address", "address", args.Bind)
-		return errors.New("can not swapout to empty or invalid address")
-	}
-	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, false)
-
-	input := PackDataWithFuncHash(funcHash, address, amount)
-	args.Input = &input // input
-
-	token := b.GetTokenConfig(pairID)
-	if token == nil {
-		return tokens.ErrUnknownPairID
-	}
-	args.To = token.ContractAddress // to
-
+func (b *Bridge) checkBalance(token, account string, amount *big.Int) (err error) {
 	var balance *big.Int
 	for i := 0; i < retryRPCCount; i++ {
-		balance, err = b.GetErc20Balance(token.ContractAddress, token.DcrmAddress)
+		if token != "" {
+			balance, err = b.GetErc20Balance(token, account)
+		} else {
+			balance, err = b.GetBalance(account)
+		}
 		if err == nil {
 			break
 		}
 		time.Sleep(retryRPCInterval)
 	}
 	if err == nil && balance.Cmp(amount) < 0 {
-		return errors.New("not enough token balance to swapout")
+		return fmt.Errorf("not enough %v balance. %v < %v", token, balance, amount)
+	}
+	if err != nil {
+		log.Warn("get balance error", "token", token, "account", account, "err", err)
 	}
 	return err
 }
