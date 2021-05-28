@@ -22,6 +22,9 @@ var (
 	swapinTaskChanMap  = make(map[string]chan *tokens.BuildTxArgs)
 	swapoutTaskChanMap = make(map[string]chan *tokens.BuildTxArgs)
 
+	processSwapTaskCache      = make(map[string]struct{})
+	maxCountOfCachedSwapTasks = 10000
+
 	errAlreadySwapped     = errors.New("already swapped")
 	errDBError            = errors.New("database error")
 	errSendTxWithDiffHash = errors.New("send tx with different hash")
@@ -161,6 +164,11 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	pairID := swap.PairID
 	txid := swap.TxID
 	bind := swap.Bind
+
+	cacheKey := getSwapCacheKey(isSwapin, txid, bind)
+	if _, exist := processSwapTaskCache[cacheKey]; exist {
+		return errAlreadySwapped
+	}
 
 	res, err := mongodb.FindSwapResult(isSwapin, txid, pairID, bind)
 	if err != nil {
@@ -330,6 +338,10 @@ func processSwapTask(swapChan <-chan *tokens.BuildTxArgs) {
 	}
 }
 
+func getSwapCacheKey(isSwapin bool, txid, bind string) string {
+	return strings.ToLower(fmt.Sprintf("%s:%s:%t", txid, bind, isSwapin))
+}
+
 func doSwap(args *tokens.BuildTxArgs) (err error) {
 	pairID := args.PairID
 	txid := args.SwapID
@@ -339,14 +351,22 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	isSwapin := swapType == tokens.SwapinType
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)
 
-	res, err := mongodb.FindSwapResult(isSwapin, txid, pairID, bind)
-	if err != nil {
-		return err
+	isCachedSwapProcessed := false
+	cacheKey := getSwapCacheKey(isSwapin, txid, bind)
+	if _, exist := processSwapTaskCache[cacheKey]; exist {
+		return errAlreadySwapped
 	}
-	err = preventReswap(res, isSwapin)
-	if err != nil {
-		return err
+	if len(processSwapTaskCache) > maxCountOfCachedSwapTasks {
+		processSwapTaskCache = make(map[string]struct{}) // clear
 	}
+	logWorker("doSwap", "add swap cache", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "value", args.OriginValue)
+	processSwapTaskCache[cacheKey] = struct{}{}
+	defer func() {
+		if !isCachedSwapProcessed {
+			logWorkerError("doSwap", "delete swap cache", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "value", args.OriginValue)
+			delete(processSwapTaskCache, cacheKey)
+		}
+	}()
 
 	logWorker("doSwap", "start to process", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "value", args.OriginValue)
 
@@ -377,6 +397,16 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
+	// recheck reswap before update db
+	res, err := mongodb.FindSwapResult(isSwapin, txid, pairID, bind)
+	if err != nil {
+		return err
+	}
+	err = preventReswap(res, isSwapin)
+	if err != nil {
+		return err
+	}
+
 	// update database before sending transaction
 	matchTx := &MatchTx{
 		SwapTx:    signTxHash,
@@ -393,6 +423,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		logWorkerError("doSwap", "update swap result failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
 	}
+	isCachedSwapProcessed = true
 
 	err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxProcessed, now(), "")
 	if err != nil {
