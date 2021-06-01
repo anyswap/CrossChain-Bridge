@@ -157,7 +157,7 @@ func processUpdateSwapHeight(resBridge tokens.CrossChainBridge, swap *mongodb.Mg
 			}
 		}
 	}
-	if blockHeight == 0 {
+	if blockHeight == 0 && swap.SwapNonce > 0 {
 		pairID := swap.PairID
 		tokenCfg := resBridge.GetTokenConfig(pairID)
 		if tokenCfg == nil {
