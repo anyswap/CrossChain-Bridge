@@ -63,16 +63,20 @@ func addInitialSwapResult(swapInfo *tokens.TxSwapInfo, status mongodb.SwapStatus
 
 func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 	updates := &mongodb.SwapResultUpdateItems{
-		Status:    mongodb.MatchTxNotStable,
+		Status:    mongodb.KeepStatus,
 		Timestamp: now(),
 	}
 	if mtx.SwapHeight == 0 {
-		updates.SwapTx = mtx.SwapTx
 		updates.SwapValue = mtx.SwapValue
 		updates.SwapNonce = mtx.SwapNonce
 		updates.SwapHeight = 0
 		updates.SwapTime = 0
+		if mtx.SwapTx != "" {
+			updates.SwapTx = mtx.SwapTx
+			updates.Status = mongodb.MatchTxNotStable
+		}
 	} else {
+		updates.SwapNonce = mtx.SwapNonce
 		updates.SwapHeight = mtx.SwapHeight
 		updates.SwapTime = mtx.SwapTime
 		if mtx.SwapTx != "" {
