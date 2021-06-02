@@ -114,7 +114,7 @@ func FindTokenConfig(address string, isSrc bool) (configs []*TokenConfig, pairID
 func GetTokenConfig(pairID string, isSrc bool) *TokenConfig {
 	pairCfg, exist := tokenPairsConfig[strings.ToLower(pairID)]
 	if !exist {
-		log.Warn("GetTokenConfig: pairID not exist", "pairID", pairID)
+		log.Trace("GetTokenConfig: pairID not exist", "pairID", pairID)
 		return nil
 	}
 	if isSrc {
@@ -127,7 +127,7 @@ func GetTokenConfig(pairID string, isSrc bool) *TokenConfig {
 func GetTokenConfigsByDirection(pairID string, isSwapin bool) (fromTokenConfig, toTokenConfig *TokenConfig) {
 	pairCfg, exist := tokenPairsConfig[strings.ToLower(pairID)]
 	if !exist {
-		log.Warn("GetTokenConfigs: pairID not exist", "pairID", pairID)
+		log.Trace("GetTokenConfigs: pairID not exist", "pairID", pairID)
 		return nil, nil
 	}
 	if isSwapin {
