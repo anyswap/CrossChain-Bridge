@@ -445,6 +445,12 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	return err
 }
 
+// DeleteCachedSwap delete cached swap
+func DeleteCachedSwap(isSwapin bool, txid, bind string) {
+	cacheKey := getSwapCacheKey(isSwapin, txid, bind)
+	delete(processSwapTaskCache, cacheKey)
+}
+
 type swapInfo struct {
 	isSwapin bool
 	txid     string
