@@ -400,6 +400,12 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	return sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin, false)
 }
 
+// DeleteCachedSwap delete cached swap
+func DeleteCachedSwap(isSwapin bool, txid, bind string) {
+	cacheKey := getSwapCacheKey(isSwapin, txid, bind)
+	delete(processSwapTaskCache, cacheKey)
+}
+
 type swapInfo struct {
 	txid     string
 	bind     string

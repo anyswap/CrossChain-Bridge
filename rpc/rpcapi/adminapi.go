@@ -237,8 +237,10 @@ func reswap(args *admin.CallArgs, result *string) (err error) {
 	if err != nil {
 		return err
 	}
+	var isSwapin bool
 	switch operation {
 	case swapinOp:
+		isSwapin = true
 		err = mongodb.Reswapin(txid, pairID, bind, forceOpt)
 	case swapoutOp:
 		err = mongodb.Reswapout(txid, pairID, bind, forceOpt)
@@ -248,6 +250,7 @@ func reswap(args *admin.CallArgs, result *string) (err error) {
 	if err != nil {
 		return err
 	}
+	worker.DeleteCachedSwap(isSwapin, txid, bind)
 	*result = successReuslt
 	return nil
 }
