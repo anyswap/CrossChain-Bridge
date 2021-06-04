@@ -22,7 +22,6 @@ github.com/btcsuite/btcd v0.21.0-beta/go.mod h1:ZSWyehm27aAuS9bvkATT+Xte3hjHZ+MR
 github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f h1:bAs4lUbRJpnnkd9VhRV3jjAVU7DJVjMaK+IsvSeZvFo=
 github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f/go.mod h1:TdznJufoqS23FtqVCzL0ZqgP5MqXbb4fg/WgDys70nA=
 github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d/go.mod h1:+5NJ2+qvTyV9exUAL/rxXi3DcLg2Ts+ymUAY5y4NvMg=
-github.com/btcsuite/btcutil v1.0.2 h1:9iZ1Terx9fMIOtq1VrwdqfsATL9MC2l8ZrUY6YZ2uts=
 github.com/btcsuite/btcutil v1.0.2/go.mod h1:j9HUFwoQRsZL3V4n+qG+CUnEGHOarIxfC3Le2Yhbcts=
 github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce h1:YtWJF7RHm2pYCvA5t0RPmAaLUhREsKuKd+SLhxFbFeQ=
 github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce/go.mod h1:0DVlHczLPewLcPGEIeUEzfOJhqGPQ0mJJRDBtD307+o=
@@ -68,7 +67,6 @@ github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMo
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/garyburd/redigo v1.6.0/go.mod h1:NR3MbYisc3/PwhQ00EMzDiPmrwpPxAn5GI05/YaO1SY=
-github.com/giangnamnabka/btcd v0.21.0-beta.0.20210422182616-7cc8292ed1fd h1:mD+Hc8ORefSV/dkm4+aLI8JpBziKxNhA5v4076O0x4c=
 github.com/giangnamnabka/btcd v0.21.0-beta.0.20210422182616-7cc8292ed1fd/go.mod h1:l9o40Mlq/YhpDFl9KCcK59xUCGvzlu6sf4FNxvtZoh8=
 github.com/giangnamnabka/btcd v0.21.0-beta.0.20210425211148-6b9fe474f6d7 h1:kwbDfxpbIaxZ8Cie+rMyOp2RGKHhBDuLmw7I9Sf6QmE=
 github.com/giangnamnabka/btcd v0.21.0-beta.0.20210425211148-6b9fe474f6d7/go.mod h1:ZflBJaNyGuO7K9zadDBlPtksrg5gOFDxDbj+M/qAjHo=
