@@ -11,13 +11,13 @@ var (
 	restIntervalInVerifyJob = 3 * time.Second
 
 	maxDoSwapLifetime       = int64(7 * 24 * 3600)
-	restIntervalInDoSwapJob = 60 * time.Second
+	restIntervalInDoSwapJob = 10 * time.Second
 
 	maxStableLifetime       = int64(7 * 24 * 3600)
 	restIntervalInStableJob = 10 * time.Second
 
 	maxReplaceSwapLifetime       = int64(7 * 24 * 3600)
-	restIntervalInReplaceSwapJob = 300 * time.Second
+	restIntervalInReplaceSwapJob = 60 * time.Second
 
 	maxPassBigValueLifetime     = int64(7 * 24 * 3600)
 	restIntervalInPassBigValJob = 300 * time.Second

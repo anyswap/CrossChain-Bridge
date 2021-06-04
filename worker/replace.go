@@ -121,6 +121,12 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) {
 	if getSepTimeInFind(waitTimeToReplace) < swap.Timestamp {
 		return
 	}
+	bridge := tokens.GetCrossChainBridge(!isSwapin)
+	err := checkIfSwapNonceHasPassed(bridge, swap, true)
+	if err != nil {
+		return
+	}
+	_ = updateSwapTimestamp(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 	dispatchReplaceTask(swap)
 }
 

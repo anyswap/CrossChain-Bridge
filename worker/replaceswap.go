@@ -59,34 +59,57 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 		return nil, nil, errSwapTxIsOnChain
 	}
 
-	tokenCfg := bridge.GetTokenConfig(pairID)
-	if tokenCfg == nil {
-		return nil, nil, fmt.Errorf("no token config for pairID '%v'", pairID)
-	}
-	nonce, err := nonceSetter.GetPoolNonce(tokenCfg.DcrmAddress, "latest")
+	err = checkIfSwapNonceHasPassed(bridge, res, true)
 	if err != nil {
-		return nil, nil, errGetNonceFailed
+		return nil, nil, err
 	}
-	if res.SwapNonce > nonce+maxDistanceOfSwapNonce {
-		_ = updateSwapTimestamp(txid, pairID, bind, isSwapin)
-		return nil, nil, errSwapNonceTooBig
-	}
-	if nonce > res.SwapNonce {
-		if isSwapResultTxOnChain(nonceSetter, res) {
-			return nil, nil, errSwapTxIsOnChain
-		}
-		if res.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
-			logWorkerWarn("[replace]", "mark swap result failed", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swaptime", res.Timestamp, "nowtime", now())
-			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
-		}
-		return nil, nil, errSwapNoncePassed
-	}
+
 	err = preventReplaceswapByHistory(res, isSwapin)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	return swap, res, nil
+}
+
+func checkIfSwapNonceHasPassed(bridge tokens.CrossChainBridge, res *mongodb.MgoSwapResult, isReplace bool) error {
+	nonceSetter, ok := bridge.(tokens.NonceSetter)
+	if !ok {
+		return errNotNonceSupport
+	}
+
+	pairID := res.PairID
+	txid := res.TxID
+	bind := res.Bind
+	isSwapin := tokens.SwapType(res.SwapType) == tokens.SwapinType
+
+	tokenCfg := bridge.GetTokenConfig(pairID)
+	if tokenCfg == nil {
+		return fmt.Errorf("no token config for pairID '%v'", pairID)
+	}
+	nonce, err := nonceSetter.GetPoolNonce(tokenCfg.DcrmAddress, "latest")
+	if err != nil {
+		return errGetNonceFailed
+	}
+	if isReplace && res.SwapNonce > nonce+maxDistanceOfSwapNonce {
+		return errSwapNonceTooBig
+	}
+	if nonce > res.SwapNonce && res.SwapNonce > 0 {
+		var iden string
+		if isReplace {
+			iden = "[replace]"
+		} else {
+			iden = "[stable]"
+		}
+		if res.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
+			logWorkerWarn(iden, "mark swap result failed", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swaptime", res.Timestamp, "nowtime", now())
+			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
+		}
+		if isReplace {
+			return errSwapNoncePassed
+		}
+	}
+	return nil
 }
 
 func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash string, err error) {
