@@ -59,7 +59,6 @@ func swapserver(ctx *cli.Context) error {
 	if ctx.NArg() > 0 {
 		return fmt.Errorf("invalid command: %q", ctx.Args().Get(0))
 	}
-	exitCh := make(chan struct{})
 	params.IsSwapServer = true
 	params.SetDataDir(utils.GetDataDir(ctx))
 	configFile := utils.GetConfigFilePath(ctx)
@@ -74,6 +73,7 @@ func swapserver(ctx *cli.Context) error {
 	time.Sleep(100 * time.Millisecond)
 	rpcserver.StartAPIServer()
 
-	<-exitCh
+	utils.TopWaitGroup.Wait()
+	log.Info("swapserver exit normally")
 	return nil
 }

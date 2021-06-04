@@ -27,16 +27,16 @@ func StartWork(isServer bool) {
 	time.Sleep(interval)
 
 	if !isServer {
-		go StartAcceptSignJob()
+		StartAcceptSignJob()
 		time.Sleep(interval)
-		go AddTokenPairDynamically()
+		AddTokenPairDynamically()
 		return
 	}
 
-	go StartVerifyJob()
+	StartSwapJob()
 	time.Sleep(interval)
 
-	go StartSwapJob()
+	go StartVerifyJob()
 	time.Sleep(interval)
 
 	go StartStableJob()

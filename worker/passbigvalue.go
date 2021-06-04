@@ -3,6 +3,7 @@ package worker
 import (
 	"errors"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -28,6 +29,10 @@ func startPassBigValSwapinJob() {
 			logWorker("passbigval", "find big value swapins to pass", "count", len(res))
 		}
 		for _, swap := range res {
+			if utils.IsCleanuping() {
+				logWorker("passbigval", "stop pass big value swapin job")
+				return
+			}
 			err = processPassBigValSwapin(swap)
 			switch {
 			case err == nil,
@@ -52,6 +57,10 @@ func startPassBigValSwapoutJob() {
 			logWorker("passbigval", "find big value swapouts to pass", "count", len(res))
 		}
 		for _, swap := range res {
+			if utils.IsCleanuping() {
+				logWorker("passbigval", "stop pass big value swapout job")
+				return
+			}
 			err = processPassBigValSwapout(swap)
 			switch {
 			case err == nil,

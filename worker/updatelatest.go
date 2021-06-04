@@ -3,6 +3,7 @@ package worker
 import (
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
@@ -13,6 +14,9 @@ var (
 // StartUpdateLatestBlockHeightJob update latest block height job
 func StartUpdateLatestBlockHeightJob() {
 	for {
+		if utils.IsCleanuping() {
+			return
+		}
 		logWorker("adjustGatewayOrder", "adjust gateway api adddress order")
 		tools.AdjustGatewayOrder(true)
 		tools.AdjustGatewayOrder(false)

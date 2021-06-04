@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -34,6 +35,10 @@ func startSwapinStableJob() {
 				logWorker("stable", "find swapin results to stable", "count", len(res))
 			}
 			for _, swap := range res {
+				if utils.IsCleanuping() {
+					logWorker("stable", "stop update swapin stable job")
+					return
+				}
 				err = processSwapinStable(swap)
 				if err != nil {
 					logWorkerError("stable", "process swapin stable error", err)
@@ -57,6 +62,10 @@ func startSwapoutStableJob() {
 				logWorker("stable", "find swapout results to stable", "count", len(res))
 			}
 			for _, swap := range res {
+				if utils.IsCleanuping() {
+					logWorker("stable", "stop update swapout stable job")
+					return
+				}
 				err = processSwapoutStable(swap)
 				if err != nil {
 					logWorkerError("stable", "process swapout stable error", err)

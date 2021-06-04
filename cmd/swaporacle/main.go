@@ -56,7 +56,6 @@ func swaporacle(ctx *cli.Context) error {
 	if ctx.NArg() > 0 {
 		return fmt.Errorf("invalid command: %q", ctx.Args().Get(0))
 	}
-	exitCh := make(chan struct{})
 	params.SetDataDir(utils.GetDataDir(ctx))
 	configFile := utils.GetConfigFilePath(ctx)
 	params.LoadConfig(configFile, false)
@@ -65,6 +64,7 @@ func swaporacle(ctx *cli.Context) error {
 
 	worker.StartWork(false)
 
-	<-exitCh
+	utils.TopWaitGroup.Wait()
+	log.Info("swaporacle exit normally")
 	return nil
 }

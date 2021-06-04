@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -31,6 +32,10 @@ func startSwapinVerifyJob() {
 				logWorker("verify", "find swapins to verify", "count", len(res))
 			}
 			for _, swap := range res {
+				if utils.IsCleanuping() {
+					logWorker("verify", "stop swapin verify job")
+					return
+				}
 				err = processSwapinVerify(swap)
 				switch {
 				case err == nil,
@@ -59,6 +64,10 @@ func startSwapoutVerifyJob() {
 				logWorker("verify", "find swapouts to verify", "count", len(res))
 			}
 			for _, swap := range res {
+				if utils.IsCleanuping() {
+					logWorker("verify", "stop swapout verify job")
+					return
+				}
 				err = processSwapoutVerify(swap)
 				switch {
 				case err == nil,

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -38,14 +39,19 @@ func StartAcceptSignJob() {
 		return
 	}
 	acceptSignStarter.Do(func() {
-		logWorker("accept", "start accept sign job")
-		openLeveldb()
-		defer closeLeveldb()
-		acceptSign()
+		utils.TopWaitGroup.Add(1)
+		go acceptSign()
 	})
 }
 
 func acceptSign() {
+	logWorker("accept", "start accept sign job")
+	openLeveldb()
+	defer func() {
+		logWorker("accept", "stop accept sign job")
+		closeLeveldb()
+		utils.TopWaitGroup.Done()
+	}()
 	i := 0
 	for {
 		signInfo, err := dcrm.GetCurNodeSignInfo()
@@ -59,6 +65,9 @@ func acceptSign() {
 			logWorker("accept", "getCurNodeSignInfo", "count", len(signInfo))
 		}
 		for _, info := range signInfo {
+			if utils.IsCleanuping() {
+				return
+			}
 			keyID := info.Key
 			if keyID == "" || info.Account == "" || info.GroupID == "" {
 				logWorkerWarn("accept", "invalid accept sign info", "signInfo", info)

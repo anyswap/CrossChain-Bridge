@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/gorilla/rpc/v2"
 	rpcjson "github.com/gorilla/rpc/v2/json2"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/rpc/restapi"
@@ -46,6 +48,19 @@ func StartAPIServer() {
 			log.Error("ListenAndServe error", "err", err)
 		}
 	}()
+
+	utils.TopWaitGroup.Add(1)
+	go utils.WaitAndCleanup(func() { doCleanup(&svr) })
+}
+
+func doCleanup(svr *http.Server) {
+	defer utils.TopWaitGroup.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := svr.Shutdown(ctx); err != nil {
+		log.Error("Server Shutdown failed", "err", err)
+	}
+	log.Info("Close http server success")
 }
 
 // nolint:funlen // put together handle func

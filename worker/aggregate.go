@@ -3,6 +3,7 @@ package worker
 import (
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
@@ -25,6 +26,9 @@ func StartAggregateJob() {
 	}
 
 	for loop := 1; ; loop++ {
+		if utils.IsCleanuping() {
+			return
+		}
 		logWorker("aggregate", "start aggregate job", "loop", loop)
 		doAggregateJob()
 		logWorker("aggregate", "finish aggregate job", "loop", loop)

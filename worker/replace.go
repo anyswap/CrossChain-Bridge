@@ -3,6 +3,7 @@ package worker
 import (
 	"strings"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -40,6 +41,10 @@ func startReplaceSwapinJob() {
 		}
 		logWorker("replace", "find swapins to replace", "count", len(res))
 		for _, swap := range res {
+			if utils.IsCleanuping() {
+				logWorker("replace", "stop replace swapin job")
+				return
+			}
 			processReplaceSwap(swap, true)
 		}
 		restInJob(restIntervalInReplaceSwapJob)
@@ -59,6 +64,10 @@ func startReplaceSwapoutJob() {
 		}
 		logWorker("replace", "find swapouts to replace", "count", len(res))
 		for _, swap := range res {
+			if utils.IsCleanuping() {
+				logWorker("replace", "stop replace swapout job")
+				return
+			}
 			processReplaceSwap(swap, false)
 		}
 		restInJob(restIntervalInReplaceSwapJob)
@@ -139,8 +148,12 @@ func dispatchReplaceTask(swap *mongodb.MgoSwapResult) {
 
 func processReplaceSwapTask(swapChan <-chan *mongodb.MgoSwapResult) {
 	for {
-		swap := <-swapChan
-		doReplaceSwap(swap)
+		select {
+		case <-utils.CleanupChan:
+			return
+		case swap := <-swapChan:
+			doReplaceSwap(swap)
+		}
 	}
 }
 
