@@ -21,8 +21,8 @@ var (
 	acceptRingLock    sync.RWMutex
 	acceptRingMaxSize = 500
 
-	retryInterval = 3 * time.Second
-	waitInterval  = 20 * time.Second
+	retryInterval = 1 * time.Second
+	waitInterval  = 1 * time.Second
 
 	// those errors will be ignored in accepting
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
@@ -46,6 +46,7 @@ func StartAcceptSignJob() {
 }
 
 func acceptSign() {
+	i := 0
 	for {
 		signInfo, err := dcrm.GetCurNodeSignInfo()
 		if err != nil {
@@ -53,13 +54,22 @@ func acceptSign() {
 			time.Sleep(retryInterval)
 			continue
 		}
-		logWorker("accept", "acceptSign", "count", len(signInfo))
+		i++
+		if i%20 == 0 {
+			logWorker("accept", "getCurNodeSignInfo", "count", len(signInfo))
+		}
 		for _, info := range signInfo {
 			keyID := info.Key
+			if keyID == "" || info.Account == "" || info.GroupID == "" {
+				logWorkerWarn("accept", "invalid accept sign info", "signInfo", info)
+				continue
+			}
 			history := getAcceptSignHistory(keyID)
 			if history != nil {
-				logWorker("accept", "history sign", "keyID", keyID, "result", history.result)
-				_, _ = dcrm.DoAcceptSign(keyID, history.result, history.msgHash, history.msgContext)
+				if history.result != "IGNORE" {
+					logWorkerTrace("accept", "quick process history accept", "keyID", keyID, "result", history.result)
+					_, _ = dcrm.DoAcceptSign(keyID, history.result, history.msgHash, history.msgContext)
+				}
 				continue
 			}
 			agreeResult := "AGREE"
@@ -68,14 +78,17 @@ func acceptSign() {
 				err = verifySignInfo(info, args)
 			}
 			switch {
+			case errors.Is(err, tokens.ErrTxNotStable),
+				errors.Is(err, tokens.ErrTxNotFound),
+				errors.Is(err, tokens.ErrRPCQueryError):
+				logWorkerTrace("accept", "ignore sign", "keyID", keyID, "err", err)
+				continue
 			case errors.Is(err, errIdentifierMismatch),
 				errors.Is(err, errInitiatorMismatch),
 				errors.Is(err, errWrongMsgContext),
 				errors.Is(err, tokens.ErrUnknownPairID),
-				errors.Is(err, tokens.ErrNoBtcBridge),
-				errors.Is(err, tokens.ErrTxNotStable),
-				errors.Is(err, tokens.ErrTxNotFound),
-				errors.Is(err, tokens.ErrRPCQueryError):
+				errors.Is(err, tokens.ErrNoBtcBridge):
+				addAcceptSignHistory(keyID, "IGNORE", info.MsgHash, info.MsgContext)
 				logWorkerTrace("accept", "ignore sign", "keyID", keyID, "err", err)
 				continue
 			}
@@ -127,7 +140,7 @@ func verifySignInfo(signInfo *dcrm.SignInfoData, args *tokens.BuildTxArgs) error
 	default:
 		return errIdentifierMismatch
 	}
-	logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
+	logWorker("accept", "verifySignInfo", "keyID", signInfo.Key, "msgHash", msgHash, "msgContext", msgContext)
 	err := CheckAcceptRecord(args)
 	if err != nil {
 		return err
