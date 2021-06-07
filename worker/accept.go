@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
@@ -13,6 +14,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+	mapset "github.com/deckarep/golang-set"
 )
 
 var (
@@ -22,8 +24,15 @@ var (
 	acceptRingLock    sync.RWMutex
 	acceptRingMaxSize = 500
 
+	cachedAcceptInfos    = mapset.NewSet()
+	maxCachedAcceptInfos = 500
+
 	retryInterval = 1 * time.Second
 	waitInterval  = 1 * time.Second
+
+	acceptInfoCh      = make(chan *dcrm.SignInfoData, 10)
+	maxAcceptRoutines = int64(10)
+	curAcceptRoutines = int64(0)
 
 	// those errors will be ignored in accepting
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
@@ -39,19 +48,16 @@ func StartAcceptSignJob() {
 		return
 	}
 	acceptSignStarter.Do(func() {
+		logWorker("accept", "start accept sign job")
+		openLeveldb()
+		go startAcceptProducer()
+
 		utils.TopWaitGroup.Add(1)
-		go acceptSign()
+		go startAcceptConsumer()
 	})
 }
 
-func acceptSign() {
-	logWorker("accept", "start accept sign job")
-	openLeveldb()
-	defer func() {
-		logWorker("accept", "stop accept sign job")
-		closeLeveldb()
-		utils.TopWaitGroup.Done()
-	}()
+func startAcceptProducer() {
 	i := 0
 	for {
 		signInfo, err := dcrm.GetCurNodeSignInfo()
@@ -81,40 +87,101 @@ func acceptSign() {
 				}
 				continue
 			}
-			agreeResult := "AGREE"
-			args, err := getBuildTxArgsFromMsgContext(info)
-			if err == nil {
-				err = verifySignInfo(info, args)
-			}
-			switch {
-			case errors.Is(err, tokens.ErrTxNotStable),
-				errors.Is(err, tokens.ErrTxNotFound),
-				errors.Is(err, tokens.ErrRPCQueryError):
-				logWorkerTrace("accept", "ignore sign", "keyID", keyID, "err", err)
-				continue
-			case errors.Is(err, errIdentifierMismatch),
-				errors.Is(err, errInitiatorMismatch),
-				errors.Is(err, errWrongMsgContext),
-				errors.Is(err, tokens.ErrUnknownPairID),
-				errors.Is(err, tokens.ErrNoBtcBridge):
-				addAcceptSignHistory(keyID, "IGNORE", info.MsgHash, info.MsgContext)
-				logWorkerTrace("accept", "ignore sign", "keyID", keyID, "err", err)
+			if cachedAcceptInfos.Contains(keyID) {
+				logWorkerTrace("accept", "ignore cached accept sign info before dispatch", "keyID", keyID)
 				continue
 			}
-			if err != nil {
-				logWorkerError("accept", "DISAGREE sign", err, "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
-				agreeResult = "DISAGREE"
-			}
-			res, err := dcrm.DoAcceptSign(keyID, agreeResult, info.MsgHash, info.MsgContext)
-			if err != nil {
-				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
-			} else {
-				logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
-				addAcceptSignHistory(keyID, agreeResult, info.MsgHash, info.MsgContext)
-				_ = AddAcceptRecord(args)
-			}
+			logWorker("accept", "dispatch accept sign info", "keyID", keyID)
+			acceptInfoCh <- info // produce
 		}
 		time.Sleep(waitInterval)
+	}
+}
+
+func startAcceptConsumer() {
+	defer func() {
+		closeLeveldb()
+		utils.TopWaitGroup.Done()
+	}()
+	for {
+		select {
+		case <-utils.CleanupChan:
+			logWorker("accept", "stop accept sign job")
+			return
+		case info := <-acceptInfoCh: // consume
+			// loop and check, break if free worker exist
+			for {
+				if atomic.LoadInt64(&curAcceptRoutines) < maxAcceptRoutines {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+
+			atomic.AddInt64(&curAcceptRoutines, 1)
+			go processAcceptInfo(info)
+		}
+	}
+}
+
+func checkAndUpdateCachedAcceptInfoMap(keyID string) (ok bool) {
+	if cachedAcceptInfos.Contains(keyID) {
+		logWorkerTrace("accept", "ignore cached accept sign info in process", "keyID", keyID)
+		return false
+	}
+	if cachedAcceptInfos.Cardinality() >= maxCachedAcceptInfos {
+		cachedAcceptInfos.Pop()
+	}
+	cachedAcceptInfos.Add(keyID)
+	return true
+}
+
+func processAcceptInfo(info *dcrm.SignInfoData) {
+	defer atomic.AddInt64(&curAcceptRoutines, -1)
+
+	keyID := info.Key
+	if !checkAndUpdateCachedAcceptInfoMap(keyID) {
+		return
+	}
+	isProcessed := false
+	defer func() {
+		if !isProcessed {
+			cachedAcceptInfos.Remove(keyID)
+		}
+	}()
+
+	agreeResult := "AGREE"
+	args, err := getBuildTxArgsFromMsgContext(info)
+	if err == nil {
+		err = verifySignInfo(info, args)
+	}
+	switch {
+	case errors.Is(err, tokens.ErrTxNotStable),
+		errors.Is(err, tokens.ErrTxNotFound),
+		errors.Is(err, tokens.ErrRPCQueryError):
+		logWorkerTrace("accept", "ignore sign", "keyID", keyID, "err", err)
+		return
+	case errors.Is(err, errIdentifierMismatch),
+		errors.Is(err, errInitiatorMismatch),
+		errors.Is(err, errWrongMsgContext),
+		errors.Is(err, tokens.ErrUnknownPairID),
+		errors.Is(err, tokens.ErrNoBtcBridge):
+		addAcceptSignHistory(keyID, "IGNORE", info.MsgHash, info.MsgContext)
+		logWorker("accept", "ignore sign", "keyID", keyID, "err", err)
+		isProcessed = true
+		return
+	}
+	if err != nil {
+		logWorkerError("accept", "DISAGREE sign", err, "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
+		agreeResult = "DISAGREE"
+	}
+	res, err := dcrm.DoAcceptSign(keyID, agreeResult, info.MsgHash, info.MsgContext)
+	if err != nil {
+		logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
+	} else {
+		logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
+		addAcceptSignHistory(keyID, agreeResult, info.MsgHash, info.MsgContext)
+		_ = AddAcceptRecord(args)
+		isProcessed = true
 	}
 }
 
