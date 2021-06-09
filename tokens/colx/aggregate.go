@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	redeemAggregateP2SHInputSize = 198
+	redeemAggregateP2SHInputSize = 38000000
 )
 
 // ShouldAggregate should aggregate
