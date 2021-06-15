@@ -40,7 +40,7 @@ func StartAPIServer() {
 	svr := http.Server{
 		Addr:         fmt.Sprintf(":%v", apiPort),
 		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		WriteTimeout: 300 * time.Second,
 		Handler:      handlers.CORS(corsOptions...)(router),
 	}
 	go func() {
