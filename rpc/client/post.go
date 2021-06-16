@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	defaultTimeout   = 60 // seconds
+	defaultTimeout   = 5 // seconds
 	defaultRequestID = 1
 )
 
