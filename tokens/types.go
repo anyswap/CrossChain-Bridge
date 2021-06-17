@@ -326,8 +326,18 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if isSrc && c.IsErc20() && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
 	}
-	if isSrc && c.IsProxyErc20() && c.ContractCodeHash == "" {
-		return errors.New("token must config 'ContractCodeHash' for ProxyERC20 in source chain")
+	if c.IsProxyErc20() {
+		if !isSrc {
+			return errors.New("token ProxyERC20 is only support in source chain")
+		}
+		if c.ContractAddress == "" {
+			return errors.New("token ProxyERC20 must config 'ContractAddress'")
+		}
+		if c.ContractCodeHash == "" {
+			return errors.New("token ProxyERC20 must config 'ContractCodeHash'")
+		}
+	} else if c.ContractCodeHash != "" {
+		return errors.New("token forbid config 'ContractCodeHash' if it's not ProxyERC20")
 	}
 	if c.IsDelegateContract {
 		if c.ContractAddress == "" {
