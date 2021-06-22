@@ -27,9 +27,6 @@ func CheckConfig(isServer bool) (err error) {
 			return errors.New("server must config 'APIServer'")
 		}
 	} else if config.SrcChain.EnableScan || config.DestChain.EnableScan {
-		if config.Oracle == nil {
-			return errors.New("oracle must config 'Oracle'")
-		}
 		err = config.Oracle.CheckConfig()
 		if err != nil {
 			return err
@@ -131,6 +128,9 @@ func (c *DcrmNodeConfig) CheckConfig(isServer bool) (err error) {
 
 // CheckConfig check oracle config
 func (c *OracleConfig) CheckConfig() (err error) {
+	if c == nil {
+		return errors.New("oracle must config 'Oracle'")
+	}
 	ServerAPIAddress = c.ServerAPIAddress
 	if ServerAPIAddress == "" {
 		return errors.New("oracle must config 'ServerAPIAddress'")
