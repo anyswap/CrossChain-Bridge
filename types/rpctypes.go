@@ -8,6 +8,18 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
 )
 
+// RPCBaseBlock struct
+type RPCBaseBlock struct {
+	Hash       *common.Hash    `json:"hash"`
+	ParentHash *common.Hash    `json:"parentHash"`
+	Coinbase   *common.Address `json:"miner"`
+	Difficulty *hexutil.Big    `json:"difficulty"`
+	Number     *hexutil.Big    `json:"number"`
+	GasLimit   *hexutil.Uint64 `json:"gasLimit"`
+	GasUsed    *hexutil.Uint64 `json:"gasUsed"`
+	Time       *hexutil.Big    `json:"timestamp"`
+}
+
 // RPCBlock struct
 type RPCBlock struct {
 	Hash            *common.Hash    `json:"hash"`

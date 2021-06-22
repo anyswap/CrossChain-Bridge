@@ -110,7 +110,7 @@ func (b *Bridge) GetBlockHashOf(urls []string, height uint64) (hash string, err 
 		return "", errEmptyURLs
 	}
 	blockNumber := types.ToBlockNumArg(new(big.Int).SetUint64(height))
-	var block *types.RPCBlock
+	var block *types.RPCBaseBlock
 	for _, url := range urls {
 		err = client.RPCPost(&block, url, "eth_getBlockByNumber", blockNumber, false)
 		if err == nil && block != nil {
