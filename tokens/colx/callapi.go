@@ -30,7 +30,14 @@ func (b *Bridge) GetTransactionByHash(txHash string) (*electrs.ElectTx, error) {
 
 // GetElectTransactionStatus impl
 func (b *Bridge) GetElectTransactionStatus(txHash string) (*electrs.ElectTxStatus, error) {
-	return electrs.GetElectTransactionStatus(b, txHash)
+	result, err := electrs.GetElectTransactionStatus(b, txHash)
+	if err != nil {
+		return nil, err
+	}
+	if result != nil {
+		*result.BlockHeight = *result.BlockHeight + 499999
+	}
+	return result, err
 }
 
 // FindUtxos impl
