@@ -21,7 +21,7 @@ func StartScanJob(isServer bool) {
 	dstChainCfg := tokens.DstBridge.GetChainConfig()
 	if dstChainCfg.EnableScan {
 		go tokens.DstBridge.StartChainTransactionScanJob()
-		if srcChainCfg.EnableScanPool {
+		if dstChainCfg.EnableScanPool {
 			go tokens.DstBridge.StartPoolTransactionScanJob()
 		}
 	}
