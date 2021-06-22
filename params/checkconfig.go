@@ -137,7 +137,7 @@ func (c *OracleConfig) CheckConfig() (err error) {
 	}
 	var version string
 	for i := 0; i < 5; i++ {
-		err = client.RPCPost(&version, ServerAPIAddress, "swap.GetVersionInfo")
+		err = client.RPCPostWithTimeout(60, &version, ServerAPIAddress, "swap.GetVersionInfo")
 		if err == nil {
 			log.Info("oracle get server version info succeed", "version", version)
 			break

@@ -192,7 +192,7 @@ func (scanner *ethSwapScanner) init() {
 
 	var version string
 	for i := 0; i < scanner.rpcRetryCount; i++ {
-		err = client.RPCPost(&version, scanner.swapServer, "swap.GetVersionInfo")
+		err = client.RPCPostWithTimeout(swapRPCTimeout, &version, scanner.swapServer, "swap.GetVersionInfo")
 		if err == nil {
 			log.Info("get server version succeed", "version", version)
 			break
@@ -387,7 +387,7 @@ func (scanner *ethSwapScanner) postSwap(txid, pairID string) {
 		"pairid": pairID,
 	}
 	for i := 0; i < scanner.rpcRetryCount; i++ {
-		err := client.RPCPost(&result, scanner.swapServer, rpcMethod, args)
+		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, scanner.swapServer, rpcMethod, args)
 		if tokens.ShouldRegisterSwapForError(err) {
 			break
 		}

@@ -64,6 +64,8 @@ scan swap on btc
 			utils.JobsFlag,
 		},
 	}
+
+	swapRPCTimeout = 60 // seconds
 )
 
 type btcSwapScanner struct {
@@ -326,7 +328,7 @@ func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 			}
 			var result interface{}
 			for i := 0; i < scanner.rpcRetryCount; i++ {
-				err = client.RPCPost(&result, scanner.swapServer, "swap.P2shSwapin", args)
+				err = client.RPCPostWithTimeout(swapRPCTimeout, &result, scanner.swapServer, "swap.P2shSwapin", args)
 				if tokens.ShouldRegisterSwapForError(err) {
 					break
 				}
@@ -352,7 +354,7 @@ func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 		}
 		var result interface{}
 		for i := 0; i < scanner.rpcRetryCount; i++ {
-			err = client.RPCPost(&result, scanner.swapServer, "swap.Swapin", args)
+			err = client.RPCPostWithTimeout(swapRPCTimeout, &result, scanner.swapServer, "swap.Swapin", args)
 			if tokens.ShouldRegisterSwapForError(err) {
 				break
 			}

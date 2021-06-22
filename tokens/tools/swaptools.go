@@ -15,6 +15,7 @@ import (
 var (
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
+	swapRPCTimeout   = 60 // seconds
 )
 
 // IsSwapExist is swapin exist
@@ -36,7 +37,7 @@ func IsSwapExist(txid, pairID, bind string, isSwapin bool) bool {
 		"bind":   bind,
 	}
 	for i := 0; i < retryRPCCount; i++ {
-		err := client.RPCPost(&result, params.ServerAPIAddress, method, args)
+		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, method, args)
 		if err == nil {
 			return result != nil
 		}
@@ -109,7 +110,7 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 			}
 			var result interface{}
 			for i := 0; i < retryRPCCount; i++ {
-				err := client.RPCPost(&result, params.ServerAPIAddress, method, args)
+				err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, method, args)
 				if tokens.ShouldRegisterSwapForError(err) ||
 					IsSwapAlreadyExistRegisterError(err) {
 					break
@@ -156,7 +157,7 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 		}
 		var result interface{}
 		for i := 0; i < retryRPCCount; i++ {
-			err := client.RPCPost(&result, params.ServerAPIAddress, "swap.P2shSwapin", args)
+			err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, "swap.P2shSwapin", args)
 			if tokens.ShouldRegisterSwapForError(err) ||
 				IsSwapAlreadyExistRegisterError(err) {
 				break
@@ -174,7 +175,7 @@ func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
 	}
 	var result tokens.P2shAddressInfo
 	for i := 0; i < retryRPCCount; i++ {
-		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetP2shAddressInfo", p2shAddress)
+		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, "swap.GetP2shAddressInfo", p2shAddress)
 		if err == nil {
 			return result.BindAddress
 		}
@@ -198,7 +199,7 @@ func GetLatestScanHeight(isSrc bool) uint64 {
 	}
 	var result mongodb.MgoLatestScanInfo
 	for {
-		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetLatestScanInfo", isSrc)
+		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, "swap.GetLatestScanInfo", isSrc)
 		if err == nil {
 			height := result.BlockHeight
 			log.Info("GetLatestScanHeight", "isSrc", isSrc, "height", height)
@@ -237,7 +238,7 @@ func IsAddressRegistered(address string) bool {
 	}
 	var result interface{}
 	for i := 0; i < retryRPCCount; i++ {
-		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetRegisteredAddress", address)
+		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, "swap.GetRegisteredAddress", address)
 		if err == nil {
 			return result != nil
 		}
