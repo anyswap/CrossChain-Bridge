@@ -54,12 +54,12 @@ func (b *Bridge) getRedeemScriptByOutputScrpit(preScript []byte) ([]byte, error)
 	p2shAddr := p2shAddress.String()
 	bindAddr := tools.GetP2shBindAddress(p2shAddr)
 	if bindAddr == "" {
-		return nil, fmt.Errorf("ps2h address %v is registered", p2shAddr)
+		return nil, fmt.Errorf("p2sh address %v is not registered", p2shAddr)
 	}
 	var address string
 	address, redeemScript, _ := b.GetP2shAddress(bindAddr)
 	if address != p2shAddr {
-		return nil, fmt.Errorf("ps2h address mismatch for bind address %v, have %v want %v", bindAddr, p2shAddr, address)
+		return nil, fmt.Errorf("p2sh address mismatch for bind address %v, have %v want %v", bindAddr, p2shAddr, address)
 	}
 	return redeemScript, nil
 }
