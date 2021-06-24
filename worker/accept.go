@@ -16,6 +16,11 @@ import (
 	mapset "github.com/deckarep/golang-set"
 )
 
+const (
+	acceptAgree    = "AGREE"
+	acceptDisagree = "DISAGREE"
+)
+
 var (
 	acceptSignStarter sync.Once
 
@@ -136,7 +141,7 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 		}
 	}()
 
-	agreeResult := "AGREE"
+	agreeResult := acceptAgree
 	args, err := getBuildTxArgsFromMsgContext(info)
 	if err == nil {
 		err = verifySignInfo(info, args)
@@ -158,16 +163,31 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 	}
 	if err != nil {
 		logWorkerError("accept", "DISAGREE sign", err, "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
-		agreeResult = "DISAGREE"
+		agreeResult = acceptDisagree
 	}
 	res, err := dcrm.DoAcceptSign(keyID, agreeResult, info.MsgHash, info.MsgContext)
 	if err != nil {
 		logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
 	} else {
 		logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
-		_ = AddAcceptRecord(args)
+		if agreeResult == acceptAgree { // only record agree result
+			saveAcceptRecord(keyID, args)
+		}
 		isProcessed = true
 	}
+}
+
+func saveAcceptRecord(keyID string, args *tokens.BuildTxArgs) {
+	var err error
+	for i := 0; i < 3; i++ {
+		err = AddAcceptRecord(args)
+		if err == nil {
+			return
+		}
+	}
+	logWorkerWarn("accept", "save accept record to db failed", err,
+		"keyID", keyID, "pairID", args.PairID, "txid", args.SwapID,
+		"bind", args.Bind, "swaptype", args.SwapType.String())
 }
 
 func getBuildTxArgsFromMsgContext(signInfo *dcrm.SignInfoData) (*tokens.BuildTxArgs, error) {
