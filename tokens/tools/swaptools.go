@@ -282,18 +282,31 @@ func AdjustGatewayOrder(isSrc bool) {
 		return
 	}
 
+	var checkPointHeight uint64
 	stableHeight := tokens.GetStableConfirmations(isSrc)
-	checkPointHeight := maxHeight
 	if maxHeight > stableHeight {
 		checkPointHeight = maxHeight - stableHeight
 	}
-	blockHash1, err1 := forkChecker.GetBlockHashOf(gateway.APIAddress, checkPointHeight)
-	blockHash2, err2 := forkChecker.GetBlockHashOf(gateway.APIAddressExt, checkPointHeight)
-	if err1 != nil || err2 != nil {
-		return
+
+	retryCount := 5
+	retrySleepInterval := 3 * time.Second
+	time.Sleep(retrySleepInterval)
+	for i := 1; i <= retryCount; i++ {
+		hash1, err1 := forkChecker.GetBlockHashOf(gateway.APIAddress, checkPointHeight)
+		hash2, err2 := forkChecker.GetBlockHashOf(gateway.APIAddressExt, checkPointHeight)
+		if err1 != nil || err2 != nil {
+			log.Warn("[detect] get block hash failed", "height", checkPointHeight, "isSrc", isSrc, "count", i, "err1", err1, "err2", err2)
+			time.Sleep(retryRPCInterval)
+			continue
+		}
+		if hash1 == hash2 {
+			log.Info("[detect] check block hash success", "height", checkPointHeight, "hash", hash1, "isSrc", isSrc, "count", i, "stable", stableHeight)
+			return
+		}
+		if i == retryCount {
+			log.Fatal("[detect] check block hash failed", "height", checkPointHeight, "hash1", hash1, "hash2", hash2, "isSrc", isSrc, "count", i, "stable", stableHeight)
+		}
+		log.Warn("[detect] check block hash failed", "height", checkPointHeight, "hash1", hash1, "hash2", hash2, "isSrc", isSrc, "count", i, "stable", stableHeight)
+		time.Sleep(retrySleepInterval)
 	}
-	if blockHash1 != blockHash2 {
-		log.Fatal("check block hash failed", "blockHeight", checkPointHeight, "blockHash1", blockHash1, "blockHash2", blockHash2, "stable", stableHeight)
-	}
-	log.Info("check block hash success", "blockHeight", checkPointHeight, "blockHash", blockHash1, "latest", maxHeight)
 }
