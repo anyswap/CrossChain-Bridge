@@ -89,6 +89,7 @@ type TokenConfig struct {
 	DisableSwap            bool
 	IsDelegateContract     bool
 	DelegateToken          string `json:",omitempty"`
+	IsAnyswapAdapter       bool   `json:",omitempty"`
 
 	DefaultGasLimit         uint64 `json:",omitempty"`
 	AllowSwapinFromContract bool   `json:",omitempty"`

@@ -107,6 +107,9 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
 	if b.IsSrc && !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
+	if tokenCfg.IsAnyswapAdapter {
+		return nil
+	}
 	if tokenCfg.IsDelegateContract {
 		return b.verifyDelegateContract(tokenCfg)
 	}
