@@ -14,7 +14,10 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-var errEmptyURLs = errors.New("empty URLs")
+var (
+	errEmptyURLs      = errors.New("empty URLs")
+	errTxHashMismatch = errors.New("tx hash mismatch with rpc result")
+)
 
 // GetLatestBlockNumberOf call eth_blockNumber
 func (b *Bridge) GetLatestBlockNumberOf(url string) (latest uint64, err error) {
@@ -101,6 +104,16 @@ func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
 	return nil, err
 }
 
+// GetTransaction impl
+func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
+	gateway := b.GatewayConfig
+	tx, err = getTransactionByHash(txHash, gateway.APIAddress)
+	if err != nil && !errors.Is(err, errTxHashMismatch) && len(gateway.APIAddressExt) > 0 {
+		tx, err = getTransactionByHash(txHash, gateway.APIAddressExt)
+	}
+	return tx, err
+}
+
 // GetTransactionByHash call eth_getTransactionByHash
 func (b *Bridge) GetTransactionByHash(txHash string) (*types.RPCTransaction, error) {
 	gateway := b.GatewayConfig
@@ -114,6 +127,9 @@ func getTransactionByHash(txHash string, urls []string) (result *types.RPCTransa
 	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionByHash", txHash)
 		if err == nil && result != nil {
+			if result.Hash.Hex() != txHash {
+				return nil, errTxHashMismatch
+			}
 			return result, nil
 		}
 	}
@@ -162,7 +178,7 @@ func (b Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
 func (b *Bridge) GetTransactionReceipt(txHash string) (receipt *types.RPCTxReceipt, url string, err error) {
 	gateway := b.GatewayConfig
 	receipt, url, err = getTransactionReceipt(txHash, gateway.APIAddress)
-	if err != nil && len(gateway.APIAddressExt) > 0 {
+	if err != nil && !errors.Is(err, errTxHashMismatch) && len(gateway.APIAddressExt) > 0 {
 		return getTransactionReceipt(txHash, gateway.APIAddressExt)
 	}
 	return receipt, url, err
@@ -175,6 +191,9 @@ func getTransactionReceipt(txHash string, urls []string) (result *types.RPCTxRec
 	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionReceipt", txHash)
 		if err == nil && result != nil {
+			if result.TxHash.Hex() != txHash {
+				return nil, "", errTxHashMismatch
+			}
 			return result, url, nil
 		}
 	}
