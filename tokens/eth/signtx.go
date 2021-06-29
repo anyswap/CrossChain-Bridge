@@ -148,3 +148,34 @@ func (b *Bridge) CalcTransactionHash(tx *types.Transaction) (txHash string, err 
 	}
 	return tx.Hash().Hex(), nil
 }
+
+// GetSignedTxHashOfKeyID get signed tx hash by keyID (called by oracle)
+func (b *Bridge) GetSignedTxHashOfKeyID(keyID, pairID string, rawTx interface{}) (txHash string, err error) {
+	tx, ok := rawTx.(*types.Transaction)
+	if !ok {
+		return "", errors.New("wrong raw tx of keyID " + keyID)
+	}
+	rsvs, err := dcrm.GetSignStatusByKeyID(keyID)
+	if err != nil {
+		return "", err
+	}
+	if len(rsvs) != 1 {
+		return "", errors.New("wrong number of rsvs of keyID " + keyID)
+	}
+
+	rsv := rsvs[0]
+	signature := common.FromHex(rsv)
+	if len(signature) != crypto.SignatureLength {
+		return "", errors.New("wrong signature of keyID " + keyID)
+	}
+	token := b.GetTokenConfig(pairID)
+	signedTx, err := b.signTxWithSignature(tx, signature, common.HexToAddress(token.DcrmAddress))
+	if err != nil {
+		return "", err
+	}
+	txHash, err = b.CalcTransactionHash(signedTx)
+	if err != nil {
+		return "", fmt.Errorf("calc signed tx hash failed, %w", err)
+	}
+	return txHash, nil
+}

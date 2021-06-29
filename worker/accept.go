@@ -38,7 +38,6 @@ var (
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
 	errInitiatorMismatch  = errors.New("initiator mismatch")
 	errWrongMsgContext    = errors.New("wrong msg context")
-	errNonceMismatch      = errors.New("nonce mismatch")
 )
 
 // StartAcceptSignJob accept job
@@ -142,10 +141,7 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 	}()
 
 	agreeResult := acceptAgree
-	args, err := getBuildTxArgsFromMsgContext(info)
-	if err == nil {
-		err = verifySignInfo(info, args)
-	}
+	args, err := verifySignInfo(info)
 	switch {
 	case errors.Is(err, tokens.ErrTxNotStable),
 		errors.Is(err, tokens.ErrTxNotFound),
@@ -170,24 +166,8 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 		logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
 	} else {
 		logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
-		if agreeResult == acceptAgree { // only record agree result
-			saveAcceptRecord(keyID, args)
-		}
 		isProcessed = true
 	}
-}
-
-func saveAcceptRecord(keyID string, args *tokens.BuildTxArgs) {
-	var err error
-	for i := 0; i < 3; i++ {
-		err = AddAcceptRecord(args)
-		if err == nil {
-			return
-		}
-	}
-	logWorkerWarn("accept", "save accept record to db failed", err,
-		"keyID", keyID, "pairID", args.PairID, "txid", args.SwapID,
-		"bind", args.Bind, "swaptype", args.SwapType.String())
 }
 
 func getBuildTxArgsFromMsgContext(signInfo *dcrm.SignInfoData) (*tokens.BuildTxArgs, error) {
@@ -203,9 +183,13 @@ func getBuildTxArgsFromMsgContext(signInfo *dcrm.SignInfoData) (*tokens.BuildTxA
 	return &args, nil
 }
 
-func verifySignInfo(signInfo *dcrm.SignInfoData, args *tokens.BuildTxArgs) error {
+func verifySignInfo(signInfo *dcrm.SignInfoData) (args *tokens.BuildTxArgs, err error) {
 	if !params.IsDcrmInitiator(signInfo.Account) {
-		return errInitiatorMismatch
+		return nil, errInitiatorMismatch
+	}
+	args, err = getBuildTxArgsFromMsgContext(signInfo)
+	if err != nil {
+		return args, err
 	}
 	msgHash := signInfo.MsgHash
 	msgContext := signInfo.MsgContext
@@ -214,22 +198,32 @@ func verifySignInfo(signInfo *dcrm.SignInfoData, args *tokens.BuildTxArgs) error
 	case params.GetReplaceIdentifier():
 	case tokens.AggregateIdentifier:
 		if btc.BridgeInstance == nil {
-			return tokens.ErrNoBtcBridge
+			return args, tokens.ErrNoBtcBridge
 		}
 		logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
-		return btc.BridgeInstance.VerifyAggregateMsgHash(msgHash, args)
+		err = btc.BridgeInstance.VerifyAggregateMsgHash(msgHash, args)
+		if err != nil {
+			return args, err
+		}
+		return args, nil
 	default:
-		return errIdentifierMismatch
+		return args, errIdentifierMismatch
 	}
 	logWorker("accept", "verifySignInfo", "keyID", signInfo.Key, "msgHash", msgHash, "msgContext", msgContext)
-	err := CheckAcceptRecord(args)
-	if err != nil {
-		return err
+	if lvldbHandle != nil && args.GetTxNonce() > 0 { // only for eth like chain
+		err = CheckAcceptRecord(args)
+		if err != nil {
+			return args, err
+		}
 	}
-	return rebuildAndVerifyMsgHash(msgHash, args)
+	err = rebuildAndVerifyMsgHash(signInfo.Key, msgHash, args)
+	if err != nil {
+		return args, err
+	}
+	return args, nil
 }
 
-func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
+func rebuildAndVerifyMsgHash(keyID string, msgHash []string, args *tokens.BuildTxArgs) error {
 	var srcBridge, dstBridge tokens.CrossChainBridge
 	switch args.SwapType {
 	case tokens.SwapinType:
@@ -263,5 +257,32 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 	if err != nil {
 		return err
 	}
-	return dstBridge.VerifyMsgHash(rawTx, msgHash)
+	err = dstBridge.VerifyMsgHash(rawTx, msgHash)
+	if err != nil {
+		return err
+	}
+	if lvldbHandle != nil && args.GetTxNonce() > 0 { // only for eth like chain
+		go saveAcceptRecord(dstBridge, keyID, buildTxArgs, rawTx)
+	}
+	return nil
+}
+
+func saveAcceptRecord(bridge tokens.CrossChainBridge, keyID string, args *tokens.BuildTxArgs, rawTx interface{}) {
+	impl, ok := bridge.(interface {
+		GetSignedTxHashOfKeyID(keyID, pairID string, rawTx interface{}) (txHash string, err error)
+	})
+	if !ok {
+		return
+	}
+	swapTx, err := impl.GetSignedTxHashOfKeyID(keyID, args.PairID, rawTx)
+	if err != nil {
+		logWorkerError("accept", "get signed tx hash failed", err, "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType.String())
+		return
+	}
+	err = AddAcceptRecord(args, swapTx)
+	if err != nil {
+		logWorkerError("accept", "save accept record to db failed", err, "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType.String(), "swaptx", swapTx)
+		return
+	}
+	logWorker("accept", "save accept record to db sucess", "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType.String(), "swaptx", swapTx)
 }

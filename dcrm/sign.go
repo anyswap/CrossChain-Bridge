@@ -119,6 +119,11 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 	return keyID, rsvs, nil
 }
 
+// GetSignStatusByKeyID get sign status by keyID
+func GetSignStatusByKeyID(keyID string) (rsvs []string, err error) {
+	return getSignResult(keyID, defaultDcrmNode.dcrmRPCAddress)
+}
+
 func getSignResult(keyID, rpcAddr string) (rsvs []string, err error) {
 	log.Info("start get sign status", "keyID", keyID)
 	var signStatus *SignStatus

@@ -9,23 +9,21 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 const (
 	identifierKey = "bridge-identifier"
 
-	allowMismatchNonceTimeInterval = 1800 // seconds
+	allowReswapTimeInterval = 1800 // seconds
 )
 
 var (
 	lvldbHandle *leveldb.Database
 )
 
-func getEthAcceptRecordKey(args *tokens.BuildTxArgs, isPrefix bool) string {
-	if isPrefix {
-		return fmt.Sprintf("%s:%d", args.SwapID, args.SwapType)
-	}
-	return fmt.Sprintf("%s:%d:%d", args.SwapID, args.SwapType, args.GetTxNonce())
+func getSwapKeyPrefix(args *tokens.BuildTxArgs) string {
+	return strings.ToLower(fmt.Sprintf("%s:%d:%s:%s:", args.SwapID, args.SwapType, args.PairID, args.Bind))
 }
 
 func int64ToBytes(i int64) []byte {
@@ -39,45 +37,27 @@ func bytesToInt64(buf []byte) int64 {
 }
 
 // AddAcceptRecord add accept record
-func AddAcceptRecord(args *tokens.BuildTxArgs) (err error) {
+func AddAcceptRecord(args *tokens.BuildTxArgs, swapTx string) (err error) {
 	if lvldbHandle == nil {
 		return nil
 	}
-	swapNonce := args.GetTxNonce()
-	if swapNonce == 0 {
-		return nil
-	}
-	key := []byte(getEthAcceptRecordKey(args, false))
-	err = lvldbHandle.Put(key, int64ToBytes(now()))
-	if err != nil {
-		log.Warn("add accept record failed", "key", string(key), "err", err)
-	} else {
-		log.Info("add accept record success", "key", string(key))
-	}
-	return err
-}
-
-// GetAcceptRecord get accept record
-func GetAcceptRecord(args *tokens.BuildTxArgs) (int64, error) {
-	key := []byte(getEthAcceptRecordKey(args, false))
-	bs, err := lvldbHandle.Get(key)
-	if err != nil {
-		return 0, err
-	}
-	return bytesToInt64(bs), nil
+	key := []byte(getSwapKeyPrefix(args) + swapTx)
+	return lvldbHandle.Put(key, int64ToBytes(now()))
 }
 
 // FindAcceptRecords find accept records
-func FindAcceptRecords(args *tokens.BuildTxArgs) (result map[string]int64, err error) {
-	result = make(map[string]int64)
-	prefix := []byte(getEthAcceptRecordKey(args, true))
+func FindAcceptRecords(args *tokens.BuildTxArgs) map[string]int64 {
+	if lvldbHandle == nil {
+		return nil
+	}
+	result := make(map[string]int64)
+	prefix := []byte(getSwapKeyPrefix(args))
 	iter := lvldbHandle.NewIterator(prefix, nil)
 	for iter.Next() {
 		result[string(iter.Key())] = bytesToInt64(iter.Value())
 	}
 	iter.Release()
-	err = iter.Error()
-	return result, err
+	return result
 }
 
 // CheckAcceptRecord check accept record
@@ -85,23 +65,55 @@ func CheckAcceptRecord(args *tokens.BuildTxArgs) (err error) {
 	if lvldbHandle == nil {
 		return nil
 	}
-	swapNonce := args.GetTxNonce()
-	if swapNonce == 0 {
-		return nil
-	}
-	_, err = GetAcceptRecord(args)
-	if err == nil {
-		return nil
-	}
+	isSwapin := args.SwapType == tokens.SwapinType
+	resBridge := tokens.GetCrossChainBridge(!isSwapin)
+	alreadySwapped := false
 	nowTime := now()
-	prefix := []byte(getEthAcceptRecordKey(args, true))
+
+	prefix := []byte(getSwapKeyPrefix(args))
+	prefixLen := len(prefix)
 	iter := lvldbHandle.NewIterator(prefix, nil)
 	for iter.Next() {
-		lastTime := bytesToInt64(iter.Value())
-		if lastTime+allowMismatchNonceTimeInterval > nowTime {
-			log.Warn("find record with nonce mismatch recently", "args", args, "oldKey", string(iter.Key()), "oldTime", lastTime, "nowTime", nowTime)
-			return errNonceMismatch
+		key := string(iter.Key())
+		value := bytesToInt64(iter.Value())
+		oldSwapTx := key[prefixLen:]
+		log.Info("[accept] check saved record", "key", key, "value", value)
+		txStatus := resBridge.GetTransactionStatus(oldSwapTx)
+		if txStatus.Receipt != nil {
+			receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
+			if ok && *receipt.Status == 1 {
+				log.Warn("[accept] found already swapped tx", "key", key, "value", value)
+				alreadySwapped = true
+				break
+			}
+		} else if txStatus != nil && txStatus.BlockHeight > 0 {
+			log.Warn("[accept] found already swapped tx", "key", key, "value", value)
+			alreadySwapped = true
+			break
+		} else if tx, _ := resBridge.GetTransaction(oldSwapTx); tx != nil {
+			etx, ok := tx.(*types.Transaction)
+			if !ok {
+				log.Warn("[accept] find already swapped tx in pool", "key", key, "value", value)
+				alreadySwapped = true
+				break
+			}
+
+			if value+allowReswapTimeInterval <= nowTime {
+				continue // allow reswap old enough
+			}
+
+			if etx.Nonce() == args.GetTxNonce() {
+				continue // allow replace always
+			}
+
+			log.Warn("[accept] find already swapped tx in pool", "key", key, "value", value)
+			alreadySwapped = true
+			break
 		}
+	}
+	iter.Release()
+	if alreadySwapped {
+		return errAlreadySwapped
 	}
 	return nil
 }
