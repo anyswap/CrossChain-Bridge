@@ -45,6 +45,7 @@ func StartSwapJob() {
 		AddSwapJob(pairCfg)
 	}
 
+	mongodb.MgoWaitGroup.Add(2)
 	go startSwapinSwapJob()
 	go startSwapoutSwapJob()
 }
@@ -67,6 +68,7 @@ func AddSwapJob(pairCfg *tokens.TokenPairConfig) {
 
 func startSwapinSwapJob() {
 	logWorker("swap", "start swapin swap job")
+	defer mongodb.MgoWaitGroup.Done()
 	for {
 		if utils.IsCleanuping() {
 			logWorker("swap", "stop swapin swap job")
@@ -79,6 +81,7 @@ func startSwapinSwapJob() {
 
 func startSwapoutSwapJob() {
 	logWorker("swap", "start swapout swap job")
+	defer mongodb.MgoWaitGroup.Done()
 	for {
 		if utils.IsCleanuping() {
 			logWorker("swap", "stop swapout swap job")

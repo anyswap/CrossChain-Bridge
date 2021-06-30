@@ -85,6 +85,9 @@ func startAcceptProducer() {
 			logWorker("accept", "dispatch accept sign info", "keyID", keyID)
 			acceptInfoCh <- info // produce
 		}
+		if utils.IsCleanuping() {
+			return
+		}
 		time.Sleep(waitInterval)
 	}
 }

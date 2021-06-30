@@ -18,6 +18,7 @@ var (
 
 // StartStableJob stable job
 func StartStableJob() {
+	mongodb.MgoWaitGroup.Add(2)
 	go startSwapinStableJob()
 	go startSwapoutStableJob()
 }
@@ -25,6 +26,7 @@ func StartStableJob() {
 func startSwapinStableJob() {
 	swapinStableStarter.Do(func() {
 		logWorker("stable", "start update swapin stable job")
+		defer mongodb.MgoWaitGroup.Done()
 		for {
 			res, err := findSwapinResultsToStable()
 			if err != nil {
@@ -44,6 +46,10 @@ func startSwapinStableJob() {
 				}
 				time.Sleep(3 * time.Second) // in case of too frequently rpc calling
 			}
+			if utils.IsCleanuping() {
+				logWorker("stable", "stop update swapin stable job")
+				return
+			}
 			restInJob(restIntervalInStableJob)
 		}
 	})
@@ -52,6 +58,7 @@ func startSwapinStableJob() {
 func startSwapoutStableJob() {
 	swapoutStableStarter.Do(func() {
 		logWorker("stable", "start update swapout stable job")
+		defer mongodb.MgoWaitGroup.Done()
 		for {
 			res, err := findSwapoutResultsToStable()
 			if err != nil {
@@ -69,6 +76,10 @@ func startSwapoutStableJob() {
 				if err != nil {
 					logWorkerError("stable", "process swapout stable error", err)
 				}
+			}
+			if utils.IsCleanuping() {
+				logWorker("stable", "stop update swapout stable job")
+				return
 			}
 			restInJob(restIntervalInStableJob)
 		}

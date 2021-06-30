@@ -14,12 +14,14 @@ const (
 
 // StartPassBigValueJob pass big value job
 func StartPassBigValueJob() {
+	mongodb.MgoWaitGroup.Add(2)
 	go startPassBigValSwapinJob()
 	go startPassBigValSwapoutJob()
 }
 
 func startPassBigValSwapinJob() {
 	logWorker("passbigval", "start pass big value swapin job")
+	defer mongodb.MgoWaitGroup.Done()
 	for {
 		res, err := findBigValSwapins()
 		if err != nil {
@@ -42,12 +44,17 @@ func startPassBigValSwapinJob() {
 				logWorkerError("passbigval", "process pass big value swapin error", err, "txid", swap.TxID)
 			}
 		}
+		if utils.IsCleanuping() {
+			logWorker("passbigval", "stop pass big value swapin job")
+			return
+		}
 		restInJob(restIntervalInPassBigValJob)
 	}
 }
 
 func startPassBigValSwapoutJob() {
 	logWorker("passbigval", "start pass big value swapout job")
+	defer mongodb.MgoWaitGroup.Done()
 	for {
 		res, err := findBigValSwapouts()
 		if err != nil {
@@ -69,6 +76,10 @@ func startPassBigValSwapoutJob() {
 			default:
 				logWorkerError("passbigval", "process pass big value swapout error", err, "txid", swap.TxID)
 			}
+		}
+		if utils.IsCleanuping() {
+			logWorker("passbigval", "stop pass big value swapout job")
+			return
 		}
 		restInJob(restIntervalInPassBigValJob)
 	}

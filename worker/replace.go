@@ -20,16 +20,19 @@ var (
 // StartReplaceJob replace job
 func StartReplaceJob() {
 	if tokens.DstNonceSetter != nil {
+		mongodb.MgoWaitGroup.Add(1)
 		go startReplaceSwapinJob()
 	}
 
 	if tokens.SrcNonceSetter != nil {
+		mongodb.MgoWaitGroup.Add(1)
 		go startReplaceSwapoutJob()
 	}
 }
 
 func startReplaceSwapinJob() {
 	logWorker("replace", "start replace swapin job")
+	defer mongodb.MgoWaitGroup.Done()
 	if !tokens.DstBridge.GetChainConfig().EnableReplaceSwap {
 		logWorker("replace", "stop replace swapin job as disabled")
 		return
@@ -47,12 +50,17 @@ func startReplaceSwapinJob() {
 			}
 			processReplaceSwap(swap, true)
 		}
+		if utils.IsCleanuping() {
+			logWorker("replace", "stop replace swapin job")
+			return
+		}
 		restInJob(restIntervalInReplaceSwapJob)
 	}
 }
 
 func startReplaceSwapoutJob() {
 	logWorker("replace", "start replace swapout job")
+	defer mongodb.MgoWaitGroup.Done()
 	if !tokens.SrcBridge.GetChainConfig().EnableReplaceSwap {
 		logWorker("replace", "stop replace swapout job as disabled")
 		return
@@ -69,6 +77,10 @@ func startReplaceSwapoutJob() {
 				return
 			}
 			processReplaceSwap(swap, false)
+		}
+		if utils.IsCleanuping() {
+			logWorker("replace", "stop replace swapout job")
+			return
 		}
 		restInJob(restIntervalInReplaceSwapJob)
 	}

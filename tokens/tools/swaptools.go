@@ -76,7 +76,7 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 		}
 		isServer := dcrm.IsSwapServer()
 		log.Info("[scan] register swap", "pairID", pairID, "isSwapin", isSwapin, "isServer", isServer, "tx", txid, "bind", bind)
-		if isServer {
+		if isServer && mongodb.HasSession() {
 			var memo string
 			if verifyError != nil {
 				memo = verifyError.Error()
@@ -134,7 +134,7 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 	isServer := dcrm.IsSwapServer()
 	bind := swapInfo.Bind
 	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid, "bind", bind)
-	if isServer {
+	if isServer && mongodb.HasSession() {
 		var memo string
 		if verifyError != nil {
 			memo = verifyError.Error()
@@ -224,7 +224,7 @@ func LoopGetLatestBlockNumber(b tokens.CrossChainBridge) uint64 {
 
 // UpdateLatestScanInfo update latest scan info
 func UpdateLatestScanInfo(isSrc bool, height uint64) error {
-	if dcrm.IsSwapServer() {
+	if dcrm.IsSwapServer() && mongodb.HasSession() {
 		return mongodb.UpdateLatestScanInfo(isSrc, height)
 	}
 	return nil

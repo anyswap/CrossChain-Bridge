@@ -20,10 +20,10 @@ func StartWork(isServer bool) {
 	client.InitHTTPClient()
 	bridge.InitCrossChainBridge(isServer)
 
-	go StartScanJob(isServer)
+	StartScanJob(isServer)
 	time.Sleep(interval)
 
-	go StartUpdateLatestBlockHeightJob()
+	StartUpdateLatestBlockHeightJob()
 	time.Sleep(interval)
 
 	if !isServer {
@@ -36,17 +36,17 @@ func StartWork(isServer bool) {
 	StartSwapJob()
 	time.Sleep(interval)
 
-	go StartVerifyJob()
+	StartVerifyJob()
 	time.Sleep(interval)
 
-	go StartStableJob()
+	StartStableJob()
 	time.Sleep(interval)
 
-	go StartReplaceJob()
+	StartReplaceJob()
 	time.Sleep(interval)
 
-	go StartPassBigValueJob()
+	StartPassBigValueJob()
 	time.Sleep(interval)
 
-	go StartAggregateJob()
+	StartAggregateJob()
 }

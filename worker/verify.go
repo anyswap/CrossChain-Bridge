@@ -16,6 +16,7 @@ var (
 
 // StartVerifyJob verify job
 func StartVerifyJob() {
+	mongodb.MgoWaitGroup.Add(2)
 	go startSwapinVerifyJob()
 	go startSwapoutVerifyJob()
 }
@@ -23,6 +24,7 @@ func StartVerifyJob() {
 func startSwapinVerifyJob() {
 	swapinVerifyStarter.Do(func() {
 		logWorker("verify", "start swapin verify job")
+		defer mongodb.MgoWaitGroup.Done()
 		for {
 			res, err := findSwapinsToVerify()
 			if err != nil {
@@ -47,6 +49,10 @@ func startSwapinVerifyJob() {
 					logWorkerError("verify", "process swapin verify error", err, "txid", swap.TxID)
 				}
 			}
+			if utils.IsCleanuping() {
+				logWorker("verify", "stop swapin verify job")
+				return
+			}
 			restInJob(restIntervalInVerifyJob)
 		}
 	})
@@ -55,6 +61,7 @@ func startSwapinVerifyJob() {
 func startSwapoutVerifyJob() {
 	swapoutVerifyStarter.Do(func() {
 		logWorker("verify", "start swapout verify job")
+		defer mongodb.MgoWaitGroup.Done()
 		for {
 			res, err := findSwapoutsToVerify()
 			if err != nil {
@@ -78,6 +85,10 @@ func startSwapoutVerifyJob() {
 				default:
 					logWorkerError("verify", "process swapout verify error", err, "txid", swap.TxID)
 				}
+			}
+			if utils.IsCleanuping() {
+				logWorker("verify", "stop swapout verify job")
+				return
 			}
 			restInJob(restIntervalInVerifyJob)
 		}

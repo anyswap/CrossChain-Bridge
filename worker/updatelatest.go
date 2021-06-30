@@ -13,6 +13,10 @@ var (
 
 // StartUpdateLatestBlockHeightJob update latest block height job
 func StartUpdateLatestBlockHeightJob() {
+	go doUpdateLatestBlockHeightJob()
+}
+
+func doUpdateLatestBlockHeightJob() {
 	for {
 		if utils.IsCleanuping() {
 			return
