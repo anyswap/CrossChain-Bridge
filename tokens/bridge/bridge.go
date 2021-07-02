@@ -10,6 +10,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/block"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+	"github.com/anyswap/CrossChain-Bridge/tokens/colx"
 	"github.com/anyswap/CrossChain-Bridge/tokens/etc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
@@ -32,6 +33,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return eth.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "COLOSSUS") || strings.HasPrefix(blockChainIden, "COLX"):
+		return colx.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
 		return nil
@@ -82,6 +85,8 @@ func InitCrossChainBridge(isServer bool) {
 		ltc.Init(cfg.BtcExtra)
 	case "BLOCK":
 		block.Init(cfg.BtcExtra)
+	case "COLX":
+		colx.Init(cfg.BtcExtra)
 	}
 
 	dcrm.Init(cfg.Dcrm, isServer)
