@@ -76,10 +76,10 @@ func getBlockByHash(blockHash string, urls []string) (result *types.RPCBlock, er
 			return result, nil
 		}
 	}
-	if result == nil {
-		return nil, errors.New("block not found")
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+	return nil, errors.New("block not found")
 }
 
 // GetBlockByNumber call eth_getBlockByNumber
@@ -95,10 +95,10 @@ func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
 			return result, nil
 		}
 	}
-	if result == nil {
-		return nil, errors.New("block not found")
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+	return nil, errors.New("block not found")
 }
 
 // GetBlockHash impl
@@ -120,10 +120,10 @@ func (b *Bridge) GetBlockHashOf(urls []string, height uint64) (hash string, err 
 			return block.Hash.Hex(), nil
 		}
 	}
-	if block == nil {
-		return "", errors.New("block not found")
+	if err != nil {
+		return "", err
 	}
-	return "", err
+	return "", errors.New("block not found")
 }
 
 // GetTransaction impl
@@ -155,10 +155,10 @@ func getTransactionByHash(txHash string, urls []string) (result *types.RPCTransa
 			return result, nil
 		}
 	}
-	if result == nil {
-		return nil, errors.New("tx not found")
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+	return nil, errors.New("tx not found")
 }
 
 // GetPendingTransactions call eth_pendingTransactions
@@ -219,10 +219,10 @@ func getTransactionReceipt(txHash string, urls []string) (result *types.RPCTxRec
 			return result, url, nil
 		}
 	}
-	if result == nil {
-		return nil, "", errors.New("tx receipt not found")
+	if err != nil {
+		return nil, "", err
 	}
-	return nil, "", err
+	return nil, "", errors.New("tx receipt not found")
 }
 
 // GetContractLogs get contract logs

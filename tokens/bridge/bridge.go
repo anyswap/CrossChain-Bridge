@@ -64,7 +64,7 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.DstBridge = NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
 
-	if !params.IsSwapServer && params.ServerAPIAddress == "" && btc.BridgeInstance != nil {
+	if !isServer && params.ServerAPIAddress == "" && btc.BridgeInstance != nil {
 		// btc need oracle config to post rpc to swap server
 		err := params.GetConfig().Oracle.CheckConfig()
 		if err != nil {

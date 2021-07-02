@@ -288,14 +288,16 @@ func AdjustGatewayOrder(isSrc bool) {
 		checkPointHeight = maxHeight - stableHeight
 	}
 
-	retryCount := 5
+	retryCount := 3
 	retrySleepInterval := 3 * time.Second
 	time.Sleep(retrySleepInterval)
 	for i := 1; i <= retryCount; i++ {
 		hash1, err1 := forkChecker.GetBlockHashOf(gateway.APIAddress, checkPointHeight)
 		hash2, err2 := forkChecker.GetBlockHashOf(gateway.APIAddressExt, checkPointHeight)
 		if err1 != nil || err2 != nil {
-			log.Warn("[detect] get block hash failed", "height", checkPointHeight, "isSrc", isSrc, "count", i, "err1", err1, "err2", err2)
+			if i == retryCount {
+				log.Warn("[detect] get block hash failed", "height", checkPointHeight, "isSrc", isSrc, "count", i, "err1", err1, "err2", err2)
+			}
 			time.Sleep(retryRPCInterval)
 			continue
 		}

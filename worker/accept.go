@@ -27,7 +27,7 @@ var (
 	cachedAcceptInfos    = mapset.NewSet()
 	maxCachedAcceptInfos = 500
 
-	retryInterval = 1 * time.Second
+	retryInterval = 3 * time.Second
 	waitInterval  = 3 * time.Second
 
 	acceptInfoCh      = make(chan *dcrm.SignInfoData, 10)

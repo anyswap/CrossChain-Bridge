@@ -151,7 +151,7 @@ LOOP_GET_SIGN_STATUS:
 				break LOOP_GET_SIGN_STATUS
 			}
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 	if len(rsvs) == 0 || err != nil {
 		log.Info("get sign status failed", "keyID", keyID, "retryCount", i, "err", err)
