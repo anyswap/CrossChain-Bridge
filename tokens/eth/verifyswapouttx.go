@@ -284,10 +284,8 @@ func ParseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 }
 
 func parseSwapoutTxLogs(logs []*types.RPCLog, targetContract string) (bind string, value *big.Int, err error) {
-	if isMbtcSwapout() {
-		return parseSwapoutToBtcTxLogs(logs)
-	}
-	logSwapoutTopic := getLogSwapoutTopic()
+	isSwapoutToBtc := isMbtcSwapout()
+	logSwapoutTopic, topicsLen := getLogSwapoutTopic()
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
 			continue
@@ -295,32 +293,18 @@ func parseSwapoutTxLogs(logs []*types.RPCLog, targetContract string) (bind strin
 		if !common.IsEqualIgnoreCase(log.Address.String(), targetContract) {
 			continue
 		}
-		if len(log.Topics) != 3 || log.Data == nil {
+		if len(log.Topics) != topicsLen || log.Data == nil {
 			continue
 		}
 		if !bytes.Equal(log.Topics[0].Bytes(), logSwapoutTopic) {
 			continue
+		}
+		if isSwapoutToBtc {
+			return parseSwapoutToBtcEncodedData(*log.Data, false)
 		}
 		bind = common.BytesToAddress(log.Topics[2].Bytes()).String()
 		value = common.GetBigInt(*log.Data, 0, 32)
 		return bind, value, nil
-	}
-	return "", nil, tokens.ErrSwapoutLogNotFound
-}
-
-func parseSwapoutToBtcTxLogs(logs []*types.RPCLog) (bind string, value *big.Int, err error) {
-	logSwapoutTopic := getLogSwapoutTopic()
-	for _, log := range logs {
-		if log.Removed != nil && *log.Removed {
-			continue
-		}
-		if len(log.Topics) != 2 || log.Data == nil {
-			continue
-		}
-		if !bytes.Equal(log.Topics[0].Bytes(), logSwapoutTopic) {
-			continue
-		}
-		return parseSwapoutToBtcEncodedData(*log.Data, false)
 	}
 	return "", nil, tokens.ErrSwapoutLogNotFound
 }
