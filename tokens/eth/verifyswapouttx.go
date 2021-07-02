@@ -280,7 +280,7 @@ func ParseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 
 func parseSwapoutTxLogs(logs []*types.RPCLog, targetContract string) (bind string, value *big.Int, err error) {
 	if isMbtcSwapout() {
-		return parseSwapoutToBtcTxLogs(logs)
+		return parseSwapoutToBtcTxLogs(logs, targetContract)
 	}
 	logSwapoutTopic := getLogSwapoutTopic()
 	for _, log := range logs {
@@ -303,10 +303,13 @@ func parseSwapoutTxLogs(logs []*types.RPCLog, targetContract string) (bind strin
 	return "", nil, tokens.ErrSwapoutLogNotFound
 }
 
-func parseSwapoutToBtcTxLogs(logs []*types.RPCLog) (bind string, value *big.Int, err error) {
+func parseSwapoutToBtcTxLogs(logs []*types.RPCLog, targetContract string) (bind string, value *big.Int, err error) {
 	logSwapoutTopic := getLogSwapoutTopic()
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
+			continue
+		}
+		if !common.IsEqualIgnoreCase(log.Address.String(), targetContract) {
 			continue
 		}
 		if len(log.Topics) != 2 || log.Data == nil {
