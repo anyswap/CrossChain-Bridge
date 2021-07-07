@@ -44,6 +44,18 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 [swap.RegisterAddress](#swapregisteraddress)  
 [swap.GetRegisteredAddress](#swapgetregisteredaddress)  
 
+And the following `API`s are for developing and debuging, you can ignore them
+
+- swap.GetNonceInfo
+- swap.GetSwapStatistics
+- swap.GetRawSwapin
+- swap.GetRawSwapinResult
+- swap.GetRawSwapout
+- swap.GetRawSwapoutResult
+- swap.IsValidSwapinBindAddress
+- swap.IsValidSwapoutBindAddress
+- swap.GetLatestScanInfo
+
 ### swap.GetServerInfo
 
 查询服务信息
@@ -330,3 +342,13 @@ limit 最大值为 100
 ### POST /register/{address}
 
 注册账户地址 (ETH like 专用接口)
+
+
+And the following `API`s are for developing and debuging, you can ignore them
+
+- GET /nonceinfo
+- GET /statistics/{pairid}
+- GET /swapin/{pairid}/{txid}/raw
+- GET /swapout/{pairid}/{txid}/raw
+- GET /swapin/{pairid}/{txid}/rawresult
+- GET /swapout/{pairid}/{txid}/rawresult
