@@ -93,8 +93,8 @@ func (b *Bridge) SetUnlockUtxoCond(txhash string, vout int, cond func() bool) er
 
 func (b *Bridge) setUnlockUtxoCond(key utxokey, cond func() bool) error {
 	utxoLock.Lock()
-	defer utxoLock.Lock()
-	if !b.isUtxoLocked(key) {
+	defer utxoLock.Unlock()
+	if lockedUtxos[key] != 1 {
 		return errNotLocked
 	}
 	unlockConds[key] = cond
