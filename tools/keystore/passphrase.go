@@ -142,7 +142,10 @@ func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	key := crypto.ToECDSAUnsafe(keyBytes)
+	key, err := crypto.ToECDSA(keyBytes)
+	if err != nil {
+		return nil, ErrDecrypt
+	}
 
 	return &Key{
 		ID:         uuid.UUID(keyID),
