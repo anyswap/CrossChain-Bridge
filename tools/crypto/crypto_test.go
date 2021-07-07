@@ -150,7 +150,7 @@ func TestLoadECDSAFile(t *testing.T) {
 		}
 	}
 
-	_ = ioutil.WriteFile(fileName0, []byte(testPrivHex), 0600)
+	_ = ioutil.WriteFile(fileName0, []byte(testPrivHex), 0400)
 	defer os.Remove(fileName0)
 
 	key0, err := LoadECDSA(fileName0)

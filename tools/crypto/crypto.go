@@ -167,6 +167,13 @@ func HexToECDSA(hexkey string) (*ecdsa.PrivateKey, error) {
 // LoadECDSA loads a secp256k1 private key from the given file.
 func LoadECDSA(file string) (*ecdsa.PrivateKey, error) {
 	buf := make([]byte, 64)
+	fi, err := os.Stat(file)
+	if err != nil {
+		return nil, err
+	}
+	if fi.Mode() != 0400 {
+		return nil, errors.New("unsafe file permissions, want 0400")
+	}
 	fd, err := os.Open(file)
 	if err != nil {
 		return nil, err
