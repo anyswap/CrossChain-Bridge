@@ -302,7 +302,10 @@ func preventReswapByHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	} else {
 		resBridge := tokens.GetCrossChainBridge(!isSwapin)
 		for _, swaphist := range swapHistories {
-			txStatus := resBridge.GetTransactionStatus(swaphist.SwapTx)
+			txStatus, err := resBridge.GetTransactionStatus(swaphist.SwapTx)
+			if err != nil {
+				continue
+			}
 			if txStatus.Receipt != nil {
 				receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
 				if ok && *receipt.Status == 1 {

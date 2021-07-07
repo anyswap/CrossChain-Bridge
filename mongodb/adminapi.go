@@ -174,8 +174,8 @@ func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
 	if isSwapTxExist && res.Status != MatchTxFailed {
 		return errors.New("swaptx exist in chain or pool")
 	}
-	txStatus := bridge.GetTransactionStatus(res.SwapTx)
-	if txStatus != nil && txStatus.BlockHeight > 0 {
+	txStatus, err := bridge.GetTransactionStatus(res.SwapTx)
+	if err == nil && txStatus != nil && txStatus.BlockHeight > 0 {
 		if res.Status != MatchTxFailed {
 			return errors.New("swaptx exist on chain and is not mark failed")
 		} else if !txStatus.IsSwapTxOnChainAndFailed(bridge.GetTokenConfig(res.PairID)) {

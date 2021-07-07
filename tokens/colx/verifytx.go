@@ -22,15 +22,15 @@ func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
 }
 
 // GetTransactionStatus impl
-func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
+func (b *Bridge) GetTransactionStatus(txHash string) (*tokens.TxStatus, error) {
 	txStatus := &tokens.TxStatus{}
 	electStatus, err := b.GetElectTransactionStatus(txHash)
 	if err != nil {
 		log.Trace(b.ChainConfig.BlockChain+" Bridge::GetElectTransactionStatus fail", "tx", txHash, "err", err)
-		return txStatus
+		return txStatus, err
 	}
 	if !*electStatus.Confirmed {
-		return txStatus
+		return txStatus, tokens.ErrTxNotStable
 	}
 	if electStatus.BlockHash != nil {
 		txStatus.BlockHash = *electStatus.BlockHash
@@ -40,16 +40,14 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	}
 	if electStatus.BlockHeight != nil {
 		txStatus.BlockHeight = *electStatus.BlockHeight
-		latest, err := b.GetLatestBlockNumber()
-		if err != nil {
-			log.Debug(b.ChainConfig.BlockChain+" Bridge::GetLatestBlockNumber fail", "err", err)
-			return txStatus
-		}
-		if latest > txStatus.BlockHeight {
-			txStatus.Confirmations = latest - txStatus.BlockHeight
+		latest, errt := b.GetLatestBlockNumber()
+		if errt == nil {
+			if latest > txStatus.BlockHeight {
+				txStatus.Confirmations = latest - txStatus.BlockHeight
+			}
 		}
 	}
-	return txStatus
+	return txStatus, nil
 }
 
 // VerifyMsgHash verify msg hash
@@ -154,7 +152,10 @@ func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 }
 
 func (b *Bridge) checkStable(txHash string) bool {
-	txStatus := b.GetTransactionStatus(txHash)
+	txStatus, err := b.GetTransactionStatus(txHash)
+	if err != nil {
+		return false
+	}
 	confirmations := *b.GetChainConfig().Confirmations
 	return txStatus.BlockHeight > 0 && txStatus.Confirmations >= confirmations
 }

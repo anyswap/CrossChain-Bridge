@@ -26,7 +26,7 @@ func (b *Bridge) GetLatestBlockNumberOf(url string) (latest uint64, err error) {
 	if err == nil {
 		return common.GetUint64FromStr(result)
 	}
-	return 0, err
+	return 0, tokens.ErrRPCQueryError
 }
 
 // GetLatestBlockNumber call eth_blockNumber
@@ -57,7 +57,7 @@ func getMaxLatestBlockNumber(urls []string) (maxHeight uint64, err error) {
 	if maxHeight > 0 {
 		return maxHeight, nil
 	}
-	return 0, err
+	return 0, tokens.ErrRPCQueryError
 }
 
 // GetBlockByHash call eth_getBlockByHash
@@ -77,7 +77,7 @@ func getBlockByHash(blockHash string, urls []string) (result *types.RPCBlock, er
 		}
 	}
 	if err != nil {
-		return nil, err
+		return nil, tokens.ErrRPCQueryError
 	}
 	return nil, errors.New("block not found")
 }
@@ -96,7 +96,7 @@ func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
 		}
 	}
 	if err != nil {
-		return nil, err
+		return nil, tokens.ErrRPCQueryError
 	}
 	return nil, errors.New("block not found")
 }
@@ -121,7 +121,7 @@ func (b *Bridge) GetBlockHashOf(urls []string, height uint64) (hash string, err 
 		}
 	}
 	if err != nil {
-		return "", err
+		return "", tokens.ErrRPCQueryError
 	}
 	return "", errors.New("block not found")
 }
@@ -156,7 +156,7 @@ func getTransactionByHash(txHash string, urls []string) (result *types.RPCTransa
 		}
 	}
 	if err != nil {
-		return nil, err
+		return nil, tokens.ErrRPCQueryError
 	}
 	return nil, errors.New("tx not found")
 }
@@ -171,7 +171,7 @@ func (b *Bridge) GetPendingTransactions() (result []*types.RPCTransaction, err e
 			return result, nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }
 
 // GetTxBlockInfo impl
@@ -220,7 +220,7 @@ func getTransactionReceipt(txHash string, urls []string) (result *types.RPCTxRec
 		}
 	}
 	if err != nil {
-		return nil, "", err
+		return nil, "", tokens.ErrRPCQueryError
 	}
 	return nil, "", errors.New("tx receipt not found")
 }
@@ -252,7 +252,7 @@ func (b *Bridge) GetLogs(filterQuery *types.FilterQuery) (result []*types.RPCLog
 			return result, nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }
 
 // GetPoolNonce call eth_getTransactionCount
@@ -280,7 +280,7 @@ func getMaxPoolNonce(account common.Address, height string, urls []string) (maxN
 	if success {
 		return maxNonce, nil
 	}
-	return 0, err
+	return 0, tokens.ErrRPCQueryError
 }
 
 // SuggestPrice call eth_gasPrice
@@ -321,7 +321,7 @@ func getMaxGasPrice(urls []string) (maxGasPrice *big.Int, err error) {
 	if success {
 		return maxGasPrice, nil
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }
 
 // SendSignedTransaction call eth_sendRawTransaction
@@ -363,7 +363,7 @@ func sendRawTransaction(hexData string, urls []string) (txHash string, err error
 		return txHash, nil
 	}
 	if err != nil {
-		return "", err
+		return "", tokens.ErrRPCQueryError
 	}
 	return "", errors.New("call eth_sendRawTransaction failed")
 }
@@ -381,7 +381,7 @@ func (b *Bridge) ChainID() (*big.Int, error) {
 			return result.ToInt(), nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }
 
 // NetworkID call net_version
@@ -400,7 +400,7 @@ func (b *Bridge) NetworkID() (*big.Int, error) {
 			return version, nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }
 
 // GetSignerChainID default way to get signer chain id
@@ -440,7 +440,7 @@ func getCode(contract string, urls []string) ([]byte, error) {
 			return []byte(result), nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }
 
 // CallContract call eth_call
@@ -459,7 +459,7 @@ func (b *Bridge) CallContract(contract string, data hexutil.Bytes, blockNumber s
 			return result, nil
 		}
 	}
-	return "", err
+	return "", tokens.ErrRPCQueryError
 }
 
 // GetBalance call eth_getBalance
@@ -474,5 +474,5 @@ func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 			return result.ToInt(), nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }

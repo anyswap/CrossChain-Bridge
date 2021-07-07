@@ -13,19 +13,19 @@ import (
 )
 
 // GetTransactionStatus impl
-func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
-	var txStatus tokens.TxStatus
+func (b *Bridge) GetTransactionStatus(txHash string) (*tokens.TxStatus, error) {
+	txStatus := &tokens.TxStatus{}
 	txr, url, err := b.GetTransactionReceipt(txHash)
 	if err != nil {
 		log.Trace("GetTransactionReceipt fail", "hash", txHash, "err", err)
-		return &txStatus
+		return txStatus, err
 	}
 	txStatus.BlockHeight = txr.BlockNumber.ToInt().Uint64()
 	txStatus.BlockHash = txr.BlockHash.String()
 	if txStatus.BlockHeight != 0 {
 		for i := 0; i < 3; i++ {
-			latest, err := b.GetLatestBlockNumberOf(url)
-			if err == nil {
+			latest, errt := b.GetLatestBlockNumberOf(url)
+			if errt == nil {
 				if latest > txStatus.BlockHeight {
 					txStatus.Confirmations = latest - txStatus.BlockHeight
 				}
@@ -35,7 +35,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 		}
 	}
 	txStatus.Receipt = txr
-	return &txStatus
+	return txStatus, nil
 }
 
 // VerifyMsgHash verify msg hash
@@ -212,14 +212,14 @@ func (b *Bridge) getReceipt(swapInfo *tokens.TxSwapInfo, allowUnstable bool) (*t
 }
 
 func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxReceipt, error) {
-	txStatus := b.GetTransactionStatus(swapInfo.Hash)
+	txStatus, err := b.GetTransactionStatus(swapInfo.Hash)
+	if err != nil {
+		return nil, err
+	}
 	swapInfo.Height = txStatus.BlockHeight  // Height
 	swapInfo.Timestamp = txStatus.BlockTime // Timestamp
 	receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-	if !ok || receipt == nil {
-		return nil, tokens.ErrTxNotStable
-	}
-	if *receipt.Status != 1 {
+	if !ok || receipt == nil || *receipt.Status != 1 {
 		return nil, tokens.ErrTxWithWrongReceipt
 	}
 	if txStatus.BlockHeight == 0 ||

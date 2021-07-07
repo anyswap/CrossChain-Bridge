@@ -78,19 +78,21 @@ func CheckAcceptRecord(args *tokens.BuildTxArgs) (err error) {
 		value := bytesToInt64(iter.Value())
 		oldSwapTx := key[prefixLen:]
 		log.Info("[accept] check saved record", "key", key, "value", value)
-		txStatus := resBridge.GetTransactionStatus(oldSwapTx)
-		if txStatus.Receipt != nil {
-			receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-			if ok && *receipt.Status == 1 {
+		txStatus, errt := resBridge.GetTransactionStatus(oldSwapTx)
+		if errt == nil && txStatus != nil && txStatus.BlockHeight > 0 { // on chain
+			if txStatus.Receipt != nil { // for eth like chain
+				receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
+				if ok && *receipt.Status == 1 {
+					log.Warn("[accept] found already swapped tx", "key", key, "value", value)
+					alreadySwapped = true
+					break
+				}
+			} else {
 				log.Warn("[accept] found already swapped tx", "key", key, "value", value)
 				alreadySwapped = true
 				break
 			}
-		} else if txStatus != nil && txStatus.BlockHeight > 0 {
-			log.Warn("[accept] found already swapped tx", "key", key, "value", value)
-			alreadySwapped = true
-			break
-		} else if tx, _ := resBridge.GetTransaction(oldSwapTx); tx != nil {
+		} else if tx, _ := resBridge.GetTransaction(oldSwapTx); tx != nil { // in tx pool
 			etx, ok := tx.(*types.Transaction)
 			if !ok {
 				log.Warn("[accept] find already swapped tx in pool", "key", key, "value", value)

@@ -81,7 +81,7 @@ type CrossChainBridge interface {
 	IsValidAddress(address string) bool
 
 	GetTransaction(txHash string) (interface{}, error)
-	GetTransactionStatus(txHash string) *TxStatus
+	GetTransactionStatus(txHash string) (*TxStatus, error)
 	VerifyTransaction(pairID, txHash string, allowUnstable bool) (*TxSwapInfo, error)
 	VerifyMsgHash(rawTx interface{}, msgHash []string) error
 

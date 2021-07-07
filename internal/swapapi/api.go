@@ -220,8 +220,8 @@ func swap(txid, pairID *string, isSwapin bool) (*PostResult, error) {
 	}
 	swapInfo, err := bridge.VerifyTransaction(pairIDStr, txidstr, true)
 	if err != nil {
-		txStat := bridge.GetTransactionStatus(txidstr)
-		if txStat != nil && txStat.BlockHeight > 0 {
+		txStat, errt := bridge.GetTransactionStatus(txidstr)
+		if errt == nil && txStat != nil && txStat.BlockHeight > 0 {
 			swapInfo, err = bridge.VerifyTransaction(pairIDStr, txidstr, false)
 		}
 	}

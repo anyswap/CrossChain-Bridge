@@ -109,16 +109,16 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 }
 
 func getSwapTxStatus(resBridge tokens.CrossChainBridge, swap *mongodb.MgoSwapResult) *tokens.TxStatus {
-	txStatus := resBridge.GetTransactionStatus(swap.SwapTx)
-	if txStatus != nil && txStatus.BlockHeight > 0 {
+	txStatus, err := resBridge.GetTransactionStatus(swap.SwapTx)
+	if err == nil && txStatus != nil && txStatus.BlockHeight > 0 {
 		return txStatus
 	}
 	for i, oldSwapTx := range swap.OldSwapTxs {
 		if swap.SwapTx == oldSwapTx {
 			continue
 		}
-		txStatus = resBridge.GetTransactionStatus(oldSwapTx)
-		if txStatus != nil && txStatus.BlockHeight > 0 {
+		txStatus, err = resBridge.GetTransactionStatus(oldSwapTx)
+		if err == nil && txStatus != nil && txStatus.BlockHeight > 0 {
 			swap.SwapTx = oldSwapTx
 			swap.SwapValue = swap.OldSwapVals[i]
 			return txStatus
