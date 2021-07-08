@@ -10,6 +10,7 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.0.0
 	github.com/deckarep/golang-set v1.7.1
+	github.com/didip/tollbooth/v6 v6.1.1
 	github.com/fsn-dev/fsn-go-sdk v0.0.0-20210430081410-a6b17c99c3ea
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/giangnamnabka/btcd v0.21.0-beta.0.20210425211148-6b9fe474f6d7
@@ -38,6 +39,7 @@ require (
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c
+	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 )
 
