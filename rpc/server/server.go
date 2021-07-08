@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/handlers"
@@ -20,7 +21,8 @@ import (
 
 // StartAPIServer start api server
 func StartAPIServer() {
-	router := initRouter()
+	router := mux.NewRouter()
+	initRouter(router)
 
 	apiPort := params.GetAPIPort()
 	apiServer := params.GetConfig().APIServer
@@ -64,63 +66,69 @@ func doCleanup(svr *http.Server) {
 }
 
 // nolint:funlen // put together handle func
-func initRouter() *mux.Router {
-	r := mux.NewRouter()
-
+func initRouter(r *mux.Router) {
 	rpcserver := rpc.NewServer()
 	rpcserver.RegisterCodec(rpcjson.NewCodec(), "application/json")
 	_ = rpcserver.RegisterService(new(rpcapi.RPCAPI), "swap")
 
 	r.Handle("/rpc", rpcserver)
-	r.HandleFunc("/serverinfo", restapi.ServerInfoHandler).Methods("GET")
-	r.HandleFunc("/versioninfo", restapi.VersionInfoHandler).Methods("GET")
-	r.HandleFunc("/nonceinfo", restapi.NonceInfoHandler).Methods("GET")
-	r.HandleFunc("/pairinfo/{pairid}", restapi.TokenPairInfoHandler).Methods("GET")
-	r.HandleFunc("/statistics/{pairid}", restapi.StatisticsHandler).Methods("GET")
-	r.HandleFunc("/swapin/post/{pairid}/{txid}", restapi.PostSwapinHandler).Methods("POST")
-	r.HandleFunc("/swapout/post/{pairid}/{txid}", restapi.PostSwapoutHandler).Methods("POST")
-	r.HandleFunc("/swapin/p2sh/{txid}/{bind}", restapi.PostP2shSwapinHandler).Methods("POST")
-	r.HandleFunc("/swapin/retry/{pairid}/{txid}", restapi.RetrySwapinHandler).Methods("POST")
-	r.HandleFunc("/swapin/{pairid}/{txid}", restapi.GetSwapinHandler).Methods("GET")
-	r.HandleFunc("/swapout/{pairid}/{txid}", restapi.GetSwapoutHandler).Methods("GET")
-	r.HandleFunc("/swapin/{pairid}/{txid}/raw", restapi.GetRawSwapinHandler).Methods("GET")
-	r.HandleFunc("/swapout/{pairid}/{txid}/raw", restapi.GetRawSwapoutHandler).Methods("GET")
-	r.HandleFunc("/swapin/{pairid}/{txid}/rawresult", restapi.GetRawSwapinResultHandler).Methods("GET")
-	r.HandleFunc("/swapout/{pairid}/{txid}/rawresult", restapi.GetRawSwapoutResultHandler).Methods("GET")
-	r.HandleFunc("/swapin/history/{pairid}/{address}", restapi.SwapinHistoryHandler).Methods("GET")
-	r.HandleFunc("/swapout/history/{pairid}/{address}", restapi.SwapoutHistoryHandler).Methods("GET")
-	r.HandleFunc("/p2sh/{address}", restapi.GetP2shAddressInfo).Methods("GET", "POST")
-	r.HandleFunc("/p2sh/bind/{address}", restapi.RegisterP2shAddress).Methods("GET", "POST")
-	r.HandleFunc("/registered/{address}", restapi.GetRegisteredAddress).Methods("GET", "POST")
-	r.HandleFunc("/register/{address}", restapi.RegisterAddress).Methods("GET", "POST")
 
-	methodsExcluesGet := []string{"POST", "HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
-	methodsExcluesPost := []string{"GET", "HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
-	methodsExcluesGetAndPost := []string{"HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
+	registerHandleFunc(r, "/serverinfo", restapi.ServerInfoHandler, "GET")
+	registerHandleFunc(r, "/versioninfo", restapi.VersionInfoHandler, "GET")
+	registerHandleFunc(r, "/nonceinfo", restapi.NonceInfoHandler, "GET")
+	registerHandleFunc(r, "/pairinfo/{pairid}", restapi.TokenPairInfoHandler, "GET")
+	registerHandleFunc(r, "/statistics/{pairid}", restapi.StatisticsHandler, "GET")
 
-	r.HandleFunc("/serverinfo", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/versioninfo", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/nonceinfo", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/pairinfo/{pairid}", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/statistics/{pairid}", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/swapin/post/{pairid}/{txid}", warnHandler).Methods(methodsExcluesPost...)
-	r.HandleFunc("/swapout/post/{pairid}/{txid}", warnHandler).Methods(methodsExcluesPost...)
-	r.HandleFunc("/swapin/p2sh/{txid}/{bind}", warnHandler).Methods(methodsExcluesPost...)
-	r.HandleFunc("/swapin/retry/{pairid}/{txid}", warnHandler).Methods(methodsExcluesPost...)
-	r.HandleFunc("/swapin/{pairid}/{txid}", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/swapout/{pairid}/{txid}", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/swapin/{pairid}/{txid}/raw", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/swapout/{pairid}/{txid}/raw", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/swapin/{pairid}/{txid}/rawresult", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/swapout/{pairid}/{txid}/rawresult", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/swapin/history/{pairid}/{address}", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/swapout/history/{pairid}/{address}", warnHandler).Methods(methodsExcluesGet...)
-	r.HandleFunc("/p2sh/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
-	r.HandleFunc("/p2sh/bind/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
-	r.HandleFunc("/registered/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
-	r.HandleFunc("/register/{address}", warnHandler).Methods(methodsExcluesGetAndPost...)
+	registerHandleFunc(r, "/swapin/post/{pairid}/{txid}", restapi.PostSwapinHandler, "POST")
+	registerHandleFunc(r, "/swapout/post/{pairid}/{txid}", restapi.PostSwapoutHandler, "POST")
+	registerHandleFunc(r, "/swapin/p2sh/{txid}/{bind}", restapi.PostP2shSwapinHandler, "POST")
+	registerHandleFunc(r, "/swapin/retry/{pairid}/{txid}", restapi.RetrySwapinHandler, "POST")
 
-	return r
+	registerHandleFunc(r, "/swapin/{pairid}/{txid}", restapi.GetSwapinHandler, "GET")
+	registerHandleFunc(r, "/swapout/{pairid}/{txid}", restapi.GetSwapoutHandler, "GET")
+	registerHandleFunc(r, "/swapin/{pairid}/{txid}/raw", restapi.GetRawSwapinHandler, "GET")
+	registerHandleFunc(r, "/swapout/{pairid}/{txid}/raw", restapi.GetRawSwapoutHandler, "GET")
+	registerHandleFunc(r, "/swapin/{pairid}/{txid}/rawresult", restapi.GetRawSwapinResultHandler, "GET")
+	registerHandleFunc(r, "/swapout/{pairid}/{txid}/rawresult", restapi.GetRawSwapoutResultHandler, "GET")
+	registerHandleFunc(r, "/swapin/history/{pairid}/{address}", restapi.SwapinHistoryHandler, "GET")
+	registerHandleFunc(r, "/swapout/history/{pairid}/{address}", restapi.SwapoutHistoryHandler, "GET")
+
+	registerHandleFunc(r, "/p2sh/{address}", restapi.GetP2shAddressInfo, "GET")
+	registerHandleFunc(r, "/p2sh/bind/{address}", restapi.RegisterP2shAddress, "POST")
+
+	registerHandleFunc(r, "/registered/{address}", restapi.GetRegisteredAddress, "GET")
+	registerHandleFunc(r, "/register/{address}", restapi.RegisterAddress, "POST")
+}
+
+type handleFuncType = func(w http.ResponseWriter, r *http.Request)
+
+func registerHandleFunc(r *mux.Router, path string, handler handleFuncType, methods ...string) {
+	for i := 0; i < len(methods); i++ {
+		methods[i] = strings.ToUpper(methods[i])
+	}
+	isAcceptMethod := func(method string) bool {
+		for _, acceptMethod := range methods {
+			if method == acceptMethod {
+				return true
+			}
+		}
+		return false
+	}
+	allMethods := []string{"GET", "POST", "HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
+	excludedMethods := make([]string, 0, len(allMethods))
+	for _, method := range allMethods {
+		if !isAcceptMethod(method) {
+			excludedMethods = append(excludedMethods, method)
+		}
+	}
+	if len(methods) > 0 {
+		acceptMethods := strings.Join(methods, ",")
+		r.HandleFunc(path, handler).Methods(acceptMethods)
+	}
+	if len(excludedMethods) > 0 {
+		forbidMethods := strings.Join(excludedMethods, ",")
+		r.HandleFunc(path, warnHandler).Methods(forbidMethods)
+	}
 }
 
 func warnHandler(w http.ResponseWriter, r *http.Request) {
