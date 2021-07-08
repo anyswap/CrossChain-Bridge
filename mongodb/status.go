@@ -11,26 +11,24 @@ import (
 // -----------------------------------------------
 // 1. swap register status change graph
 //
-// TxNotStable -> |- TxVerifyFailed    -> manual
+// TxNotStable -> |- TxVerifyFailed        -> admin reverify ---> TxNotStable
+//                |- BindAddrIsContract    -> admin reverify ---> TxNotStable
+//                |- TxSenderNotRegistered -> retry reverify ---> TxNotStable
+//                |- TxWithBigValue        -> admin bigvalue ---> TxNotSwapped
 //                |- TxWithWrongMemo   -> manual
 //                |- TxWithWrongSender -> manual
 //                |- TxWithWrongValue  -> manual
 //                |- SwapInBlacklist   -> manual
-//                |- TxIncompatible    -> manual
 //                |- ManualMakeFail    -> manual
-//                |- BindAddrIsContract-> manual
-//                |- TxWithBigValue        ---> TxNotSwapped
-//                |- TxSenderNotRegistered ---> TxNotStable
-//                |- TxNotSwapped -> |- TxSwapFailed -> manual
-//                                   |- TxProcessed (->MatchTxNotStable)
+//                |- TxNotSwapped -> |- TxProcessed (->MatchTxNotStable or ->MatchTxFailed)
 // -----------------------------------------------
 // 2. swap result status change graph
 //
 // TxWithWrongMemo -> manual
-// TxWithBigValue        ---> MatchTxEmpty
-// TxSenderNotRegistered ---> MatchTxEmpty
-// MatchTxEmpty          -> | MatchTxNotStable -> |- MatchTxStable
-//                                                |- MatchTxFailed -> manual
+// TxWithBigValue  -> admin bigvalue ---> MatchTxEmpty
+// MatchTxEmpty    -> |- MatchTxNotStable [admin replace]
+// -> |- MatchTxStable
+//    |- MatchTxFailed -> admin reswap ---> MatchTxEmpty
 // -----------------------------------------------
 
 // SwapStatus swap status
@@ -42,9 +40,9 @@ const (
 	TxVerifyFailed                          // 1
 	TxWithWrongSender                       // 2
 	TxWithWrongValue                        // 3
-	TxIncompatible                          // 4
+	TxIncompatible                          // 4 // deprecated
 	TxNotSwapped                            // 5
-	TxSwapFailed                            // 6
+	TxSwapFailed                            // 6 // deprecated
 	TxProcessed                             // 7
 	MatchTxEmpty                            // 8
 	MatchTxNotStable                        // 9
@@ -73,12 +71,7 @@ func (status SwapStatus) CanManualMakeFail() bool {
 
 // CanRetry can retry
 func (status SwapStatus) CanRetry() bool {
-	switch status {
-	case TxSenderNotRegistered:
-		return true
-	default:
-		return false
-	}
+	return status == TxSenderNotRegistered
 }
 
 // CanReverify can reverify
@@ -90,7 +83,6 @@ func (status SwapStatus) CanReverify() bool {
 		TxWithBigValue,
 		TxSenderNotRegistered,
 		SwapInBlacklist,
-		TxIncompatible,
 		BindAddrIsContract:
 		return true
 	default:
@@ -100,12 +92,7 @@ func (status SwapStatus) CanReverify() bool {
 
 // CanReswap can reswap
 func (status SwapStatus) CanReswap() bool {
-	switch status {
-	case TxSwapFailed, TxProcessed:
-		return true
-	default:
-		return false
-	}
+	return status == TxProcessed
 }
 
 // nolint:gocyclo // allow big simple switch

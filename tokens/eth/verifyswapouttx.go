@@ -280,7 +280,7 @@ func ParseSwapoutTxInput(input *[]byte) (string, *big.Int, error) {
 		return "", nil, tokens.ErrTxFuncHashMismatch
 	}
 	encData := data[4:]
-	return parseTxInputEncodedData(encData)
+	return parseSwapoutTxInputEncodedData(encData)
 }
 
 func parseSwapoutTxLogs(logs []*types.RPCLog, targetContract string) (bind string, value *big.Int, err error) {
@@ -309,7 +309,7 @@ func parseSwapoutTxLogs(logs []*types.RPCLog, targetContract string) (bind strin
 	return "", nil, tokens.ErrSwapoutLogNotFound
 }
 
-func parseTxInputEncodedData(encData []byte) (bind string, value *big.Int, err error) {
+func parseSwapoutTxInputEncodedData(encData []byte) (bind string, value *big.Int, err error) {
 	if isMbtcSwapout() {
 		return parseSwapoutToBtcEncodedData(encData, true)
 	}

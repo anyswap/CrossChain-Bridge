@@ -25,8 +25,6 @@ func GetStatusByTokenVerifyError(err error) SwapStatus {
 		return TxSenderNotRegistered
 	case errors.Is(err, tokens.ErrTxWithWrongSender):
 		return TxWithWrongSender
-	case errors.Is(err, tokens.ErrTxIncompatible):
-		return TxIncompatible
 	default:
 		log.Warn("[mongodb] maybe not considered tx verify error", "err", err)
 		return TxNotStable

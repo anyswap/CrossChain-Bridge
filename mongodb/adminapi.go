@@ -160,7 +160,6 @@ func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
 		return fmt.Errorf("swap type is %v, can not reswap", swapType.String())
 	}
 	switch res.Status {
-	case TxSwapFailed:
 	case MatchTxNotStable:
 	case MatchTxFailed:
 	default:

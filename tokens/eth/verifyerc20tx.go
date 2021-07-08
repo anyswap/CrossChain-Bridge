@@ -163,18 +163,18 @@ func ParseErc20SwapinTxLogs(logs []*types.RPCLog, contractAddress, checkToAddres
 func parseErc20EncodedData(encData []byte, isTransferFrom bool, checkToAddress string) (from, to string, value *big.Int, err error) {
 	// use common GetData and GetBigInt to prevent index overflow
 	if isTransferFrom {
+		if len(encData) != 96 {
+			return "", "", nil, tokens.ErrTxIncompatible
+		}
 		from = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
 		to = common.BytesToAddress(common.GetData(encData, 32, 32)).String()
 		value = common.GetBigInt(encData, 64, 32)
-		if len(encData) != 96 {
-			err = tokens.ErrTxIncompatible
-		}
 	} else {
+		if len(encData) != 64 {
+			return "", "", nil, tokens.ErrTxIncompatible
+		}
 		to = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
 		value = common.GetBigInt(encData, 32, 32)
-		if len(encData) != 64 {
-			err = tokens.ErrTxIncompatible
-		}
 	}
 	// error ErrTxWithWrongReceiver has highest priority,
 	// because this error means we don't care about this tx.
