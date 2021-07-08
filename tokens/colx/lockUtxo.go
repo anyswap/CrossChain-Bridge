@@ -52,7 +52,7 @@ func (b *Bridge) LockUtxoWithCond(txhash string, vout int, cond func() bool) err
 func after(seconds int64) func() bool {
 	deadline := time.Now().Unix() + seconds
 	return func() bool {
-		return time.Now().Unix() >= deadline 
+		return time.Now().Unix() >= deadline
 	}
 }
 
@@ -88,8 +88,8 @@ func (b *Bridge) SetUnlockUtxoCond(txhash string, vout int, cond func() bool) er
 
 func (b *Bridge) setUnlockUtxoCond(key utxokey, cond func() bool) error {
 	utxoLock.Lock()
-	defer utxoLock.Lock()
-	if !b.isUtxoLocked(key) {
+	defer utxoLock.Unlock()
+	if lockedUtxos[key] != 1 {
 		return ErrNotLocked
 	}
 	unlockConds[key] = cond
