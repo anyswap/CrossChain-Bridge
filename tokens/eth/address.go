@@ -1,19 +1,23 @@
 package eth
 
 import (
-	"math/big"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 )
+
+// ShouldCheckAddressMixedCase check address mixed case
+// eg. RSK chain do not check mixed case or not same as eth
+func (b *Bridge) ShouldCheckAddressMixedCase() bool {
+	return true
+}
 
 // IsValidAddress check address
 func (b *Bridge) IsValidAddress(address string) bool {
 	if !common.IsHexAddress(address) {
 		return false
 	}
-	// RSK chain do not check mixed case
-	if b.SignerChainID.Cmp(big.NewInt(30)) == 0 {
+	if !b.ShouldCheckAddressMixedCase() {
 		return true
 	}
 	unprefixedHex, ok, hasUpperChar := common.GetUnprefixedHex(address)

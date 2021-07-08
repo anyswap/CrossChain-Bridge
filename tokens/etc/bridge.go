@@ -11,12 +11,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-const (
-	netMainnet = "mainnet"
-	netKotti   = "kotti"
-	netMordor  = "mordor"
-)
-
 // Bridge etc bridge inherit from eth bridge
 type Bridge struct {
 	*eth.Bridge
@@ -39,9 +33,9 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
 	networkID := strings.ToLower(b.ChainConfig.NetID)
-	switch networkID {
-	case netMainnet:
-	default:
+	targetChainID := eth.GetChainIDOfNetwork(eth.EtcNetworkAndChainIDMap, networkID)
+	isCustom := eth.IsCustomNetwork(networkID)
+	if !isCustom && targetChainID == nil {
 		log.Fatalf("unsupported etc network: %v", b.ChainConfig.NetID)
 	}
 
@@ -60,25 +54,8 @@ func (b *Bridge) VerifyChainID() {
 		time.Sleep(3 * time.Second)
 	}
 
-	panicMismatchChainID := func() {
-		log.Fatalf("gateway chainID %v is not %v", chainID, b.ChainConfig.NetID)
-	}
-
-	switch networkID {
-	case netMainnet:
-		if chainID.Uint64() != 61 {
-			panicMismatchChainID()
-		}
-	case netKotti:
-		if chainID.Uint64() != 6 {
-			panicMismatchChainID()
-		}
-	case netMordor:
-		if chainID.Uint64() != 63 {
-			panicMismatchChainID()
-		}
-	default:
-		log.Fatalf("unsupported etc network %v", networkID)
+	if !isCustom && chainID.Cmp(targetChainID) != 0 {
+		log.Fatalf("gateway chainID '%v' is not '%v'", chainID, b.ChainConfig.NetID)
 	}
 
 	b.SignerChainID = chainID
@@ -87,22 +64,22 @@ func (b *Bridge) VerifyChainID() {
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
 }
 
-// GetSignerChainID override
+// GetSignerChainID override as its networkID is different of chainID
 func (b *Bridge) GetSignerChainID() (*big.Int, error) {
 	networkID, err := b.NetworkID()
 	if err != nil {
 		return nil, err
 	}
-	var chainID uint64
+	var chainID *big.Int
 	switch networkID.Uint64() {
 	case 1:
-		chainID = 61
+		chainID = eth.EtcNetworkAndChainIDMap["mainnet"]
 	case 6:
-		chainID = 6
+		chainID = eth.EtcNetworkAndChainIDMap["kotti"]
 	case 7:
-		chainID = 63
+		chainID = eth.EtcNetworkAndChainIDMap["mordor"]
 	default:
 		log.Fatalf("unsupported etc network %v", networkID)
 	}
-	return new(big.Int).SetUint64(chainID), nil
+	return chainID, nil
 }

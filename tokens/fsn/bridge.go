@@ -11,13 +11,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-const (
-	netMainnet = "mainnet"
-	netTestnet = "testnet"
-	netDevnet  = "devnet"
-	netCustom  = "custom"
-)
-
 // Bridge fsn bridge inherit from eth bridge
 type Bridge struct {
 	*eth.Bridge
@@ -40,10 +33,9 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
 	networkID := strings.ToLower(b.ChainConfig.NetID)
-	switch networkID {
-	case netMainnet, netTestnet, netDevnet:
-	case netCustom:
-	default:
+	targetChainID := eth.GetChainIDOfNetwork(eth.FsnNetworkAndChainIDMap, networkID)
+	isCustom := eth.IsCustomNetwork(networkID)
+	if !isCustom && targetChainID == nil {
 		log.Fatalf("unsupported fusion network: %v", b.ChainConfig.NetID)
 	}
 
@@ -62,26 +54,8 @@ func (b *Bridge) VerifyChainID() {
 		time.Sleep(3 * time.Second)
 	}
 
-	panicMismatchChainID := func() {
-		log.Fatalf("gateway chainID %v is not %v", chainID, b.ChainConfig.NetID)
-	}
-
-	switch networkID {
-	case netMainnet:
-		if chainID.Uint64() != 32659 {
-			panicMismatchChainID()
-		}
-	case netTestnet:
-		if chainID.Uint64() != 46688 {
-			panicMismatchChainID()
-		}
-	case netDevnet:
-		if chainID.Uint64() != 55555 {
-			panicMismatchChainID()
-		}
-	case netCustom:
-	default:
-		log.Fatalf("unsupported fusion network %v", networkID)
+	if !isCustom && chainID.Cmp(targetChainID) != 0 {
+		log.Fatalf("gateway chainID '%v' is not '%v'", chainID, b.ChainConfig.NetID)
 	}
 
 	b.SignerChainID = chainID

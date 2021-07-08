@@ -11,11 +11,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-const (
-	netMainnet = "mainnet"
-	netCustom  = "custom"
-)
-
 // Bridge okex bridge inherit from eth bridge
 type Bridge struct {
 	*eth.Bridge
@@ -38,10 +33,9 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
 	networkID := strings.ToLower(b.ChainConfig.NetID)
-	switch networkID {
-	case netMainnet:
-	case netCustom:
-	default:
+	targetChainID := eth.GetChainIDOfNetwork(eth.OkexNetworkAndChainIDMap, networkID)
+	isCustom := eth.IsCustomNetwork(networkID)
+	if !isCustom && targetChainID == nil {
 		log.Fatalf("unsupported okex network: %v", b.ChainConfig.NetID)
 	}
 
@@ -60,18 +54,8 @@ func (b *Bridge) VerifyChainID() {
 		time.Sleep(3 * time.Second)
 	}
 
-	panicMismatchChainID := func() {
-		log.Fatalf("gateway chainID %v is not %v", chainID, b.ChainConfig.NetID)
-	}
-
-	switch networkID {
-	case netMainnet:
-		if chainID.Uint64() != 66 {
-			panicMismatchChainID()
-		}
-	case netCustom:
-	default:
-		log.Fatalf("unsupported okex network %v", networkID)
+	if !isCustom && chainID.Cmp(targetChainID) != 0 {
+		log.Fatalf("gateway chainID '%v' is not '%v'", chainID, b.ChainConfig.NetID)
 	}
 
 	b.SignerChainID = chainID

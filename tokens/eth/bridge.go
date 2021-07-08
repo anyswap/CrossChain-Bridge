@@ -12,12 +12,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-const (
-	netMainnet = "mainnet"
-	netRinkeby = "rinkeby"
-	netCustom  = "custom"
-)
-
 // Bridge eth bridge
 type Bridge struct {
 	Inherit interface{}
@@ -60,10 +54,9 @@ func (b *Bridge) Init() {
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
 	networkID := strings.ToLower(b.ChainConfig.NetID)
-	switch networkID {
-	case netMainnet, netRinkeby:
-	case netCustom:
-	default:
+	targetChainID := GetChainIDOfNetwork(EthNetworkAndChainIDMap, networkID)
+	isCustom := IsCustomNetwork(networkID)
+	if !isCustom && targetChainID == nil {
 		log.Fatalf("unsupported ethereum network: %v", b.ChainConfig.NetID)
 	}
 
@@ -85,22 +78,8 @@ func (b *Bridge) VerifyChainID() {
 		log.Fatal("get chain ID failed", "err", err)
 	}
 
-	panicMismatchChainID := func() {
-		log.Fatalf("gateway chainID %v is not %v", chainID, b.ChainConfig.NetID)
-	}
-
-	switch networkID {
-	case netMainnet:
-		if chainID.Uint64() != 1 {
-			panicMismatchChainID()
-		}
-	case netRinkeby:
-		if chainID.Uint64() != 4 {
-			panicMismatchChainID()
-		}
-	case netCustom:
-	default:
-		log.Fatalf("unsupported ethereum network %v", networkID)
+	if !isCustom && chainID.Cmp(targetChainID) != 0 {
+		log.Fatalf("gateway chainID '%v' is not '%v'", chainID, b.ChainConfig.NetID)
 	}
 
 	b.SignerChainID = chainID
