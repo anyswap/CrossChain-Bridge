@@ -9,6 +9,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/anyswap/CrossChain-Bridge/tools/keystore"
@@ -127,6 +128,17 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 		return "", nil, errors.New("get sign status failed")
 	}
 
+	for _, rsv := range rsvs {
+		signature := common.FromHex(rsv)
+		if len(signature) != crypto.SignatureLength {
+			return "", nil, errors.New("wrong signature length")
+		}
+		r := common.ToHex(signature[:32])
+		err = mongodb.AddUsedRValue(signPubkey, r)
+		if err != nil {
+			return "", nil, errors.New("r value is already used")
+		}
+	}
 	return keyID, rsvs, err
 }
 

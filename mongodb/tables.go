@@ -11,6 +11,7 @@ const (
 	tbRegisteredAddress string = "RegisteredAddress"
 	tbBlacklist         string = "Blacklist"
 	tbLatestSwapNonces  string = "LatestSwapNonces"
+	tbUsedRValues       string = "UsedRValues"
 
 	keyOfSrcLatestScanInfo string = "srclatest"
 	keyOfDstLatestScanInfo string = "dstlatest"
@@ -114,5 +115,11 @@ type MgoLatestSwapNonce struct {
 	Address   string `bson:"address"`
 	IsSwapin  bool   `bson:"isswapin"`
 	SwapNonce uint64 `bson:"swapnonce"`
+	Timestamp int64  `bson:"timestamp"`
+}
+
+// MgoUsedRValue security enhancement
+type MgoUsedRValue struct {
+	Key       string `bson:"_id"` // r + pubkey
 	Timestamp int64  `bson:"timestamp"`
 }

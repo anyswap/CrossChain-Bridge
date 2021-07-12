@@ -784,3 +784,35 @@ func LoadAllSwapNonces() (swapinNonces, swapoutNonces map[string]uint64) {
 	}
 	return swapinNonces, swapoutNonces
 }
+
+// ---------------------- used rvalue -----------------------------
+
+// AddUsedRValue add used r, if error mean already exist
+func AddUsedRValue(pubkey, r string) error {
+	key := strings.ToLower(r + ":" + pubkey)
+	mr := &MgoUsedRValue{
+		Key:       key,
+		Timestamp: common.NowMilli(),
+	}
+	err := collUsedRValue.Insert(mr)
+	switch {
+	case err == nil:
+		log.Info("mongodb add used r success", "pubkey", pubkey, "r", r)
+		return nil
+	case mgo.IsDup(err):
+		log.Warn("mongodb add used r failed", "pubkey", pubkey, "r", r, "err", err)
+		return ErrItemIsDup
+	default:
+		old := &MgoUsedRValue{}
+		if collUsedRValue.FindId(key).One(old) == nil {
+			log.Warn("mongodb add used r failed", "pubkey", pubkey, "r", r, "err", ErrItemIsDup)
+			return ErrItemIsDup
+		}
+
+		err = collUsedRValue.Insert(mr) // retry once
+		if err != nil {
+			log.Warn("mongodb add used r failed in retry", "pubkey", pubkey, "r", r, "err", err)
+		}
+		return mgoError(err)
+	}
+}
