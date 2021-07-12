@@ -16,6 +16,7 @@ const (
 	tbBlacklist         string = "Blacklist"
 	tbLatestSwapNonces  string = "LatestSwapNonces"
 	tbSwapHistory       string = "SwapHistory"
+	tbUsedRValues       string = "UsedRValues"
 
 	keyOfSrcLatestScanInfo string = "srclatest"
 	keyOfDstLatestScanInfo string = "dstlatest"
@@ -131,4 +132,10 @@ type MgoSwapHistory struct {
 	TxID     string        `bson:"txid"`
 	Bind     string        `bson:"bind"`
 	SwapTx   string        `bson:"swaptx"`
+}
+
+// MgoUsedRValue security enhancement
+type MgoUsedRValue struct {
+	Key       string `bson:"_id"` // r + pubkey
+	Timestamp int64  `bson:"timestamp"`
 }

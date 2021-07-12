@@ -9,6 +9,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/anyswap/CrossChain-Bridge/tools/keystore"
@@ -28,6 +29,8 @@ var (
 	errDoSignFailed         = errors.New("do sign failed")
 	errSignWithoutPublickey = errors.New("sign without public key")
 	errGetSignResultFailed  = errors.New("get sign result failed")
+	errRValueIsUsed         = errors.New("r value is already used")
+	errWrongSignatureLength = errors.New("wrong signature length")
 )
 
 func pingDcrmNode(nodeInfo *NodeInfo) (err error) {
@@ -116,6 +119,18 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 	if err != nil {
 		return "", nil, err
 	}
+	for _, rsv := range rsvs {
+		signature := common.FromHex(rsv)
+		if len(signature) != crypto.SignatureLength {
+			return "", nil, errWrongSignatureLength
+		}
+		r := common.ToHex(signature[:32])
+		err = mongodb.AddUsedRValue(signPubkey, r)
+		if err != nil {
+			return "", nil, errRValueIsUsed
+		}
+	}
+
 	return keyID, rsvs, nil
 }
 
