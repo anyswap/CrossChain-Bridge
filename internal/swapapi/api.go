@@ -219,12 +219,6 @@ func swap(txid, pairID *string, isSwapin bool) (*PostResult, error) {
 		return nil, err
 	}
 	swapInfo, err := bridge.VerifyTransaction(pairIDStr, txidstr, true)
-	if err != nil {
-		txStat, errt := bridge.GetTransactionStatus(txidstr)
-		if errt == nil && txStat != nil && txStat.BlockHeight > 0 {
-			swapInfo, err = bridge.VerifyTransaction(pairIDStr, txidstr, false)
-		}
-	}
 	var txType tokens.SwapTxType
 	if isSwapin {
 		txType = tokens.SwapinTx
