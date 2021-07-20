@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -27,6 +28,8 @@ var (
 	cachedAcceptInfos    = mapset.NewSet()
 	maxCachedAcceptInfos = 500
 
+	maxAcceptSignTimeInterval = int64(600) // seconds
+
 	retryInterval = 3 * time.Second
 	waitInterval  = 3 * time.Second
 
@@ -38,6 +41,8 @@ var (
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
 	errInitiatorMismatch  = errors.New("initiator mismatch")
 	errWrongMsgContext    = errors.New("wrong msg context")
+	errInvalidSignInfo    = errors.New("invalid sign info")
+	errExpiredSignInfo    = errors.New("expired sign info")
 )
 
 // StartAcceptSignJob accept job
@@ -74,10 +79,6 @@ func startAcceptProducer() {
 				return
 			}
 			keyID := info.Key
-			if keyID == "" || info.Account == "" || info.GroupID == "" {
-				logWorkerWarn("accept", "invalid accept sign info", "signInfo", info)
-				continue
-			}
 			if cachedAcceptInfos.Contains(keyID) {
 				logWorkerTrace("accept", "ignore cached accept sign info before dispatch", "keyID", keyID)
 				continue
@@ -154,6 +155,8 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 	case errors.Is(err, errIdentifierMismatch),
 		errors.Is(err, errInitiatorMismatch),
 		errors.Is(err, errWrongMsgContext),
+		errors.Is(err, errExpiredSignInfo),
+		errors.Is(err, errInvalidSignInfo),
 		errors.Is(err, tokens.ErrUnknownPairID),
 		errors.Is(err, tokens.ErrNoBtcBridge):
 		logWorker("accept", "ignore sign", "keyID", keyID, "err", err)
@@ -187,6 +190,15 @@ func getBuildTxArgsFromMsgContext(signInfo *dcrm.SignInfoData) (*tokens.BuildTxA
 }
 
 func verifySignInfo(signInfo *dcrm.SignInfoData) (args *tokens.BuildTxArgs, err error) {
+	timestamp, err := common.GetUint64FromStr(signInfo.TimeStamp)
+	if err != nil || int64(timestamp/1000)+maxAcceptSignTimeInterval < time.Now().Unix() {
+		logWorkerTrace("accept", "expired accept sign info", "signInfo", signInfo)
+		return nil, errExpiredSignInfo
+	}
+	if signInfo.Key == "" || signInfo.Account == "" || signInfo.GroupID == "" {
+		logWorkerWarn("accept", "invalid accept sign info", "signInfo", signInfo)
+		return nil, errInvalidSignInfo
+	}
 	if !params.IsDcrmInitiator(signInfo.Account) {
 		return nil, errInitiatorMismatch
 	}
