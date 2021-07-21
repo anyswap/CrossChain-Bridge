@@ -12,17 +12,29 @@ import (
 )
 
 func writeResponse(w http.ResponseWriter, resp interface{}, err error) {
+	if err != nil {
+		writeErrResponse(w, err)
+		return
+	}
+	jsonData, err := json.Marshal(resp)
+	if err != nil {
+		writeErrResponse(w, err)
+		return
+	}
 	// Note: must set header before write header
-	if err == nil {
-		w.Header().Set("Content-Type", "application/json")
-	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err == nil {
-		jsonData, _ := json.Marshal(resp)
-		_, _ = w.Write(jsonData)
-	} else {
-		fmt.Fprintln(w, err.Error())
+	_, err = w.Write(jsonData)
+	if err != nil {
+		fmt.Println("write response error:", err)
 	}
+}
+
+func writeErrResponse(w http.ResponseWriter, err error) {
+	// Note: must set header before write header
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, err.Error())
 }
 
 // VersionInfoHandler handler
