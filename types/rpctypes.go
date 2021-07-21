@@ -51,7 +51,7 @@ type RPCTransaction struct {
 	BlockNumber      *hexutil.Big    `json:"blockNumber,omitempty"`
 	BlockHash        *common.Hash    `json:"blockHash,omitempty"`
 	From             *common.Address `json:"from,omitempty"`
-	AccountNonce     interface{}     `json:"nonce"` // unexpect RSK has leading zero (eg. 0x01)
+	AccountNonce     string          `json:"nonce"` // unexpect RSK has leading zero (eg. 0x01)
 	Price            *hexutil.Big    `json:"gasPrice"`
 	GasLimit         *hexutil.Uint64 `json:"gas"`
 	Recipient        *common.Address `json:"to"`
@@ -60,6 +60,14 @@ type RPCTransaction struct {
 	V                *hexutil.Big    `json:"v"`
 	R                *hexutil.Big    `json:"r"`
 	S                *hexutil.Big    `json:"s"`
+}
+
+// GetAccountNonce convert
+func (tx *RPCTransaction) GetAccountNonce() uint64 {
+	if result, err := common.GetUint64FromStr(tx.AccountNonce); err == nil {
+		return result
+	}
+	return 0
 }
 
 // RPCLog struct

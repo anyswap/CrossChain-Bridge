@@ -93,7 +93,7 @@ func CheckAcceptRecord(args *tokens.BuildTxArgs) (err error) {
 				break
 			}
 		} else if tx, _ := resBridge.GetTransaction(oldSwapTx); tx != nil { // in tx pool
-			etx, ok := tx.(*types.Transaction)
+			etx, ok := tx.(*types.RPCTransaction)
 			if !ok {
 				log.Warn("[accept] find already swapped tx in pool", "key", key, "value", value)
 				alreadySwapped = true
@@ -104,11 +104,13 @@ func CheckAcceptRecord(args *tokens.BuildTxArgs) (err error) {
 				continue // allow reswap old enough
 			}
 
-			if etx.Nonce() == args.GetTxNonce() {
+			txNonce := etx.GetAccountNonce()
+			argNonce := args.GetTxNonce()
+			if txNonce == argNonce {
 				continue // allow replace always
 			}
 
-			log.Warn("[accept] find already swapped tx in pool", "key", key, "value", value)
+			log.Warn("[accept] find already swapped tx in pool", "key", key, "value", value, "txNonce", txNonce, "argNonce", argNonce)
 			alreadySwapped = true
 			break
 		}
