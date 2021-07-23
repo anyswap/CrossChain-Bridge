@@ -23,15 +23,11 @@ func (b *Bridge) verifyErc20SwapinTx(pairID, txHash string, allowUnstable bool, 
 		return swapInfo, err
 	}
 
-	if receipt == nil && (token.IsDelegateContract || token.AllowSwapinFromContract) {
+	if receipt == nil {
 		return swapInfo, tokens.ErrTxNotFound
 	}
 
-	if !allowUnstable || receipt != nil {
-		err = b.verifyErc20SwapinTxReceipt(swapInfo, receipt, token)
-	} else {
-		err = b.verifySwapinRawTx(swapInfo, token)
-	}
+	err = b.verifyErc20SwapinTxReceipt(swapInfo, receipt, token)
 	if err != nil {
 		return swapInfo, err
 	}
@@ -48,11 +44,13 @@ func (b *Bridge) verifyErc20SwapinTx(pairID, txHash string, allowUnstable bool, 
 }
 
 func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *types.RPCTxReceipt, token *tokens.TokenConfig) error {
-	if receipt.Recipient == nil ||
+	if receipt.Recipient == nil {
+		return tokens.ErrTxWithWrongContract
+	}
+
+	if !token.AllowSwapinFromContract &&
 		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) {
-		if !token.AllowSwapinFromContract {
-			return tokens.ErrTxWithWrongContract
-		}
+		return tokens.ErrTxWithWrongContract
 	}
 
 	swapInfo.TxTo = strings.ToLower(receipt.Recipient.String()) // TxTo
@@ -71,6 +69,7 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 	return nil
 }
 
+// nolint:unused // keep
 func (b *Bridge) verifySwapinRawTx(swapInfo *tokens.TxSwapInfo, token *tokens.TokenConfig) error {
 	txHash := swapInfo.Hash
 	tx, err := b.GetTransactionByHash(txHash)
