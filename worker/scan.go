@@ -8,21 +8,11 @@ import (
 // StartScanJob scan job
 func StartScanJob(isServer bool) {
 	srcChainCfg := tokens.SrcBridge.GetChainConfig()
-	if srcChainCfg.EnableScan {
-		go tokens.SrcBridge.StartChainTransactionScanJob()
+	if srcChainCfg.EnableScan && btc.BridgeInstance != nil {
+		go btc.BridgeInstance.StartChainTransactionScanJob()
 		if srcChainCfg.EnableScanPool {
-			go tokens.SrcBridge.StartPoolTransactionScanJob()
+			go btc.BridgeInstance.StartPoolTransactionScanJob()
 		}
-		if btc.BridgeInstance != nil {
-			go btc.BridgeInstance.StartSwapHistoryScanJob()
-		}
-	}
-
-	dstChainCfg := tokens.DstBridge.GetChainConfig()
-	if dstChainCfg.EnableScan {
-		go tokens.DstBridge.StartChainTransactionScanJob()
-		if dstChainCfg.EnableScanPool {
-			go tokens.DstBridge.StartPoolTransactionScanJob()
-		}
+		go btc.BridgeInstance.StartSwapHistoryScanJob()
 	}
 }

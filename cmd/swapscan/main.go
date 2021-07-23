@@ -24,7 +24,6 @@ func initApp() {
 	app.HideVersion = true // we have a command to print the version
 	app.Copyright = "Copyright 2017-2020 The CrossChain-Bridge Authors"
 	app.Commands = []*cli.Command{
-		scanEthCommand,
 		scanBtcCommand,
 		utils.LicenseCommand,
 		utils.VersionCommand,

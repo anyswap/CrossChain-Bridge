@@ -69,63 +69,6 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 	return nil
 }
 
-// nolint:unused // keep
-func (b *Bridge) verifySwapinRawTx(swapInfo *tokens.TxSwapInfo, token *tokens.TokenConfig) error {
-	txHash := swapInfo.Hash
-	tx, err := b.GetTransactionByHash(txHash)
-	if err != nil {
-		log.Debug("[verifySwapinRawTx] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
-		return tokens.ErrTxNotFound
-	}
-	if tx.Recipient == nil {
-		return tokens.ErrTxWithWrongContract
-	}
-
-	txRecipient := strings.ToLower(tx.Recipient.String())
-	if !common.IsEqualIgnoreCase(txRecipient, token.ContractAddress) {
-		return tokens.ErrTxWithWrongContract
-	}
-
-	swapInfo.TxTo = txRecipient                       // TxTo
-	swapInfo.From = strings.ToLower(tx.From.String()) // From
-
-	input := (*[]byte)(tx.Payload)
-	from, to, value, err := ParseErc20SwapinTxInput(input, token.DepositAddress)
-	if err != nil {
-		if !errors.Is(err, tokens.ErrTxWithWrongReceiver) {
-			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", swapInfo.Hash, "err", err)
-		}
-		return err
-	}
-	swapInfo.To = strings.ToLower(to) // To
-	swapInfo.Value = value            // Value
-	if from != "" {
-		swapInfo.Bind = strings.ToLower(from) // Bind
-	} else {
-		swapInfo.Bind = swapInfo.From // Bind
-	}
-	return nil
-}
-
-// ParseErc20SwapinTxInput parse erc20 swapin tx input
-func ParseErc20SwapinTxInput(input *[]byte, checkToAddress string) (from, to string, value *big.Int, err error) {
-	if input == nil || len(*input) < 4 {
-		return "", "", nil, tokens.ErrTxWithWrongInput
-	}
-	data := *input
-	funcHash := data[:4]
-	isTransferFrom := false
-	switch {
-	case bytes.Equal(funcHash, erc20CodeParts["transfer"]):
-	case bytes.Equal(funcHash, erc20CodeParts["transferFrom"]):
-		isTransferFrom = true
-	default:
-		return "", "", nil, tokens.ErrTxFuncHashMismatch
-	}
-	encData := data[4:]
-	return parseErc20EncodedData(encData, isTransferFrom, checkToAddress)
-}
-
 // ParseErc20SwapinTxLogs parse erc20 swapin tx logs
 func ParseErc20SwapinTxLogs(logs []*types.RPCLog, contractAddress, checkToAddress string) (from, to string, value *big.Int, err error) {
 	transferLogExist := false
@@ -157,28 +100,4 @@ func ParseErc20SwapinTxLogs(logs []*types.RPCLog, contractAddress, checkToAddres
 		err = tokens.ErrDepositLogNotFound
 	}
 	return "", "", nil, err
-}
-
-func parseErc20EncodedData(encData []byte, isTransferFrom bool, checkToAddress string) (from, to string, value *big.Int, err error) {
-	// use common GetData and GetBigInt to prevent index overflow
-	if isTransferFrom {
-		if len(encData) != 96 {
-			return "", "", nil, tokens.ErrTxIncompatible
-		}
-		from = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
-		to = common.BytesToAddress(common.GetData(encData, 32, 32)).String()
-		value = common.GetBigInt(encData, 64, 32)
-	} else {
-		if len(encData) != 64 {
-			return "", "", nil, tokens.ErrTxIncompatible
-		}
-		to = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
-		value = common.GetBigInt(encData, 32, 32)
-	}
-	// error ErrTxWithWrongReceiver has highest priority,
-	// because this error means we don't care about this tx.
-	if !common.IsEqualIgnoreCase(to, checkToAddress) {
-		err = tokens.ErrTxWithWrongReceiver
-	}
-	return from, to, value, err
 }

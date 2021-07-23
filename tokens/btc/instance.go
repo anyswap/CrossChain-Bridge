@@ -18,6 +18,10 @@ type BridgeInterface interface {
 	VerifyAggregateMsgHash(msgHash []string, args *tokens.BuildTxArgs) error
 	AggregateUtxos(addrs []string, utxos []*electrs.ElectUtxo) (string, error)
 	FindUtxos(addr string) ([]*electrs.ElectUtxo, error)
+
 	StartSwapHistoryScanJob()
+	StartChainTransactionScanJob()
+	StartPoolTransactionScanJob()
+
 	ShouldAggregate(aggUtxoCount int, aggSumVal uint64) bool
 }

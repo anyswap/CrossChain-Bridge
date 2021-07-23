@@ -371,3 +371,23 @@ var btcCachedBlocks = &cachedSacnnedBlocks{
 	nextIndex: 0,
 	hashes:    make([]string, 100),
 }
+
+type cachedSacnnedBlocks struct {
+	capacity  int
+	nextIndex int
+	hashes    []string
+}
+
+func (cache *cachedSacnnedBlocks) addBlock(blockHash string) {
+	cache.hashes[cache.nextIndex] = blockHash
+	cache.nextIndex = (cache.nextIndex + 1) % cache.capacity
+}
+
+func (cache *cachedSacnnedBlocks) isScanned(blockHash string) bool {
+	for _, b := range cache.hashes {
+		if b == blockHash {
+			return true
+		}
+	}
+	return false
+}

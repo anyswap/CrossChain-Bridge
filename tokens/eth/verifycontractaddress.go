@@ -155,10 +155,6 @@ func getSwapinFuncHash() []byte {
 	return ExtCodeParts["SwapinFuncHash"]
 }
 
-func getSwapoutFuncHash() []byte {
-	return ExtCodeParts["SwapoutFuncHash"]
-}
-
 func getLogSwapoutTopic() (topTopic []byte, topicsLen int) {
 	topTopic = ExtCodeParts["LogSwapoutTopic"]
 	if isMbtcSwapout() {
