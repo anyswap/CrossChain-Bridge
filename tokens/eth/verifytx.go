@@ -215,12 +215,12 @@ func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxRece
 	if !ok || receipt == nil {
 		return nil, tokens.ErrTxNotStable
 	}
-	if *receipt.Status != 1 {
-		return nil, tokens.ErrTxWithWrongReceipt
-	}
 	if txStatus.BlockHeight == 0 ||
 		txStatus.Confirmations < *b.GetChainConfig().Confirmations {
 		return nil, tokens.ErrTxNotStable
+	}
+	if *receipt.Status != 1 {
+		return nil, tokens.ErrTxWithWrongReceipt
 	}
 	return receipt, nil
 }
