@@ -13,30 +13,8 @@ import (
 )
 
 // verifySwapoutTxWithPairID verify swapout with PairID
-func (b *Bridge) verifySwapoutTxWithPairID(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID // PairID
-	swapInfo.Hash = txHash   // Hash
-
-	token := b.GetTokenConfig(pairID)
-	if token == nil {
-		return swapInfo, tokens.ErrUnknownPairID
-	}
-
-	if token.DisableSwap {
-		return swapInfo, tokens.ErrSwapIsClosed
-	}
-
-	receipt, err := b.getReceipt(swapInfo, allowUnstable)
-	if err != nil {
-		return swapInfo, err
-	}
-
-	if receipt == nil {
-		return swapInfo, tokens.ErrTxNotFound
-	}
-
-	err = b.verifySwapoutTxReceipt(swapInfo, receipt, token)
+func (b *Bridge) verifySwapoutTx(swapInfo *tokens.TxSwapInfo, allowUnstable bool, token *tokens.TokenConfig, receipt *types.RPCTxReceipt) (*tokens.TxSwapInfo, error) {
+	err := b.verifySwapoutTxReceipt(swapInfo, receipt, token)
 	if err != nil {
 		return swapInfo, err
 	}
@@ -47,7 +25,7 @@ func (b *Bridge) verifySwapoutTxWithPairID(pairID, txHash string, allowUnstable 
 	}
 
 	if !allowUnstable {
-		log.Info("verify swapout stable pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+		log.Info("verify swapout stable pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 
 	return swapInfo, nil
@@ -75,12 +53,8 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 		}
 		return err
 	}
-	if bindAddress != "" {
-		swapInfo.Bind = bindAddress // Bind
-	} else {
-		swapInfo.Bind = swapInfo.From // Bind
-	}
-	swapInfo.Value = value // Value
+	swapInfo.Bind = bindAddress // Bind
+	swapInfo.Value = value      // Value
 	return nil
 }
 

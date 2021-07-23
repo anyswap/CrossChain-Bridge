@@ -6,9 +6,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
@@ -68,18 +66,12 @@ func getTxByHash(b *Bridge, txHash string, withExt bool) (*types.RPCTransaction,
 
 // VerifyTransaction impl
 func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	if !b.IsSrc {
-		return b.verifySwapoutTxWithPairID(pairID, txHash, allowUnstable)
-	}
-	return b.verifySwapinTxWithPairID(pairID, txHash, allowUnstable)
-}
-
-func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash
 
 	token := b.GetTokenConfig(pairID)
+
 	if token == nil {
 		return swapInfo, tokens.ErrUnknownPairID
 	}
@@ -88,18 +80,30 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, tokens.ErrSwapIsClosed
 	}
 
-	if token.IsErc20() {
-		return b.verifyErc20SwapinTx(pairID, txHash, allowUnstable, token)
-	}
-
-	_, err := b.getReceipt(swapInfo, allowUnstable)
+	receipt, err := b.getReceipt(swapInfo, allowUnstable)
 	if err != nil {
 		return swapInfo, err
 	}
 
-	tx, err := getTxByHash(b, txHash, !allowUnstable)
+	if receipt == nil {
+		return swapInfo, tokens.ErrTxNotFound
+	}
+
+	if !b.IsSrc {
+		return b.verifySwapoutTx(swapInfo, allowUnstable, token, receipt)
+	}
+
+	if token.IsErc20() {
+		return b.verifyErc20SwapinTx(swapInfo, allowUnstable, token, receipt)
+	}
+
+	return b.verifyNativeSwapinTx(swapInfo, allowUnstable, token)
+}
+
+func (b *Bridge) verifyNativeSwapinTx(swapInfo *tokens.TxSwapInfo, allowUnstable bool, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
+	tx, err := getTxByHash(b, swapInfo.Hash, !allowUnstable)
 	if err != nil {
-		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", swapInfo.Hash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 	if tx.Recipient == nil { // ignore contract creation tx
@@ -123,7 +127,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	}
 
 	if !allowUnstable {
-		log.Info("verify swapin stable pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+		log.Info("verify swapin stable pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfo, nil
 }
@@ -164,39 +168,4 @@ func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxRece
 		return nil, tokens.ErrTxWithWrongReceipt
 	}
 	return receipt, nil
-}
-
-func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
-	if swapInfo.Bind == swapInfo.To {
-		return tokens.ErrTxWithWrongSender
-	}
-	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
-		return tokens.ErrTxWithWrongValue
-	}
-	token := b.GetTokenConfig(swapInfo.PairID)
-	if token == nil {
-		return tokens.ErrUnknownPairID
-	}
-	return b.checkSwapinBindAddress(swapInfo.Bind, token.AllowSwapinFromContract)
-}
-
-func (b *Bridge) checkSwapinBindAddress(bindAddr string, allowContractAddress bool) error {
-	if !tokens.DstBridge.IsValidAddress(bindAddr) {
-		log.Warn("wrong bind address in swapin", "bind", bindAddr)
-		return tokens.ErrTxWithWrongMemo
-	}
-	if params.MustRegisterAccount() && !tools.IsAddressRegistered(bindAddr) {
-		return tokens.ErrTxSenderNotRegistered
-	}
-	if params.IsSwapServer && !allowContractAddress {
-		isContract, err := b.IsContractAddress(bindAddr)
-		if err != nil {
-			log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)
-			return tokens.ErrRPCQueryError
-		}
-		if isContract {
-			return tokens.ErrBindAddrIsContract
-		}
-	}
-	return nil
 }
