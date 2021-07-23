@@ -156,20 +156,24 @@ func GetBigValueThreshold(pairID string, isSrc bool) *big.Int {
 
 // CheckSwapValue check swap value is in right range
 func CheckSwapValue(pairID string, value *big.Int, isSrc bool) bool {
-	token := GetTokenConfig(pairID, isSrc)
-	if value.Cmp(token.minSwap) < 0 {
-		return false
-	}
-	if value.Cmp(token.maxSwap) > 0 {
-		return false
-	}
 	swappedValue := CalcSwappedValue(pairID, value, isSrc)
 	return swappedValue.Sign() > 0
 }
 
 // CalcSwappedValue calc swapped value (get rid of fee)
 func CalcSwappedValue(pairID string, value *big.Int, isSrc bool) *big.Int {
+	if value == nil || value.Sign() <= 0 {
+		return big.NewInt(0)
+	}
+
 	token := GetTokenConfig(pairID, isSrc)
+
+	if value.Cmp(token.minSwap) < 0 {
+		return big.NewInt(0)
+	}
+	if value.Cmp(token.maxSwap) > 0 {
+		return big.NewInt(0)
+	}
 
 	if *token.SwapFeeRate == 0.0 {
 		return value
@@ -185,10 +189,16 @@ func CalcSwappedValue(pairID string, value *big.Int, isSrc bool) *big.Int {
 		swapFee = token.maxSwapFee
 	}
 
-	if value.Cmp(swapFee) > 0 {
-		return new(big.Int).Sub(value, swapFee)
+	if value.Cmp(swapFee) <= 0 {
+		return big.NewInt(0)
 	}
-	return big.NewInt(0)
+
+	swappedValue := new(big.Int).Sub(value, swapFee)
+	// recheck swap value range
+	if swappedValue.Cmp(value) > 0 || swappedValue.Cmp(token.maxSwap) > 0 {
+		return big.NewInt(0)
+	}
+	return swappedValue
 }
 
 // SetLatestBlockHeight set latest block height
