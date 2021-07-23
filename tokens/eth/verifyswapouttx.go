@@ -27,11 +27,11 @@ func (b *Bridge) verifySwapoutTxWithPairID(pairID, txHash string, allowUnstable 
 		return swapInfo, err
 	}
 
-	if !allowUnstable || receipt != nil {
-		err = b.verifySwapoutTxReceipt(swapInfo, receipt, token)
-	} else {
-		err = b.verifySwapoutRawTx(swapInfo, token)
+	if receipt == nil {
+		return swapInfo, tokens.ErrTxNotFound
 	}
+
+	err = b.verifySwapoutTxReceipt(swapInfo, receipt, token)
 	if err != nil {
 		return swapInfo, err
 	}
@@ -74,6 +74,7 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 	return nil
 }
 
+// nolint:unused // keep
 func (b *Bridge) verifySwapoutRawTx(swapInfo *tokens.TxSwapInfo, token *tokens.TokenConfig) error {
 	txHash := swapInfo.Hash
 	tx, err := b.GetTransactionByHash(txHash)
