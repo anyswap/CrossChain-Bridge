@@ -93,8 +93,9 @@ type TokenConfig struct {
 	DelegateToken          string `json:",omitempty"`
 	IsAnyswapAdapter       bool   `json:",omitempty"`
 
-	DefaultGasLimit         uint64 `json:",omitempty"`
-	AllowSwapinFromContract bool   `json:",omitempty"`
+	DefaultGasLimit          uint64 `json:",omitempty"`
+	AllowSwapinFromContract  bool   `json:",omitempty"`
+	AllowSwapoutFromContract bool   `json:",omitempty"`
 
 	// use private key address instead
 	DcrmAddressKeyStore string `json:"-"`

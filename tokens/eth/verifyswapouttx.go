@@ -58,6 +58,11 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 		return tokens.ErrTxWithWrongContract
 	}
 
+	if !token.AllowSwapoutFromContract &&
+		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) {
+		return tokens.ErrTxWithWrongContract
+	}
+
 	txRecipient := strings.ToLower(receipt.Recipient.String())
 	swapInfo.TxTo = txRecipient                            // TxTo
 	swapInfo.To = txRecipient                              // To

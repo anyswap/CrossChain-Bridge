@@ -70,3 +70,5 @@ BigValueThreshold = 50.0
 DisableSwap = false
 # default gas limit
 DefaultGasLimit = 90000
+# allow swapout from contract address
+AllowSwapoutFromContract = false
