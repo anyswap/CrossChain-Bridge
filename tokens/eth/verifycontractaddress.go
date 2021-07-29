@@ -127,9 +127,9 @@ func (b *Bridge) VerifyErc20ContractAddress(contract, codeHash string, isProxy b
 	return nil
 }
 
-// VerifyMbtcContractAddress verify mbtc contract
-func (b *Bridge) VerifyMbtcContractAddress(contract string) (err error) {
-	return b.VerifyContractCode(contract, ExtCodeParts, erc20CodeParts)
+// VerifyAnyswapContractAddress verify anyswap contract
+func (b *Bridge) VerifyAnyswapContractAddress(contract string) (err error) {
+	return b.VerifyContractCode(contract, ExtCodeParts)
 }
 
 // InitExtCodeParts init extended code parts
@@ -156,10 +156,12 @@ func getSwapinFuncHash() []byte {
 	return ExtCodeParts["SwapinFuncHash"]
 }
 
-func getSwapoutFuncHash() []byte {
-	return ExtCodeParts["SwapoutFuncHash"]
-}
-
-func getLogSwapoutTopic() []byte {
-	return ExtCodeParts["LogSwapoutTopic"]
+func getLogSwapoutTopic() (topTopic []byte, topicsLen int) {
+	topTopic = ExtCodeParts["LogSwapoutTopic"]
+	if isMbtcSwapout() {
+		topicsLen = 2
+	} else {
+		topicsLen = 3
+	}
+	return topTopic, topicsLen
 }

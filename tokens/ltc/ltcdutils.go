@@ -52,7 +52,7 @@ func (b *Bridge) ParsePkScript(pkScript []byte) (txscript.PkScript, error) {
 func (b *Bridge) GetPayToAddrScript(address string) ([]byte, error) {
 	toAddr, err := b.DecodeAddress(address)
 	if err != nil {
-		return nil, fmt.Errorf("decode ltc address '%v' failed. %v", address, err)
+		return nil, fmt.Errorf("decode ltc address '%v' failed. %w", address, err)
 	}
 	return txscript.PayToAddrScript(toAddr)
 }

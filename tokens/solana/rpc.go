@@ -141,7 +141,7 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 }
 
 // GetTransactionStatus returns tx status
-func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
+func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, err1 error) {
 	status = new(tokens.TxStatus)
 	params := []interface{}{txHash, "json"}
 	rpcError := &RPCError{[]error{}, "GetConfirmedTransaction"}
@@ -156,10 +156,12 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 			status.BlockHeight = uint64(tx.Slot)
 			status.BlockHash = ""
 			status.BlockTime = uint64(tx.BlockTime)
+			err1 = err
 			return
 		} else {
 			status.Confirmations = 0
 			rpcError.log(err)
+			err1 = err
 			return
 		}
 	}

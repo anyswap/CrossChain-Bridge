@@ -4,7 +4,6 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
@@ -12,6 +11,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
+	"github.com/anyswap/CrossChain-Bridge/tools"
 	"github.com/ltcsuite/ltcd/btcec"
 	"github.com/ltcsuite/ltcutil"
 	"github.com/ltcsuite/ltcutil/base58"
@@ -143,13 +143,13 @@ func (bts *ltcTxSender) initBridge() {
 func (bts *ltcTxSender) loadWIFForAddress() string {
 	var wifStr string
 	if bts.wifFile != "" {
-		wifdata, err := ioutil.ReadFile(bts.wifFile)
+		wifdata, err := tools.SafeReadFile(bts.wifFile)
 		if err != nil {
 			log.Fatal("Read WIF file failed", "err", err)
 		}
 		wifStr = strings.TrimSpace(string(wifdata))
 	} else {
-		pridata, err := ioutil.ReadFile(bts.priFile)
+		pridata, err := tools.SafeReadFile(bts.priFile)
 		if err != nil {
 			log.Fatal("Read private key file failed", "err", err)
 		}

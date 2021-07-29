@@ -142,7 +142,6 @@ func TestNewContractAddress(t *testing.T) {
 func TestLoadECDSAFile(t *testing.T) {
 	keyBytes := common.FromHex(testPrivHex)
 	fileName0 := "test_key0"
-	fileName1 := "test_key1"
 	checkKey := func(k *ecdsa.PrivateKey) {
 		checkAddr(t, PubkeyToAddress(k.PublicKey), common.HexToAddress(testAddrHex))
 		loadedKeyBytes := FromECDSA(k)
@@ -151,7 +150,7 @@ func TestLoadECDSAFile(t *testing.T) {
 		}
 	}
 
-	_ = ioutil.WriteFile(fileName0, []byte(testPrivHex), 0600)
+	_ = ioutil.WriteFile(fileName0, []byte(testPrivHex), 0400)
 	defer os.Remove(fileName0)
 
 	key0, err := LoadECDSA(fileName0)
@@ -159,19 +158,6 @@ func TestLoadECDSAFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkKey(key0)
-
-	// again, this time with SaveECDSA instead of manual save:
-	err = SaveECDSA(fileName1, key0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(fileName1)
-
-	key1, err := LoadECDSA(fileName1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkKey(key1)
 }
 
 func TestValidateSignatureValues(t *testing.T) {

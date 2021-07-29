@@ -28,10 +28,12 @@ package keystore
 import (
 	"bytes"
 	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -64,6 +66,9 @@ const (
 	scryptR     = 8
 	scryptDKLen = 32
 )
+
+// ErrDecrypt decrypt error
+var ErrDecrypt = errors.New("could not decrypt key with given password")
 
 // EncryptDataV3 encrypts the data given as 'data' with the password 'auth'.
 func EncryptDataV3(data, auth []byte, scryptN, scryptP int) (CryptoJSON, error) {
@@ -127,36 +132,20 @@ func EncryptKey(key *Key, auth string, scryptN, scryptP int) ([]byte, error) {
 
 // DecryptKey decrypts a key from a json blob, returning the private key itself.
 func DecryptKey(keyjson []byte, auth string) (*Key, error) {
-	// Parse the json into a simple map to fetch the key version
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(keyjson, &m); err != nil {
+	k := new(encryptedKeyJSONV3)
+	err := json.Unmarshal(keyjson, k)
+	if err != nil {
 		return nil, err
 	}
-	// Depending on the version try to parse one way or another
-	var (
-		keyBytes, keyID []byte
-		err             error
-	)
-	if version, ok := m["version"].(string); ok && version == "1" {
-		k := new(encryptedKeyJSONV1)
-		err = json.Unmarshal(keyjson, k)
-		if err != nil {
-			return nil, err
-		}
-		keyBytes, keyID, err = decryptKeyV1(k, auth)
-	} else {
-		k := new(encryptedKeyJSONV3)
-		err = json.Unmarshal(keyjson, k)
-		if err != nil {
-			return nil, err
-		}
-		keyBytes, keyID, err = decryptKeyV3(k, auth)
-	}
+	keyBytes, keyID, err := decryptKeyV3(k, auth)
 	// Handle any decryption errors and return the key
 	if err != nil {
 		return nil, err
 	}
-	key := crypto.ToECDSAUnsafe(keyBytes)
+	key, err := crypto.ToECDSA(keyBytes)
+	if err != nil {
+		return nil, ErrDecrypt
+	}
 
 	return &Key{
 		ID:         uuid.UUID(keyID),
@@ -214,40 +203,6 @@ func decryptKeyV3(keyProtected *encryptedKeyJSONV3, auth string) (keyBytes, keyI
 	return plainText, keyID, err
 }
 
-func decryptKeyV1(keyProtected *encryptedKeyJSONV1, auth string) (keyBytes, keyID []byte, err error) {
-	keyID = uuid.Parse(keyProtected.ID)
-	mac, err := hex.DecodeString(keyProtected.Crypto.MAC)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	iv, err := hex.DecodeString(keyProtected.Crypto.CipherParams.IV)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	cipherText, err := hex.DecodeString(keyProtected.Crypto.CipherText)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	derivedKey, err := getKDFKey(&keyProtected.Crypto, auth)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	calculatedMAC := crypto.Keccak256(derivedKey[16:32], cipherText)
-	if !bytes.Equal(calculatedMAC, mac) {
-		return nil, nil, ErrDecrypt
-	}
-
-	plainText, err := aesCBCDecrypt(crypto.Keccak256(derivedKey[:16])[:16], cipherText, iv)
-	if err != nil {
-		return nil, nil, err
-	}
-	return plainText, keyID, err
-}
-
 func getKDFKey(cryptoJSON *CryptoJSON, auth string) ([]byte, error) {
 	authArray := []byte(auth)
 	salt, err := hex.DecodeString(cryptoJSON.KDFParams["salt"].(string))
@@ -283,4 +238,16 @@ func ensureInt(x interface{}) int {
 		res = int(x.(float64))
 	}
 	return res
+}
+
+func aesCTRXOR(key, inText, iv []byte) ([]byte, error) {
+	// AES-128 is selected due to size of encryptKey.
+	aesBlock, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	stream := cipher.NewCTR(aesBlock, iv)
+	outText := make([]byte, len(inText))
+	stream.XORKeyStream(outText, inText)
+	return outText, err
 }

@@ -152,7 +152,7 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 
 // GetTransactionStatus returns tx status
 // call rest api "/txs/{txhash}"
-func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
+func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, err1 error) {
 	status = &tokens.TxStatus{
 		// Receipt
 		//Confirmations
@@ -179,11 +179,13 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 		err = CDC.UnmarshalJSON(resp.Body(), &txResult)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTransactionStatus", "resp", string(resp.Body()))
+			err1 = err
 			return
 		}
 		tx := txResult.Tx
 		err = tx.ValidateBasic()
 		if err != nil {
+			err1 = err
 			return
 		}
 		if txResult.Code != 0 {
@@ -200,7 +202,6 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus) {
 		if txResult.Code == 0 && status.BlockHeight > 0 {
 			status.PrioriFinalized = true // asserts that tx has finalized, no need to check everything again
 		}
-
 		return
 	}
 	return

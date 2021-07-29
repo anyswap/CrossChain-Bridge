@@ -7,53 +7,79 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tools/rlp"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
+var (
+	errEmptyURLs      = errors.New("empty URLs")
+	errTxHashMismatch = errors.New("tx hash mismatch with rpc result")
+)
+
 // GetLatestBlockNumberOf call eth_blockNumber
-func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
+func (b *Bridge) GetLatestBlockNumberOf(url string) (latest uint64, err error) {
 	var result string
-	url := apiAddress
-	err := client.RPCPost(&result, url, "eth_blockNumber")
+	err = client.RPCPost(&result, url, "eth_blockNumber")
 	if err == nil {
 		return common.GetUint64FromStr(result)
 	}
-	return 0, err
+	return 0, tokens.ErrRPCQueryError
 }
 
 // GetLatestBlockNumber call eth_blockNumber
 func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
 	gateway := b.GatewayConfig
-	var result string
-	var err error
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
-		err = client.RPCPost(&result, url, "eth_blockNumber")
-		if err == nil {
-			return common.GetUint64FromStr(result)
-		}
+	maxHeight, err := getMaxLatestBlockNumber(gateway.APIAddress)
+	if maxHeight > 0 {
+		tokens.CmpAndSetLatestBlockHeight(maxHeight, b.IsSrcEndpoint())
+		return maxHeight, nil
 	}
 	return 0, err
+}
+
+func getMaxLatestBlockNumber(urls []string) (maxHeight uint64, err error) {
+	if len(urls) == 0 {
+		return 0, errEmptyURLs
+	}
+	var result string
+	for _, url := range urls {
+		err = client.RPCPost(&result, url, "eth_blockNumber")
+		if err == nil {
+			height, _ := common.GetUint64FromStr(result)
+			if height > maxHeight {
+				maxHeight = height
+			}
+		}
+	}
+	if maxHeight > 0 {
+		return maxHeight, nil
+	}
+	return 0, tokens.ErrRPCQueryError
 }
 
 // GetBlockByHash call eth_getBlockByHash
 func (b *Bridge) GetBlockByHash(blockHash string) (*types.RPCBlock, error) {
 	gateway := b.GatewayConfig
-	var result *types.RPCBlock
-	var err error
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
+	return getBlockByHash(blockHash, gateway.APIAddress)
+}
+
+func getBlockByHash(blockHash string, urls []string) (result *types.RPCBlock, err error) {
+	if len(urls) == 0 {
+		return nil, errEmptyURLs
+	}
+	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getBlockByHash", blockHash, false)
 		if err == nil && result != nil {
 			return result, nil
 		}
 	}
-	if result == nil {
-		return nil, errors.New("block not found")
+	if err != nil {
+		return nil, tokens.ErrRPCQueryError
 	}
-	return nil, err
+	return nil, errors.New("block not found")
 }
 
 // GetBlockByNumber call eth_getBlockByNumber
@@ -61,35 +87,78 @@ func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
 	gateway := b.GatewayConfig
 	var result *types.RPCBlock
 	var err error
+	blockNumber := types.ToBlockNumArg(number)
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress
-		err = client.RPCPost(&result, url, "eth_getBlockByNumber", types.ToBlockNumArg(number), false)
+		err = client.RPCPost(&result, url, "eth_getBlockByNumber", blockNumber, false)
 		if err == nil && result != nil {
 			return result, nil
 		}
 	}
-	if result == nil {
-		return nil, errors.New("block not found")
+	if err != nil {
+		return nil, tokens.ErrRPCQueryError
 	}
-	return nil, err
+	return nil, errors.New("block not found")
+}
+
+// GetBlockHash impl
+func (b *Bridge) GetBlockHash(height uint64) (hash string, err error) {
+	gateway := b.GatewayConfig
+	return b.GetBlockHashOf(gateway.APIAddress, height)
+}
+
+// GetBlockHashOf impl
+func (b *Bridge) GetBlockHashOf(urls []string, height uint64) (hash string, err error) {
+	if len(urls) == 0 {
+		return "", errEmptyURLs
+	}
+	blockNumber := types.ToBlockNumArg(new(big.Int).SetUint64(height))
+	var block *types.RPCBaseBlock
+	for _, url := range urls {
+		err = client.RPCPost(&block, url, "eth_getBlockByNumber", blockNumber, false)
+		if err == nil && block != nil {
+			return block.Hash.Hex(), nil
+		}
+	}
+	if err != nil {
+		return "", tokens.ErrRPCQueryError
+	}
+	return "", errors.New("block not found")
+}
+
+// GetTransaction impl
+func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
+	gateway := b.GatewayConfig
+	tx, err = getTransactionByHash(txHash, gateway.APIAddress)
+	if err != nil && !errors.Is(err, errTxHashMismatch) && len(gateway.APIAddressExt) > 0 {
+		tx, err = getTransactionByHash(txHash, gateway.APIAddressExt)
+	}
+	return tx, err
 }
 
 // GetTransactionByHash call eth_getTransactionByHash
 func (b *Bridge) GetTransactionByHash(txHash string) (*types.RPCTransaction, error) {
 	gateway := b.GatewayConfig
-	var result *types.RPCTransaction
-	var err error
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
+	return getTransactionByHash(txHash, gateway.APIAddress)
+}
+
+func getTransactionByHash(txHash string, urls []string) (result *types.RPCTransaction, err error) {
+	if len(urls) == 0 {
+		return nil, errEmptyURLs
+	}
+	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionByHash", txHash)
 		if err == nil && result != nil {
+			if !common.IsEqualIgnoreCase(result.Hash.Hex(), txHash) {
+				return nil, errTxHashMismatch
+			}
 			return result, nil
 		}
 	}
-	if result == nil {
-		return nil, errors.New("tx not found")
+	if err != nil {
+		return nil, tokens.ErrRPCQueryError
 	}
-	return nil, err
+	return nil, errors.New("tx not found")
 }
 
 // GetPendingTransactions call eth_pendingTransactions
@@ -102,25 +171,58 @@ func (b *Bridge) GetPendingTransactions() (result []*types.RPCTransaction, err e
 			return result, nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
+}
+
+// GetTxBlockInfo impl
+func (b *Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
+	var useExt bool
+	gateway := b.GatewayConfig
+	receipt, _, _ := getTransactionReceipt(txHash, gateway.APIAddress)
+	if receipt == nil && len(gateway.APIAddressExt) > 0 {
+		useExt = true
+		receipt, _, _ = getTransactionReceipt(txHash, gateway.APIAddressExt)
+	}
+	if receipt == nil {
+		return 0, 0
+	}
+	blockHeight = receipt.BlockNumber.ToInt().Uint64()
+	if !useExt {
+		block, err := b.GetBlockByHash(receipt.BlockHash.Hex())
+		if err == nil {
+			blockTime = block.Time.ToInt().Uint64()
+		}
+	}
+	return blockHeight, blockTime
 }
 
 // GetTransactionReceipt call eth_getTransactionReceipt
-func (b *Bridge) GetTransactionReceipt(txHash string) (*types.RPCTxReceipt, error) {
+func (b *Bridge) GetTransactionReceipt(txHash string) (receipt *types.RPCTxReceipt, url string, err error) {
 	gateway := b.GatewayConfig
-	var result *types.RPCTxReceipt
-	var err error
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
+	receipt, url, err = getTransactionReceipt(txHash, gateway.APIAddress)
+	if err != nil && !errors.Is(err, errTxHashMismatch) && len(gateway.APIAddressExt) > 0 {
+		return getTransactionReceipt(txHash, gateway.APIAddressExt)
+	}
+	return receipt, url, err
+}
+
+func getTransactionReceipt(txHash string, urls []string) (result *types.RPCTxReceipt, rpcURL string, err error) {
+	if len(urls) == 0 {
+		return nil, "", errEmptyURLs
+	}
+	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionReceipt", txHash)
 		if err == nil && result != nil {
-			return result, nil
+			if !common.IsEqualIgnoreCase(result.TxHash.Hex(), txHash) {
+				return nil, "", errTxHashMismatch
+			}
+			return result, url, nil
 		}
 	}
-	if result == nil {
-		return nil, errors.New("tx receipt not found")
+	if err != nil {
+		return nil, "", tokens.ErrRPCQueryError
 	}
-	return nil, err
+	return nil, "", errors.New("tx receipt not found")
 }
 
 // GetContractLogs get contract logs
@@ -150,57 +252,120 @@ func (b *Bridge) GetLogs(filterQuery *types.FilterQuery) (result []*types.RPCLog
 			return result, nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }
 
 // GetPoolNonce call eth_getTransactionCount
 func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 	account := common.HexToAddress(address)
 	gateway := b.GatewayConfig
+	return getMaxPoolNonce(account, height, gateway.APIAddress)
+}
+
+func getMaxPoolNonce(account common.Address, height string, urls []string) (maxNonce uint64, err error) {
+	if len(urls) == 0 {
+		return 0, errEmptyURLs
+	}
+	var success bool
 	var result hexutil.Uint64
-	var err error
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
+	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionCount", account, height)
 		if err == nil {
-			return uint64(result), nil
+			success = true
+			if uint64(result) > maxNonce {
+				maxNonce = uint64(result)
+			}
 		}
 	}
-	return 0, err
+	if success {
+		return maxNonce, nil
+	}
+	return 0, tokens.ErrRPCQueryError
 }
 
 // SuggestPrice call eth_gasPrice
-func (b *Bridge) SuggestPrice() (*big.Int, error) {
+func (b *Bridge) SuggestPrice() (maxGasPrice *big.Int, err error) {
 	gateway := b.GatewayConfig
-	var result hexutil.Big
-	var err error
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
-		err = client.RPCPost(&result, url, "eth_gasPrice")
-		if err == nil {
-			return result.ToInt(), nil
+	if len(gateway.APIAddressExt) > 0 {
+		maxGasPrice, err = getMaxGasPrice(gateway.APIAddressExt)
+	}
+	maxGasPrice2, err2 := getMaxGasPrice(gateway.APIAddress)
+	if err2 == nil {
+		if maxGasPrice == nil || maxGasPrice2.Cmp(maxGasPrice) > 0 {
+			maxGasPrice = maxGasPrice2
 		}
+	} else {
+		err = err2
+	}
+	if maxGasPrice != nil {
+		return maxGasPrice, nil
 	}
 	return nil, err
 }
 
+func getMaxGasPrice(urls []string) (maxGasPrice *big.Int, err error) {
+	if len(urls) == 0 {
+		return nil, errEmptyURLs
+	}
+	var success bool
+	var result hexutil.Big
+	for _, url := range urls {
+		err = client.RPCPost(&result, url, "eth_gasPrice")
+		if err == nil {
+			success = true
+			if maxGasPrice == nil || result.ToInt().Cmp(maxGasPrice) > 0 {
+				maxGasPrice = result.ToInt()
+			}
+		}
+	}
+	if success {
+		return maxGasPrice, nil
+	}
+	return nil, tokens.ErrRPCQueryError
+}
+
 // SendSignedTransaction call eth_sendRawTransaction
-func (b *Bridge) SendSignedTransaction(tx *types.Transaction) error {
+func (b *Bridge) SendSignedTransaction(tx *types.Transaction) (txHash string, err error) {
 	data, err := rlp.EncodeToBytes(tx)
 	if err != nil {
-		return err
+		return "", err
 	}
 	hexData := common.ToHex(data)
 	gateway := b.GatewayConfig
-	var result interface{}
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
+	txHash, _ = sendRawTransaction(hexData, gateway.APIAddressExt)
+	txHash2, err := sendRawTransaction(hexData, gateway.APIAddress)
+	if txHash != "" {
+		return txHash, nil
+	}
+	if txHash2 != "" {
+		return txHash2, nil
+	}
+	return "", err
+}
+
+func sendRawTransaction(hexData string, urls []string) (txHash string, err error) {
+	if len(urls) == 0 {
+		return "", errEmptyURLs
+	}
+	var result string
+	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_sendRawTransaction", hexData)
-		if err == nil {
-			return nil
+		if err != nil {
+			log.Trace("call eth_sendRawTransaction failed", "txHash", result, "url", url, "err", err)
+			continue
+		}
+		log.Trace("call eth_sendRawTransaction success", "txHash", result, "url", url)
+		if txHash == "" {
+			txHash = result
 		}
 	}
-	return err
+	if txHash != "" {
+		return txHash, nil
+	}
+	if err != nil {
+		return "", tokens.ErrRPCQueryError
+	}
+	return "", errors.New("call eth_sendRawTransaction failed")
 }
 
 // ChainID call eth_chainId
@@ -216,7 +381,7 @@ func (b *Bridge) ChainID() (*big.Int, error) {
 			return result.ToInt(), nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }
 
 // NetworkID call net_version
@@ -235,22 +400,47 @@ func (b *Bridge) NetworkID() (*big.Int, error) {
 			return version, nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
+}
+
+// GetSignerChainID default way to get signer chain id
+// use chain ID first, if missing then use network ID instead.
+// normally this way works, but sometimes it failed (eg. ETC),
+// then we should overwrite this function
+func (b *Bridge) GetSignerChainID() (*big.Int, error) {
+	chainID, err := b.ChainID()
+	if err != nil {
+		return nil, err
+	}
+	if chainID.Sign() != 0 {
+		return chainID, nil
+	}
+	return b.NetworkID()
 }
 
 // GetCode call eth_getCode
-func (b *Bridge) GetCode(contract string) ([]byte, error) {
+func (b *Bridge) GetCode(contract string) (code []byte, err error) {
 	gateway := b.GatewayConfig
+	code, err = getCode(contract, gateway.APIAddress)
+	if err != nil && len(gateway.APIAddressExt) > 0 {
+		return getCode(contract, gateway.APIAddressExt)
+	}
+	return code, err
+}
+
+func getCode(contract string, urls []string) ([]byte, error) {
+	if len(urls) == 0 {
+		return nil, errEmptyURLs
+	}
 	var result hexutil.Bytes
 	var err error
-	for _, apiAddress := range gateway.APIAddress {
-		url := apiAddress
+	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getCode", contract, "latest")
 		if err == nil {
 			return []byte(result), nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }
 
 // CallContract call eth_call
@@ -269,7 +459,7 @@ func (b *Bridge) CallContract(contract string, data hexutil.Bytes, blockNumber s
 			return result, nil
 		}
 	}
-	return "", err
+	return "", tokens.ErrRPCQueryError
 }
 
 // GetBalance call eth_getBalance
@@ -284,5 +474,5 @@ func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 			return result.ToInt(), nil
 		}
 	}
-	return nil, err
+	return nil, tokens.ErrRPCQueryError
 }

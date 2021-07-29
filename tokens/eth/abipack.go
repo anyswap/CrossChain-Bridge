@@ -20,6 +20,7 @@ func PackDataWithFuncHash(funcHash []byte, args ...interface{}) []byte {
 }
 
 // PackData pack data
+// nolint:makezero // keep it
 func PackData(args ...interface{}) []byte {
 	lenArgs := len(args)
 	bs := make([]byte, lenArgs*32)
@@ -29,6 +30,10 @@ func PackData(args ...interface{}) []byte {
 			copy(bs[i*32:], packHash(v))
 		case common.Address:
 			copy(bs[i*32:], packAddress(v))
+		case []common.Address:
+			offset := big.NewInt(int64(len(bs)))
+			copy(bs[i*32:], packBigInt(offset))
+			bs = append(bs, packAddressSlice(v)...)
 		case *big.Int:
 			copy(bs[i*32:(i+1)*32], packBigInt(v))
 		case string:
@@ -73,5 +78,15 @@ func packString(str string) []byte {
 	copy(bs[:32], packBigInt(big.NewInt(int64(strLen))))
 	copy(bs[32:], str)
 
+	return bs
+}
+
+func packAddressSlice(addrs []common.Address) []byte {
+	length := len(addrs)
+	bs := make([]byte, (1+length)*32)
+	copy(bs[:32], packBigInt(big.NewInt(int64(length))))
+	for i, addr := range addrs {
+		copy(bs[(i+1)*32:], addr.Hash().Bytes())
+	}
 	return bs
 }

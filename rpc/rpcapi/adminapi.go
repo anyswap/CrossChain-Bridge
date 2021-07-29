@@ -3,6 +3,7 @@ package rpcapi
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/admin"
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -20,7 +21,6 @@ const (
 	passSwapoutOp = "passswapout"
 	failSwapinOp  = "failswapin"
 	failSwapoutOp = "failswapout"
-	forceFlag     = "--force"
 )
 
 // AdminCall admin call
@@ -54,6 +54,8 @@ func doCall(args *admin.CallArgs, result *string) error {
 		return reverify(args, result)
 	case "reswap":
 		return reswap(args, result)
+	case "replaceswap":
+		return replaceswap(args, result)
 	case "manual":
 		return manual(args, result)
 	case "setnonce":
@@ -129,7 +131,7 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 	}
 	operation := args.Params[0]
 	direction := args.Params[1]
-	pairID := args.Params[2]
+	pairIDs := args.Params[2]
 
 	var newDisableFlag bool
 	switch operation {
@@ -155,29 +157,43 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 		return fmt.Errorf("unknown direction '%v'", direction)
 	}
 
-	if isDeposit {
-		tokenCfg := tokens.GetTokenConfig(pairID, true)
-		if tokenCfg == nil {
-			return fmt.Errorf("pairID %v is not configed", pairID)
-		}
-		tokenCfg.DisableSwap = newDisableFlag
+	var pairIDSlice []string
+	if strings.EqualFold(pairIDs, "all") {
+		pairIDSlice = tokens.GetAllPairIDs()
+	} else {
+		pairIDSlice = strings.Split(pairIDs, ",")
 	}
 
-	if isWithdraw {
-		tokenCfg := tokens.GetTokenConfig(pairID, false)
-		if tokenCfg == nil {
-			return fmt.Errorf("pairID %v is not configed", pairID)
+	var successPairs, failedPairs string
+	for _, pairID := range pairIDSlice {
+		pairCfg := tokens.GetTokenPairConfig(pairID)
+		if pairCfg == nil {
+			failedPairs += " " + pairID
+			continue
 		}
-		tokenCfg.DisableSwap = newDisableFlag
+		if isDeposit {
+			pairCfg.SrcToken.DisableSwap = newDisableFlag
+		}
+
+		if isWithdraw {
+			pairCfg.DestToken.DisableSwap = newDisableFlag
+		}
+
+		successPairs += " " + pairID
 	}
 
-	*result = successReuslt
+	resultStr := "success: " + successPairs
+	if failedPairs != "" {
+		resultStr += ", failed: " + failedPairs
+	}
+
+	*result = resultStr
 	return nil
 }
 
-func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID, bind, forceOpt string, err error) {
-	if !(len(args.Params) == 4 || len(args.Params) == 5) {
-		err = fmt.Errorf("wrong number of params, have %v want 4 or 5", len(args.Params))
+func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID, bind string, err error) {
+	if len(args.Params) != 4 {
+		err = fmt.Errorf("wrong number of params, have %v want 4", len(args.Params))
 		return
 	}
 	operation = args.Params[0]
@@ -185,18 +201,11 @@ func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID, bind, forc
 	pairID = args.Params[2]
 	bind = args.Params[3]
 
-	if len(args.Params) > 4 {
-		forceOpt = args.Params[4]
-		if forceOpt != forceFlag {
-			err = fmt.Errorf("wrong force flag %v, must be %v", forceOpt, forceFlag)
-			return
-		}
-	}
-	return operation, txid, pairID, bind, forceOpt, nil
+	return operation, txid, pairID, bind, nil
 }
 
 func reverify(args *admin.CallArgs, result *string) (err error) {
-	operation, txid, pairID, bind, _, err := getOpTxAndPairID(args)
+	operation, txid, pairID, bind, err := getOpTxAndPairID(args)
 	if err != nil {
 		return err
 	}
@@ -216,22 +225,52 @@ func reverify(args *admin.CallArgs, result *string) (err error) {
 }
 
 func reswap(args *admin.CallArgs, result *string) (err error) {
-	operation, txid, pairID, bind, forceOpt, err := getOpTxAndPairID(args)
+	operation, txid, pairID, bind, err := getOpTxAndPairID(args)
 	if err != nil {
 		return err
 	}
+	var isSwapin bool
 	switch operation {
 	case swapinOp:
-		err = mongodb.Reswapin(txid, pairID, bind, forceOpt)
+		isSwapin = true
+		err = mongodb.Reswapin(txid, pairID, bind)
 	case swapoutOp:
-		err = mongodb.Reswapout(txid, pairID, bind, forceOpt)
+		err = mongodb.Reswapout(txid, pairID, bind)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
 	if err != nil {
 		return err
 	}
+	worker.DeleteCachedSwap(isSwapin, txid, bind)
 	*result = successReuslt
+	return nil
+}
+
+func replaceswap(args *admin.CallArgs, result *string) (err error) {
+	if len(args.Params) != 5 {
+		err = fmt.Errorf("wrong number of params, have %v want 5", len(args.Params))
+		return
+	}
+	operation := args.Params[0]
+	txid := args.Params[1]
+	pairID := args.Params[2]
+	bind := args.Params[3]
+	gasPrice := args.Params[4]
+
+	var txHash string
+	switch operation {
+	case swapinOp:
+		txHash, err = worker.ReplaceSwapin(txid, pairID, bind, gasPrice)
+	case swapoutOp:
+		txHash, err = worker.ReplaceSwapout(txid, pairID, bind, gasPrice)
+	default:
+		return fmt.Errorf("unknown operation '%v'", operation)
+	}
+	if err != nil {
+		return err
+	}
+	*result = successReuslt + " txHash is " + txHash
 	return nil
 }
 
@@ -281,7 +320,7 @@ func setnonce(args *admin.CallArgs, result *string) (err error) {
 	operation := args.Params[0]
 	nonce, err := common.GetUint64FromStr(args.Params[1])
 	if err != nil {
-		return fmt.Errorf("wrong nonce value, %v", err)
+		return fmt.Errorf("wrong nonce value, %w", err)
 	}
 	pairID := args.Params[2]
 	var bridge tokens.CrossChainBridge

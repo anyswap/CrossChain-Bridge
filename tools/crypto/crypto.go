@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"os"
 
@@ -168,6 +167,13 @@ func HexToECDSA(hexkey string) (*ecdsa.PrivateKey, error) {
 // LoadECDSA loads a secp256k1 private key from the given file.
 func LoadECDSA(file string) (*ecdsa.PrivateKey, error) {
 	buf := make([]byte, 64)
+	fi, err := os.Stat(file)
+	if err != nil {
+		return nil, err
+	}
+	if fi.Mode() != 0400 {
+		return nil, errors.New("unsafe file permissions, want 0400")
+	}
 	fd, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -182,13 +188,6 @@ func LoadECDSA(file string) (*ecdsa.PrivateKey, error) {
 		return nil, err
 	}
 	return ToECDSA(key)
-}
-
-// SaveECDSA saves a secp256k1 private key to the given file with
-// restrictive permissions. The key data is saved hex-encoded.
-func SaveECDSA(file string, key *ecdsa.PrivateKey) error {
-	k := hex.EncodeToString(FromECDSA(key))
-	return ioutil.WriteFile(file, []byte(k), 0600)
 }
 
 // GenerateKey generate key

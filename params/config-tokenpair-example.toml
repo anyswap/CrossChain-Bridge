@@ -33,6 +33,10 @@ PlusGasPricePercentage = 15 # plus 15% gas price
 BigValueThreshold = 5.0
 # disable deposit function if this flag is true
 DisableSwap = false
+# default gas limit
+DefaultGasLimit = 90000
+# allow swapin from contract address
+AllowSwapinFromContract = false
 
 # dest token config
 [DestToken]
@@ -64,3 +68,7 @@ PlusGasPricePercentage = 1 # plus 1% gas price
 BigValueThreshold = 50.0
 # disable withdraw function if this flag is true
 DisableSwap = false
+# default gas limit
+DefaultGasLimit = 90000
+# allow swapout from contract address
+AllowSwapoutFromContract = false

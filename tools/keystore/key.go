@@ -38,13 +38,6 @@ type encryptedKeyJSONV3 struct {
 	Version int        `json:"version"`
 }
 
-type encryptedKeyJSONV1 struct {
-	Address string     `json:"address"`
-	Crypto  CryptoJSON `json:"crypto"`
-	ID      string     `json:"id"`
-	Version string     `json:"version"`
-}
-
 // CryptoJSON struct
 type CryptoJSON struct {
 	Cipher       string                 `json:"cipher"`

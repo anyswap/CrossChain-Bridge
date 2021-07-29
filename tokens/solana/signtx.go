@@ -83,7 +83,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	msgHash := buf.Bytes()
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
-	rpcAddr, keyID, err := dcrm.DoSignED25519One(b.GetDcrmPublicKey(args.PairID), fmt.Sprintf("%X", msgHash), msgContext)
+	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), fmt.Sprintf("%X", msgHash), msgContext, "ED25519")
 	if err != nil {
 		return nil, "", err
 	}
@@ -93,7 +93,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	var rsv string
 	i := 0
 	for ; i < retryGetSignStatusCount; i++ {
-		signStatus, err2 := dcrm.GetSignStatus(keyID, rpcAddr)
+		signStatus, err2 := dcrm.GetSignStatus(keyID[0], rpcAddr)
 		if err2 == nil {
 			if len(signStatus.Rsv) != 1 {
 				return nil, "", fmt.Errorf("get sign status require one rsv but have %v (keyID = %v)", len(signStatus.Rsv), keyID)

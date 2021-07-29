@@ -11,12 +11,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-const (
-	netMainnet = "mainnet"
-	netKotti   = "kotti"
-	netMordor  = "mordor"
-)
-
 // Bridge etc bridge inherit from eth bridge
 type Bridge struct {
 	*eth.Bridge
@@ -24,7 +18,9 @@ type Bridge struct {
 
 // NewCrossChainBridge new etc bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	return &Bridge{Bridge: eth.NewCrossChainBridge(isSrc)}
+	bridge := &Bridge{Bridge: eth.NewCrossChainBridge(isSrc)}
+	bridge.Inherit = bridge
+	return bridge
 }
 
 // SetChainAndGateway set token and gateway config
@@ -37,9 +33,9 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
 	networkID := strings.ToLower(b.ChainConfig.NetID)
-	switch networkID {
-	case netMainnet:
-	default:
+	targetChainID := eth.GetChainIDOfNetwork(eth.EtcNetworkAndChainIDMap, networkID)
+	isCustom := eth.IsCustomNetwork(networkID)
+	if !isCustom && targetChainID == nil {
 		log.Fatalf("unsupported etc network: %v", b.ChainConfig.NetID)
 	}
 
@@ -49,8 +45,7 @@ func (b *Bridge) VerifyChainID() {
 	)
 
 	for {
-		// call NetworkID instead of ChainID as ChainID may return 0x0 wrongly
-		chainID, err = b.NetworkID() // network id
+		chainID, err = b.GetSignerChainID()
 		if err == nil {
 			break
 		}
@@ -59,30 +54,32 @@ func (b *Bridge) VerifyChainID() {
 		time.Sleep(3 * time.Second)
 	}
 
-	panicMismatchChainID := func() {
-		log.Fatalf("gateway chainID %v is not %v", chainID, b.ChainConfig.NetID)
+	if !isCustom && chainID.Cmp(targetChainID) != 0 {
+		log.Fatalf("gateway chainID '%v' is not '%v'", chainID, b.ChainConfig.NetID)
 	}
 
-	switch networkID {
-	case netMainnet:
-		if chainID.Uint64() != 1 {
-			panicMismatchChainID()
-		}
-		chainID = big.NewInt(61)
-	case netKotti:
-		if chainID.Uint64() != 6 {
-			panicMismatchChainID()
-		}
-	case netMordor:
-		if chainID.Uint64() != 7 {
-			panicMismatchChainID()
-		}
-		chainID = big.NewInt(63)
-	default:
-		log.Fatalf("unsupported etc network %v", networkID)
-	}
-
+	b.SignerChainID = chainID
 	b.Signer = types.MakeSigner("EIP155", chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
+}
+
+// GetSignerChainID override as its networkID is different of chainID
+func (b *Bridge) GetSignerChainID() (*big.Int, error) {
+	networkID, err := b.NetworkID()
+	if err != nil {
+		return nil, err
+	}
+	var chainID *big.Int
+	switch networkID.Uint64() {
+	case 1:
+		chainID = eth.EtcNetworkAndChainIDMap["mainnet"]
+	case 6:
+		chainID = eth.EtcNetworkAndChainIDMap["kotti"]
+	case 7:
+		chainID = eth.EtcNetworkAndChainIDMap["mordor"]
+	default:
+		log.Fatalf("unsupported etc network %v", networkID)
+	}
+	return chainID, nil
 }

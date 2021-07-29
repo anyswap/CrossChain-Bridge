@@ -1,9 +1,12 @@
 package mongodb
 
 import (
+	"errors"
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"gopkg.in/mgo.v2"
 )
@@ -13,6 +16,11 @@ var (
 	session  *mgo.Session
 
 	dialInfo *mgo.DialInfo
+
+	// MgoWaitGroup wait all mongodb related task done
+	MgoWaitGroup = new(sync.WaitGroup)
+
+	errSessionIsClosed = errors.New("session is closed")
 )
 
 // HasSession has session connected
@@ -35,12 +43,34 @@ func initDialInfo(addrs []string, db, user, pass string) {
 		Username: user,
 		Password: pass,
 	}
+
+	utils.TopWaitGroup.Add(1)
+	go utils.WaitAndCleanup(doCleanup)
+}
+
+func doCleanup() {
+	defer utils.TopWaitGroup.Done()
+	if !HasSession() {
+		return
+	}
+	err := session.Fsync(false)
+	if err != nil {
+		log.Warn("[mongodb] session flush failed", "err", err)
+	} else {
+		log.Info("[mongodb] session flush success")
+	}
+	MgoWaitGroup.Wait()
+	session.Close()
+	session = nil
+	log.Info("[mongodb] session close success")
 }
 
 func mongoConnect() {
-	if session != nil { // when reconnect
-		session.Close()
-	}
+	defer func(oldSession *mgo.Session) {
+		if oldSession != nil { // when reconnect
+			oldSession.Close()
+		}
+	}(session)
 	log.Info("[mongodb] connect database start.", "addrs", dialInfo.Addrs, "dbName", dialInfo.Database)
 	var err error
 	for {
@@ -63,6 +93,9 @@ func checkMongoSession() {
 	for {
 		time.Sleep(60 * time.Second)
 		if err := ensureMongoConnected(); err != nil {
+			if !HasSession() {
+				return
+			}
 			log.Info("[mongodb] check session error", "err", err)
 			log.Info("[mongodb] reconnect database", "dbName", dialInfo.Database)
 			mongoConnect()
@@ -89,6 +122,9 @@ func sessionPing() (err error) {
 func ensureMongoConnected() (err error) {
 	err = sessionPing()
 	if err != nil {
+		if !HasSession() {
+			return errSessionIsClosed
+		}
 		log.Error("[mongodb] session ping error", "err", err)
 		log.Info("[mongodb] refresh session.", "dbName", dialInfo.Database)
 		session.Refresh()

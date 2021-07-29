@@ -12,13 +12,16 @@ import (
 )
 
 const (
-	defaultAPIPort      = 11556
-	defServerConfigFile = "config.toml"
+	defaultAPIPort = 11556
 )
 
 var (
+	locDataDir        string
 	serverConfig      *ServerConfig
 	loadConfigStarter sync.Once
+
+	// IsSwapServer if true then it's swap server, otherwise it's swap oracle
+	IsSwapServer bool
 
 	// ServerAPIAddress server api address
 	ServerAPIAddress string
@@ -26,17 +29,19 @@ var (
 
 // ServerConfig config items (decode from toml file)
 type ServerConfig struct {
-	Identifier  string
-	MongoDB     *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
-	APIServer   *APIServerConfig `toml:",omitempty" json:",omitempty"`
-	SrcChain    *tokens.ChainConfig
-	SrcGateway  *tokens.GatewayConfig
-	DestChain   *tokens.ChainConfig
-	DestGateway *tokens.GatewayConfig
-	Dcrm        *DcrmConfig            `toml:",omitempty" json:",omitempty"`
-	Oracle      *OracleConfig          `toml:",omitempty" json:",omitempty"`
-	BtcExtra    *tokens.BtcExtraConfig `toml:",omitempty" json:",omitempty"`
-	Admins      []string               `toml:",omitempty" json:",omitempty"`
+	Identifier          string
+	MustRegisterAccount bool             `toml:",omitempty" json:",omitempty"`
+	MongoDB             *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
+	APIServer           *APIServerConfig `toml:",omitempty" json:",omitempty"`
+	SrcChain            *tokens.ChainConfig
+	SrcGateway          *tokens.GatewayConfig
+	DestChain           *tokens.ChainConfig
+	DestGateway         *tokens.GatewayConfig
+	Dcrm                *DcrmConfig            `toml:",omitempty" json:",omitempty"`
+	Oracle              *OracleConfig          `toml:",omitempty" json:",omitempty"`
+	BtcExtra            *tokens.BtcExtraConfig `toml:",omitempty" json:",omitempty"`
+	Extra               *ExtraConfig           `toml:",omitempty" json:",omitempty"`
+	Admins              []string               `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmConfig dcrm related config
@@ -78,6 +83,11 @@ type MongoDBConfig struct {
 	Password string `json:"-"`
 }
 
+// ExtraConfig extra config
+type ExtraConfig struct {
+	MinReserveFee string
+}
+
 // GetAPIPort get api service port
 func GetAPIPort() int {
 	apiPort := GetConfig().APIServer.Port
@@ -90,6 +100,16 @@ func GetAPIPort() int {
 // GetIdentifier get identifier (to distiguish in dcrm accept)
 func GetIdentifier() string {
 	return GetConfig().Identifier
+}
+
+// GetReplaceIdentifier get identifier (to distiguish in dcrm accept)
+func GetReplaceIdentifier() string {
+	return GetConfig().Identifier + ":replaceswap"
+}
+
+// MustRegisterAccount flag
+func MustRegisterAccount() bool {
+	return GetConfig().MustRegisterAccount
 }
 
 // IsDcrmEnabled is dcrm enabled (for dcrm sign)
@@ -117,16 +137,16 @@ func SetConfig(config *ServerConfig) {
 	serverConfig = config
 }
 
+// GetExtraConfig get extra config
+func GetExtraConfig() *ExtraConfig {
+	return GetConfig().Extra
+}
+
 // LoadConfig load config
 func LoadConfig(configFile string, isServer bool) *ServerConfig {
 	loadConfigStarter.Do(func() {
 		if configFile == "" {
-			// find config file in the execute directory (default).
-			dir, err := common.ExecuteDir()
-			if err != nil {
-				log.Fatalf("LoadConfig error (get ExecuteDir): %v", err)
-			}
-			configFile = common.AbsolutePath(dir, defServerConfigFile)
+			log.Fatalf("LoadConfig error: no config file specified")
 		}
 		log.Println("Config file is", configFile)
 		if !common.FileExist(configFile) {
@@ -135,6 +155,13 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 		config := &ServerConfig{}
 		if _, err := toml.DecodeFile(configFile, &config); err != nil {
 			log.Fatalf("LoadConfig error (toml DecodeFile): %v", err)
+		}
+
+		if isServer {
+			config.Oracle = nil
+		} else {
+			config.MongoDB = nil
+			config.APIServer = nil
 		}
 
 		SetConfig(config)
@@ -165,4 +192,25 @@ func IsAdmin(account string) bool {
 		}
 	}
 	return false
+}
+
+// SetDataDir set data dir
+func SetDataDir(dir string) {
+	if dir == "" {
+		if !IsSwapServer {
+			log.Warn("suggest specify '--datadir' to enhance accept job")
+		}
+		return
+	}
+	currDir, err := common.CurrentDir()
+	if err != nil {
+		log.Fatal("get current dir failed", "err", err)
+	}
+	locDataDir = common.AbsolutePath(currDir, dir)
+	log.Info("set data dir success", "datadir", locDataDir)
+}
+
+// GetDataDir get data dir
+func GetDataDir() string {
+	return locDataDir
 }

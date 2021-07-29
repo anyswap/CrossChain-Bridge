@@ -2,6 +2,7 @@ package params
 
 import (
 	"errors"
+	"math/big"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -14,6 +15,10 @@ func CheckConfig(isServer bool) (err error) {
 	if config.Identifier == "" {
 		return errors.New("server must config non empty 'Identifier'")
 	}
+	err = checkChainAndGatewayConfig()
+	if err != nil {
+		return err
+	}
 	if isServer {
 		if config.MongoDB == nil {
 			return errors.New("server must config 'MongoDB'")
@@ -21,18 +26,11 @@ func CheckConfig(isServer bool) (err error) {
 		if config.APIServer == nil {
 			return errors.New("server must config 'APIServer'")
 		}
-	} else {
-		if config.Oracle == nil {
-			return errors.New("oracle must config 'Oracle'")
-		}
+	} else if config.SrcChain.EnableScan || config.DestChain.EnableScan {
 		err = config.Oracle.CheckConfig()
 		if err != nil {
 			return err
 		}
-	}
-	err = checkChainAndGatewayConfig()
-	if err != nil {
-		return err
 	}
 	if config.Dcrm == nil {
 		return errors.New("server must config 'Dcrm'")
@@ -40,6 +38,12 @@ func CheckConfig(isServer bool) (err error) {
 	err = config.Dcrm.CheckConfig(isServer)
 	if err != nil {
 		return err
+	}
+	if config.Extra != nil {
+		err = config.Extra.CheckConfig()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -124,13 +128,16 @@ func (c *DcrmNodeConfig) CheckConfig(isServer bool) (err error) {
 
 // CheckConfig check oracle config
 func (c *OracleConfig) CheckConfig() (err error) {
+	if c == nil {
+		return errors.New("oracle must config 'Oracle'")
+	}
 	ServerAPIAddress = c.ServerAPIAddress
 	if ServerAPIAddress == "" {
 		return errors.New("oracle must config 'ServerAPIAddress'")
 	}
 	var version string
-	for {
-		err = client.RPCPost(&version, ServerAPIAddress, "swap.GetVersionInfo")
+	for i := 0; i < 5; i++ {
+		err = client.RPCPostWithTimeout(60, &version, ServerAPIAddress, "swap.GetVersionInfo")
 		if err == nil {
 			log.Info("oracle get server version info succeed", "version", version)
 			break
@@ -139,4 +146,16 @@ func (c *OracleConfig) CheckConfig() (err error) {
 		time.Sleep(3 * time.Second)
 	}
 	return err
+}
+
+// CheckConfig extra config
+func (c *ExtraConfig) CheckConfig() (err error) {
+	if c.MinReserveFee != "" {
+		bi, ok := new(big.Int).SetString(c.MinReserveFee, 10)
+		if !ok {
+			return errors.New("wrong 'MinReserveFee' in extra config")
+		}
+		log.Printf("MinReserveFee is %v", bi)
+	}
+	return nil
 }

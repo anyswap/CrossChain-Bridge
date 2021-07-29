@@ -6,6 +6,12 @@ import (
 )
 
 var (
+	// DataDirFlag --datadir
+	DataDirFlag = &cli.StringFlag{
+		Name:  "datadir",
+		Usage: "data directory",
+		Value: "",
+	}
 	// ConfigFileFlag -c|--config
 	ConfigFileFlag = &cli.StringFlag{
 		Name:    "config",
@@ -140,6 +146,11 @@ func SetLogger(ctx *cli.Context) {
 		logMaxAge := ctx.Uint64(LogMaxAgeFlag.Name)
 		log.SetLogFile(logFile, logRotation, logMaxAge)
 	}
+}
+
+// GetDataDir specified by `--datadir`
+func GetDataDir(ctx *cli.Context) string {
+	return ctx.String(DataDirFlag.Name)
 }
 
 // GetConfigFilePath specified by `-c|--config`

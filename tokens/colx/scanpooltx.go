@@ -1,4 +1,4 @@
-package eth
+package colx
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	scannedTxs = tools.NewCachedScannedTxs(300)
+	scannedTxs = tools.NewCachedScannedTxs(3000)
 )
 
 // StartPoolTransactionScanJob scan job
@@ -19,14 +19,13 @@ func (b *Bridge) StartPoolTransactionScanJob() {
 	errorSubject := fmt.Sprintf("[scanpool] get %v pool txs error", chainName)
 	scanSubject := fmt.Sprintf("[scanpool] scanned %v tx", chainName)
 	for {
-		txs, err := b.GetPendingTransactions()
+		txids, err := b.GetPoolTxidList()
 		if err != nil {
 			log.Error(errorSubject, "err", err)
 			time.Sleep(retryIntervalInScanJob)
 			continue
 		}
-		for _, tx := range txs {
-			txid := tx.Hash.String()
+		for _, txid := range txids {
 			if scannedTxs.IsTxScanned(txid) {
 				continue
 			}

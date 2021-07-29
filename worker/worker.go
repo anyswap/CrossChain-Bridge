@@ -11,32 +11,42 @@ const interval = 10 * time.Millisecond
 
 // StartWork start swap server work
 func StartWork(isServer bool) {
-	logWorker("worker", "start server worker")
+	if isServer {
+		logWorker("worker", "start server worker")
+	} else {
+		logWorker("worker", "start oracle worker")
+	}
 
 	client.InitHTTPClient()
 	bridge.InitCrossChainBridge(isServer)
 
-	go StartScanJob(isServer)
+	StartScanJob(isServer)
 	time.Sleep(interval)
 
-	go StartUpdateLatestBlockHeightJob()
+	StartUpdateLatestBlockHeightJob()
 	time.Sleep(interval)
 
 	if !isServer {
-		go StartAcceptSignJob()
+		StartAcceptSignJob()
 		time.Sleep(interval)
-		go AddTokenPairDynamically()
+		AddTokenPairDynamically()
 		return
 	}
 
-	go StartVerifyJob()
+	StartSwapJob()
 	time.Sleep(interval)
 
-	go StartSwapJob()
+	StartVerifyJob()
 	time.Sleep(interval)
 
-	go StartStableJob()
+	StartStableJob()
 	time.Sleep(interval)
 
-	go StartAggregateJob()
+	StartReplaceJob()
+	time.Sleep(interval)
+
+	StartPassBigValueJob()
+	time.Sleep(interval)
+
+	StartAggregateJob()
 }

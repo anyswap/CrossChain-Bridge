@@ -40,11 +40,12 @@ func GetServerInfo() (*ServerInfo, error) {
 		return nil, nil
 	}
 	return &ServerInfo{
-		Identifier: config.Identifier,
-		SrcChain:   config.SrcChain,
-		DestChain:  config.DestChain,
-		PairIDs:    tokens.GetAllPairIDs(),
-		Version:    params.VersionWithMeta,
+		Identifier:          config.Identifier,
+		MustRegisterAccount: config.MustRegisterAccount,
+		SrcChain:            config.SrcChain,
+		DestChain:           config.DestChain,
+		PairIDs:             tokens.GetAllPairIDs(),
+		Version:             params.VersionWithMeta,
 	}, nil
 }
 
@@ -55,6 +56,15 @@ func GetTokenPairInfo(pairID string) (*tokens.TokenPairConfig, error) {
 		return nil, errTokenPairNotExist
 	}
 	return pairCfg, nil
+}
+
+// GetNonceInfo api
+func GetNonceInfo() (*SwapNonceInfo, error) {
+	swapinNonces, swapoutNonces := mongodb.LoadAllSwapNonces()
+	return &SwapNonceInfo{
+		SwapinNonces:  swapinNonces,
+		SwapoutNonces: swapoutNonces,
+	}, nil
 }
 
 // GetSwapStatistics api
@@ -118,20 +128,20 @@ func GetSwapout(txid, pairID, bindAddr *string) (*SwapInfo, error) {
 func processHistoryLimit(limit int) int {
 	switch {
 	case limit == 0:
-		limit = 20
+		limit = 20 // default
 	case limit > 100:
 		limit = 100
-	case limit < 0:
-		limit = 1
+	case limit < -100:
+		limit = -100
 	}
 	return limit
 }
 
 // GetSwapinHistory api
-func GetSwapinHistory(address, pairID string, offset, limit int) ([]*SwapInfo, error) {
-	log.Debug("[api] receive GetSwapinHistory", "address", address, "pairID", pairID, "offset", offset, "limit", limit)
+func GetSwapinHistory(address, pairID string, offset, limit int, status string) ([]*SwapInfo, error) {
+	log.Debug("[api] receive GetSwapinHistory", "address", address, "pairID", pairID, "offset", offset, "limit", limit, "status", status)
 	limit = processHistoryLimit(limit)
-	result, err := mongodb.FindSwapinResults(address, pairID, offset, limit)
+	result, err := mongodb.FindSwapinResults(address, pairID, offset, limit, status)
 	if err != nil {
 		return nil, err
 	}
@@ -139,10 +149,10 @@ func GetSwapinHistory(address, pairID string, offset, limit int) ([]*SwapInfo, e
 }
 
 // GetSwapoutHistory api
-func GetSwapoutHistory(address, pairID string, offset, limit int) ([]*SwapInfo, error) {
+func GetSwapoutHistory(address, pairID string, offset, limit int, status string) ([]*SwapInfo, error) {
 	log.Debug("[api] receive GetSwapoutHistory", "address", address, "pairID", pairID, "offset", offset, "limit", limit)
 	limit = processHistoryLimit(limit)
-	result, err := mongodb.FindSwapoutResults(address, pairID, offset, limit)
+	result, err := mongodb.FindSwapoutResults(address, pairID, offset, limit, status)
 	if err != nil {
 		return nil, err
 	}
@@ -152,14 +162,7 @@ func GetSwapoutHistory(address, pairID string, offset, limit int) ([]*SwapInfo, 
 // Swapin api
 func Swapin(txid, pairID *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapin", "txid", *txid, "pairID", *pairID)
-	txidstr := *txid
-	pairIDStr := *pairID
-	swapInfo, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr, true)
-	err = addSwapToDatabase(txidstr, tokens.SwapinTx, swapInfo, err)
-	if err != nil {
-		return nil, err
-	}
-	return &SuccessPostResult, nil
+	return swap(txid, pairID, true)
 }
 
 // RetrySwapin api
@@ -170,6 +173,9 @@ func RetrySwapin(txid, pairID *string) (*PostResult, error) {
 	}
 	txidstr := *txid
 	pairIDStr := *pairID
+	if err := basicCheckSwapRegister(tokens.SrcBridge, pairIDStr); err != nil {
+		return nil, err
+	}
 	swapInfo, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr, true)
 	if err != nil {
 		return nil, newRPCError(-32099, "retry swapin failed! "+err.Error())
@@ -192,12 +198,42 @@ func RetrySwapin(txid, pairID *string) (*PostResult, error) {
 // Swapout api
 func Swapout(txid, pairID *string) (*PostResult, error) {
 	log.Debug("[api] receive Swapout", "txid", *txid, "pairID", *pairID)
+	return swap(txid, pairID, false)
+}
+
+func basicCheckSwapRegister(bridge tokens.CrossChainBridge, pairIDStr string) error {
+	tokenCfg := bridge.GetTokenConfig(pairIDStr)
+	if tokenCfg == nil {
+		return tokens.ErrUnknownPairID
+	}
+	if tokenCfg.DisableSwap {
+		return tokens.ErrSwapIsClosed
+	}
+	return nil
+}
+
+func swap(txid, pairID *string, isSwapin bool) (*PostResult, error) {
 	txidstr := *txid
 	pairIDStr := *pairID
-	swapInfo, err := tokens.DstBridge.VerifyTransaction(pairIDStr, txidstr, true)
-	err = addSwapToDatabase(txidstr, tokens.SwapoutTx, swapInfo, err)
+	bridge := tokens.GetCrossChainBridge(isSwapin)
+	if err := basicCheckSwapRegister(bridge, pairIDStr); err != nil {
+		return nil, err
+	}
+	swapInfo, err := bridge.VerifyTransaction(pairIDStr, txidstr, true)
+	var txType tokens.SwapTxType
+	if isSwapin {
+		txType = tokens.SwapinTx
+	} else {
+		txType = tokens.SwapoutTx
+	}
+	err = addSwapToDatabase(txidstr, txType, swapInfo, err)
 	if err != nil {
 		return nil, err
+	}
+	if isSwapin {
+		log.Info("[api] receive swapin register", "txid", txidstr, "pairID", pairIDStr)
+	} else {
+		log.Info("[api] receive swapout register", "txid", txidstr, "pairID", pairIDStr)
 	}
 	return &SuccessPostResult, nil
 }
@@ -294,6 +330,9 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	if swap, _ := mongodb.FindSwapin(txidstr, pairID, *bindAddr); swap != nil {
 		return nil, mongodb.ErrItemIsDup
 	}
+	if err := basicCheckSwapRegister(btc.BridgeInstance, pairID); err != nil {
+		return nil, err
+	}
 	swapInfo, err := btc.BridgeInstance.VerifyP2shTransaction(pairID, txidstr, *bindAddr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32099, "verify p2sh swapin failed! "+err.Error())
@@ -325,8 +364,11 @@ func GetLatestScanInfo(isSrc bool) (*LatestScanInfo, error) {
 	return mongodb.FindLatestScanInfo(isSrc)
 }
 
-// RegisterAddress register address
+// RegisterAddress register address for ETH like chain
 func RegisterAddress(address string) (*PostResult, error) {
+	if !params.MustRegisterAccount() {
+		return &SuccessPostResult, nil
+	}
 	address = strings.ToLower(address)
 	err := mongodb.AddRegisteredAddress(address)
 	if err != nil {

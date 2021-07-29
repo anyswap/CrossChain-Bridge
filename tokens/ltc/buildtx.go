@@ -52,11 +52,11 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	var (
 		pairID        = args.PairID
 		token         = b.GetTokenConfig(pairID)
-		from          = args.From
-		to            = args.To
-		changeAddress = args.From
-		amount        = args.Value
-		memo          = args.Memo
+		from          string
+		to            string
+		changeAddress string
+		amount        *big.Int
+		memo          string
 		relayFeePerKb ltcAmountType
 	)
 
@@ -73,6 +73,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		changeAddress = token.DcrmAddress                                 // change
 		amount = tokens.CalcSwappedValue(pairID, args.OriginValue, false) // amount
 		memo = tokens.UnlockMemoPrefix + args.SwapID
+	default:
+		return nil, tokens.ErrUnknownSwapType
 	}
 
 	if from == "" {

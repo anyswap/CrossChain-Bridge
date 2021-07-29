@@ -28,17 +28,27 @@ type BtcExtraConfig struct {
 
 // ChainConfig struct
 type ChainConfig struct {
-	BlockChain    string
-	NetID         string
-	Confirmations *uint64
-	InitialHeight *uint64
-	EnableScan    bool
+	BlockChain     string
+	NetID          string
+	Confirmations  *uint64
+	InitialHeight  *uint64
+	EnableScan     bool
+	EnableScanPool bool
+	ScanReceipt    bool `json:",omitempty"`
+
+	BaseGasPrice               string `json:",omitempty"`
+	MaxGasPriceFluctPercent    uint64 `json:",omitempty"`
+	ReplacePlusGasPricePercent uint64 `json:",omitempty"`
+	WaitTimeToReplace          int64  // seconds
+	MaxReplaceCount            int
+	EnableReplaceSwap          bool
 }
 
 // GatewayConfig struct
 type GatewayConfig struct {
-	APIAddress []string
-	Extras     *GatewayExtras
+	APIAddress    []string
+	APIAddressExt []string
+	Extras        *GatewayExtras
 }
 
 // GatewayExtras struct
@@ -87,8 +97,13 @@ type TokenConfig struct {
 	MinimumSwapFee         *float64
 	PlusGasPricePercentage uint64 `json:",omitempty"`
 	DisableSwap            bool
+	IsDelegateContract     bool
+	DelegateToken          string `json:",omitempty"`
+	IsAnyswapAdapter       bool   `json:",omitempty"`
 
-	DefaultGasLimit uint64 `json:",omitempty"`
+	DefaultGasLimit          uint64 `json:",omitempty"`
+	AllowSwapinFromContract  bool   `json:",omitempty"`
+	AllowSwapoutFromContract bool   `json:",omitempty"`
 
 	PrivateKeyType KeyType `json:"ecdsa"`
 
@@ -210,9 +225,11 @@ type BuildTxArgs struct {
 	To          string     `json:"to,omitempty"`
 	Value       *big.Int   `json:"value,omitempty"`
 	OriginValue *big.Int   `json:"originValue,omitempty"`
+	SwapValue   *big.Int   `json:"swapvalue,omitempty"`
 	Memo        string     `json:"memo,omitempty"`
 	Input       *[]byte    `json:"input,omitempty"`
 	Extra       *AllExtras `json:"extra,omitempty"`
+	ReplaceNum  uint64     `json:"replaceNum,omitempty"`
 }
 
 // GetExtraArgs get extra args
@@ -232,6 +249,26 @@ func (args *BuildTxArgs) GetTxNonce() uint64 {
 		return *args.Extra.EthExtra.Nonce
 	}
 	return 0
+}
+
+// SetTxNonce set tx nonce
+func (args *BuildTxArgs) SetTxNonce(nonce uint64) {
+	var extra *EthExtraArgs
+	if args.Extra == nil || args.Extra.EthExtra == nil {
+		extra = &EthExtraArgs{}
+		args.Extra = &AllExtras{EthExtra: extra}
+	} else {
+		extra = args.Extra.EthExtra
+	}
+	extra.Nonce = &nonce
+}
+
+// GetTxGasPrice get tx gas price
+func (args *BuildTxArgs) GetTxGasPrice() *big.Int {
+	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.GasPrice != nil {
+		return args.Extra.EthExtra.GasPrice
+	}
+	return nil
 }
 
 // AllExtras struct
@@ -282,11 +319,22 @@ func (c *ChainConfig) CheckConfig() error {
 	if c.InitialHeight == nil {
 		return errors.New("token must config 'InitialHeight'")
 	}
+	if c.MaxGasPriceFluctPercent > 100 {
+		return errors.New("'MaxGasPriceFluctPercent' is too large (>100)")
+	}
+	if c.ReplacePlusGasPricePercent > 100 {
+		return errors.New("'ReplacePlusGasPricePercent' is too large (>100)")
+	}
+	if c.BaseGasPrice != "" {
+		if _, err := common.GetBigIntFromStr(c.BaseGasPrice); err != nil {
+			return errors.New("wrong 'BaseGasPrice'")
+		}
+	}
 	return nil
 }
 
 // CheckConfig check token config
-//nolint:gocyclo // keep TokenConfig check as whole
+//nolint:funlen,gocyclo // keep TokenConfig check as whole
 func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if c.Decimals == nil {
 		return errors.New("token must config 'Decimals'")
@@ -318,8 +366,7 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if *c.SwapFeeRate == 0.0 && *c.MinimumSwapFee > 0.0 {
 		return errors.New("wrong token config, MinimumSwapFee should be 0 if SwapFeeRate is 0")
 	}
-	maxPlusGasPricePercentage := uint64(10000)
-	if c.PlusGasPricePercentage > maxPlusGasPricePercentage {
+	if c.PlusGasPricePercentage > MaxPlusGasPricePercentage {
 		return errors.New("too large 'PlusGasPricePercentage' value")
 	}
 	if c.BigValueThreshold == nil {
@@ -334,11 +381,39 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if !isSrc && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for destination chain")
 	}
-	if isSrc && c.IsErc20() && c.ContractAddress == "" {
+	if c.IsErc20() && c.ContractAddress == "" {
 		return errors.New("token must config 'ContractAddress' for ERC20 in source chain")
 	}
-	if isSrc && c.IsProxyErc20() && c.ContractCodeHash == "" {
-		return errors.New("token must config 'ContractCodeHash' for ProxyERC20 in source chain")
+	if c.AllowSwapinFromContract {
+		if !isSrc || !c.IsErc20() {
+			return errors.New("only source ERC20 token allow swapin from contract")
+		}
+	}
+	if c.IsProxyErc20() {
+		if !isSrc {
+			return errors.New("token ProxyERC20 is only support in source chain")
+		}
+		if c.ContractAddress == "" {
+			return errors.New("token ProxyERC20 must config 'ContractAddress'")
+		}
+		if c.ContractCodeHash == "" {
+			return errors.New("token ProxyERC20 must config 'ContractCodeHash'")
+		}
+	} else if c.ContractCodeHash != "" {
+		return errors.New("token forbid config 'ContractCodeHash' if it's not ProxyERC20")
+	}
+	if c.IsDelegateContract {
+		if c.ContractAddress == "" {
+			return errors.New("token must config 'ContractAddress' if 'IsDelegateContract' is true")
+		}
+		if c.DelegateToken == "" || !common.IsHexAddress(c.DelegateToken) {
+			return errors.New("wrong 'DelegateToken' address")
+		}
+		if c.IsProxyErc20() {
+			return errors.New("token can not be both IsDelegateContract and ProxyERC20")
+		}
+	} else if c.DelegateToken != "" {
+		return errors.New("token forbid config 'DelegateToken' if 'IsDelegateContract' is false")
 	}
 	// calc value and store
 	c.CalcAndStoreValue()
@@ -351,11 +426,12 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 
 // CalcAndStoreValue calc and store value (minus duplicate calculation)
 func (c *TokenConfig) CalcAndStoreValue() {
-	c.maxSwap = ToBits(*c.MaximumSwap, *c.Decimals)
-	c.minSwap = ToBits(*c.MinimumSwap, *c.Decimals)
+	smallBiasValue := 0.0001
+	c.maxSwap = ToBits(*c.MaximumSwap+smallBiasValue, *c.Decimals)
+	c.minSwap = ToBits(*c.MinimumSwap-smallBiasValue, *c.Decimals)
 	c.maxSwapFee = ToBits(*c.MaximumSwapFee, *c.Decimals)
 	c.minSwapFee = ToBits(*c.MinimumSwapFee, *c.Decimals)
-	c.bigValThreshhold = ToBits(*c.BigValueThreshold, *c.Decimals)
+	c.bigValThreshhold = ToBits(*c.BigValueThreshold+smallBiasValue, *c.Decimals)
 }
 
 // GetDcrmAddressPrivateKey get private key
@@ -373,7 +449,7 @@ func (c *TokenConfig) LoadDcrmAddressPrivateKey() error {
 	if c.DcrmAddressKeyFile != "" {
 		priKey, err := crypto.LoadECDSA(c.DcrmAddressKeyFile)
 		if err != nil {
-			return fmt.Errorf("wrong private key, %v", err)
+			return fmt.Errorf("wrong private key, %w", err)
 		}
 		c.dcrmAddressPriKey = priKey
 	} else if c.DcrmAddressKeyStore != "" {
