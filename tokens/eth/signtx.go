@@ -138,13 +138,9 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 
 // CalcTransactionHash calc tx hash
 func (b *Bridge) CalcTransactionHash(tx *types.Transaction) (txHash string, err error) {
-	if b.Inherit != nil {
-		impl, ok := b.Inherit.(interface {
-			CalcTransactionHashImpl(tx *types.Transaction) (txHash string, err error)
-		})
-		if ok {
-			return impl.CalcTransactionHashImpl(tx)
-		}
+	hash := tx.Hash()
+	if hash == common.EmptyHash {
+		return hash.Hex(), errors.New("empty tx hash")
 	}
 	return tx.Hash().Hex(), nil
 }
