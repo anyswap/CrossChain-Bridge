@@ -149,7 +149,7 @@ func getTransactionByHash(txHash string, urls []string) (result *types.RPCTransa
 	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionByHash", txHash)
 		if err == nil && result != nil {
-			if result.Hash.Hex() != txHash {
+			if !common.IsEqualIgnoreCase(result.Hash.Hex(), txHash) {
 				return nil, errTxHashMismatch
 			}
 			return result, nil
@@ -213,7 +213,7 @@ func getTransactionReceipt(txHash string, urls []string) (result *types.RPCTxRec
 	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionReceipt", txHash)
 		if err == nil && result != nil {
-			if result.TxHash.Hex() != txHash {
+			if !common.IsEqualIgnoreCase(result.TxHash.Hex(), txHash) {
 				return nil, "", errTxHashMismatch
 			}
 			return result, url, nil

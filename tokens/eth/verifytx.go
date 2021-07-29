@@ -67,8 +67,8 @@ func getTxByHash(b *Bridge, txHash string, withExt bool) (*types.RPCTransaction,
 // VerifyTransaction impl
 func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID // PairID
-	swapInfo.Hash = txHash   // Hash
+	swapInfo.PairID = pairID                // PairID
+	swapInfo.Hash = strings.ToLower(txHash) // Hash
 
 	token := b.GetTokenConfig(pairID)
 
