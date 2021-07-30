@@ -42,15 +42,6 @@ func (b *Bridge) BeforeConfig() {
 	cosmos.ChainIDs["columbus-4"] = true
 	cosmos.ChainIDs["tequila-0004"] = true
 	cosmos.SignBytesModifier = TerraSignBytesModifier
-	/*b.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
-	b.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
-	b.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
-	b.SupportedCoins["SDR"] = cosmos.CosmosCoin{"usdr", 6}
-	b.SupportedCoins["CNY"] = cosmos.CosmosCoin{"ucny", 6}
-	b.SupportedCoins["JPY"] = cosmos.CosmosCoin{"ujpy", 6}
-	b.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
-	b.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
-	b.SupportedCoins["UMNT"] = cosmos.CosmosCoin{"umnt", 6}*/
 	tokens.IsSwapoutToStringAddress = true
 }
 
@@ -58,7 +49,21 @@ func (b *Bridge) BeforeConfig() {
 func (b *Bridge) AfterConfig() {
 	cosmos.GetFeeAmount = b.FeeGetter()
 	b.Bridge.InitLatestBlockNumber()
+	// Load coins from token configs
 	b.LoadCoins()
+	// You must add this coin
+	// b.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
+	// You can add these coins to config
+	/*
+	b.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
+	b.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
+	b.SupportedCoins["SDR"] = cosmos.CosmosCoin{"usdr", 6}
+	b.SupportedCoins["CNY"] = cosmos.CosmosCoin{"ucny", 6}
+	b.SupportedCoins["JPY"] = cosmos.CosmosCoin{"ujpy", 6}
+	b.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
+	b.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
+	b.SupportedCoins["UMNT"] = cosmos.CosmosCoin{"umnt", 6}
+	*/
 	if luna, ok := b.SupportedCoins["LUNA"]; ok == false || luna.Denom != "uluna" || luna.Decimal != 6 {
 		log.Info("Terra init coins", "luna", luna, "ok", ok, "check denom", (luna.Denom != "uluna"), "check decimal", luna.Decimal != 6)
 		log.Fatalf("Terra bridge must have Luna token config")
@@ -123,7 +128,7 @@ var DefaultSwapoutGas uint64 = 300000
 func (b *Bridge) FeeGetter() func() authtypes.StdFee {
 	return func() authtypes.StdFee {
 		// TODO
-		feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(50000)}}
+		feeAmount := sdk.Coins{sdk.Coin{Denom: "uluna", Amount: sdk.NewInt(50000)}}
 		return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 	}
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
+	//"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -41,7 +41,7 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 		}
 	}
 	log.Warn("No such swapInfo")
-	return nil, nil
+	return nil, fmt.Errorf("No swap info, errors: %v", errs)
 }
 
 func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
@@ -179,14 +179,17 @@ func (b *Bridge) getPairID(coin sdk.Coin) (string, error) {
 }
 
 func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
+	log.Warn("!!!! 000000", "pairID", pairID)
 	txid := strings.ToLower(txHash)
 	tx, err := b.GetTransaction(txHash)
+	log.Warn("!!!! 111111", "tx", tx, "err", err)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		errs = []error{tokens.ErrTxNotStable}
 		return nil, errs
 	}
 	cosmostx, ok := tx.(sdk.Tx)
+	log.Warn("!!!! 222222", "tx", tx, "cosmostx", ok)
 	if !ok {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::Transacton is of wrong type", "tx", txHash)
 		return nil, []error{errors.New("Tx is of wrong type")}
@@ -196,6 +199,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 
 	// get bind address from memo
 	bindaddress, ok := b.GetBindAddressFromMemo(cosmostx)
+	log.Warn("!!!! 333333", "bindaddress", bindaddress)
 	if !ok {
 		return swapInfos, []error{fmt.Errorf("Cannot get bind address")}
 	}
@@ -221,7 +225,9 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 			}
 
 			for _, coin := range msgsend.Amount {
+				log.Warn("!!!! 444444", "coin", coin)
 				pairID, err := b.getPairID(coin)
+				log.Warn("!!!! 555555", "pairID", pairID)
 				if err != nil {
 					continue
 				}
@@ -325,8 +331,8 @@ func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
 		log.Warn("wrong bind address in swapin", "bind", bindAddr)
 		return tokens.ErrTxWithWrongMemo
 	}
-	if !tools.IsAddressRegistered(bindAddr) {
+	/*if !tools.IsAddressRegistered(bindAddr) {
 		return tokens.ErrTxSenderNotRegistered
-	}
+	}*/
 	return nil
 }
