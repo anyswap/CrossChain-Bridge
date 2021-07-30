@@ -7,6 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
@@ -133,7 +134,7 @@ func (b *Bridge) VerifyAnyswapContractAddress(contract string) (err error) {
 
 // InitExtCodeParts init extended code parts
 func InitExtCodeParts() {
-	InitExtCodePartsWithFlag(isMbtcSwapout())
+	InitExtCodePartsWithFlag(isSwapoutToStringAddress())
 }
 
 // InitExtCodePartsWithFlag init extended code parts with flag
@@ -147,8 +148,8 @@ func InitExtCodePartsWithFlag(isMbtc bool) {
 	log.Info("init extented code parts", "isMBTC", isMbtc)
 }
 
-func isMbtcSwapout() bool {
-	return btc.BridgeInstance != nil
+func isSwapoutToStringAddress() bool {
+	return params.IsSwapoutToStringAddress() || btc.BridgeInstance != nil
 }
 
 func getSwapinFuncHash() []byte {
@@ -157,7 +158,7 @@ func getSwapinFuncHash() []byte {
 
 func getLogSwapoutTopic() (topTopic []byte, topicsLen int) {
 	topTopic = ExtCodeParts["LogSwapoutTopic"]
-	if isMbtcSwapout() {
+	if isSwapoutToStringAddress() {
 		topicsLen = 2
 	} else {
 		topicsLen = 3
