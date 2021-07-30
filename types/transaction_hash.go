@@ -6,24 +6,25 @@ import (
 	"sync"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
-	"github.com/cosmos/cosmos-sdk/codec"
+	amino "github.com/tendermint/go-amino"
 )
 
 var (
-	okexCdc       *codec.Codec
-	okexCdcInitor sync.Once
-	okexChainID   = big.NewInt(66)
+	aminoCdc       *amino.Codec
+	aminoCdcInitor sync.Once
+
+	okexChainID = big.NewInt(66)
 )
 
-func getOkexCdc() *codec.Codec {
-	if okexCdc == nil {
-		okexCdcInitor.Do(func() {
-			okexCdc = codec.New()
-			okexCdc.RegisterConcrete(MsgEthereumTx{}, "ethermint/MsgEthereumTx", nil)
-			okexCdc.Seal()
+func getAminoCdc() *amino.Codec {
+	if aminoCdc == nil {
+		aminoCdcInitor.Do(func() {
+			aminoCdc = amino.NewCodec()
+			aminoCdc.RegisterConcrete(MsgEthereumTx{}, "ethermint/MsgEthereumTx", nil)
+			aminoCdc.Seal()
 		})
 	}
-	return okexCdc
+	return aminoCdc
 }
 
 // Hash returns the transaction hash
@@ -52,7 +53,7 @@ type MsgEthereumTx struct {
 
 // CalcOkexTransactionHash calc okex tx hash
 func CalcOkexTransactionHash(tx *Transaction) (hash common.Hash, err error) {
-	txBytes, err := getOkexCdc().MarshalBinaryLengthPrefixed(MsgEthereumTx{tx.data})
+	txBytes, err := getAminoCdc().MarshalBinaryLengthPrefixed(MsgEthereumTx{tx.data})
 	if err != nil {
 		return hash, err
 	}
@@ -101,7 +102,7 @@ func (td txdata) MarshalAmino() ([]byte, error) {
 		Hash:         td.Hash,
 	}
 
-	return getOkexCdc().MarshalBinaryBare(e)
+	return getAminoCdc().MarshalBinaryBare(e)
 }
 
 // encodableTxData implements the Ethereum transaction data structure. It is used
