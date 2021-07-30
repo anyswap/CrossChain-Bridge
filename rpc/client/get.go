@@ -11,7 +11,7 @@ import (
 
 // RPCGet rpc get
 func RPCGet(result interface{}, url string) error {
-	return RPCGetRequest(result, url, nil, nil, defaultTimeout)
+	return RPCGetRequest(result, url, nil, nil, defaultSlowTimeout)
 }
 
 // RPCGetWithTimeout rpc get with timeout
@@ -49,7 +49,7 @@ func RPCGetRequest(result interface{}, url string, params, headers map[string]st
 
 // RPCRawGet rpc raw get
 func RPCRawGet(url string) (string, error) {
-	return RPCRawGetRequest(url, nil, nil, defaultTimeout)
+	return RPCRawGetRequest(url, nil, nil, defaultSlowTimeout)
 }
 
 // RPCRawGetWithTimeout rpc raw get with timeout
