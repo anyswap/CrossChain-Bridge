@@ -85,7 +85,8 @@ type MongoDBConfig struct {
 
 // ExtraConfig extra config
 type ExtraConfig struct {
-	MinReserveFee string
+	MinReserveFee            string
+	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
 }
 
 // GetAPIPort get api service port
@@ -110,6 +111,11 @@ func GetReplaceIdentifier() string {
 // MustRegisterAccount flag
 func MustRegisterAccount() bool {
 	return GetConfig().MustRegisterAccount
+}
+
+// IsSwapoutToStringAddress swapout to string address (eg. btc)
+func IsSwapoutToStringAddress() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().IsSwapoutToStringAddress
 }
 
 // IsDcrmEnabled is dcrm enabled (for dcrm sign)

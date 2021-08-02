@@ -165,17 +165,6 @@ func rlpHash(x interface{}) (h common.Hash) {
 	return h
 }
 
-// Hash hashes the RLP encoding of tx.
-// It uniquely identifies the transaction.
-func (tx *Transaction) Hash() common.Hash {
-	if hash := tx.hash.Load(); hash != nil {
-		return hash.(common.Hash)
-	}
-	v := rlpHash(tx)
-	tx.hash.Store(v)
-	return v
-}
-
 type writeCounter StorageSize
 
 func (c *writeCounter) Write(b []byte) (int, error) {

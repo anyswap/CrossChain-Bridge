@@ -50,6 +50,7 @@ require (
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/tendermint/go-amino v0.16.0
 	github.com/tendermint/tendermint v0.33.9
+	github.com/tendermint/tm-db v0.5.2 // indirect
 	github.com/terra-project/core v0.4.2
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/ybbus/jsonrpc v2.1.2+incompatible
@@ -61,4 +62,4 @@ replace github.com/gogo/protobuf v1.3.3 => github.com/regen-network/protobuf v1.
 
 replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.33.9
 
-replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.39.3 // indirect
+replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.39.2 // indirect

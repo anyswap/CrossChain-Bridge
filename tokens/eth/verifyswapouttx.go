@@ -70,28 +70,26 @@ func (b *Bridge) checkSwapoutInfo(swapInfo *tokens.TxSwapInfo) error {
 }
 
 func parseSwapoutTxLogs(logs []*types.RPCLog, targetContract string) (bind string, value *big.Int, err error) {
-	log.Warn("!!!! IsSwapoutToStringAddress", "tokens.IsSwapoutToStringAddress", tokens.IsSwapoutToStringAddress)
-	isSwapoutToBtc := isMbtcSwapout()
+	isSwapoutToStrAddr := isSwapoutToStringAddress()
 	logSwapoutTopic, topicsLen := getLogSwapoutTopic()
-	for _, log1 := range logs {
-		if log1.Removed != nil && *log1.Removed {
+	for _, log := range logs {
+		if log.Removed != nil && *log.Removed {
 			continue
 		}
-		if !common.IsEqualIgnoreCase(log1.Address.String(), targetContract) {
+		if !common.IsEqualIgnoreCase(log.Address.String(), targetContract) {
 			continue
 		}
-		if len(log1.Topics) != topicsLen || log1.Data == nil {
+		if len(log.Topics) != topicsLen || log.Data == nil {
 			continue
 		}
-		if !bytes.Equal(log1.Topics[0].Bytes(), logSwapoutTopic) {
+		if !bytes.Equal(log.Topics[0].Bytes(), logSwapoutTopic) {
 			continue
 		}
-		if isSwapoutToBtc || tokens.IsSwapoutToStringAddress {
-			log.Warn("!!!! IsSwapoutToStringAddress")
-			return parseSwapoutToBtcEncodedData(*log1.Data, false)
+		if isSwapoutToStrAddr {
+			return parseSwapoutToBtcEncodedData(*log.Data, false)
 		}
-		bind = common.BytesToAddress(log1.Topics[2].Bytes()).String()
-		value = common.GetBigInt(*log1.Data, 0, 32)
+		bind = common.BytesToAddress(log.Topics[2].Bytes()).String()
+		value = common.GetBigInt(*log.Data, 0, 32)
 		return bind, value, nil
 	}
 	return "", nil, tokens.ErrSwapoutLogNotFound
