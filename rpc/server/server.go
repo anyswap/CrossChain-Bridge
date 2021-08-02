@@ -27,7 +27,7 @@ func StartAPIServer() {
 	initRouter(router)
 
 	apiPort := params.GetAPIPort()
-	apiServer := params.GetConfig().APIServer
+	apiServer := params.GetServerConfig().APIServer
 	allowedOrigins := apiServer.AllowedOrigins
 
 	corsOptions := []handlers.CORSOption{

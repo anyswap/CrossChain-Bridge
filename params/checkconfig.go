@@ -20,11 +20,12 @@ func CheckConfig(isServer bool) (err error) {
 		return err
 	}
 	if isServer {
-		if config.MongoDB == nil {
-			return errors.New("server must config 'MongoDB'")
+		if config.Server == nil {
+			return errors.New("server must config 'Server'")
 		}
-		if config.APIServer == nil {
-			return errors.New("server must config 'APIServer'")
+		err = config.Server.CheckConfig()
+		if err != nil {
+			return err
 		}
 	} else if config.SrcChain.EnableScan || config.DestChain.EnableScan {
 		err = config.Oracle.CheckConfig()
@@ -69,6 +70,17 @@ func checkChainAndGatewayConfig() (err error) {
 	err = config.DestChain.CheckConfig()
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+// CheckConfig check swap server config
+func (c *ServerConfig) CheckConfig() error {
+	if c.MongoDB == nil {
+		return errors.New("server must config 'Server.MongoDB'")
+	}
+	if c.APIServer == nil {
+		return errors.New("server must config 'Server.APIServer'")
 	}
 	return nil
 }

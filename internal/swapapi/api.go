@@ -40,7 +40,7 @@ func GetServerInfo() (*ServerInfo, error) {
 	}
 	return &ServerInfo{
 		Identifier:          config.Identifier,
-		MustRegisterAccount: config.MustRegisterAccount,
+		MustRegisterAccount: params.MustRegisterAccount(),
 		SrcChain:            config.SrcChain,
 		DestChain:           config.DestChain,
 		PairIDs:             tokens.GetAllPairIDs(),

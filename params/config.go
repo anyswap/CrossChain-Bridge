@@ -17,7 +17,7 @@ const (
 
 var (
 	locDataDir        string
-	serverConfig      *ServerConfig
+	bridgeConfig      *BridgeConfig
 	loadConfigStarter sync.Once
 
 	// IsSwapServer if true then it's swap server, otherwise it's swap oracle
@@ -27,21 +27,25 @@ var (
 	ServerAPIAddress string
 )
 
-// ServerConfig config items (decode from toml file)
+// BridgeConfig config items (decode from toml file)
+type BridgeConfig struct {
+	Identifier  string
+	SrcChain    *tokens.ChainConfig
+	SrcGateway  *tokens.GatewayConfig
+	DestChain   *tokens.ChainConfig
+	DestGateway *tokens.GatewayConfig
+	Server      *ServerConfig          `toml:",omitempty" json:",omitempty"`
+	Oracle      *OracleConfig          `toml:",omitempty" json:",omitempty"`
+	BtcExtra    *tokens.BtcExtraConfig `toml:",omitempty" json:",omitempty"`
+	Extra       *ExtraConfig           `toml:",omitempty" json:",omitempty"`
+	Dcrm        *DcrmConfig            `toml:",omitempty" json:",omitempty"`
+}
+
+// ServerConfig swap server config
 type ServerConfig struct {
-	Identifier          string
-	MustRegisterAccount bool             `toml:",omitempty" json:",omitempty"`
-	MongoDB             *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
-	APIServer           *APIServerConfig `toml:",omitempty" json:",omitempty"`
-	SrcChain            *tokens.ChainConfig
-	SrcGateway          *tokens.GatewayConfig
-	DestChain           *tokens.ChainConfig
-	DestGateway         *tokens.GatewayConfig
-	Dcrm                *DcrmConfig            `toml:",omitempty" json:",omitempty"`
-	Oracle              *OracleConfig          `toml:",omitempty" json:",omitempty"`
-	BtcExtra            *tokens.BtcExtraConfig `toml:",omitempty" json:",omitempty"`
-	Extra               *ExtraConfig           `toml:",omitempty" json:",omitempty"`
-	Admins              []string               `toml:",omitempty" json:",omitempty"`
+	MongoDB   *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
+	APIServer *APIServerConfig `toml:",omitempty" json:",omitempty"`
+	Admins    []string         `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmConfig dcrm related config
@@ -53,7 +57,7 @@ type DcrmConfig struct {
 	Mode          uint32 // 0:managed 1:private (default 0)
 	Initiators    []string
 	DefaultNode   *DcrmNodeConfig
-	OtherNodes    []*DcrmNodeConfig
+	OtherNodes    []*DcrmNodeConfig `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmNodeConfig dcrm node config
@@ -85,13 +89,14 @@ type MongoDBConfig struct {
 
 // ExtraConfig extra config
 type ExtraConfig struct {
+	MustRegisterAccount      bool
 	MinReserveFee            string
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
 }
 
 // GetAPIPort get api service port
 func GetAPIPort() int {
-	apiPort := GetConfig().APIServer.Port
+	apiPort := GetServerConfig().APIServer.Port
 	if apiPort == 0 {
 		apiPort = defaultAPIPort
 	}
@@ -110,7 +115,7 @@ func GetReplaceIdentifier() string {
 
 // MustRegisterAccount flag
 func MustRegisterAccount() bool {
-	return GetConfig().MustRegisterAccount
+	return GetExtraConfig() != nil && GetExtraConfig().MustRegisterAccount
 }
 
 // IsSwapoutToStringAddress swapout to string address (eg. btc)
@@ -134,13 +139,18 @@ func IsDcrmInitiator(account string) bool {
 }
 
 // GetConfig get config items structure
-func GetConfig() *ServerConfig {
-	return serverConfig
+func GetConfig() *BridgeConfig {
+	return bridgeConfig
 }
 
 // SetConfig set config items
-func SetConfig(config *ServerConfig) {
-	serverConfig = config
+func SetConfig(config *BridgeConfig) {
+	bridgeConfig = config
+}
+
+// GetServerConfig get extra config
+func GetServerConfig() *ServerConfig {
+	return GetConfig().Server
 }
 
 // GetExtraConfig get extra config
@@ -149,7 +159,7 @@ func GetExtraConfig() *ExtraConfig {
 }
 
 // LoadConfig load config
-func LoadConfig(configFile string, isServer bool) *ServerConfig {
+func LoadConfig(configFile string, isServer bool) *BridgeConfig {
 	loadConfigStarter.Do(func() {
 		if configFile == "" {
 			log.Fatalf("LoadConfig error: no config file specified")
@@ -158,7 +168,7 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 		if !common.FileExist(configFile) {
 			log.Fatalf("LoadConfig error: config file %v not exist", configFile)
 		}
-		config := &ServerConfig{}
+		config := &BridgeConfig{}
 		if _, err := toml.DecodeFile(configFile, &config); err != nil {
 			log.Fatalf("LoadConfig error (toml DecodeFile): %v", err)
 		}
@@ -166,8 +176,7 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 		if isServer {
 			config.Oracle = nil
 		} else {
-			config.MongoDB = nil
-			config.APIServer = nil
+			config.Server = nil
 		}
 
 		SetConfig(config)
@@ -182,17 +191,17 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 			log.Fatalf("Check config failed. %v", err)
 		}
 	})
-	return serverConfig
+	return bridgeConfig
 }
 
 // HasAdmin has admin
 func HasAdmin() bool {
-	return len(serverConfig.Admins) != 0
+	return len(GetServerConfig().Admins) != 0
 }
 
 // IsAdmin is admin
 func IsAdmin(account string) bool {
-	for _, admin := range serverConfig.Admins {
+	for _, admin := range GetServerConfig().Admins {
 		if strings.EqualFold(account, admin) {
 			return true
 		}

@@ -47,7 +47,7 @@ type ChainConfig struct {
 type GatewayConfig struct {
 	APIAddress    []string
 	APIAddressExt []string
-	Extras        *GatewayExtras
+	Extras        *GatewayExtras `json:",omitempty"`
 }
 
 // GatewayExtras struct

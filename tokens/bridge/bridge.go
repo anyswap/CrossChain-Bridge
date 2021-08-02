@@ -103,6 +103,8 @@ func InitCrossChainBridge(isServer bool) {
 		block.Init(cfg.BtcExtra)
 	case "COLX":
 		colx.Init(cfg.BtcExtra)
+	default:
+		cfg.BtcExtra = nil
 	}
 
 	dcrm.Init(cfg.Dcrm, isServer)

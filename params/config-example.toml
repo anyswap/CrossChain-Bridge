@@ -1,23 +1,22 @@
 # a short string to identify the bridge
 Identifier = "BTC2ETH"
-# if users should register their address before swapping
-MustRegisterAccount = false
 
 # administrators who can do admin work like maintain blacklist etc.
+[Server]
 Admins = [
 	"0x3dfaef310a1044fd7d96750b42b44cf3775c00bf",
 	"0x46cbe22b687d4b72c8913e4784dfe5b20fdc2b0e"
 ]
 
 # modgodb database connection config (server only)
-[MongoDB]
+[Server.MongoDB]
 DBURL = "localhost:27017"
 DBName = "databasename"
 UserName = "username"
 Password = "password"
 
 # bridge API service (server only)
-[APIServer]
+[Server.APIServer]
 # listen port
 Port = 11556
 # CORS config
@@ -48,6 +47,7 @@ UtxoAggregateMinValue = 1000000 # unit satoshi
 UtxoAggregateToAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 
 [Extra]
+MustRegisterAccount = false
 MinReserveFee = "10000000000000000"
 IsSwapoutToStringAddress = false
 
@@ -131,21 +131,6 @@ Initiators = [
 	"0x00c37841378920E2BA5151a5d1E074Cf367586c4",
 	"0x897a9980808a2cae0d09ff693f02a4f80abb2233"
 ]
-
-# DCRM other initiators nodes config (server only)
-[[Dcrm.OtherNodes]]
-# dcrm sub groups for signing
-SignGroups = [
-	"38a93f457c793ac3ee242b2c050a403774738e6558cfaa620fe5577bb15a28f63c39adcc0778497e5009a9ee776a0778ffcad4e95827e69efa21b893b8a78793",
-	"bb1dfe1ec046cc3a3b88408ae03976aabffe459b40e5def09e76f5d4c7a917133241da9da7fc05e3e172fab54ce3129a9a492d52a5a09494d0b9c1e608f661bf"
-]
-
-# dcrm user keystore and password file (suggest using absolute path)
-KeystoreFile = "/home/xxx/accounts/keystore2"
-PasswordFile = "/home/xxx/accounts/password2"
-
-# dcrm backend node (gdcrm node RPC address)
-RPCAddress = "http://127.0.0.1:2922"
 
 # DCRM default node config
 [Dcrm.DefaultNode]
