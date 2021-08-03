@@ -597,7 +597,7 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 	}
 	data := fmt.Sprintf(`{"tx":%v,"mode":"block"}`, string(bz2))
 
-	log.Info("Broadcast tx", "data", data)
+	log.Info("!!! broadcast", "data", data)
 
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
@@ -607,11 +607,12 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 		}
 		endpoint = endpointURL.String()
 		endpoint = strings.TrimSuffix(endpoint, "/")
-		endpoint = endpoint + "/"
+		api := endpoint + "/txs"
+		log.Info("!!! broadcast", "api", api)
 
 		client := &http.Client{}
 
-		req, err := http.NewRequest("POST", endpoint+"txs", strings.NewReader(data))
+		req, err := http.NewRequest("POST", api, strings.NewReader(data))
 		if err != nil {
 			continue
 		}

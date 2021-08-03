@@ -132,23 +132,23 @@ func (b *Bridge) FeeGetter() func(pairID string) authtypes.StdFee {
 		var amount int64
 		switch denom {
 		case "uluna":
-			amount = 60000
+			amount = 100000
 		case "uusd":
-			amount = 70000
+			amount = 100000
 		case "ukrw":
-			amount = 60000000
+			amount = 100000000
 		case "usdr":
-			amount = 40000
+			amount = 80000
 		case "ucny":
-			amount = 600000
+			amount = 1000000
 		case "ujpy":
-			amount = 6500000
+			amount = 10000000
 		case "ueur":
-			amount = 38000
+			amount = 80000
 		case "ugbp":
-			amount = 60000
+			amount = 100000
 		case "umnt":
-			amount = 50000
+			amount = 100000
 		}
 
 		feeAmount := sdk.Coins{sdk.Coin{Denom: denom, Amount: sdk.NewInt(amount)}}
