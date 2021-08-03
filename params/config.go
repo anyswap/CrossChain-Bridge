@@ -92,6 +92,7 @@ type ExtraConfig struct {
 	MustRegisterAccount      bool
 	MinReserveFee            string
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
+	EnableCheckBlockFork     bool
 }
 
 // GetAPIPort get api service port
@@ -121,6 +122,11 @@ func MustRegisterAccount() bool {
 // IsSwapoutToStringAddress swapout to string address (eg. btc)
 func IsSwapoutToStringAddress() bool {
 	return GetExtraConfig() != nil && GetExtraConfig().IsSwapoutToStringAddress
+}
+
+// EnableCheckBlockFork enable check block fork
+func EnableCheckBlockFork() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().EnableCheckBlockFork
 }
 
 // IsDcrmEnabled is dcrm enabled (for dcrm sign)

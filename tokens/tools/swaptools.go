@@ -273,6 +273,10 @@ func AdjustGatewayOrder(isSrc bool) {
 		log.Info("adjust dest gateways", "result", weightedAPIs)
 	}
 
+	if !params.EnableCheckBlockFork() {
+		return
+	}
+
 	if len(gateway.APIAddressExt) == 0 {
 		return
 	}
@@ -289,6 +293,7 @@ func AdjustGatewayOrder(isSrc bool) {
 	}
 
 	retryCount := 3
+	shouldPanic := false
 	retrySleepInterval := 3 * time.Second
 	time.Sleep(retrySleepInterval)
 	for i := 1; i <= retryCount; i++ {
@@ -305,10 +310,25 @@ func AdjustGatewayOrder(isSrc bool) {
 			log.Info("[detect] check block hash success", "height", checkPointHeight, "hash", hash1, "isSrc", isSrc, "count", i, "stable", stableHeight)
 			return
 		}
-		if i == retryCount {
-			log.Fatal("[detect] check block hash failed", "height", checkPointHeight, "hash1", hash1, "hash2", hash2, "isSrc", isSrc, "count", i, "stable", stableHeight)
+		failedContext := []interface{}{
+			"height", checkPointHeight,
+			"hash1", hash1, "hash2", hash2,
+			"isSrc", isSrc, "count", i, "stable", stableHeight,
 		}
-		log.Warn("[detect] check block hash failed", "height", checkPointHeight, "hash1", hash1, "hash2", hash2, "isSrc", isSrc, "count", i, "stable", stableHeight)
+		if i == retryCount {
+			if shouldPanic {
+				log.Fatal("[detect] check block hash failed", failedContext...)
+			}
+			// recheck of previous check point, and panic if still mismatch
+			shouldPanic, i = true, -1
+			if checkPointHeight > stableHeight {
+				checkPointHeight -= stableHeight
+			} else {
+				checkPointHeight = 0
+			}
+		} else {
+			log.Warn("[detect] check block hash failed", failedContext...)
+		}
 		time.Sleep(retrySleepInterval)
 	}
 }
