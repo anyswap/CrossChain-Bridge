@@ -66,8 +66,8 @@ func NewKeccakState() KeccakState {
 // HashData hashes the provided data using the KeccakState and returns a 32 byte hash
 func HashData(kh KeccakState, data []byte) (h common.Hash) {
 	kh.Reset()
-	kh.Write(data)
-	kh.Read(h[:])
+	_, _ = kh.Write(data)
+	_, _ = kh.Read(h[:])
 	return h
 }
 
@@ -78,7 +78,7 @@ func Keccak256(data ...[]byte) []byte {
 	for _, b := range data {
 		_, _ = d.Write(b)
 	}
-	d.Read(b)
+	_, _ = d.Read(b)
 	return b
 }
 
@@ -89,7 +89,7 @@ func Keccak256Hash(data ...[]byte) (h common.Hash) {
 	for _, b := range data {
 		_, _ = d.Write(b)
 	}
-	d.Read(h[:])
+	_, _ = d.Read(h[:])
 	return h
 }
 
@@ -198,11 +198,13 @@ func LoadECDSA(file string) (*ecdsa.PrivateKey, error) {
 	if fi.Mode() != 0400 {
 		return nil, errors.New("unsafe file permissions, want 0400")
 	}
-	fd, err := os.Open(file)
+	fd, err := os.Open(file) // nolint:gosec // ok
 	if err != nil {
 		return nil, err
 	}
-	defer fd.Close()
+	defer func() {
+		_ = fd.Close()
+	}()
 	if _, err = io.ReadFull(fd, buf); err != nil {
 		return nil, err
 	}

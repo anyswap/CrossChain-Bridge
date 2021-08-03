@@ -212,26 +212,24 @@ func (tx *Transaction) AccessList() AccessList {
 }
 
 // rlpHash encodes x and hashes the encoded bytes.
-// nolint:errcheck // ok
 func rlpHash(x interface{}) (h common.Hash) {
 	sha := hasherPool.Get().(crypto.KeccakState)
 	defer hasherPool.Put(sha)
 	sha.Reset()
-	rlp.Encode(sha, x)
-	sha.Read(h[:])
+	_ = rlp.Encode(sha, x)
+	_, _ = sha.Read(h[:])
 	return h
 }
 
 // prefixedRlpHash writes the prefix into the hasher before rlp-encoding x.
 // It's used for typed transactions.
-// nolint:errcheck // ok
 func prefixedRlpHash(prefix byte, x interface{}) (h common.Hash) {
 	sha := hasherPool.Get().(crypto.KeccakState)
 	defer hasherPool.Put(sha)
 	sha.Reset()
-	sha.Write([]byte{prefix})
-	rlp.Encode(sha, x)
-	sha.Read(h[:])
+	_, _ = sha.Write([]byte{prefix})
+	_ = rlp.Encode(sha, x)
+	_, _ = sha.Read(h[:])
 	return h
 }
 
