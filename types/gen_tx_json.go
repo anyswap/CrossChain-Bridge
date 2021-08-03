@@ -11,60 +11,93 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tools/rlp"
 )
 
+type txJSON struct {
+	Type hexutil.Uint64 `json:"type"`
+
+	// Common transaction fields:
+	AccountNonce         *hexutil.Uint64 `json:"nonce"`
+	Price                *hexutil.Big    `json:"gasPrice"`
+	MaxPriorityFeePerGas *hexutil.Big    `json:"maxPriorityFeePerGas,omitempty"`
+	MaxFeePerGas         *hexutil.Big    `json:"maxFeePerGas,omitempty"`
+	GasLimit             *hexutil.Uint64 `json:"gas"`
+	Recipient            *common.Address `json:"to"`
+	Amount               *hexutil.Big    `json:"value"`
+	Payload              *hexutil.Bytes  `json:"input"`
+	V                    *hexutil.Big    `json:"v"`
+	R                    *hexutil.Big    `json:"r"`
+	S                    *hexutil.Big    `json:"s"`
+
+	// Access list transaction fields:
+	ChainID    *hexutil.Big `json:"chainId,omitempty"`
+	AccessList *AccessList  `json:"accessList,omitempty"`
+
+	// Only used for encoding:
+	Hash *common.Hash `json:"hash"`
+}
+
 // MarshalJSON marshals as JSON.
 func (t *txdata) MarshalJSON() ([]byte, error) {
-	type txdata struct {
-		AccountNonce hexutil.Uint64  `json:"nonce"    gencodec:"required"`
-		Price        *hexutil.Big    `json:"gasPrice" gencodec:"required"`
-		GasLimit     hexutil.Uint64  `json:"gas"      gencodec:"required"`
-		Recipient    *common.Address `json:"to"       rlp:"nil"`
-		Amount       *hexutil.Big    `json:"value"    gencodec:"required"`
-		Payload      hexutil.Bytes   `json:"input"    gencodec:"required"`
-		V            *hexutil.Big    `json:"v" gencodec:"required"`
-		R            *hexutil.Big    `json:"r" gencodec:"required"`
-		S            *hexutil.Big    `json:"s" gencodec:"required"`
-		Hash         *common.Hash    `json:"hash" rlp:"-"`
-	}
-	var enc txdata
-	enc.AccountNonce = hexutil.Uint64(t.AccountNonce)
-	enc.Price = (*hexutil.Big)(t.Price)
-	enc.GasLimit = hexutil.Uint64(t.GasLimit)
+	var enc txJSON
+	enc.Type = hexutil.Uint64(t.Type)
+	enc.AccountNonce = (*hexutil.Uint64)(&t.AccountNonce)
+	enc.GasLimit = (*hexutil.Uint64)(&t.GasLimit)
 	enc.Recipient = t.Recipient
 	enc.Amount = (*hexutil.Big)(t.Amount)
-	enc.Payload = t.Payload
+	enc.Payload = (*hexutil.Bytes)(&t.Payload)
 	enc.V = (*hexutil.Big)(t.V)
 	enc.R = (*hexutil.Big)(t.R)
 	enc.S = (*hexutil.Big)(t.S)
 	enc.Hash = t.Hash
+
+	if t.Type != LegacyTxType {
+		enc.ChainID = (*hexutil.Big)(t.ChainID)
+		enc.AccessList = &t.AccessList
+
+	}
+	if t.Type == DynamicFeeTxType {
+		enc.MaxFeePerGas = (*hexutil.Big)(t.MaxFeePerGas)
+		enc.MaxPriorityFeePerGas = (*hexutil.Big)(t.MaxPriorityFeePerGas)
+	} else {
+		enc.Price = (*hexutil.Big)(t.Price)
+	}
 	return json.Marshal(&enc)
 }
 
 // UnmarshalJSON unmarshals from JSON.
 func (t *txdata) UnmarshalJSON(input []byte) error {
-	type txdata struct {
-		AccountNonce *hexutil.Uint64 `json:"nonce"    gencodec:"required"`
-		Price        *hexutil.Big    `json:"gasPrice" gencodec:"required"`
-		GasLimit     *hexutil.Uint64 `json:"gas"      gencodec:"required"`
-		Recipient    *common.Address `json:"to"       rlp:"nil"`
-		Amount       *hexutil.Big    `json:"value"    gencodec:"required"`
-		Payload      *hexutil.Bytes  `json:"input"    gencodec:"required"`
-		V            *hexutil.Big    `json:"v" gencodec:"required"`
-		R            *hexutil.Big    `json:"r" gencodec:"required"`
-		S            *hexutil.Big    `json:"s" gencodec:"required"`
-		Hash         *common.Hash    `json:"hash" rlp:"-"`
-	}
-	var dec txdata
+	var dec txJSON
 	if err := json.Unmarshal(input, &dec); err != nil {
 		return err
 	}
+	t.Type = uint8(uint64(dec.Type))
 	if dec.AccountNonce == nil {
 		return errors.New("missing required field 'nonce' for txdata")
 	}
 	t.AccountNonce = uint64(*dec.AccountNonce)
-	if dec.Price == nil {
-		return errors.New("missing required field 'gasPrice' for txdata")
+	if t.Type != LegacyTxType {
+		if dec.AccessList != nil {
+			t.AccessList = *dec.AccessList
+		}
+		if dec.ChainID == nil {
+			return errors.New("missing required field 'chainId' in transaction")
+		}
+		t.ChainID = (*big.Int)(dec.ChainID)
 	}
-	t.Price = (*big.Int)(dec.Price)
+	if t.Type == DynamicFeeTxType {
+		if dec.MaxPriorityFeePerGas == nil {
+			return errors.New("missing required field 'maxPriorityFeePerGas' for txdata")
+		}
+		t.MaxPriorityFeePerGas = (*big.Int)(dec.MaxPriorityFeePerGas)
+		if dec.MaxFeePerGas == nil {
+			return errors.New("missing required field 'maxFeePerGas' for txdata")
+		}
+		t.MaxFeePerGas = (*big.Int)(dec.MaxFeePerGas)
+	} else {
+		if dec.Price == nil {
+			return errors.New("missing required field 'gasPrice' for txdata")
+		}
+		t.Price = (*big.Int)(dec.Price)
+	}
 	if dec.GasLimit == nil {
 		return errors.New("missing required field 'gas' for txdata")
 	}
@@ -92,9 +125,6 @@ func (t *txdata) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 's' for txdata")
 	}
 	t.S = (*big.Int)(dec.S)
-	if dec.Hash != nil {
-		t.Hash = dec.Hash
-	}
 	return nil
 }
 
@@ -113,5 +143,5 @@ func (tx *Transaction) PrintRaw() {
 // RawStr return raw encoded (hex string)
 func (tx *Transaction) RawStr() string {
 	bs, _ := rlp.EncodeToBytes(tx)
-	return string(bs)
+	return common.ToHex(bs)
 }

@@ -33,12 +33,19 @@ func (tx *Transaction) Hash() common.Hash {
 		return hash.(common.Hash)
 	}
 	var h common.Hash
-	chainID := tx.ChainID()
-	switch {
-	case chainID.Cmp(okexChainID) == 0:
-		h, _ = CalcOkexTransactionHash(tx)
-	default:
-		h = rlpHash(tx)
+	switch tx.Type() {
+	case LegacyTxType:
+		chainID := tx.ChainID()
+		switch {
+		case chainID.Cmp(okexChainID) == 0:
+			h, _ = CalcOkexTransactionHash(tx)
+		default:
+			h = rlpHash(tx.toLegacyTx())
+		}
+	case AccessListTxType:
+		h = prefixedRlpHash(tx.Type(), tx.toAccessListTx())
+	case DynamicFeeTxType:
+		h = prefixedRlpHash(tx.Type(), tx.toDynamicFeeTx())
 	}
 	if h != common.EmptyHash {
 		tx.hash.Store(h)

@@ -476,3 +476,91 @@ func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 	}
 	return nil, tokens.ErrRPCQueryError
 }
+
+// SuggestGasTipCap call eth_maxPriorityFeePerGas
+func (b *Bridge) SuggestGasTipCap() (maxGasTipCap *big.Int, err error) {
+	gateway := b.GatewayConfig
+	if len(gateway.APIAddressExt) > 0 {
+		maxGasTipCap, err = getMaxGasTipCap(gateway.APIAddressExt)
+	}
+	maxGasTipCap2, err2 := getMaxGasTipCap(gateway.APIAddress)
+	if err2 == nil {
+		if maxGasTipCap == nil || maxGasTipCap2.Cmp(maxGasTipCap) > 0 {
+			maxGasTipCap = maxGasTipCap2
+		}
+	} else {
+		err = err2
+	}
+	if maxGasTipCap != nil {
+		return maxGasTipCap, nil
+	}
+	return nil, err
+}
+
+func getMaxGasTipCap(urls []string) (maxGasTipCap *big.Int, err error) {
+	if len(urls) == 0 {
+		return nil, errEmptyURLs
+	}
+	var success bool
+	var result hexutil.Big
+	for _, url := range urls {
+		err = client.RPCPost(&result, url, "eth_maxPriorityFeePerGas")
+		if err == nil {
+			success = true
+			if maxGasTipCap == nil || result.ToInt().Cmp(maxGasTipCap) > 0 {
+				maxGasTipCap = result.ToInt()
+			}
+		}
+	}
+	if success {
+		return maxGasTipCap, nil
+	}
+	return nil, tokens.ErrRPCQueryError
+}
+
+// FeeHistory call eth_feeHistory
+func (b *Bridge) FeeHistory(blockCount int, rewardPercentiles []float64) (*types.FeeHistoryResult, error) {
+	gateway := b.GatewayConfig
+	result, err := getFeeHistory(gateway.APIAddress, blockCount, rewardPercentiles)
+	if err != nil && len(gateway.APIAddressExt) > 0 {
+		result, err = getFeeHistory(gateway.APIAddressExt, blockCount, rewardPercentiles)
+	}
+	return result, err
+}
+
+func getFeeHistory(urls []string, blockCount int, rewardPercentiles []float64) (*types.FeeHistoryResult, error) {
+	if len(urls) == 0 {
+		return nil, errEmptyURLs
+	}
+	var result types.FeeHistoryResult
+	var err error
+	for _, url := range urls {
+		err = client.RPCPost(&result, url, "eth_feeHistory", blockCount, "latest", rewardPercentiles)
+		if err == nil {
+			return &result, nil
+		}
+	}
+	log.Warn("get fee history failed", "blockCount", blockCount, "err", err)
+	return nil, tokens.ErrRPCQueryError
+}
+
+// GetBaseFee get base fee
+func (b *Bridge) GetBaseFee(blockCount int) (*big.Int, error) {
+	if blockCount == 0 { // from lastest block header
+		block, err := b.GetBlockByNumber(nil)
+		if err != nil {
+			return nil, err
+		}
+		return block.BaseFee.ToInt(), nil
+	}
+	// from fee history
+	feeHistory, err := b.FeeHistory(blockCount, nil)
+	if err != nil {
+		return nil, err
+	}
+	length := len(feeHistory.BaseFee)
+	if length > 0 {
+		return feeHistory.BaseFee[length-1].ToInt(), nil
+	}
+	return nil, tokens.ErrRPCQueryError
+}
