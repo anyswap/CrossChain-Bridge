@@ -83,9 +83,17 @@ func (b *Bridge) VerifyChainID() {
 	}
 
 	b.SignerChainID = chainID
-	b.Signer = types.MakeSigner("EIP155", chainID)
+	b.Signer = b.MakeSigner(chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
+}
+
+// MakeSigner make signer
+func (b *Bridge) MakeSigner(chainID *big.Int) types.Signer {
+	if b.ChainConfig.IsDynamicFeeTxEnabled {
+		return types.MakeSigner("London", chainID)
+	}
+	return types.MakeSigner("EIP155", chainID)
 }
 
 // VerifyTokenConfig verify token config
