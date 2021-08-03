@@ -33,7 +33,6 @@ func (b *Bridge) BeforeConfig() {
 	ChainIDs["cosmos-hub4"] = true
 	ChainIDs["stargate-final"] = true
 	// SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
-	tokens.IsSwapoutToStringAddress = true
 }
 
 // AfterConfig run after loading bridge and token config
@@ -157,23 +156,23 @@ func (b *Bridge) InitLatestBlockNumber() {
 var DefaultSwapoutGas uint64 = 300000
 
 // GetFeeAmount returns StdFee
-var GetFeeAmount func() authtypes.StdFee
+var GetFeeAmount func(string) authtypes.StdFee
 
 // FeeGetter returns a cosmos fee getter
-func (b *Bridge) FeeGetter() func() authtypes.StdFee {
+func (b *Bridge) FeeGetter() func(pairID string) authtypes.StdFee {
 	switch b.ChainConfig.NetID {
 	case "stargate-final":
-		return func() authtypes.StdFee {
+		return func(pairID string) authtypes.StdFee {
 			feeAmount := sdk.Coins{sdk.Coin{"umuon", sdk.NewInt(3000)}}
 			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 		}
 	case "cosmos-hub4":
-		return func() authtypes.StdFee {
+		return func(pairID string) authtypes.StdFee {
 			feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
 			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 		}
 	default:
-		return func() authtypes.StdFee {
+		return func(pairID string) authtypes.StdFee {
 			feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
 			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 		}

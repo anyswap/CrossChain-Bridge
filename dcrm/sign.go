@@ -144,7 +144,7 @@ func GetSignStatusByKeyID(keyID string) (rsvs []string, err error) {
 }
 
 func getSignResult(keyID, rpcAddr string) (rsvs []string, err error) {
-	log.Info("start get sign status", "keyID", keyID)
+	log.Info("start get sign status", "keyID", keyID, "rpcAddr", rpcAddr)
 	var signStatus *SignStatus
 	i := 0
 	signTimer := time.NewTimer(signTimeout)

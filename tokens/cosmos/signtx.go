@@ -72,43 +72,20 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	msgHash := tx.Hash()
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
-	rpcAddr, keyID, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), msgHash, msgContext)
+	keyID, rsv, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), msgHash, msgContext)
 	if err != nil {
 		return nil, "", err
 	}
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
 	time.Sleep(retryGetSignStatusInterval)
 
-	var rsv string
-	i := 0
-	for ; i < retryGetSignStatusCount; i++ {
-		signStatus, err2 := dcrm.GetSignStatus(keyID[0], rpcAddr)
-		if err2 == nil {
-			if len(signStatus.Rsv) != 1 {
-				return nil, "", fmt.Errorf("get sign status require one rsv but have %v (keyID = %v)", len(signStatus.Rsv), keyID)
-			}
-
-			rsv = signStatus.Rsv[0]
-			break
-		}
-		switch err2 {
-		case dcrm.ErrGetSignStatusFailed, dcrm.ErrGetSignStatusTimeout:
-			return nil, "", err2
-		}
-		log.Warn("retry get sign status as error", "err", err2, "txid", args.SwapID, "keyID", keyID, "bridge", args.Identifier, "swaptype", args.SwapType.String())
-		time.Sleep(retryGetSignStatusInterval)
-	}
-	if i == retryGetSignStatusCount || rsv == "" {
-		return nil, "", errors.New("get sign status failed")
-	}
-
 	log.Trace(b.ChainConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
 
-	signature := common.FromHex(rsv)
+	signature := common.FromHex(rsv[0])
 
 	if len(signature) != crypto.SignatureLength {
 		log.Error("DcrmSignTransaction wrong length of signature")
-		return nil, "", errors.New("wrong signature of keyID " + keyID[0])
+		return nil, "", errors.New("wrong signature of keyID " + keyID)
 	}
 
 	// pub
@@ -128,7 +105,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	copy(arr[:], cpub[:33])
 	pubkey := secp256k1.PubKeySecp256k1(arr)
 
-	rsvb, err := hex.DecodeString(rsv)
+	rsvb, err := hex.DecodeString(rsv[0])
 	if err != nil {
 		return
 	}

@@ -69,6 +69,7 @@ func GetSignNonce(dcrmUser, rpcAddr string) (uint64, error) {
 // GetSignStatus call dcrm_getSignStatus
 func GetSignStatus(key, rpcAddr string) (*SignStatus, error) {
 	var result DataResultResp
+	log.Warn("!!! GetSignStatus", "key", key, "rpcAddr", rpcAddr)
 	err := httpPostTo(&result, rpcAddr, "dcrm_getSignStatus", key)
 	if err != nil {
 		return nil, wrapPostError("dcrm_getSignStatus", err)

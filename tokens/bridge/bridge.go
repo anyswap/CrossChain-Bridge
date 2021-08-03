@@ -69,8 +69,12 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.SrcBridge = NewCrossChainBridge(srcID, true)
 	tokens.DstBridge = NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
-
 	BlockChain := strings.ToUpper(srcChain.BlockChain)
+	switch BlockChain {
+	case "COSMOS", "TERRA", "BITCOIN", "LITECOIN", "BLOCK", "COLX":
+		tokens.IsSwapoutToStringAddress = true
+	}
+
 	switch BlockChain {
 	case "COSMOS", "TERRA":
 		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).BeforeConfig()

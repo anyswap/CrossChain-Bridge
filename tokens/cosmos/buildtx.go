@@ -14,6 +14,7 @@ import (
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var (
 		pairID   = args.PairID
+		denom    = b.SupportedCoins[strings.ToUpper(pairID)].Denom
 		tokenCfg = b.GetTokenConfig(pairID)
 		from     = args.From
 		to       = args.Bind
@@ -48,10 +49,10 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	if err != nil {
 		return nil, errors.New("To address does not refer to a cosmos account")
 	}
-	sendcoin := sdk.Coin{b.MainCoin.Denom, sdk.NewIntFromBigInt(amount)}
+	sendcoin := sdk.Coin{denom, sdk.NewIntFromBigInt(amount)}
 	sendmsg := NewMsgSend(fromAcc, toAcc, sdk.Coins{sendcoin})
 
-	fee := GetFeeAmount()
+	fee := GetFeeAmount(pairID)
 
 	accountNumber, err := b.GetAccountNumberCached(from)
 	if err != nil {

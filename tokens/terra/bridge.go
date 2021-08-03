@@ -55,14 +55,14 @@ func (b *Bridge) AfterConfig() {
 	// b.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
 	// You can add these coins to config
 	/*
-	b.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
-	b.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
-	b.SupportedCoins["SDR"] = cosmos.CosmosCoin{"usdr", 6}
-	b.SupportedCoins["CNY"] = cosmos.CosmosCoin{"ucny", 6}
-	b.SupportedCoins["JPY"] = cosmos.CosmosCoin{"ujpy", 6}
-	b.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
-	b.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
-	b.SupportedCoins["UMNT"] = cosmos.CosmosCoin{"umnt", 6}
+		b.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
+		b.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
+		b.SupportedCoins["SDR"] = cosmos.CosmosCoin{"usdr", 6}
+		b.SupportedCoins["CNY"] = cosmos.CosmosCoin{"ucny", 6}
+		b.SupportedCoins["JPY"] = cosmos.CosmosCoin{"ujpy", 6}
+		b.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
+		b.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
+		b.SupportedCoins["MNT"] = cosmos.CosmosCoin{"umnt", 6}
 	*/
 	if luna, ok := b.SupportedCoins["LUNA"]; ok == false || luna.Denom != "uluna" || luna.Decimal != 6 {
 		log.Info("Terra init coins", "luna", luna, "ok", ok, "check denom", (luna.Denom != "uluna"), "check decimal", luna.Decimal != 6)
@@ -122,13 +122,36 @@ func (b *Bridge) InitLatestBlockNumber() {
 }
 
 // DefaultSwapoutGas is terra default gas
-var DefaultSwapoutGas uint64 = 300000
+var DefaultSwapoutGas uint64 = 500000
 
 // FeeGetter returns terra fee getter
-func (b *Bridge) FeeGetter() func() authtypes.StdFee {
-	return func() authtypes.StdFee {
-		// TODO
-		feeAmount := sdk.Coins{sdk.Coin{Denom: "uluna", Amount: sdk.NewInt(50000)}}
+func (b *Bridge) FeeGetter() func(pairID string) authtypes.StdFee {
+	return func(pairID string) authtypes.StdFee {
+		tokenCfg := b.GetTokenConfig(pairID)
+		denom := tokenCfg.Unit
+		var amount int64
+		switch denom {
+		case "uluna":
+			amount = 60000
+		case "uusd":
+			amount = 70000
+		case "ukrw":
+			amount = 60000000
+		case "usdr":
+			amount = 40000
+		case "ucny":
+			amount = 600000
+		case "ujpy":
+			amount = 6500000
+		case "ueur":
+			amount = 38000
+		case "ugbp":
+			amount = 60000
+		case "umnt":
+			amount = 50000
+		}
+
+		feeAmount := sdk.Coins{sdk.Coin{Denom: denom, Amount: sdk.NewInt(amount)}}
 		return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 	}
 }

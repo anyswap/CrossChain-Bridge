@@ -67,8 +67,8 @@ func genKeyX() {
 
 func main() {
 	//genKey()
-	//sendTx()
-	broadcastTx()
+	sendTx()
+	//broadcastTx()
 }
 
 func genKey() {
@@ -121,19 +121,20 @@ func sendTx() {
 
 	accountNumber := uint64(29325) // tequila-0004
 	//accountNumber := uint64(25361) // stargate-final
-	sequence := uint64(0)
+	sequence := uint64(5)
 
 	msgs := []sdk.Msg{
 		bank.MsgSend{
 			FromAddress: address,
 			ToAddress:   address2,
-			Amount:      sdk.Coins{sdk.NewCoin("uluna", sdk.NewInt(100000))},
+			//Amount:      sdk.Coins{sdk.NewCoin("uluna", sdk.NewInt(100000))},
+			Amount: sdk.Coins{sdk.NewCoin("ukrw", sdk.NewInt(5000000))},
 			//Amount: sdk.Coins{sdk.NewCoin("umuon", sdk.NewInt(10))},
 		},
 	}
 	memo := ""
 
-	feeAmount := sdk.Coins{sdk.Coin{"uluna", sdk.NewInt(50000)}}
+	feeAmount := sdk.Coins{sdk.Coin{"ukrw", sdk.NewInt(55000000)}}
 	//feeAmount := sdk.Coins{sdk.Coin{"umuon", sdk.NewInt(50000)}}
 	gas := uint64(300000)
 	fee := authtypes.NewStdFee(gas, feeAmount)
@@ -256,14 +257,14 @@ func sendTx() {
 	sigs := sigTx.GetSignatures()
 	fmt.Printf("\npubkeys:\n%+v\nsigners:\n%+v\nsigs:\n%+v\n", pubkeys, signers, sigs)
 
-	fmt.Printf("\nsignBytes:\n%X\n", signBytes)
+	fmt.Printf("\nsignBytes:\n%s\n", signBytes)
 	valid1 := pubkeys[0].VerifyBytes(signBytes, sigs[0])
 	fmt.Printf("\nvalid1:\n%v\n", valid1)
 
 	signBytes2 := authtypes.StdSignBytes(
 		ChainID, accountNumber, sequence, req1.Tx.Fee, req1.Tx.Msgs, req1.Tx.Memo,
 	)
-	fmt.Printf("\nsignBytes2:\n%X\n", signBytes2)
+	fmt.Printf("\nsignBytes2:\n%s\n", signBytes2)
 	valid2 := pubkeys[0].VerifyBytes(signBytes2, sigs[0])
 	fmt.Printf("\nvalid2:\n%v\n", valid2)
 }

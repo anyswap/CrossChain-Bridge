@@ -42,6 +42,8 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 			continue
 		}
 		endpoint = endpointURL.String()
+		endpoint = strings.TrimSuffix(endpoint, "/")
+		endpoint = endpoint + "/"
 		client := resty.New()
 		resp, err := client.R().Get(fmt.Sprintf("%vbank/balances/%v", endpoint, account))
 		if err != nil || resp.StatusCode() != 200 {
@@ -82,6 +84,8 @@ func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (b
 			continue
 		}
 		endpoint = endpointURL.String()
+		endpoint = strings.TrimSuffix(endpoint, "/")
+		endpoint = endpoint + "/"
 		client := resty.New()
 		resp, err := client.R().Get(fmt.Sprintf("%vbank/balances/%v", endpoint, accountAddress))
 		if err != nil || resp.StatusCode() != 200 {
@@ -123,6 +127,8 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 			continue
 		}
 		endpoint = endpointURL.String()
+		endpoint = strings.TrimSuffix(endpoint, "/")
+		endpoint = endpoint + "/"
 		client := resty.New()
 
 		resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, txHash))
@@ -167,6 +173,8 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 			continue
 		}
 		endpoint = endpointURL.String()
+		endpoint = strings.TrimSuffix(endpoint, "/")
+		endpoint = endpoint + "/"
 		client := resty.New()
 
 		resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, txHash))
@@ -217,6 +225,8 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 			continue
 		}
 		endpoint = endpointURL.String()
+		endpoint = strings.TrimSuffix(endpoint, "/")
+		endpoint = endpoint + "/"
 		client := resty.New()
 
 		resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
@@ -244,6 +254,8 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 		return 0, err
 	}
 	endpoint := endpointURL.String()
+	endpoint = strings.TrimSuffix(endpoint, "/")
+	endpoint = endpoint + "/"
 	client := resty.New()
 
 	resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
@@ -261,6 +273,40 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	return height, nil
 }
 
+func GetAccountNumber(endpoint, address string) (uint64, error) {
+	client := resty.New()
+
+	resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
+	if err != nil || resp.StatusCode() != 200 {
+		log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetAccountNumber")
+		return 0, err
+	}
+	tempStruct := make(map[string]interface{})
+	err = json.Unmarshal(resp.Body(), &tempStruct)
+	if err != nil {
+		log.Warn("Marshal resp error", "err", err)
+		return 0, err
+	}
+	result, ok := tempStruct["result"]
+	if !ok {
+		log.Warn("Get result error")
+		return 0, fmt.Errorf("Get result error")
+	}
+	bz, err := json.Marshal(result)
+	if err != nil {
+		log.Warn("Marshal result error", "err", err)
+		return 0, err
+	}
+	var accountRes authtypes.BaseAccount
+	err = CDC.UnmarshalJSON(bz, &accountRes)
+	if err != nil {
+		log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetAccountNumber")
+		return 0, err
+	}
+	accountNumber := accountRes.AccountNumber
+	return accountNumber, nil
+}
+
 // GetAccountNumber gets account number, a series number of account on a cosmos state
 // call rest api "/auth/accounts/"
 func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
@@ -271,39 +317,49 @@ func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 			continue
 		}
 		endpoint = endpointURL.String()
-		client := resty.New()
-
-		resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
-		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetAccountNumber")
-			continue
-		}
-		tempStruct := make(map[string]interface{})
-		err = json.Unmarshal(resp.Body(), &tempStruct)
+		endpoint = strings.TrimSuffix(endpoint, "/")
+		endpoint = endpoint + "/"
+		accn, err := GetAccountNumber(endpoint, address)
 		if err != nil {
-			log.Warn("Marshal resp error", "err", err)
 			continue
 		}
-		result, ok := tempStruct["result"]
-		if !ok {
-			log.Warn("Get result error")
-			continue
-		}
-		bz, err := json.Marshal(result)
-		if err != nil {
-			log.Warn("Marshal result error", "err", err)
-			continue
-		}
-		var accountRes authtypes.BaseAccount
-		err = CDC.UnmarshalJSON(bz, &accountRes)
-		if err != nil {
-			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetAccountNumber")
-			continue
-		}
-		accountNumber := accountRes.AccountNumber
-		return accountNumber, nil
+		return accn, nil
 	}
 	return 0, nil
+}
+
+func GetPoolNonce(endpoint, address, height string) (uint64, error) {
+	client := resty.New()
+
+	resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
+	if err != nil || resp.StatusCode() != 200 {
+		log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetPoolNonce")
+		return 0, err
+	}
+	tempStruct := make(map[string]interface{})
+	err = json.Unmarshal(resp.Body(), &tempStruct)
+	if err != nil {
+		log.Warn("Marshal resp error", "err", err)
+		return 0, err
+	}
+	result, ok := tempStruct["result"]
+	if !ok {
+		log.Warn("Get result error")
+		return 0, fmt.Errorf("Result error")
+	}
+	bz, err := json.Marshal(result)
+	if err != nil {
+		log.Warn("Marshal result error", "err", err)
+		return 0, err
+	}
+	var accountRes authtypes.BaseAccount
+	err = CDC.UnmarshalJSON(bz, &accountRes)
+	if err != nil {
+		log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetPoolNonce")
+		return 0, err
+	}
+	seq := accountRes.Sequence
+	return seq, nil
 }
 
 // GetPoolNonce gets account sequence
@@ -316,36 +372,12 @@ func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 			continue
 		}
 		endpoint = endpointURL.String()
-		client := resty.New()
-
-		resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
-		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetPoolNonce")
-			continue
-		}
-		tempStruct := make(map[string]interface{})
-		err = json.Unmarshal(resp.Body(), &tempStruct)
+		endpoint = strings.TrimSuffix(endpoint, "/")
+		endpoint = endpoint + "/"
+		seq, err := GetPoolNonce(endpoint, address, height)
 		if err != nil {
-			log.Warn("Marshal resp error", "err", err)
 			continue
 		}
-		result, ok := tempStruct["result"]
-		if !ok {
-			log.Warn("Get result error")
-			continue
-		}
-		bz, err := json.Marshal(result)
-		if err != nil {
-			log.Warn("Marshal result error", "err", err)
-			continue
-		}
-		var accountRes authtypes.BaseAccount
-		err = CDC.UnmarshalJSON(bz, &accountRes)
-		if err != nil {
-			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetPoolNonce")
-			continue
-		}
-		seq := accountRes.Sequence
 		return seq, nil
 	}
 	return 0, nil
@@ -369,6 +401,8 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 				continue
 			}
 			endpoint = endpointURL.String()
+			endpoint = strings.TrimSuffix(endpoint, "/")
+			endpoint = endpoint + "/"
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
@@ -407,6 +441,8 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 				continue
 			}
 			endpoint = endpointURL.String()
+			endpoint = strings.TrimSuffix(endpoint, "/")
+			endpoint = endpoint + "/"
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=multisend&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
@@ -455,6 +491,8 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 				continue
 			}
 			endpoint = endpointURL.String()
+			endpoint = strings.TrimSuffix(endpoint, "/")
+			endpoint = endpoint + "/"
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
@@ -493,6 +531,8 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 				continue
 			}
 			endpoint = endpointURL.String()
+			endpoint = strings.TrimSuffix(endpoint, "/")
+			endpoint = endpoint + "/"
 			client := resty.New()
 			params := fmt.Sprintf("?message.action=multisend&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%v/txs%v", endpoint, params))
@@ -566,6 +606,8 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 			continue
 		}
 		endpoint = endpointURL.String()
+		endpoint = strings.TrimSuffix(endpoint, "/")
+		endpoint = endpoint + "/"
 
 		client := &http.Client{}
 
@@ -577,7 +619,7 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
-			resp.Body.Close()
+			log.Warn("Broadcast tx error", "error", err)
 			continue
 		}
 		bodyText, err := ioutil.ReadAll(resp.Body)
