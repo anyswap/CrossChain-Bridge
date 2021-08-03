@@ -90,7 +90,6 @@ type MongoDBConfig struct {
 // ExtraConfig extra config
 type ExtraConfig struct {
 	MustRegisterAccount      bool
-	MinReserveFee            string
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
 	EnableCheckBlockFork     bool
 }

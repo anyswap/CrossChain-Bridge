@@ -35,12 +35,40 @@ type ChainConfig struct {
 	EnableScanPool bool
 	ScanReceipt    bool `json:",omitempty"`
 
+	MinReserveFee              string
 	BaseGasPrice               string `json:",omitempty"`
 	MaxGasPriceFluctPercent    uint64 `json:",omitempty"`
 	ReplacePlusGasPricePercent uint64 `json:",omitempty"`
 	WaitTimeToReplace          int64  // seconds
 	MaxReplaceCount            int
 	EnableReplaceSwap          bool
+
+	IsDynamicFeeTxEnabled bool
+	PlusGasTipCapPercent  uint64
+	PlusGasFeeCapPercent  uint64
+	BlockCountFeeHistory  int
+	MaxGasTipCap          string
+	MaxGasFeeCap          string
+
+	// cached values
+	minReserveFee *big.Int
+	maxGasTipCap  *big.Int
+	maxGasFeeCap  *big.Int
+}
+
+// GetMinReserveFee get min reserve fee
+func (c *ChainConfig) GetMinReserveFee() *big.Int {
+	return c.minReserveFee
+}
+
+// GetMaxGasTipCap get max gas tip cap
+func (c *ChainConfig) GetMaxGasTipCap() *big.Int {
+	return c.maxGasTipCap
+}
+
+// GetMaxGasFeeCap get max fee gas cap
+func (c *ChainConfig) GetMaxGasFeeCap() *big.Int {
+	return c.maxGasFeeCap
 }
 
 // GatewayConfig struct
@@ -257,9 +285,11 @@ type AllExtras struct {
 
 // EthExtraArgs struct
 type EthExtraArgs struct {
-	Gas      *uint64  `json:"gas,omitempty"`
-	GasPrice *big.Int `json:"gasPrice,omitempty"`
-	Nonce    *uint64  `json:"nonce,omitempty"`
+	Gas       *uint64  `json:"gas,omitempty"`
+	GasPrice  *big.Int `json:"gasPrice,omitempty"`
+	GasTipCap *big.Int `json:"gasTipCap,omitempty"`
+	GasFeeCap *big.Int `json:"gasFeeCap,omitempty"`
+	Nonce     *uint64  `json:"nonce,omitempty"`
 }
 
 // BtcOutPoint struct
@@ -306,6 +336,38 @@ func (c *ChainConfig) CheckConfig() error {
 	if c.BaseGasPrice != "" {
 		if _, err := common.GetBigIntFromStr(c.BaseGasPrice); err != nil {
 			return errors.New("wrong 'BaseGasPrice'")
+		}
+	}
+	if c.MinReserveFee != "" {
+		bi, ok := new(big.Int).SetString(c.MinReserveFee, 10)
+		if !ok {
+			return errors.New("wrong 'MinReserveFee' in extra config")
+		}
+		c.minReserveFee = bi
+	}
+	if c.IsDynamicFeeTxEnabled {
+		if c.MaxGasTipCap != "" {
+			bi, err := common.GetBigIntFromStr(c.MaxGasTipCap)
+			if err != nil {
+				return errors.New("wrong 'MaxGasTipCap'")
+			}
+			c.maxGasTipCap = bi
+		}
+		if c.MaxGasFeeCap != "" {
+			bi, err := common.GetBigIntFromStr(c.MaxGasFeeCap)
+			if err != nil {
+				return errors.New("wrong 'MaxGasFeeCap'")
+			}
+			c.maxGasFeeCap = bi
+		}
+		if c.PlusGasTipCapPercent > 100 {
+			return errors.New("too large 'PlusGasTipCapPercent'")
+		}
+		if c.PlusGasFeeCapPercent > 100 {
+			return errors.New("too large 'PlusGasFeeCapPercent'")
+		}
+		if c.BlockCountFeeHistory > 1024 {
+			return errors.New("too large 'BlockCountFeeHistory'")
 		}
 	}
 	return nil

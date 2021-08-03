@@ -8,7 +8,6 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
@@ -109,11 +108,15 @@ func (b *Bridge) checkBuildTxArgs(args *tokens.BuildTxArgs) error {
 
 func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, input []byte) (rawTx interface{}, err error) {
 	var (
-		to       = common.HexToAddress(args.To)
-		value    = args.Value
-		nonce    = *extra.Nonce
-		gasLimit = *extra.Gas
-		gasPrice = extra.GasPrice
+		to        = common.HexToAddress(args.To)
+		value     = args.Value
+		nonce     = *extra.Nonce
+		gasLimit  = *extra.Gas
+		gasPrice  = extra.GasPrice
+		gasTipCap = extra.GasTipCap
+		gasFeeCap = extra.GasFeeCap
+
+		isDynamicFeeTx = b.ChainConfig.IsDynamicFeeTxEnabled
 	)
 
 	needValue := big.NewInt(0)
@@ -121,7 +124,10 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		needValue = value
 	}
 	if args.SwapType != tokens.NoSwapType {
-		needValue = new(big.Int).Add(needValue, getMinReserveFee())
+		needValue = new(big.Int).Add(needValue, b.getMinReserveFee())
+	} else if isDynamicFeeTx {
+		gasFee := new(big.Int).Mul(gasFeeCap, new(big.Int).SetUint64(gasLimit))
+		needValue = new(big.Int).Add(needValue, gasFee)
 	} else {
 		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
@@ -132,25 +138,30 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		return nil, err
 	}
 
-	rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)
+	if isDynamicFeeTx {
+		rawTx = types.NewDynamicFeeTx(b.SignerChainID, nonce, &to, value, gasLimit, gasTipCap, gasFeeCap, input, nil)
+	} else {
+		rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)
+	}
 
 	log.Info("build raw tx", "pairID", args.PairID, "identifier", args.Identifier,
 		"swapID", args.SwapID, "swapType", args.SwapType,
 		"bind", args.Bind, "originValue", args.OriginValue, "swapValue", args.SwapValue,
 		"from", args.From, "to", to.String(), "value", value, "nonce", nonce,
-		"gasLimit", gasLimit, "gasPrice", gasPrice, "data", common.ToHex(input))
+		"gasLimit", gasLimit, "gasPrice", gasPrice, "data", common.ToHex(input),
+		"gasTipCap", gasTipCap, "gasFeeCap", gasFeeCap,
+	)
 
 	return rawTx, nil
 }
 
-func getMinReserveFee() *big.Int {
+func (b *Bridge) getMinReserveFee() *big.Int {
 	if minReserveFee != nil {
 		return minReserveFee
 	}
-	if params.GetExtraConfig() == nil || params.GetExtraConfig().MinReserveFee == "" {
+	minReserveFee = b.ChainConfig.GetMinReserveFee()
+	if minReserveFee == nil {
 		minReserveFee = big.NewInt(1e16) // default 0.01 ETH
-	} else {
-		minReserveFee, _ = new(big.Int).SetString(params.GetExtraConfig().MinReserveFee, 10)
 	}
 	return minReserveFee
 }
@@ -165,11 +176,27 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 	} else {
 		extra = args.Extra.EthExtra
 	}
-	if extra.GasPrice == nil {
+	if b.ChainConfig.IsDynamicFeeTxEnabled {
+		if extra.GasTipCap == nil {
+			extra.GasTipCap, err = b.getGasTipCap(args)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if extra.GasFeeCap == nil {
+			extra.GasFeeCap, err = b.getGasFeeCap(args, extra.GasTipCap)
+			if err != nil {
+				return nil, err
+			}
+		}
+		extra.GasPrice = nil
+	} else if extra.GasPrice == nil {
 		extra.GasPrice, err = b.getGasPrice(args)
 		if err != nil {
 			return nil, err
 		}
+		extra.GasTipCap = nil
+		extra.GasFeeCap = nil
 	}
 	if extra.Nonce == nil {
 		extra.Nonce, err = b.getAccountNonce(args.PairID, args.From, args.SwapType)
@@ -299,4 +326,68 @@ func (b *Bridge) checkBalance(token, account string, amount *big.Int) (err error
 		log.Warn("get balance error", "token", token, "account", account, "err", err)
 	}
 	return err
+}
+
+func (b *Bridge) getGasTipCap(args *tokens.BuildTxArgs) (gasTipCap *big.Int, err error) {
+	for i := 0; i < retryRPCCount; i++ {
+		gasTipCap, err = b.SuggestGasTipCap()
+		if err == nil {
+			break
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if args == nil || args.SwapType == tokens.NoSwapType {
+		return gasTipCap, err
+	}
+
+	addPercent := b.ChainConfig.PlusGasTipCapPercent
+	if args.ReplaceNum > 0 {
+		addPercent += args.ReplaceNum * b.ChainConfig.ReplacePlusGasPricePercent
+	}
+	if addPercent > tokens.MaxPlusGasPricePercentage {
+		addPercent = tokens.MaxPlusGasPricePercentage
+	}
+	if addPercent > 0 {
+		gasTipCap.Mul(gasTipCap, big.NewInt(int64(100+addPercent)))
+		gasTipCap.Div(gasTipCap, big.NewInt(100))
+	}
+
+	maxGasTipCap := b.ChainConfig.GetMaxGasTipCap()
+	if maxGasTipCap != nil && gasTipCap.Cmp(maxGasTipCap) > 0 {
+		gasTipCap = maxGasTipCap
+	}
+	return gasTipCap, nil
+}
+
+func (b *Bridge) getGasFeeCap(args *tokens.BuildTxArgs, gasTipCap *big.Int) (gasFeeCap *big.Int, err error) {
+	blockCount := b.ChainConfig.BlockCountFeeHistory
+	var baseFee *big.Int
+	for i := 0; i < retryRPCCount; i++ {
+		baseFee, err = b.GetBaseFee(blockCount)
+		if err == nil {
+			break
+		}
+		time.Sleep(retryRPCInterval)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	newGasFeeCap := new(big.Int).Set(gasTipCap) // copy
+	newGasFeeCap.Add(newGasFeeCap, baseFee.Mul(baseFee, big.NewInt(2)))
+	if args == nil || args.SwapType == tokens.NoSwapType {
+		return newGasFeeCap, err
+	}
+
+	newGasFeeCap.Mul(newGasFeeCap, big.NewInt(int64(100+b.ChainConfig.PlusGasFeeCapPercent)))
+	newGasFeeCap.Div(newGasFeeCap, big.NewInt(100))
+
+	maxGasFeeCap := b.ChainConfig.GetMaxGasFeeCap()
+	if maxGasFeeCap != nil && newGasFeeCap.Cmp(maxGasFeeCap) > 0 {
+		newGasFeeCap = maxGasFeeCap
+	}
+	return newGasFeeCap, nil
 }

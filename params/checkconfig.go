@@ -2,7 +2,6 @@ package params
 
 import (
 	"errors"
-	"math/big"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -162,12 +161,5 @@ func (c *OracleConfig) CheckConfig() (err error) {
 
 // CheckConfig extra config
 func (c *ExtraConfig) CheckConfig() (err error) {
-	if c.MinReserveFee != "" {
-		bi, ok := new(big.Int).SetString(c.MinReserveFee, 10)
-		if !ok {
-			return errors.New("wrong 'MinReserveFee' in extra config")
-		}
-		log.Printf("MinReserveFee is %v", bi)
-	}
 	return nil
 }

@@ -48,7 +48,6 @@ UtxoAggregateToAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 
 [Extra]
 MustRegisterAccount = false
-MinReserveFee = "10000000000000000"
 IsSwapoutToStringAddress = false
 EnableCheckBlockFork = false
 
