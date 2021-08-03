@@ -105,6 +105,15 @@ WaitTimeToReplace = 900
 MaxReplaceCount = 20
 # enable replace swap job
 EnableReplaceSwap = false
+# minimum reserve coin for gas provide
+MinReserveFee = "10000000000000000"
+# dynamic fee tx related (EIP-1559)
+IsDynamicFeeTxEnabled = false
+PlusGasTipCapPercent = 10
+PlusGasFeeCapPercent = 10
+BlockCountFeeHistory = 3
+MaxGasTipCap = "5000000000"
+MaxGasFeeCap = "10000000000"
 
 # dest blockchain gateway config
 [DestGateway]
