@@ -15,6 +15,10 @@ func CheckConfig(isServer bool) (err error) {
 	if config.Identifier == "" {
 		return errors.New("server must config non empty 'Identifier'")
 	}
+	err = checkChainAndGatewayConfig()
+	if err != nil {
+		return err
+	}
 	if isServer {
 		if config.MongoDB == nil {
 			return errors.New("server must config 'MongoDB'")
@@ -22,18 +26,11 @@ func CheckConfig(isServer bool) (err error) {
 		if config.APIServer == nil {
 			return errors.New("server must config 'APIServer'")
 		}
-	} else {
-		if config.Oracle == nil {
-			return errors.New("oracle must config 'Oracle'")
-		}
+	} else if config.SrcChain.EnableScan || config.DestChain.EnableScan {
 		err = config.Oracle.CheckConfig()
 		if err != nil {
 			return err
 		}
-	}
-	err = checkChainAndGatewayConfig()
-	if err != nil {
-		return err
 	}
 	if config.Dcrm == nil {
 		return errors.New("server must config 'Dcrm'")
@@ -131,6 +128,9 @@ func (c *DcrmNodeConfig) CheckConfig(isServer bool) (err error) {
 
 // CheckConfig check oracle config
 func (c *OracleConfig) CheckConfig() (err error) {
+	if c == nil {
+		return errors.New("oracle must config 'Oracle'")
+	}
 	ServerAPIAddress = c.ServerAPIAddress
 	if ServerAPIAddress == "" {
 		return errors.New("oracle must config 'ServerAPIAddress'")

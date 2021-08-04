@@ -13,7 +13,6 @@ import (
 // MatchTx struct
 type MatchTx struct {
 	SwapTx     string
-	OldSwapTxs []string
 	SwapHeight uint64
 	SwapTime   uint64
 	SwapValue  string
@@ -64,17 +63,20 @@ func addInitialSwapResult(swapInfo *tokens.TxSwapInfo, status mongodb.SwapStatus
 
 func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 	updates := &mongodb.SwapResultUpdateItems{
-		Status:    mongodb.MatchTxNotStable,
+		Status:    mongodb.KeepStatus,
 		Timestamp: now(),
 	}
 	if mtx.SwapHeight == 0 {
-		updates.SwapTx = mtx.SwapTx
-		updates.OldSwapTxs = mtx.OldSwapTxs
 		updates.SwapValue = mtx.SwapValue
 		updates.SwapNonce = mtx.SwapNonce
 		updates.SwapHeight = 0
 		updates.SwapTime = 0
+		if mtx.SwapTx != "" {
+			updates.SwapTx = mtx.SwapTx
+			updates.Status = mongodb.MatchTxNotStable
+		}
 	} else {
+		updates.SwapNonce = mtx.SwapNonce
 		updates.SwapHeight = mtx.SwapHeight
 		updates.SwapTime = mtx.SwapTime
 		if mtx.SwapTx != "" {
@@ -101,6 +103,35 @@ func updateSwapResult(txid, pairID, bind string, mtx *MatchTx) (err error) {
 			"swaptx", mtx.SwapTx, "swapheight", mtx.SwapHeight,
 			"swaptime", mtx.SwapTime, "swapvalue", mtx.SwapValue,
 			"swaptype", mtx.SwapType, "swapnonce", mtx.SwapNonce)
+	}
+	return err
+}
+
+func updateSwapResultHeight(swap *mongodb.MgoSwapResult, blockHeight, blockTime uint64, updateSwapTx bool) (err error) {
+	updates := &mongodb.SwapResultUpdateItems{
+		Status:    mongodb.KeepStatus,
+		Timestamp: now(),
+	}
+	updates.SwapHeight = blockHeight
+	updates.SwapTime = blockTime
+	if updateSwapTx {
+		updates.SwapTx = swap.SwapTx
+	}
+	txid := swap.TxID
+	pairID := swap.PairID
+	bind := swap.Bind
+	switch tokens.SwapType(swap.SwapType) {
+	case tokens.SwapinType:
+		err = mongodb.UpdateSwapinResult(txid, pairID, bind, updates)
+	case tokens.SwapoutType:
+		err = mongodb.UpdateSwapoutResult(txid, pairID, bind, updates)
+	default:
+		err = tokens.ErrUnknownSwapType
+	}
+	if err != nil {
+		logWorkerError("update", "updateSwapResultHeight", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swap.SwapTx, "height", blockHeight)
+	} else {
+		logWorker("update", "updateSwapResultHeight", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swap.SwapTx, "height", blockHeight)
 	}
 	return err
 }
@@ -204,8 +235,6 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 	}
 	if err != nil {
 		logWorkerError("sendtx", "update swap status to TxSwapFailed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
-		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
-		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, mongodb.TxSwapFailed, now(), err.Error())
 		return err
 	}
 	if !isReplace {

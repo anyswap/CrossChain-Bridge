@@ -193,12 +193,6 @@ func swap(txid, pairID *string, isSwapin bool) (*PostResult, error) {
 	pairIDStr := *pairID
 	bridge := tokens.GetCrossChainBridge(isSwapin)
 	swapInfo, err := bridge.VerifyTransaction(pairIDStr, txidstr, true)
-	if err != nil {
-		txStat := bridge.GetTransactionStatus(txidstr)
-		if txStat != nil && txStat.BlockHeight > 0 {
-			swapInfo, err = bridge.VerifyTransaction(pairIDStr, txidstr, false)
-		}
-	}
 	var txType tokens.SwapTxType
 	if isSwapin {
 		txType = tokens.SwapinTx
@@ -208,6 +202,11 @@ func swap(txid, pairID *string, isSwapin bool) (*PostResult, error) {
 	err = addSwapToDatabase(txidstr, txType, swapInfo, err)
 	if err != nil {
 		return nil, err
+	}
+	if isSwapin {
+		log.Info("[api] receive swapin register", "txid", txidstr, "pairID", pairIDStr)
+	} else {
+		log.Info("[api] receive swapout register", "txid", txidstr, "pairID", pairIDStr)
 	}
 	return &SuccessPostResult, nil
 }
@@ -335,8 +334,11 @@ func GetLatestScanInfo(isSrc bool) (*LatestScanInfo, error) {
 	return mongodb.FindLatestScanInfo(isSrc)
 }
 
-// RegisterAddress register address
+// RegisterAddress register address for ETH like chain
 func RegisterAddress(address string) (*PostResult, error) {
+	if !params.MustRegisterAccount() {
+		return &SuccessPostResult, nil
+	}
 	address = strings.ToLower(address)
 	err := mongodb.AddRegisteredAddress(address)
 	if err != nil {

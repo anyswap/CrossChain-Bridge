@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	defaultTimeout   = 60 // seconds
-	defaultRequestID = 1
+	defaultSlowTimeout = 60 // seconds
+	defaultTimeout     = 5  // seconds
+	defaultRequestID   = 1
 )
 
 // Request json rpc request
@@ -131,7 +132,7 @@ func getResultFromJSONResponse(result interface{}, resp *http.Response) error {
 
 // RPCRawPost rpc raw post
 func RPCRawPost(url, body string) (string, error) {
-	return RPCRawPostWithTimeout(url, body, defaultTimeout)
+	return RPCRawPostWithTimeout(url, body, defaultSlowTimeout)
 }
 
 // RPCRawPostWithTimeout rpc raw post with timeout

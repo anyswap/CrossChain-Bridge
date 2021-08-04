@@ -12,67 +12,77 @@ import (
 )
 
 // verifyErc20SwapinTx verify erc20 swapin with pairID
-func (b *Bridge) verifyErc20SwapinTx(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	if allowUnstable {
-		return b.verifyErc20SwapinTxUnstable(tx, pairID, token)
-	}
-	return b.verifyErc20SwapinTxStable(tx, pairID, token)
-}
-
-func (b *Bridge) verifyErc20SwapinTxStable(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
-	txHash := tx.Hash.String()
-	txRecipient := strings.ToLower(tx.Recipient.String())
-
+func (b *Bridge) verifyErc20SwapinTx(pairID, txHash string, allowUnstable bool, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID    // PairID
-	swapInfo.Hash = txHash      // Hash
-	swapInfo.TxTo = txRecipient // TxTo
+	swapInfo.PairID = pairID // PairID
+	swapInfo.Hash = txHash   // Hash
 
-	receipt, err := b.getStableReceipt(swapInfo)
+	receipt, err := b.getReceipt(swapInfo, allowUnstable)
 	if err != nil {
 		return swapInfo, err
 	}
 
-	if receipt.Recipient == nil ||
-		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) {
-		return swapInfo, tokens.ErrTxWithWrongContract
+	if receipt == nil {
+		return swapInfo, tokens.ErrTxNotFound
 	}
 
-	swapInfo.From = strings.ToLower(receipt.From.String()) // From
-
-	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.ContractAddress, token.DepositAddress)
+	err = b.verifyErc20SwapinTxReceipt(swapInfo, receipt, token)
 	if err != nil {
-		if err != tokens.ErrTxWithWrongReceiver {
-			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", txHash, "err", err)
-		}
 		return swapInfo, err
 	}
-	swapInfo.To = strings.ToLower(to)     // To
-	swapInfo.Value = value                // Value
-	swapInfo.Bind = strings.ToLower(from) // Bind
 
 	err = b.checkSwapinInfo(swapInfo)
 	if err != nil {
 		return swapInfo, err
 	}
 
-	log.Debug("verify erc20 swapin pass", "from", "pairID", swapInfo.PairID, swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+	if !allowUnstable {
+		log.Info("verify erc20 swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+	}
 	return swapInfo, nil
 }
 
-func (b *Bridge) verifyErc20SwapinTxUnstable(tx *types.RPCTransaction, pairID string, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
-	txHash := tx.Hash.String()
-	swapInfo := &tokens.TxSwapInfo{}
-	swapInfo.PairID = pairID // PairID
-	swapInfo.Hash = txHash   // Hash
+func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *types.RPCTxReceipt, token *tokens.TokenConfig) error {
+	if receipt.Recipient == nil {
+		return tokens.ErrTxWithWrongContract
+	}
 
+	if !token.AllowSwapinFromContract &&
+		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) {
+		return tokens.ErrTxWithWrongContract
+	}
+
+	swapInfo.TxTo = strings.ToLower(receipt.Recipient.String()) // TxTo
+	swapInfo.From = strings.ToLower(receipt.From.String())      // From
+
+	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.ContractAddress, token.DepositAddress)
+	if err != nil {
+		if err != tokens.ErrTxWithWrongReceiver {
+			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxLogs failed", "tx", swapInfo.Hash, "err", err)
+		}
+		return err
+	}
+	swapInfo.To = strings.ToLower(to)     // To
+	swapInfo.Value = value                // Value
+	swapInfo.Bind = strings.ToLower(from) // Bind
+	return nil
+}
+
+// nolint:unused // keep
+func (b *Bridge) verifySwapinRawTx(swapInfo *tokens.TxSwapInfo, token *tokens.TokenConfig) error {
+	txHash := swapInfo.Hash
+	tx, err := b.GetTransactionByHash(txHash)
+	if err != nil {
+		log.Debug("[verifySwapinRawTx] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
+		return tokens.ErrTxNotFound
+	}
 	if tx.Recipient == nil {
-		return swapInfo, tokens.ErrTxWithWrongContract
+		return tokens.ErrTxWithWrongContract
 	}
 
 	txRecipient := strings.ToLower(tx.Recipient.String())
 	if !common.IsEqualIgnoreCase(txRecipient, token.ContractAddress) {
-		return swapInfo, tokens.ErrTxWithWrongContract
+		return tokens.ErrTxWithWrongContract
 	}
 
 	swapInfo.TxTo = txRecipient                       // TxTo
@@ -82,9 +92,9 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(tx *types.RPCTransaction, pairID st
 	from, to, value, err := ParseErc20SwapinTxInput(input, token.DepositAddress)
 	if err != nil {
 		if err != tokens.ErrTxWithWrongReceiver {
-			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", txHash, "err", err)
+			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", swapInfo.Hash, "err", err)
 		}
-		return swapInfo, err
+		return err
 	}
 	swapInfo.To = strings.ToLower(to) // To
 	swapInfo.Value = value            // Value
@@ -93,13 +103,7 @@ func (b *Bridge) verifyErc20SwapinTxUnstable(tx *types.RPCTransaction, pairID st
 	} else {
 		swapInfo.Bind = swapInfo.From // Bind
 	}
-
-	err = b.checkSwapinInfo(swapInfo)
-	if err != nil {
-		return swapInfo, err
-	}
-
-	return swapInfo, nil
+	return nil
 }
 
 // ParseErc20SwapinTxInput parse erc20 swapin tx input
@@ -157,18 +161,18 @@ func ParseErc20SwapinTxLogs(logs []*types.RPCLog, contractAddress, checkToAddres
 func parseErc20EncodedData(encData []byte, isTransferFrom bool, checkToAddress string) (from, to string, value *big.Int, err error) {
 	// use common GetData and GetBigInt to prevent index overflow
 	if isTransferFrom {
+		if len(encData) != 96 {
+			return "", "", nil, tokens.ErrTxIncompatible
+		}
 		from = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
 		to = common.BytesToAddress(common.GetData(encData, 32, 32)).String()
 		value = common.GetBigInt(encData, 64, 32)
-		if len(encData) != 96 {
-			err = tokens.ErrTxIncompatible
-		}
 	} else {
+		if len(encData) != 64 {
+			return "", "", nil, tokens.ErrTxIncompatible
+		}
 		to = common.BytesToAddress(common.GetData(encData, 0, 32)).String()
 		value = common.GetBigInt(encData, 32, 32)
-		if len(encData) != 64 {
-			err = tokens.ErrTxIncompatible
-		}
 	}
 	// error ErrTxWithWrongReceiver has highest priority,
 	// because this error means we don't care about this tx.

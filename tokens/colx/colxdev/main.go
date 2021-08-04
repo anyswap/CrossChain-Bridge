@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
-	colxutil "github.com/giangnamnabka/btcutil"
-	"github.com/giangnamnabka/btcd/chaincfg"
 	"github.com/giangnamnabka/btcd/btcec"
+	"github.com/giangnamnabka/btcd/chaincfg"
+	colxutil "github.com/giangnamnabka/btcutil"
 )
 
 func main() {

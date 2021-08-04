@@ -29,8 +29,8 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 
 	args.To = token.ContractAddress // to
 
-	if !token.IsDelegateContract {
-		return nil
+	if token.IsDelegateContract && !token.IsAnyswapAdapter {
+		return b.checkBalance(token.DelegateToken, token.ContractAddress, amount)
 	}
-	return b.checkBalance(token.DelegateToken, token.ContractAddress, amount)
+	return nil
 }

@@ -2,6 +2,7 @@ package eth
 
 import (
 	"strings"
+	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -11,35 +12,26 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-// GetTransaction impl
-func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
-	return b.GetTransactionByHash(txHash)
-}
-
 // GetTransactionStatus impl
 func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	var txStatus tokens.TxStatus
-	txr, err := b.GetTransactionReceipt(txHash)
+	txr, url, err := b.GetTransactionReceipt(txHash)
 	if err != nil {
 		log.Trace("GetTransactionReceipt fail", "hash", txHash, "err", err)
 		return &txStatus
 	}
 	txStatus.BlockHeight = txr.BlockNumber.ToInt().Uint64()
 	txStatus.BlockHash = txr.BlockHash.String()
-	block, err := b.GetBlockByHash(txStatus.BlockHash)
-	if err == nil {
-		txStatus.BlockTime = block.Time.ToInt().Uint64()
-	} else {
-		log.Debug("GetBlockByHash fail", "hash", txStatus.BlockHash, "err", err)
-	}
 	if txStatus.BlockHeight != 0 {
-		latest, err := b.GetLatestBlockNumber()
-		if err == nil {
-			if latest > txStatus.BlockHeight {
-				txStatus.Confirmations = latest - txStatus.BlockHeight
+		for i := 0; i < 3; i++ {
+			latest, err := b.GetLatestBlockNumberOf(url)
+			if err == nil {
+				if latest > txStatus.BlockHeight {
+					txStatus.Confirmations = latest - txStatus.BlockHeight
+				}
+				break
 			}
-		} else {
-			log.Debug("GetLatestBlockNumber fail", "err", err)
+			time.Sleep(1 * time.Second)
 		}
 	}
 	txStatus.Receipt = txr
@@ -65,6 +57,15 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) error {
 	return nil
 }
 
+func getTxByHash(b *Bridge, txHash string, withExt bool) (*types.RPCTransaction, error) {
+	gateway := b.GatewayConfig
+	tx, err := getTransactionByHash(txHash, gateway.APIAddress)
+	if err != nil && withExt && len(gateway.APIAddressExt) > 0 {
+		tx, err = getTransactionByHash(txHash, gateway.APIAddressExt)
+	}
+	return tx, err
+}
+
 // VerifyTransaction impl
 func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	if !b.IsSrc {
@@ -83,28 +84,22 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, tokens.ErrUnknownPairID
 	}
 
-	tx, err := b.GetTransactionByHash(txHash)
+	if token.IsErc20() {
+		return b.verifyErc20SwapinTx(pairID, txHash, allowUnstable, token)
+	}
+
+	_, err := b.getReceipt(swapInfo, allowUnstable)
+	if err != nil {
+		return swapInfo, err
+	}
+
+	tx, err := getTxByHash(b, txHash, !allowUnstable)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
-
 	if tx.Recipient == nil { // ignore contract creation tx
-		if token.IsErc20() {
-			return swapInfo, tokens.ErrTxWithWrongContract
-		}
 		return swapInfo, tokens.ErrTxWithWrongReceiver
-	}
-
-	if token.IsErc20() {
-		return b.verifyErc20SwapinTx(tx, pairID, token, allowUnstable)
-	}
-
-	if !allowUnstable {
-		_, err = b.getStableReceipt(swapInfo)
-		if err != nil {
-			return swapInfo, err
-		}
 	}
 
 	txRecipient := strings.ToLower(tx.Recipient.String())
@@ -124,7 +119,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	}
 
 	if !allowUnstable {
-		log.Debug("verify swapin stable pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+		log.Info("verify swapin stable pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", txHash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfo, nil
 }
@@ -152,7 +147,7 @@ func (b *Bridge) verifySwapinTx(txHash string, allowUnstable bool) (swapInfos []
 		token := tokenCfgs[i]
 
 		if token.IsErc20() {
-			swapInfo, errf := b.verifyErc20SwapinTx(tx, pairID, token, allowUnstable)
+			swapInfo, errf := b.verifyErc20SwapinTx(pairID, txHash, allowUnstable, token)
 			addSwapInfoConsiderError(swapInfo, errf, &swapInfos, &errs)
 			continue
 		}
@@ -197,6 +192,21 @@ func addSwapInfoConsiderError(swapInfo *tokens.TxSwapInfo, err error, swapInfos 
 	*errs = append(*errs, err)
 }
 
+func (b *Bridge) getReceipt(swapInfo *tokens.TxSwapInfo, allowUnstable bool) (*types.RPCTxReceipt, error) {
+	if !allowUnstable {
+		return b.getStableReceipt(swapInfo)
+	}
+	receipt, _, err := b.GetTransactionReceipt(swapInfo.Hash)
+	if err != nil {
+		return nil, nil // if receipt not found, then verify raw tx input
+	}
+	swapInfo.Height = receipt.BlockNumber.ToInt().Uint64() // Height
+	if *receipt.Status != 1 {
+		return nil, tokens.ErrTxWithWrongReceipt
+	}
+	return receipt, nil
+}
+
 func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxReceipt, error) {
 	txStatus := b.GetTransactionStatus(swapInfo.Hash)
 	swapInfo.Height = txStatus.BlockHeight  // Height
@@ -205,12 +215,12 @@ func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxRece
 	if !ok || receipt == nil {
 		return nil, tokens.ErrTxNotStable
 	}
-	if *receipt.Status != 1 {
-		return nil, tokens.ErrTxWithWrongReceipt
-	}
 	if txStatus.BlockHeight == 0 ||
 		txStatus.Confirmations < *b.GetChainConfig().Confirmations {
 		return nil, tokens.ErrTxNotStable
+	}
+	if *receipt.Status != 1 {
+		return nil, tokens.ErrTxWithWrongReceipt
 	}
 	return receipt, nil
 }
@@ -222,10 +232,14 @@ func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
 		return tokens.ErrTxWithWrongValue
 	}
-	return b.checkSwapinBindAddress(swapInfo.Bind)
+	token := b.GetTokenConfig(swapInfo.PairID)
+	if token == nil {
+		return tokens.ErrUnknownPairID
+	}
+	return b.checkSwapinBindAddress(swapInfo.Bind, token.AllowSwapinFromContract)
 }
 
-func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
+func (b *Bridge) checkSwapinBindAddress(bindAddr string, allowContractAddress bool) error {
 	if !tokens.DstBridge.IsValidAddress(bindAddr) {
 		log.Warn("wrong bind address in swapin", "bind", bindAddr)
 		return tokens.ErrTxWithWrongMemo
@@ -233,13 +247,15 @@ func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
 	if params.MustRegisterAccount() && !tools.IsAddressRegistered(bindAddr) {
 		return tokens.ErrTxSenderNotRegistered
 	}
-	isContract, err := b.IsContractAddress(bindAddr)
-	if err != nil {
-		log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)
-		return tokens.ErrRPCQueryError
-	}
-	if isContract {
-		return tokens.ErrBindAddrIsContract
+	if !allowContractAddress {
+		isContract, err := b.IsContractAddress(bindAddr)
+		if err != nil {
+			log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)
+			return tokens.ErrRPCQueryError
+		}
+		if isContract {
+			return tokens.ErrBindAddrIsContract
+		}
 	}
 	return nil
 }

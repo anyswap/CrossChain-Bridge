@@ -131,7 +131,11 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 	resultStatus := mongodb.MatchTxEmpty
 
 	switch err {
-	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+	case tokens.ErrTxNotStable,
+		tokens.ErrTxNotFound,
+		tokens.ErrTxWithWrongReceipt,
+		tokens.ErrTxIncompatible,
+		tokens.ErrRPCQueryError:
 		return err
 	case nil:
 		status := mongodb.TxNotSwapped
@@ -153,13 +157,8 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSenderNotRegistered, now(), err.Error())
 	case tokens.ErrTxWithWrongSender:
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxWithWrongSender, now(), err.Error())
-	case tokens.ErrTxIncompatible:
-		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxIncompatible, now(), err.Error())
-	case tokens.ErrTxWithWrongReceipt,
-		tokens.ErrBindAddressMismatch:
+	case tokens.ErrBindAddressMismatch:
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
-	case tokens.ErrRPCQueryError:
-		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.RPCQueryError, now(), err.Error())
 	default:
 		logWorkerWarn("verify", "maybe not considered tx verify error", "err", err)
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())

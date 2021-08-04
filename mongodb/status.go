@@ -16,10 +16,8 @@ import (
 //                |- TxWithWrongSender -> manual
 //                |- TxWithWrongValue  -> manual
 //                |- SwapInBlacklist   -> manual
-//                |- TxIncompatible    -> manual
 //                |- ManualMakeFail    -> manual
 //                |- BindAddrIsContract-> manual
-//                |- RPCQueryError     -> manual
 //                |- TxWithBigValue        ---> TxNotSwapped
 //                |- TxSenderNotRegistered ---> TxNotStable
 //                |- TxNotSwapped -> |- TxSwapFailed -> manual
@@ -57,7 +55,6 @@ const (
 	SwapInBlacklist                         // 15
 	ManualMakeFail                          // 16
 	BindAddrIsContract                      // 17
-	RPCQueryError                           // 18
 
 	KeepStatus = 255
 )
@@ -85,7 +82,7 @@ func (status SwapStatus) CanManualMakeFail() bool {
 // CanRetry can retry
 func (status SwapStatus) CanRetry() bool {
 	switch status {
-	case TxSenderNotRegistered, RPCQueryError:
+	case TxSenderNotRegistered:
 		return true
 	default:
 		return false
@@ -102,9 +99,7 @@ func (status SwapStatus) CanReverify() bool {
 		TxSenderNotRegistered,
 		SwapInBlacklist,
 		ManualMakeFail,
-		TxIncompatible,
-		BindAddrIsContract,
-		RPCQueryError:
+		BindAddrIsContract:
 		return true
 	default:
 		return false
@@ -160,8 +155,6 @@ func (status SwapStatus) String() string {
 		return "ManualMakeFail"
 	case BindAddrIsContract:
 		return "BindAddrIsContract"
-	case RPCQueryError:
-		return "RPCQueryError"
 	default:
 		return fmt.Sprintf("unknown swap status %d", status)
 	}

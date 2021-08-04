@@ -1,7 +1,9 @@
 package worker
 
 import (
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -11,6 +13,8 @@ import (
 var (
 	swapinStableStarter  sync.Once
 	swapoutStableStarter sync.Once
+
+	treatAsNoncePassedInterval = int64(300) // seconds
 )
 
 // StartStableJob stable job
@@ -35,6 +39,7 @@ func startSwapinStableJob() {
 				if err != nil {
 					logWorkerError("stable", "process swapin stable error", err)
 				}
+				time.Sleep(3 * time.Second) // in case of too frequently rpc calling
 			}
 			restInJob(restIntervalInStableJob)
 		}
@@ -85,34 +90,22 @@ func processSwapoutStable(swap *mongodb.MgoSwapResult) (err error) {
 	return processSwapStable(swap, false)
 }
 
-func isTxOnChain(bridge tokens.CrossChainBridge, txStatus *tokens.TxStatus) bool {
-	if txStatus == nil || txStatus.BlockHeight == 0 {
-		return false
-	}
-	// only consider eth like tx
-	_, ok := bridge.(tokens.NonceSetter)
-	if !ok {
-		return true
-	}
-	return txStatus.Receipt != nil
-}
-
 func getSwapTxStatus(resBridge tokens.CrossChainBridge, swap *mongodb.MgoSwapResult) *tokens.TxStatus {
 	txStatus := resBridge.GetTransactionStatus(swap.SwapTx)
-	if isTxOnChain(resBridge, txStatus) {
+	if txStatus != nil && txStatus.BlockHeight > 0 {
 		return txStatus
 	}
 	for _, oldSwapTx := range swap.OldSwapTxs {
 		if swap.SwapTx == oldSwapTx {
 			continue
 		}
-		txStatus2 := resBridge.GetTransactionStatus(oldSwapTx)
-		if isTxOnChain(resBridge, txStatus2) {
+		txStatus = resBridge.GetTransactionStatus(oldSwapTx)
+		if txStatus != nil && txStatus.BlockHeight > 0 {
 			swap.SwapTx = oldSwapTx
-			return txStatus2
+			return txStatus
 		}
 	}
-	return txStatus
+	return nil
 }
 
 func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
@@ -120,6 +113,9 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)
 	txStatus := getSwapTxStatus(resBridge, swap)
 	if txStatus == nil || txStatus.BlockHeight == 0 {
+		if swap.SwapHeight == 0 {
+			return processUpdateSwapHeight(resBridge, swap, isSwapin)
+		}
 		return nil
 	}
 
@@ -144,13 +140,44 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 		return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 	}
 
-	matchTx := &MatchTx{
-		SwapHeight: txStatus.BlockHeight,
-		SwapTime:   txStatus.BlockTime,
-		SwapType:   getSwapType(isSwapin),
+	return updateSwapResultHeight(swap, txStatus.BlockHeight, txStatus.BlockTime, swap.SwapTx != oldSwapTx)
+}
+
+func processUpdateSwapHeight(resBridge tokens.CrossChainBridge, swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
+	nonceSetter, ok := resBridge.(tokens.NonceSetter)
+	if !ok {
+		return nil
 	}
-	if swap.SwapTx != oldSwapTx {
-		matchTx.SwapTx = swap.SwapTx
+	oldSwapTx := swap.SwapTx
+	blockHeight, blockTime := nonceSetter.GetTxBlockInfo(swap.SwapTx)
+	if blockHeight == 0 {
+		for _, oldSwapTx := range swap.OldSwapTxs {
+			if swap.SwapTx == oldSwapTx {
+				continue
+			}
+			blockHeight, blockTime = nonceSetter.GetTxBlockInfo(oldSwapTx)
+			if blockHeight > 0 {
+				swap.SwapTx = oldSwapTx
+				break
+			}
+		}
 	}
-	return updateSwapResult(swap.TxID, swap.PairID, swap.Bind, matchTx)
+	if blockHeight == 0 && swap.SwapNonce > 0 {
+		pairID := swap.PairID
+		tokenCfg := resBridge.GetTokenConfig(pairID)
+		if tokenCfg == nil {
+			return fmt.Errorf("no token config for pairID '%v'", pairID)
+		}
+		nonce, err := nonceSetter.GetPoolNonce(tokenCfg.DcrmAddress, "latest")
+		if err != nil {
+			return errGetNonceFailed
+		}
+		if nonce > swap.SwapNonce &&
+			swap.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
+			_ = markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
+			return errSwapNoncePassed
+		}
+		return nil
+	}
+	return updateSwapResultHeight(swap, blockHeight, blockTime, swap.SwapTx != oldSwapTx)
 }

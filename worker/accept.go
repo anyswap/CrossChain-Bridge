@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -21,6 +22,8 @@ var (
 	acceptRingLock    sync.RWMutex
 	acceptRingMaxSize = 500
 
+	maxAcceptSignTimeInterval = int64(600) // seconds
+
 	retryInterval = 3 * time.Second
 	waitInterval  = 20 * time.Second
 
@@ -28,6 +31,8 @@ var (
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
 	errInitiatorMismatch  = errors.New("initiator mismatch")
 	errWrongMsgContext    = errors.New("wrong msg context")
+	errInvalidSignInfo    = errors.New("invalid sign info")
+	errExpiredSignInfo    = errors.New("expired sign info")
 )
 
 // StartAcceptSignJob accept job
@@ -65,6 +70,8 @@ func acceptSign() {
 			case errIdentifierMismatch,
 				errInitiatorMismatch,
 				errWrongMsgContext,
+				errExpiredSignInfo,
+				errInvalidSignInfo,
 				tokens.ErrUnknownPairID,
 				tokens.ErrNoBtcBridge,
 				tokens.ErrTxNotStable,
@@ -90,6 +97,15 @@ func acceptSign() {
 }
 
 func verifySignInfo(signInfo *dcrm.SignInfoData) error {
+	timestamp, err := common.GetUint64FromStr(signInfo.TimeStamp)
+	if err != nil || int64(timestamp/1000)+maxAcceptSignTimeInterval < time.Now().Unix() {
+		logWorkerTrace("accept", "expired accept sign info", "signInfo", signInfo)
+		return errExpiredSignInfo
+	}
+	if signInfo.Key == "" || signInfo.Account == "" || signInfo.GroupID == "" {
+		logWorkerWarn("accept", "invalid accept sign info", "signInfo", signInfo)
+		return errInvalidSignInfo
+	}
 	if !params.IsDcrmInitiator(signInfo.Account) {
 		return errInitiatorMismatch
 	}
@@ -99,7 +115,7 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) error {
 		return errWrongMsgContext
 	}
 	var args tokens.BuildTxArgs
-	err := json.Unmarshal([]byte(msgContext[0]), &args)
+	err = json.Unmarshal([]byte(msgContext[0]), &args)
 	if err != nil {
 		return errWrongMsgContext
 	}
