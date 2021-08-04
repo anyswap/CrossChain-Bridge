@@ -10,13 +10,13 @@ import (
 // GetLatestBlockNumberOf impl
 func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	num, err := electrs.GetLatestBlockNumberOf(apiAddress)
-	return num + 499999, err
+	return num, err
 }
 
 // GetLatestBlockNumber impl
 func (b *Bridge) GetLatestBlockNumber() (uint64, error) {
 	num, err := electrs.GetLatestBlockNumber(b)
-	return num + 499999, err
+	return num, err
 }
 
 // GetTransactionByHash impl
@@ -35,7 +35,7 @@ func (b *Bridge) GetElectTransactionStatus(txHash string) (*electrs.ElectTxStatu
 		return nil, err
 	}
 	if result != nil {
-		*result.BlockHeight = *result.BlockHeight + 499999
+		*result.BlockHeight = *result.BlockHeight
 	}
 	return result, err
 }
