@@ -34,9 +34,6 @@ func (b *Bridge) GetElectTransactionStatus(txHash string) (*electrs.ElectTxStatu
 	if err != nil {
 		return nil, err
 	}
-	if result != nil {
-		*result.BlockHeight = *result.BlockHeight
-	}
 	return result, err
 }
 
