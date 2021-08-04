@@ -14,7 +14,7 @@ func CheckConfig(isServer bool) (err error) {
 	if config.Identifier == "" {
 		return errors.New("server must config non empty 'Identifier'")
 	}
-	err = checkChainAndGatewayConfig()
+	err = checkChainAndGatewayConfig(isServer)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func CheckConfig(isServer bool) (err error) {
 	return nil
 }
 
-func checkChainAndGatewayConfig() (err error) {
+func checkChainAndGatewayConfig(isServer bool) (err error) {
 	config := GetConfig()
 	if config.SrcChain == nil {
 		return errors.New("server must config 'SrcChain'")
@@ -62,11 +62,11 @@ func checkChainAndGatewayConfig() (err error) {
 	if config.DestGateway == nil {
 		return errors.New("server must config 'DestGateway'")
 	}
-	err = config.SrcChain.CheckConfig()
+	err = config.SrcChain.CheckConfig(isServer)
 	if err != nil {
 		return err
 	}
-	err = config.DestChain.CheckConfig()
+	err = config.DestChain.CheckConfig(isServer)
 	if err != nil {
 		return err
 	}

@@ -314,7 +314,7 @@ type P2shAddressInfo struct {
 }
 
 // CheckConfig check chain config
-func (c *ChainConfig) CheckConfig() error {
+func (c *ChainConfig) CheckConfig(isServer bool) error {
 	if c.BlockChain == "" {
 		return errors.New("token must config 'BlockChain'")
 	}
@@ -368,6 +368,17 @@ func (c *ChainConfig) CheckConfig() error {
 		}
 		if c.BlockCountFeeHistory > 1024 {
 			return errors.New("too large 'BlockCountFeeHistory'")
+		}
+		if isServer {
+			if c.maxGasTipCap == nil {
+				return errors.New("server must config 'MaxGasTipCap'")
+			}
+			if c.maxGasFeeCap == nil {
+				return errors.New("server must config 'MaxGasFeeCap'")
+			}
+			if c.maxGasTipCap.Cmp(c.maxGasFeeCap) > 0 {
+				return errors.New("must satisfy 'MaxGasTipCap <= MaxGasFeeCap'")
+			}
 		}
 	}
 	return nil
