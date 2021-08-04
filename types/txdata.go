@@ -214,6 +214,18 @@ func (tx *Transaction) encodeTyped(w *bytes.Buffer) error {
 	}
 }
 
+// MarshalBinary returns the canonical encoding of the transaction.
+// For legacy transactions, it returns the RLP encoding. For EIP-2718 typed
+// transactions, it returns the type and payload.
+func (tx *Transaction) MarshalBinary() ([]byte, error) {
+	if tx.Type() == LegacyTxType {
+		return rlp.EncodeToBytes(tx.toLegacyTx())
+	}
+	var buf bytes.Buffer
+	err := tx.encodeTyped(&buf)
+	return buf.Bytes(), err
+}
+
 // DecodeRLP implements rlp.Decoder
 func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 	kind, size, err := s.Kind()
@@ -225,8 +237,7 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 		var inner LegacyTx
 		err = s.Decode(&inner)
 		if err == nil {
-			tx.data = *inner.getTxData()
-			tx.size.Store(StorageSize(rlp.ListSize(size)))
+			tx.setDecoded(inner.getTxData(), int(size))
 		}
 		return err
 	case kind == rlp.String:
@@ -237,8 +248,7 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 		}
 		txData, err := tx.decodeTyped(b)
 		if err == nil {
-			tx.data = *txData
-			tx.size.Store(StorageSize(len(b)))
+			tx.setDecoded(txData, len(b))
 		}
 		return err
 	default:
@@ -268,5 +278,35 @@ func (tx *Transaction) decodeTyped(b []byte) (*txdata, error) {
 		return inner.getTxData(), nil
 	default:
 		return nil, ErrTxTypeNotSupported
+	}
+}
+
+// UnmarshalBinary decodes the canonical encoding of transactions.
+// It supports legacy RLP transactions and EIP2718 typed transactions.
+func (tx *Transaction) UnmarshalBinary(b []byte) error {
+	if len(b) > 0 && b[0] > 0x7f {
+		// It's a legacy transaction.
+		var inner LegacyTx
+		err := rlp.DecodeBytes(b, &inner)
+		if err != nil {
+			return err
+		}
+		tx.setDecoded(inner.getTxData(), len(b))
+		return nil
+	}
+	// It's an EIP2718 typed transaction envelope.
+	txData, err := tx.decodeTyped(b)
+	if err != nil {
+		return err
+	}
+	tx.setDecoded(txData, len(b))
+	return nil
+}
+
+// setDecoded sets the inner transaction and size after decoding.
+func (tx *Transaction) setDecoded(inner *txdata, size int) {
+	tx.data = *inner
+	if size > 0 {
+		tx.size.Store(StorageSize(size))
 	}
 }

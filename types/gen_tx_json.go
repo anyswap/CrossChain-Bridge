@@ -8,7 +8,6 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
-	"github.com/anyswap/CrossChain-Bridge/tools/rlp"
 )
 
 type txJSON struct {
@@ -136,12 +135,12 @@ func (tx *Transaction) PrintPretty() {
 
 // PrintRaw print raw encoded (hex string)
 func (tx *Transaction) PrintRaw() {
-	bs, _ := rlp.EncodeToBytes(tx)
+	bs, _ := tx.MarshalBinary()
 	fmt.Println(hexutil.Bytes(bs))
 }
 
 // RawStr return raw encoded (hex string)
 func (tx *Transaction) RawStr() string {
-	bs, _ := rlp.EncodeToBytes(tx)
+	bs, _ := tx.MarshalBinary()
 	return common.ToHex(bs)
 }

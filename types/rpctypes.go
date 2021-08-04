@@ -56,7 +56,7 @@ type RPCTransaction struct {
 
 // FeeHistoryResult fee history result
 type FeeHistoryResult struct {
-	OldestBlock  int64            `json:"oldestBlock"`
+	OldestBlock  interface{}      `json:"oldestBlock"`
 	Reward       [][]*hexutil.Big `json:"reward,omitempty"`
 	BaseFee      []*hexutil.Big   `json:"baseFeePerGas,omitempty"`
 	GasUsedRatio []float64        `json:"gasUsedRatio"`
