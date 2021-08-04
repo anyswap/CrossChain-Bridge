@@ -89,6 +89,7 @@ type MongoDBConfig struct {
 
 // ExtraConfig extra config
 type ExtraConfig struct {
+	IsDebugMode              bool `toml:",omitempty" json:",omitempty"`
 	MustRegisterAccount      bool
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
 	EnableCheckBlockFork     bool
@@ -126,6 +127,11 @@ func IsSwapoutToStringAddress() bool {
 // EnableCheckBlockFork enable check block fork
 func EnableCheckBlockFork() bool {
 	return GetExtraConfig() != nil && GetExtraConfig().EnableCheckBlockFork
+}
+
+// IsDebugMode is debug mode, add more debugging log infos
+func IsDebugMode() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().IsDebugMode
 }
 
 // IsDcrmEnabled is dcrm enabled (for dcrm sign)
