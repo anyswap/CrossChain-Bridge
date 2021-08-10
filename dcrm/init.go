@@ -29,6 +29,8 @@ var (
 	dcrmNeededOracles uint32
 	dcrmTotalOracles  uint32
 
+	dcrmSignTimeout = 120 * time.Second // default to 120 seconds
+
 	defaultDcrmNode   *NodeInfo
 	allInitiatorNodes []*NodeInfo // server only
 
@@ -50,6 +52,10 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 		return
 	}
 
+	if dcrmConfig.SignTimeout > 0 {
+		dcrmSignTimeout = time.Duration(dcrmConfig.SignTimeout) * time.Second
+	}
+
 	setDcrmGroup(*dcrmConfig.GroupID, dcrmConfig.Mode, *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
 	setDefaultDcrmNodeInfo(initDcrmNodeInfo(dcrmConfig.DefaultNode, isServer))
 
@@ -63,6 +69,7 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 	initAllEnodes()
 
 	verifyInitiators(dcrmConfig.Initiators)
+	log.Info("init dcrm success", "signTimeout", dcrmSignTimeout, "isServer", isServer)
 }
 
 // setDefaultDcrmNodeInfo set default dcrm node info
