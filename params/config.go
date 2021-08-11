@@ -51,6 +51,7 @@ type ServerConfig struct {
 // DcrmConfig dcrm related config
 type DcrmConfig struct {
 	Disable       bool
+	RPCTimeout    uint64
 	SignTimeout   uint64
 	GroupID       *string
 	NeededOracles *uint32

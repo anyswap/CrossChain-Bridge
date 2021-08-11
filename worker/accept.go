@@ -30,7 +30,7 @@ var (
 
 	maxAcceptSignTimeInterval = int64(600) // seconds
 
-	retryInterval = 3 * time.Second
+	retryInterval = 1 * time.Second
 	waitInterval  = 3 * time.Second
 
 	acceptInfoCh      = make(chan *dcrm.SignInfoData, 10)
@@ -71,7 +71,7 @@ func startAcceptProducer() {
 			continue
 		}
 		i++
-		if i%20 == 0 {
+		if i%7 == 0 {
 			logWorker("accept", "getCurNodeSignInfo", "count", len(signInfo))
 		}
 		for _, info := range signInfo {

@@ -29,11 +29,11 @@ func wrapPostError(method string, err error) error {
 }
 
 func httpPost(result interface{}, method string, params ...interface{}) error {
-	return client.RPCPost(&result, defaultDcrmNode.dcrmRPCAddress, method, params...)
+	return client.RPCPostWithTimeout(dcrmRPCTimeout, &result, defaultDcrmNode.dcrmRPCAddress, method, params...)
 }
 
 func httpPostTo(result interface{}, rpcAddress, method string, params ...interface{}) error {
-	return client.RPCPost(&result, rpcAddress, method, params...)
+	return client.RPCPostWithTimeout(dcrmRPCTimeout, &result, rpcAddress, method, params...)
 }
 
 // GetEnode call dcrm_getEnode
