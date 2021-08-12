@@ -6,6 +6,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
@@ -123,7 +124,11 @@ func (b *Bridge) verifyNativeSwapinTx(swapInfo *tokens.TxSwapInfo, allowUnstable
 	}
 
 	if !allowUnstable {
-		log.Info("verify swapin stable pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+		log.Info("verify swapin stable pass",
+			"identifier", params.GetIdentifier(), "pairID", swapInfo.PairID,
+			"from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind,
+			"value", swapInfo.Value, "txid", swapInfo.Hash,
+			"height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfo, nil
 }

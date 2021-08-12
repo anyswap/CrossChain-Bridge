@@ -27,7 +27,11 @@ func (b *Bridge) verifyErc20SwapinTx(swapInfo *tokens.TxSwapInfo, allowUnstable 
 	}
 
 	if !allowUnstable {
-		log.Info("verify erc20 swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+		log.Info("verify erc20 swapin stable pass",
+			"identifier", params.GetIdentifier(), "pairID", swapInfo.PairID,
+			"from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind,
+			"value", swapInfo.Value, "txid", swapInfo.Hash,
+			"height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfo, nil
 }

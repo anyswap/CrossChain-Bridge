@@ -151,6 +151,7 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 	}
 	if args != nil {
 		ctx = append(ctx,
+			"identifier", args.Identifier,
 			"swaptype", args.SwapType.String(),
 			"pairID", args.PairID,
 			"swapID", args.SwapID,
@@ -281,6 +282,7 @@ func rebuildAndVerifyMsgHash(keyID string, msgHash []string, args *tokens.BuildT
 
 	ctx := []interface{}{
 		"keyID", keyID,
+		"identifier", args.Identifier,
 		"swaptype", args.SwapType.String(),
 		"pairID", args.PairID,
 		"swapID", args.SwapID,
@@ -326,6 +328,7 @@ func saveAcceptRecord(bridge tokens.CrossChainBridge, keyID string, args *tokens
 
 	ctx := []interface{}{
 		"keyID", keyID,
+		"identifier", args.Identifier,
 		"swaptype", args.SwapType.String(),
 		"pairID", args.PairID,
 		"swapID", args.SwapID,
