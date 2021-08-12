@@ -238,8 +238,8 @@ func isTransactionExist(bridge tokens.CrossChainBridge, txHash string) bool {
 	if txHash == "" {
 		return false
 	}
-	tx, err := bridge.GetTransaction(txHash)
-	return err == nil && tx != nil
+	_, err := bridge.GetTransaction(txHash)
+	return err == nil
 }
 
 func isSwapResultTxExist(bridge tokens.CrossChainBridge, res *MgoSwapResult) bool {

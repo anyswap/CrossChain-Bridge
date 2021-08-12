@@ -85,10 +85,6 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 		return swapInfo, err
 	}
 
-	if receipt == nil {
-		return swapInfo, tokens.ErrTxNotFound
-	}
-
 	if !b.IsSrc {
 		return b.verifySwapoutTx(swapInfo, allowUnstable, token, receipt)
 	}
@@ -136,9 +132,9 @@ func (b *Bridge) getReceipt(swapInfo *tokens.TxSwapInfo, allowUnstable bool) (*t
 	if !allowUnstable {
 		return b.getStableReceipt(swapInfo)
 	}
-	receipt, _, _ := b.GetTransactionReceipt(swapInfo.Hash)
-	if receipt == nil {
-		return nil, nil // if receipt not found, then verify raw tx input
+	receipt, _, err := b.GetTransactionReceipt(swapInfo.Hash)
+	if err != nil {
+		return nil, err
 	}
 	swapInfo.Height = receipt.BlockNumber.ToInt().Uint64() // Height
 	if *receipt.Status != 1 {

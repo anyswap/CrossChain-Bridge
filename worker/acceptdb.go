@@ -92,7 +92,7 @@ func CheckAcceptRecord(args *tokens.BuildTxArgs) (err error) {
 				alreadySwapped = true
 				break
 			}
-		} else if tx, _ := resBridge.GetTransaction(oldSwapTx); tx != nil { // in tx pool
+		} else if tx, err := resBridge.GetTransaction(oldSwapTx); err == nil { // in tx pool
 			etx, ok := tx.(*types.RPCTransaction)
 			if !ok {
 				log.Warn("[accept] find already swapped tx in pool", "key", key, "value", value)
