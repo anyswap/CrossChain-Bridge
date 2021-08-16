@@ -62,12 +62,23 @@ type ElectOutspend struct {
 	Status *ElectTxStatus `json:"status,omitempty"`
 }
 
+func (outspend *ElectOutspend) String() string {
+	return fmt.Sprintf("spent %v txid %v vin %v status %v", *outspend.Spent, *outspend.Txid, *outspend.Vin, outspend.Status.String())
+}
+
 // ElectTxStatus struct
 type ElectTxStatus struct {
 	Confirmed   *bool   `json:"confirmed"`
 	BlockHeight *uint64 `json:"block_height"`
 	BlockHash   *string `json:"block_hash"`
 	BlockTime   *uint64 `json:"block_time"`
+}
+
+func (status *ElectTxStatus) String() string {
+	if *status.Confirmed && status.BlockHeight != nil {
+		return fmt.Sprintf("confirmed %v blockHeight %v blockHash %v blockTime %v", *status.Confirmed, *status.BlockHeight, *status.BlockHash, *status.BlockTime)
+	}
+	return fmt.Sprintf("confirmed %v", *status.Confirmed)
 }
 
 // ElectUtxo struct
@@ -79,7 +90,7 @@ type ElectUtxo struct {
 }
 
 func (utxo *ElectUtxo) String() string {
-	return fmt.Sprintf("txid %v vout %v value %v confirmed %v", *utxo.Txid, *utxo.Vout, *utxo.Value, *utxo.Status.Confirmed)
+	return fmt.Sprintf("txid %v vout %v value %v status %v", *utxo.Txid, *utxo.Vout, *utxo.Value, utxo.Status.String())
 }
 
 // SortableElectUtxoSlice sortable
