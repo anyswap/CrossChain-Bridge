@@ -73,7 +73,7 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 	initAllEnodes()
 
 	verifyInitiators(dcrmConfig.Initiators)
-	log.Info("init dcrm success", "signTimeout", dcrmSignTimeout, "isServer", isServer)
+	log.Info("init dcrm success", "signTimeout", dcrmSignTimeout.String(), "isServer", isServer)
 }
 
 // setDefaultDcrmNodeInfo set default dcrm node info

@@ -124,7 +124,7 @@ func (b *Bridge) verifyNativeSwapinTx(swapInfo *tokens.TxSwapInfo, allowUnstable
 	}
 
 	if !allowUnstable {
-		log.Info("verify swapin stable pass",
+		log.Info("verify native swapin stable pass",
 			"identifier", params.GetIdentifier(), "pairID", swapInfo.PairID,
 			"from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind,
 			"value", swapInfo.Value, "txid", swapInfo.Hash,
