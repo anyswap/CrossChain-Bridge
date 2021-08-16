@@ -73,6 +73,16 @@ func findUtxosAndAggregate(addr string) {
 		if isUtxoExist(utxo) {
 			continue
 		}
+		outspend, err := btc.BridgeInstance.GetOutspend(*utxo.Txid, *utxo.Vout)
+		if err != nil {
+			logWorkerError("aggregate", "get out spend failed", err, "address", addr, "utxo", utxo.String())
+			continue
+		}
+		if *outspend.Spent {
+			logWorkerTrace("aggregate", "ignore spent utxo", "address", addr, "utxo", utxo.String(), "outspend", outspend.String())
+			continue
+		}
+
 		logWorker("aggregate", "find utxo", "address", addr, "utxo", utxo.String())
 
 		aggSumVal += *utxo.Value
