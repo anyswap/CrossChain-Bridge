@@ -19,7 +19,7 @@ const (
 )
 
 // StorageSize type
-type StorageSize float64
+type StorageSize = common.StorageSize
 
 // hasherPool holds LegacyKeccak256 hashers for rlpHash.
 var hasherPool = sync.Pool{
