@@ -229,6 +229,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 			SwapType:   swapType,
 			TxType:     tokens.SwapTxType(swap.TxType),
 			Bind:       bind,
+			Reswapping: res.Status == mongodb.Reswapping,
 		},
 		From:        dcrmAddress,
 		OriginValue: swapInfo.Value,

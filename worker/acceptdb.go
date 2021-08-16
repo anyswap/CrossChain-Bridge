@@ -100,7 +100,7 @@ func CheckAcceptRecord(args *tokens.BuildTxArgs) (err error) {
 				break
 			}
 
-			if value+allowReswapTimeInterval <= nowTime {
+			if args.Reswapping && value+allowReswapTimeInterval <= nowTime {
 				continue // allow reswap old enough
 			}
 

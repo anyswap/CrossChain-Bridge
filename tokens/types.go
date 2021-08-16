@@ -225,6 +225,7 @@ type SwapInfo struct {
 	TxType     SwapTxType `json:"txtype,omitempty"`
 	Bind       string     `json:"bind,omitempty"`
 	Identifier string     `json:"identifier,omitempty"`
+	Reswapping bool       `json:"reswapping,omitempty"`
 }
 
 // BuildTxArgs struct
