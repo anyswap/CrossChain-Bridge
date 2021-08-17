@@ -23,6 +23,7 @@ var (
 	dcrmSigner = types.MakeSigner("EIP155", big.NewInt(dcrmWalletServiceID))
 	dcrmToAddr = common.HexToAddress(dcrmToAddress)
 
+	dcrmAPIPrefix     string
 	dcrmGroupID       string
 	dcrmThreshold     string
 	dcrmMode          string
@@ -52,6 +53,8 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 	if dcrmConfig.Disable {
 		return
 	}
+
+	dcrmAPIPrefix = dcrmConfig.APIPrefix
 
 	if dcrmConfig.RPCTimeout > 0 {
 		dcrmRPCTimeout = int(dcrmConfig.RPCTimeout)

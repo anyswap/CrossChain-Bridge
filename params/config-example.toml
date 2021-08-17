@@ -124,6 +124,8 @@ APIAddressExt = ["http://5.189.139.168:8000"]
 [Dcrm]
 # disable flag
 Disable = false
+# RPC API prefix
+APIPrefix = "dcrm_"
 # RPC timeout
 RPCTimeout = 10
 # sign timeout of seconds
