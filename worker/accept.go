@@ -78,6 +78,9 @@ func startAcceptProducer() {
 			if utils.IsCleanuping() {
 				return
 			}
+			if info == nil { // maybe a dcrm RPC problem
+				continue
+			}
 			keyID := info.Key
 			if cachedAcceptInfos.Contains(keyID) {
 				logWorkerTrace("accept", "ignore cached accept sign info before dispatch", "keyID", keyID)
