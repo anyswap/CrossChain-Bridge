@@ -40,6 +40,16 @@ func (s *RPCAPI) GetTokenPairInfo(r *http.Request, pairID *string, result *token
 	return err
 }
 
+// GetTokenPairsInfo api
+// nolint:gocritic // rpc need result of pointer type
+func (s *RPCAPI) GetTokenPairsInfo(r *http.Request, pairIDs *string, result *map[string]*tokens.TokenPairConfig) error {
+	res, err := swapapi.GetTokenPairsInfo(*pairIDs)
+	if err == nil && res != nil {
+		*result = res
+	}
+	return nil
+}
+
 // GetSwapStatistics api
 func (s *RPCAPI) GetSwapStatistics(r *http.Request, pairID *string, result *swapapi.SwapStatistics) error {
 	res, err := swapapi.GetSwapStatistics(*pairID)
