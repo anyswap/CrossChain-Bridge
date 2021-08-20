@@ -57,6 +57,21 @@ func GetTokenPairInfo(pairID string) (*tokens.TokenPairConfig, error) {
 	return pairCfg, nil
 }
 
+// GetTokenPairsInfo api
+func GetTokenPairsInfo(pairIDs string) (map[string]*tokens.TokenPairConfig, error) {
+	var pairIDSlice []string
+	if strings.EqualFold(pairIDs, "all") {
+		pairIDSlice = tokens.GetAllPairIDs()
+	} else {
+		pairIDSlice = strings.Split(pairIDs, ",")
+	}
+	result := make(map[string]*tokens.TokenPairConfig, len(pairIDSlice))
+	for _, pairID := range pairIDSlice {
+		result[pairID] = tokens.GetTokenPairConfig(pairID)
+	}
+	return result, nil
+}
+
 // GetNonceInfo api
 func GetNonceInfo() (*SwapNonceInfo, error) {
 	swapinNonces, swapoutNonces := mongodb.LoadAllSwapNonces()

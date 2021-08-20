@@ -57,6 +57,14 @@ func TokenPairInfoHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// TokenPairsInfoHandler handler
+func TokenPairsInfoHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	pairIDs := vars["pairids"]
+	res, err := swapapi.GetTokenPairsInfo(pairIDs)
+	writeResponse(w, res, err)
+}
+
 // NonceInfoHandler handler
 func NonceInfoHandler(w http.ResponseWriter, r *http.Request) {
 	res, err := swapapi.GetNonceInfo()

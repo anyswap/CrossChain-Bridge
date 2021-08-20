@@ -84,6 +84,7 @@ func initRouter(r *mux.Router) {
 	registerHandleFunc(r, "/versioninfo", restapi.VersionInfoHandler, "GET")
 	registerHandleFunc(r, "/nonceinfo", restapi.NonceInfoHandler, "GET")
 	registerHandleFunc(r, "/pairinfo/{pairid}", restapi.TokenPairInfoHandler, "GET")
+	registerHandleFunc(r, "/pairsinfo/{pairids}", restapi.TokenPairsInfoHandler, "GET")
 	registerHandleFunc(r, "/statistics/{pairid}", restapi.StatisticsHandler, "GET")
 
 	registerHandleFunc(r, "/swapin/post/{pairid}/{txid}", restapi.PostSwapinHandler, "POST")

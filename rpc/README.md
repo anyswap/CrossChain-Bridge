@@ -31,6 +31,7 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 [swap.GetServerInfo](#swapgetserverinfo)  
 [swap.GetVersionInfo](#swapgetversioninfo)  
 [swap.GetTokenPairInfo](#swapgettokenpairinfo)  
+[swap.GetTokenPairsInfo](#swapgettokenpairsinfo)  
 [swap.Swapin](#swapswapin)  
 [swap.P2shSwapin](#swapp2shswapin)  
 [swap.RetrySwapin](#swapretryswapin)  
@@ -93,6 +94,21 @@ And the following `API`s are for developing and debuging, you can ignore them
 ##### 返回值：
 ```text
 成功返回交易对信息，失败返回错误。
+```
+
+### swap.GetTokenPairsInfo
+
+批量查询交易对信息
+pairids 为 pairid 通过逗号拼接在一起的字符串
+当 pairids 为 all 时查询所有交易对信息
+
+##### 参数：
+```text
+["pairids"]
+```
+##### 返回值：
+```text
+成功返回指定的交易对信息，失败返回错误。
 ```
 
 ### swap.Swapin
@@ -282,6 +298,12 @@ limit 最大值为 100
 ### GEt /pairinfo/{pairid}
 
 查询交易对信息
+
+### GEt /pairsinfo/{pairids}
+
+批量查询交易对信息
+pairids 为 pairid 通过逗号拼接在一起的字符串
+当 pairids 为 all 时查询所有交易对信息
 
 ### GET /swapin/{pairid}/{txid}?bind=绑定地址
 
