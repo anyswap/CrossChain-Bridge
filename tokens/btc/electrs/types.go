@@ -63,7 +63,10 @@ type ElectOutspend struct {
 }
 
 func (outspend *ElectOutspend) String() string {
-	return fmt.Sprintf("spent %v txid %v vin %v status %v", *outspend.Spent, *outspend.Txid, *outspend.Vin, outspend.Status.String())
+	if outspend.Txid != nil && outspend.Vin != nil {
+		return fmt.Sprintf("spent %v txid %v vin %v status %v", *outspend.Spent, *outspend.Txid, *outspend.Vin, outspend.Status.String())
+	}
+	return fmt.Sprintf("spent %v status %v", *outspend.Spent, outspend.Status.String())
 }
 
 // ElectTxStatus struct
@@ -75,7 +78,10 @@ type ElectTxStatus struct {
 }
 
 func (status *ElectTxStatus) String() string {
-	if *status.Confirmed && status.BlockHeight != nil {
+	if status == nil {
+		return "<nil>"
+	}
+	if status.BlockHeight != nil && status.BlockHash != nil && status.BlockTime != nil {
 		return fmt.Sprintf("confirmed %v blockHeight %v blockHash %v blockTime %v", *status.Confirmed, *status.BlockHeight, *status.BlockHash, *status.BlockTime)
 	}
 	return fmt.Sprintf("confirmed %v", *status.Confirmed)
