@@ -94,15 +94,15 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 		return b.verifyErc20SwapinTx(swapInfo, allowUnstable, token, receipt)
 	}
 
-	return b.verifyNativeSwapinTx(swapInfo, allowUnstable, token)
-}
-
-func (b *Bridge) verifyNativeSwapinTx(swapInfo *tokens.TxSwapInfo, allowUnstable bool, token *tokens.TokenConfig) (*tokens.TxSwapInfo, error) {
 	tx, err := getTxByHash(b, swapInfo.Hash, !allowUnstable)
 	if err != nil {
-		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", swapInfo.Hash, "err", err)
+		log.Debug("[verifyNativeSwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", swapInfo.Hash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
+	return b.verifyNativeSwapinTx(swapInfo, allowUnstable, token, tx)
+}
+
+func (b *Bridge) verifyNativeSwapinTx(swapInfo *tokens.TxSwapInfo, allowUnstable bool, token *tokens.TokenConfig, tx *types.RPCTransaction) (*tokens.TxSwapInfo, error) {
 	if tx.Recipient == nil { // ignore contract creation tx
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
@@ -118,7 +118,7 @@ func (b *Bridge) verifyNativeSwapinTx(swapInfo *tokens.TxSwapInfo, allowUnstable
 	swapInfo.Bind = swapInfo.From                     // Bind
 	swapInfo.Value = tx.Amount.ToInt()                // Value
 
-	err = b.checkSwapinInfo(swapInfo)
+	err := b.checkSwapinInfo(swapInfo)
 	if err != nil {
 		return swapInfo, err
 	}
