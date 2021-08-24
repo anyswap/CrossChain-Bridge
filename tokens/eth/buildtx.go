@@ -223,6 +223,11 @@ func (b *Bridge) getDefaultGasLimit(pairID string) (gasLimit uint64) {
 }
 
 func (b *Bridge) getGasPrice(args *tokens.BuildTxArgs) (price *big.Int, err error) {
+	fixedGasPrice := b.ChainConfig.GetFixedGasPrice()
+	if fixedGasPrice != nil {
+		return fixedGasPrice, nil
+	}
+
 	for i := 0; i < retryRPCCount; i++ {
 		price, err = b.SuggestPrice()
 		if err == nil {

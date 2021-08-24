@@ -42,6 +42,7 @@ type ChainConfig struct {
 	WaitTimeToReplace          int64  // seconds
 	MaxReplaceCount            int
 	EnableReplaceSwap          bool
+	FixedGasPrice              string `json:",omitempty"`
 
 	IsDynamicFeeTxEnabled bool
 	PlusGasTipCapPercent  uint64
@@ -51,9 +52,18 @@ type ChainConfig struct {
 	MaxGasFeeCap          string
 
 	// cached values
+	fixedGasPrice *big.Int
 	minReserveFee *big.Int
 	maxGasTipCap  *big.Int
 	maxGasFeeCap  *big.Int
+}
+
+// GetFixedGasPrice get fixed gas price
+func (c *ChainConfig) GetFixedGasPrice() *big.Int {
+	if c.fixedGasPrice != nil {
+		return new(big.Int).Set(c.fixedGasPrice) // clone
+	}
+	return nil
 }
 
 // GetMinReserveFee get min reserve fee
@@ -338,6 +348,13 @@ func (c *ChainConfig) CheckConfig(isServer bool) error {
 		if _, err := common.GetBigIntFromStr(c.BaseGasPrice); err != nil {
 			return errors.New("wrong 'BaseGasPrice'")
 		}
+	}
+	if c.FixedGasPrice != "" {
+		fixedGasPrice, err := common.GetBigIntFromStr(c.FixedGasPrice)
+		if err != nil {
+			return err
+		}
+		c.fixedGasPrice = fixedGasPrice
 	}
 	if c.MinReserveFee != "" {
 		bi, ok := new(big.Int).SetString(c.MinReserveFee, 10)

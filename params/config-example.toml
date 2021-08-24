@@ -105,6 +105,8 @@ WaitTimeToReplace = 900
 MaxReplaceCount = 20
 # enable replace swap job
 EnableReplaceSwap = false
+# use fixed gas price (no adjust)
+FixedGasPrice = "5000000001"
 # minimum reserve coin for gas provide
 MinReserveFee = "10000000000000000"
 # dynamic fee tx related (EIP-1559)
