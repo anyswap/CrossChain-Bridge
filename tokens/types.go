@@ -39,6 +39,10 @@ type ChainConfig struct {
 	WaitTimeToReplace       int64  // seconds
 	MaxReplaceCount         int
 	EnableReplaceSwap       bool
+	FixedGasPrice           string `json:",omitempty"`
+
+	// calced value
+	fixedGasPrice *big.Int
 }
 
 // GatewayConfig struct
@@ -272,6 +276,21 @@ func (c *ChainConfig) CheckConfig() error {
 	}
 	if c.InitialHeight == nil {
 		return errors.New("token must config 'InitialHeight'")
+	}
+	if c.FixedGasPrice != "" {
+		fixedGasPrice, err := common.GetBigIntFromStr(c.FixedGasPrice)
+		if err != nil {
+			return err
+		}
+		c.fixedGasPrice = fixedGasPrice
+	}
+	return nil
+}
+
+// GetFixedGasPrice get fixed gas price
+func (c *ChainConfig) GetFixedGasPrice() *big.Int {
+	if c.fixedGasPrice != nil {
+		return new(big.Int).Set(c.fixedGasPrice) // clone
 	}
 	return nil
 }
