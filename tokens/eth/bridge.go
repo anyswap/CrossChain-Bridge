@@ -1,3 +1,4 @@
+// Package eth implements the bridge interfaces for eth-like blockchain.
 package eth
 
 import (

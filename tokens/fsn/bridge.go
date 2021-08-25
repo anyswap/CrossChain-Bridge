@@ -1,3 +1,4 @@
+// Package fsn implements the bridge interfaces for fsn blockchain.
 package fsn
 
 import (

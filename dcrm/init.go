@@ -1,3 +1,4 @@
+// Package dcrm is a client of dcrm server, doing the sign and accept tasks.
 package dcrm
 
 import (

@@ -1,3 +1,4 @@
+// Package server provides JSON/RESTful RPC service.
 package server
 
 import (

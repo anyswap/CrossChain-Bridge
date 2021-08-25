@@ -1,3 +1,5 @@
+// Package build provide customized methods to build project.
+// It can add external infos (eg. gitCommit, gitDate) to the version sub command.
 package main
 
 import (

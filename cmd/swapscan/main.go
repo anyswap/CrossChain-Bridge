@@ -1,3 +1,4 @@
+// Command swapscan scan blockchains and post swap registers to the server node.
 package main
 
 import (

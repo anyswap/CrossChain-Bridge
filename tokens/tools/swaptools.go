@@ -1,3 +1,4 @@
+// Package tools provides tools for scanning and registering swaps.
 package tools
 
 import (

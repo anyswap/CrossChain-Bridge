@@ -1,3 +1,4 @@
+// Package log is a wrapper of logrus.
 package log
 
 import (

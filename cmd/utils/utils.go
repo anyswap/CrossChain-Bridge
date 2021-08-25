@@ -1,3 +1,4 @@
+// Package utils provides common sub commands and command flags.
 package utils
 
 import (

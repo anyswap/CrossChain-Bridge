@@ -1,3 +1,4 @@
+// Package params provides common version info and config items.
 package params
 
 import (

@@ -1,3 +1,4 @@
+// Package restapi provides RESTful RPC service.
 package restapi
 
 import (

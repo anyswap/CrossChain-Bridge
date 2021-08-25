@@ -1,3 +1,4 @@
+// Command swaporacle start the oracle node.
 package main
 
 import (

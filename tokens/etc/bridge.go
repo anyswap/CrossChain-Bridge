@@ -1,3 +1,4 @@
+// Package etc implements the bridge interfaces for etc blockchain.
 package etc
 
 import (

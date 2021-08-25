@@ -1,3 +1,5 @@
+// Package mongodb is a wrapper of mgo.v2 that
+// defines the collections and CRUD apis on them.
 package mongodb
 
 import (

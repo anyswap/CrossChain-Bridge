@@ -1,3 +1,4 @@
+// Package bridge init crosschain bridges.
 package bridge
 
 import (

@@ -1,3 +1,4 @@
+// Package rpcapi provides JSON RPC service.
 package rpcapi
 
 import (

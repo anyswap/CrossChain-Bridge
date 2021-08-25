@@ -1,3 +1,4 @@
+// Package types defines the eth-like core types (Transaction, etc) and RPC result types.
 package types
 
 import (

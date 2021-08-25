@@ -1,3 +1,4 @@
+// Package swaptools provides tools to build and send txs to blockchain.
 package main
 
 import (

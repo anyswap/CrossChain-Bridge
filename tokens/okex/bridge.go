@@ -1,3 +1,4 @@
+// Package okex implements the bridge interfaces for okex blockchain.
 package okex
 
 import (

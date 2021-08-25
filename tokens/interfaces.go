@@ -1,3 +1,4 @@
+// Package tokens defines the common interfaces and supported bridges in sub directories.
 package tokens
 
 import (
