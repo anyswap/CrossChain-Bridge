@@ -142,7 +142,8 @@ type TokenConfig struct {
 	DisableSwap            bool
 	IsDelegateContract     bool
 	DelegateToken          string `json:",omitempty"`
-	IsAnyswapAdapter       bool   `json:",omitempty"`
+	IsAnyswapAdapter       bool   `json:",omitempty"` // PRQ
+	IsMappingTokenProxy    bool   `json:",omitempty"` // VTX
 
 	DefaultGasLimit          uint64 `json:",omitempty"`
 	AllowSwapinFromContract  bool   `json:",omitempty"`
@@ -506,6 +507,9 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 		}
 		if c.IsProxyErc20() {
 			return errors.New("token can not be both IsDelegateContract and ProxyERC20")
+		}
+		if c.IsMappingTokenProxy {
+			return errors.New("token can not be both IsDelegateContract and IsMappingTokenProxy")
 		}
 	} else if c.DelegateToken != "" {
 		return errors.New("token forbid config 'DelegateToken' if 'IsDelegateContract' is false")

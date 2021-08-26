@@ -144,10 +144,12 @@ func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) error {
 		}
 		log.Info(tokenCfg.Symbol+" verify decimals success", "address", checkToken, "decimals", configedDecimals)
 
-		if err := b.VerifyErc20ContractAddress(checkToken, tokenCfg.ContractCodeHash, tokenCfg.IsProxyErc20()); err != nil {
-			return fmt.Errorf("wrong token address: %v, %w", checkToken, err)
+		if !tokenCfg.IsMappingTokenProxy {
+			if err := b.VerifyErc20ContractAddress(checkToken, tokenCfg.ContractCodeHash, tokenCfg.IsProxyErc20()); err != nil {
+				return fmt.Errorf("wrong token address: %v, %w", checkToken, err)
+			}
+			log.Info("verify token address pass", "address", checkToken)
 		}
-		log.Info("verify token address pass", "address", checkToken)
 	}
 	return nil
 }
@@ -160,8 +162,8 @@ func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsValidAddress(contractAddr) {
 		return fmt.Errorf("invalid contract address: %v", contractAddr)
 	}
-	if b.IsSrc && !(tokenCfg.IsErc20() || tokenCfg.IsProxyErc20() || tokenCfg.IsDelegateContract) {
-		return fmt.Errorf("source token %v is not ERC20, ProxyERC20 or delegated", contractAddr)
+	if b.IsSrc && !(tokenCfg.IsErc20() || tokenCfg.IsProxyErc20() || tokenCfg.IsDelegateContract || tokenCfg.IsMappingTokenProxy) {
+		return fmt.Errorf("source token %v is not ERC20, ProxyERC20 or delegated or MappingTokenProxy", contractAddr)
 	}
 	if tokenCfg.IsDelegateContract && !tokenCfg.IsAnyswapAdapter && !b.IsSrc {
 		// keccak256 'proxyToken()' is '0x4faaefae'
@@ -174,7 +176,7 @@ func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
 			return fmt.Errorf("mismatch 'DelegateToken', has %v, want %v", tokenCfg.DelegateToken, proxyToken.String())
 		}
 	}
-	if !b.IsSrc {
+	if !b.IsSrc && !tokenCfg.IsMappingTokenProxy {
 		err := b.VerifyAnyswapContractAddress(contractAddr)
 		if err != nil {
 			return fmt.Errorf("wrong anyswap contract address: %v, %w", contractAddr, err)
