@@ -116,6 +116,11 @@ PlusGasFeeCapPercent = 10
 BlockCountFeeHistory = 3
 MaxGasTipCap = "5000000000"
 MaxGasFeeCap = "10000000000"
+# call by contract whitelist
+CallByContractWhitelist = [
+	"0x1111111111111111111111111111111111111111",
+	"0x2222222222222222222222222222222222222222"
+]
 
 # dest blockchain gateway config
 [DestGateway]

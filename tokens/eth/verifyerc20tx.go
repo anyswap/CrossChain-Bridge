@@ -42,7 +42,8 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 	}
 
 	if !token.AllowSwapinFromContract &&
-		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) {
+		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) &&
+		!b.ChainConfig.IsInCallByContractWhitelist(receipt.From.String()) {
 		return tokens.ErrTxWithWrongContract
 	}
 
