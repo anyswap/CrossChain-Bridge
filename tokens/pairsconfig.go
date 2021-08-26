@@ -28,7 +28,7 @@ type TokenPairConfig struct {
 
 // SetTokenPairsDir set token pairs directory
 func SetTokenPairsDir(dir string) {
-	log.Printf("set token pairs config directory to '%v'\n", dir)
+	log.Printf("set token pairs config directory to '%v'", dir)
 	fileStat, err := os.Stat(dir)
 	if err != nil {
 		log.Fatal("wrong token pairs dir", "dir", dir, "err", err)

@@ -16,6 +16,12 @@ var (
 	okexChainID = big.NewInt(66)
 )
 
+// IsOkexChain judge if it is okex blockchain by chain ID.
+// okex chain is different from eth (transaction hash calc, rpc response behavior)
+func IsOkexChain(chainID *big.Int) bool {
+	return chainID.Cmp(okexChainID) == 0
+}
+
 func getAminoCdc() *amino.Codec {
 	if aminoCdc == nil {
 		aminoCdcInitor.Do(func() {
@@ -37,7 +43,7 @@ func (tx *Transaction) Hash() common.Hash {
 	case LegacyTxType:
 		chainID := tx.ChainID()
 		switch {
-		case chainID.Cmp(okexChainID) == 0:
+		case IsOkexChain(chainID):
 			h, _ = CalcOkexTransactionHash(tx)
 		default:
 			h = rlpHash(tx.toLegacyTx())

@@ -9,6 +9,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 var (
@@ -63,10 +64,11 @@ func (b *Bridge) getContractCode(contract string) (code []byte, err error) {
 	retryCount := 3
 	for i := 0; i < retryCount; i++ {
 		code, err = b.GetCode(contract)
-		if err == nil {
+		if err != nil {
+			log.Warn("get contract code failed", "contract", contract, "err", err)
+		} else if len(code) > 0 || !types.IsOkexChain(b.SignerChainID) {
 			break
 		}
-		log.Warn("get contract code failed", "contract", contract, "err", err)
 		time.Sleep(1 * time.Second)
 	}
 	return code, err

@@ -1,9 +1,16 @@
 package eth
 
 import (
-	"time"
-
 	"github.com/anyswap/CrossChain-Bridge/common"
+	mapset "github.com/deckarep/golang-set"
+)
+
+var (
+	cachedContractAddrs    = mapset.NewSet()
+	maxCachedContractAddrs = 50
+
+	cachedNoncontractAddrs    = mapset.NewSet()
+	maxNoncachedContractAddrs = 500
 )
 
 // ShouldCheckAddressMixedCase check address mixed case
@@ -32,14 +39,35 @@ func (b *Bridge) IsValidAddress(address string) bool {
 
 // IsContractAddress is contract address
 func (b *Bridge) IsContractAddress(address string) (bool, error) {
-	var code []byte
-	var err error
-	for i := 0; i < retryRPCCount; i++ {
-		code, err = b.GetCode(address)
-		if err == nil {
-			return len(code) > 1, nil // unexpect RSK getCode return 0x00
+	if cachedNoncontractAddrs.Contains(address) {
+		return false, nil
+	}
+	if cachedContractAddrs.Contains(address) {
+		return true, nil
+	}
+
+	code, err := b.getContractCode(address)
+	if err == nil {
+		if len(code) > 1 { // unexpect RSK getCode return 0x00
+			addCachedContractAddr(address)
+		} else {
+			addNoncachedContractAddr(address)
 		}
-		time.Sleep(retryRPCInterval)
+		return true, nil
 	}
 	return false, err
+}
+
+func addNoncachedContractAddr(address string) {
+	if cachedNoncontractAddrs.Cardinality() >= maxNoncachedContractAddrs {
+		cachedNoncontractAddrs.Pop()
+	}
+	cachedNoncontractAddrs.Add(address)
+}
+
+func addCachedContractAddr(address string) {
+	if cachedContractAddrs.Cardinality() >= maxCachedContractAddrs {
+		cachedContractAddrs.Pop()
+	}
+	cachedContractAddrs.Add(address)
 }
