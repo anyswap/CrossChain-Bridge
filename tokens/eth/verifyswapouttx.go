@@ -54,7 +54,8 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 	}
 
 	if !token.AllowSwapoutFromContract &&
-		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) {
+		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) &&
+		!b.ChainConfig.IsInCallByContractWhitelist(receipt.From.String()) {
 		return tokens.ErrTxWithWrongContract
 	}
 

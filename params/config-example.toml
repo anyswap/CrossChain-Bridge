@@ -102,6 +102,11 @@ MaxReplaceCount = 20
 EnableReplaceSwap = false
 # use fixed gas price (no adjust)
 FixedGasPrice = "5000000001"
+# call by contract whitelist
+CallByContractWhitelist = [
+	"0x1111111111111111111111111111111111111111",
+	"0x2222222222222222222222222222222222222222"
+]
 
 # dest blockchain gateway config
 [DestGateway]

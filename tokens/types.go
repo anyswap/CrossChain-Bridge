@@ -35,6 +35,8 @@ type ChainConfig struct {
 	EnableScanPool bool
 	ScanReceipt    bool `json:",omitempty"`
 
+	CallByContractWhitelist []string `json:",omitempty"`
+
 	MaxGasPriceFluctPercent uint64 `json:",omitempty"`
 	WaitTimeToReplace       int64  // seconds
 	MaxReplaceCount         int
@@ -43,6 +45,17 @@ type ChainConfig struct {
 
 	// calced value
 	fixedGasPrice *big.Int
+
+	callByContractWhitelist map[string]struct{}
+}
+
+// IsInCallByContractWhitelist is in call by contract whitelist
+func (c *ChainConfig) IsInCallByContractWhitelist(caller string) bool {
+	if c.callByContractWhitelist == nil {
+		return false
+	}
+	_, exist := c.callByContractWhitelist[strings.ToLower(caller)]
+	return exist
 }
 
 // GatewayConfig struct
@@ -283,6 +296,19 @@ func (c *ChainConfig) CheckConfig() error {
 			return err
 		}
 		c.fixedGasPrice = fixedGasPrice
+	}
+	if len(c.CallByContractWhitelist) > 0 {
+		c.callByContractWhitelist = make(map[string]struct{}, len(c.CallByContractWhitelist))
+		for _, addr := range c.CallByContractWhitelist {
+			if !common.IsHexAddress(addr) {
+				return fmt.Errorf("wrong address '%v' in 'CallByContractWhitelist'", addr)
+			}
+			key := strings.ToLower(addr)
+			if _, exist := c.callByContractWhitelist[key]; exist {
+				return fmt.Errorf("duplicate address '%v' in 'CallByContractWhitelist'", addr)
+			}
+			c.callByContractWhitelist[key] = struct{}{}
+		}
 	}
 	return nil
 }
