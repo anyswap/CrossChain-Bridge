@@ -42,6 +42,7 @@ type ChainConfig struct {
 	MaxReplaceCount         int
 	EnableReplaceSwap       bool
 	FixedGasPrice           string `json:",omitempty"`
+	BaseFeePercent          int64
 
 	// calced value
 	fixedGasPrice *big.Int
@@ -289,6 +290,9 @@ func (c *ChainConfig) CheckConfig() error {
 	}
 	if c.InitialHeight == nil {
 		return errors.New("token must config 'InitialHeight'")
+	}
+	if c.BaseFeePercent < -90 || c.BaseFeePercent > 500 {
+		return errors.New("'BaseFeePercent' must be in range [-90, 500]")
 	}
 	if c.FixedGasPrice != "" {
 		fixedGasPrice, err := common.GetBigIntFromStr(c.FixedGasPrice)
