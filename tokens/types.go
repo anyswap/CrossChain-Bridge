@@ -33,11 +33,11 @@ type ChainConfig struct {
 	InitialHeight  *uint64
 	EnableScan     bool
 	EnableScanPool bool
-	ScanReceipt    bool `json:",omitempty"`
 
 	CallByContractWhitelist []string `json:",omitempty"`
 
 	MinReserveFee              string
+	BaseFeePercent             int64
 	BaseGasPrice               string `json:",omitempty"`
 	MaxGasPriceFluctPercent    uint64 `json:",omitempty"`
 	ReplacePlusGasPricePercent uint64 `json:",omitempty"`
@@ -351,6 +351,9 @@ func (c *ChainConfig) CheckConfig(isServer bool) error {
 	}
 	if c.InitialHeight == nil {
 		return errors.New("token must config 'InitialHeight'")
+	}
+	if c.BaseFeePercent < -90 || c.BaseFeePercent > 500 {
+		return errors.New("'BaseFeePercent' must be in range [-90, 500]")
 	}
 	if c.MaxGasPriceFluctPercent > 100 {
 		return errors.New("'MaxGasPriceFluctPercent' is too large (>100)")

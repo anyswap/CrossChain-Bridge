@@ -95,8 +95,8 @@ InitialHeight = 0
 EnableScan = false
 # whether enable scan txs in pool
 EnableScanPool = false
-# whether scan transaction receipt logs
-ScanReceipt = false
+# base fee percent, must be in range [-90, 500]
+BaseFeePercent = 0
 # max gas price fluct percent
 MaxGasPriceFluctPercent = 10
 # extra added gas price percent for replace swap
