@@ -26,8 +26,9 @@ func CheckConfig(isServer bool) (err error) {
 		if err != nil {
 			return err
 		}
-	} else if config.SrcChain.EnableScan || config.DestChain.EnableScan {
-		err = config.Oracle.CheckConfig()
+	} else {
+		enableScan := config.SrcChain.EnableScan || config.DestChain.EnableScan
+		err = config.Oracle.CheckConfig(enableScan)
 		if err != nil {
 			return err
 		}
@@ -138,7 +139,7 @@ func (c *DcrmNodeConfig) CheckConfig(isServer bool) (err error) {
 }
 
 // CheckConfig check oracle config
-func (c *OracleConfig) CheckConfig() (err error) {
+func (c *OracleConfig) CheckConfig(enableScan bool) (err error) {
 	if c == nil {
 		return errors.New("oracle must config 'Oracle'")
 	}
@@ -147,16 +148,21 @@ func (c *OracleConfig) CheckConfig() (err error) {
 		return errors.New("oracle must config 'ServerAPIAddress'")
 	}
 	var version string
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 3; i++ {
 		err = client.RPCPostWithTimeout(60, &version, ServerAPIAddress, "swap.GetVersionInfo")
 		if err == nil {
 			log.Info("oracle get server version info succeed", "version", version)
 			break
 		}
-		log.Warn("oracle connect ServerAPIAddress failed", "ServerAPIAddress", ServerAPIAddress, "err", err)
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
-	return err
+	if err != nil {
+		log.Warn("oracle connect ServerAPIAddress failed", "ServerAPIAddress", ServerAPIAddress, "err", err)
+		if enableScan {
+			return err
+		}
+	}
+	return nil
 }
 
 // CheckConfig extra config

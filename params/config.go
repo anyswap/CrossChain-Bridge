@@ -73,7 +73,8 @@ type DcrmNodeConfig struct {
 
 // OracleConfig oracle config
 type OracleConfig struct {
-	ServerAPIAddress string
+	ServerAPIAddress      string
+	GetAcceptListInterval uint64
 }
 
 // APIServerConfig api service config
@@ -152,19 +153,24 @@ func IsDcrmInitiator(account string) bool {
 	return false
 }
 
-// GetConfig get config items structure
+// GetConfig get bridge config
 func GetConfig() *BridgeConfig {
 	return bridgeConfig
 }
 
-// SetConfig set config items
+// SetConfig set bridge config
 func SetConfig(config *BridgeConfig) {
 	bridgeConfig = config
 }
 
-// GetServerConfig get extra config
+// GetServerConfig get server config
 func GetServerConfig() *ServerConfig {
 	return GetConfig().Server
+}
+
+// GetOracleConfig get oracle config
+func GetOracleConfig() *OracleConfig {
+	return GetConfig().Oracle
 }
 
 // GetExtraConfig get extra config

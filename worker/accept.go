@@ -30,8 +30,8 @@ var (
 
 	maxAcceptSignTimeInterval = int64(600) // seconds
 
-	retryInterval = 1 * time.Second
-	waitInterval  = 3 * time.Second
+	retryInterval = 3 * time.Second
+	waitInterval  = 20 * time.Second
 
 	acceptInfoCh      = make(chan *dcrm.SignInfoData, 10)
 	maxAcceptRoutines = int64(10)
@@ -50,6 +50,10 @@ func StartAcceptSignJob() {
 	if !params.IsDcrmEnabled() {
 		logWorker("accept", "no need to start accept sign job as dcrm is disabled")
 		return
+	}
+	getAcceptListInterval := params.GetOracleConfig().GetAcceptListInterval
+	if getAcceptListInterval > 0 {
+		waitInterval = time.Duration(getAcceptListInterval) * time.Second
 	}
 	acceptSignStarter.Do(func() {
 		logWorker("accept", "start accept sign job")
