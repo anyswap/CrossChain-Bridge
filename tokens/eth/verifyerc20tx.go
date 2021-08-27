@@ -41,14 +41,14 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 		return tokens.ErrTxWithWrongContract
 	}
 
-	if !token.AllowSwapinFromContract &&
-		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) &&
-		!b.ChainConfig.IsInCallByContractWhitelist(receipt.From.String()) {
-		return tokens.ErrTxWithWrongContract
-	}
-
 	swapInfo.TxTo = strings.ToLower(receipt.Recipient.String()) // TxTo
 	swapInfo.From = strings.ToLower(receipt.From.String())      // From
+
+	if !token.AllowSwapinFromContract &&
+		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) &&
+		!b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
+		return tokens.ErrTxWithWrongContract
+	}
 
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.ContractAddress, token.DepositAddress)
 	if err != nil {
