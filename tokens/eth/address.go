@@ -47,15 +47,15 @@ func (b *Bridge) IsContractAddress(address string) (bool, error) {
 	}
 
 	code, err := b.getContractCode(address)
-	if err == nil {
-		if len(code) > 1 { // unexpect RSK getCode return 0x00
-			addCachedContractAddr(address)
-		} else {
-			addNoncachedContractAddr(address)
-		}
+	if err != nil {
+		return false, err
+	}
+	if len(code) > 1 { // unexpect RSK getCode return 0x00
+		addCachedContractAddr(address)
 		return true, nil
 	}
-	return false, err
+	addNoncachedContractAddr(address)
+	return false, nil
 }
 
 func addNoncachedContractAddr(address string) {
