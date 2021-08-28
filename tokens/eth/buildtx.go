@@ -68,7 +68,9 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		if err != nil {
 			return nil, err
 		}
-		input = *args.Input
+		if args.Input != nil {
+			input = *args.Input
+		}
 	default:
 		return nil, tokens.ErrUnknownSwapType
 	}

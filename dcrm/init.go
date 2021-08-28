@@ -63,7 +63,7 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 		dcrmRPCTimeout = int(dcrmConfig.RPCTimeout)
 	}
 	if dcrmConfig.SignTimeout > 0 {
-		dcrmSignTimeout = time.Duration(dcrmConfig.SignTimeout) * time.Second
+		dcrmSignTimeout = time.Duration(dcrmConfig.SignTimeout * uint64(time.Second))
 	}
 
 	setDcrmGroup(*dcrmConfig.GroupID, dcrmConfig.Mode, *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
