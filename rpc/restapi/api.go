@@ -8,6 +8,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/internal/swapapi"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/gorilla/mux"
 )
@@ -22,20 +23,24 @@ func writeResponse(w http.ResponseWriter, resp interface{}, err error) {
 		writeErrResponse(w, err)
 		return
 	}
+	writeJSONResponse(w, jsonData)
+}
+
+func writeJSONResponse(w http.ResponseWriter, jsonData []byte) {
 	// Note: must set header before write header
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonData)
+	_, err := w.Write(jsonData)
 	if err != nil {
-		fmt.Println("write response error:", err)
+		log.Warn("write response error", "data", common.ToHex(jsonData), "err", err)
 	}
 }
 
 func writeErrResponse(w http.ResponseWriter, err error) {
 	// Note: must set header before write header
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, err.Error())
+	fmt.Fprint(w, err.Error())
 }
 
 // VersionInfoHandler handler
