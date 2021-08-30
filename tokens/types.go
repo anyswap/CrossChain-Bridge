@@ -42,10 +42,12 @@ type ChainConfig struct {
 	MaxReplaceCount         int
 	EnableReplaceSwap       bool
 	FixedGasPrice           string `json:",omitempty"`
+	MaxGasPrice             string `json:",omitempty"`
 	BaseFeePercent          int64
 
 	// calced value
 	fixedGasPrice *big.Int
+	maxGasPrice   *big.Int
 
 	callByContractWhitelist map[string]struct{}
 }
@@ -301,6 +303,13 @@ func (c *ChainConfig) CheckConfig() error {
 		}
 		c.fixedGasPrice = fixedGasPrice
 	}
+	if c.MaxGasPrice != "" {
+		maxGasPrice, err := common.GetBigIntFromStr(c.MaxGasPrice)
+		if err != nil {
+			return err
+		}
+		c.maxGasPrice = maxGasPrice
+	}
 	if len(c.CallByContractWhitelist) > 0 {
 		c.callByContractWhitelist = make(map[string]struct{}, len(c.CallByContractWhitelist))
 		for _, addr := range c.CallByContractWhitelist {
@@ -321,6 +330,14 @@ func (c *ChainConfig) CheckConfig() error {
 func (c *ChainConfig) GetFixedGasPrice() *big.Int {
 	if c.fixedGasPrice != nil {
 		return new(big.Int).Set(c.fixedGasPrice) // clone
+	}
+	return nil
+}
+
+// GetMaxGasPrice get max gas price
+func (c *ChainConfig) GetMaxGasPrice() *big.Int {
+	if c.maxGasPrice != nil {
+		return new(big.Int).Set(c.maxGasPrice) // clone
 	}
 	return nil
 }
