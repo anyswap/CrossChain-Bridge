@@ -142,11 +142,7 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 	dstContractsMap := make(map[string]struct{})
 	nonContractSrcCount := 0
 	for _, tokenPair := range pairsConfig {
-		// check pairsID
 		pairID := strings.ToLower(tokenPair.PairID)
-		if _, exist := pairsMap[pairID]; exist {
-			return fmt.Errorf("duplicate pairID '%v'", tokenPair.PairID)
-		}
 		pairsMap[pairID] = struct{}{}
 		// check source contract address
 		srcContract := strings.ToLower(tokenPair.SrcToken.ContractAddress)
@@ -215,7 +211,7 @@ func LoadTokenPairsConfig(check bool) {
 	if err != nil {
 		log.Fatal("load token pair config error", "err", err)
 	}
-	SetTokenPairsConfig(pairsConfig, false)
+	SetTokenPairsConfig(pairsConfig, check)
 }
 
 // LoadTokenPairsConfigInDir load token pairs config
@@ -242,7 +238,12 @@ func LoadTokenPairsConfigInDir(dir string, check bool) (map[string]*TokenPairCon
 			return nil, err
 		}
 		// use all small case to identify
-		pairsConfig[strings.ToLower(pairConfig.PairID)] = pairConfig
+		pairID := strings.ToLower(pairConfig.PairID)
+		// check duplicate pairID
+		if _, exist := pairsConfig[pairID]; exist {
+			return nil, fmt.Errorf("duplicate pairID '%v'", pairConfig.PairID)
+		}
+		pairsConfig[pairID] = pairConfig
 	}
 	if check {
 		err = checkTokenPairsConfig(pairsConfig)
