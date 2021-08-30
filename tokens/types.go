@@ -45,6 +45,7 @@ type ChainConfig struct {
 	MaxReplaceCount            int
 	EnableReplaceSwap          bool
 	FixedGasPrice              string `json:",omitempty"`
+	MaxGasPrice                string `json:",omitempty"`
 
 	IsDynamicFeeTxEnabled bool
 	PlusGasTipCapPercent  uint64
@@ -55,6 +56,7 @@ type ChainConfig struct {
 
 	// cached values
 	fixedGasPrice *big.Int
+	maxGasPrice   *big.Int
 	minReserveFee *big.Int
 	maxGasTipCap  *big.Int
 	maxGasFeeCap  *big.Int
@@ -75,6 +77,14 @@ func (c *ChainConfig) IsInCallByContractWhitelist(caller string) bool {
 func (c *ChainConfig) GetFixedGasPrice() *big.Int {
 	if c.fixedGasPrice != nil {
 		return new(big.Int).Set(c.fixedGasPrice) // clone
+	}
+	return nil
+}
+
+// GetMaxGasPrice get max gas price
+func (c *ChainConfig) GetMaxGasPrice() *big.Int {
+	if c.maxGasPrice != nil {
+		return new(big.Int).Set(c.maxGasPrice) // clone
 	}
 	return nil
 }
@@ -372,6 +382,13 @@ func (c *ChainConfig) CheckConfig(isServer bool) error {
 			return err
 		}
 		c.fixedGasPrice = fixedGasPrice
+	}
+	if c.MaxGasPrice != "" {
+		maxGasPrice, err := common.GetBigIntFromStr(c.MaxGasPrice)
+		if err != nil {
+			return err
+		}
+		c.maxGasPrice = maxGasPrice
 	}
 	if c.MinReserveFee != "" {
 		bi, ok := new(big.Int).SetString(c.MinReserveFee, 10)
