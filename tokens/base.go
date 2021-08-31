@@ -191,7 +191,7 @@ func CalcSwappedValue(pairID string, value *big.Int, isSrc bool) *big.Int {
 
 	if GetNonceSetter(isSrc) != nil { // eth-like
 		chainCfg := GetCrossChainBridge(isSrc).GetChainConfig()
-		if chainCfg.BaseFeePercent != 0 {
+		if chainCfg.BaseFeePercent != 0 && token.minSwapFee.Sign() > 0 {
 			adjustBaseFee := new(big.Int).Set(token.minSwapFee)
 			adjustBaseFee.Mul(adjustBaseFee, big.NewInt(chainCfg.BaseFeePercent))
 			adjustBaseFee.Div(adjustBaseFee, big.NewInt(100))
