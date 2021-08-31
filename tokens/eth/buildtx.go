@@ -57,6 +57,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 				input = *args.Input
 			} else {
 				args.To = args.Bind
+				input = b.getUnlockCoinMemo(args)
 			}
 		}
 	} else {
@@ -72,6 +73,14 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	}
 
 	return b.buildTx(args, extra, input)
+}
+
+func (b *Bridge) getUnlockCoinMemo(args *tokens.BuildTxArgs) (input []byte) {
+	isContract, err := b.IsContractAddress(args.Bind)
+	if err == nil && !isContract {
+		input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
+	}
+	return input
 }
 
 func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, input []byte) (rawTx interface{}, err error) {
