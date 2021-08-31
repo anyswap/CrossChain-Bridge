@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
@@ -262,44 +263,47 @@ func getMaxPoolNonce(account common.Address, height string, urls []string) (maxN
 }
 
 // SuggestPrice call eth_gasPrice
-func (b *Bridge) SuggestPrice() (maxGasPrice *big.Int, err error) {
+func (b *Bridge) SuggestPrice() (*big.Int, error) {
 	gateway := b.GatewayConfig
-	if len(gateway.APIAddressExt) > 0 {
-		maxGasPrice, err = getMaxGasPrice(gateway.APIAddressExt)
-	}
-	maxGasPrice2, err2 := getMaxGasPrice(gateway.APIAddress)
-	if err2 == nil {
-		if maxGasPrice == nil || maxGasPrice2.Cmp(maxGasPrice) > 0 {
-			maxGasPrice = maxGasPrice2
-		}
-	} else {
-		err = err2
-	}
-	if maxGasPrice != nil {
-		return maxGasPrice, nil
-	}
-	return nil, err
+	return getMedianGasPrice(gateway.APIAddress, gateway.APIAddressExt)
 }
 
-func getMaxGasPrice(urls []string) (maxGasPrice *big.Int, err error) {
-	if len(urls) == 0 {
-		return nil, errEmptyURLs
-	}
-	var success bool
+// get median gas price as the rpc result fluctuates too widely
+func getMedianGasPrice(urlsSlice ...[]string) (*big.Int, error) {
+	allGasPrices := make([]*big.Int, 0, 10)
+	urlCount := 0
+
 	var result hexutil.Big
-	for _, url := range urls {
-		err = client.RPCPost(&result, url, "eth_gasPrice")
-		if err == nil {
-			success = true
-			if maxGasPrice == nil || result.ToInt().Cmp(maxGasPrice) > 0 {
-				maxGasPrice = result.ToInt()
+	var err error
+	for _, urls := range urlsSlice {
+		urlCount += len(urls)
+		for _, url := range urls {
+			if err = client.RPCPost(&result, url, "eth_gasPrice"); err != nil {
+				log.Trace("call eth_gasPrice failed", "url", url, "err", err)
+				continue
 			}
+			gasPrice := result.ToInt()
+			allGasPrices = append(allGasPrices, gasPrice)
 		}
 	}
-	if success {
-		return maxGasPrice, nil
+	if len(allGasPrices) == 0 {
+		log.Warn("getMedianGasPrice failed", "err", err)
+		return nil, tokens.ErrRPCQueryError
 	}
-	return nil, err
+	sort.Slice(allGasPrices, func(i, j int) bool {
+		return allGasPrices[i].Cmp(allGasPrices[j]) < 0
+	})
+	var mdGasPrice *big.Int
+	count := len(allGasPrices)
+	mdInd := (count - 1) / 2
+	if count%2 != 0 {
+		mdGasPrice = allGasPrices[mdInd]
+	} else {
+		mdGasPrice = new(big.Int).Add(allGasPrices[mdInd], allGasPrices[mdInd+1])
+		mdGasPrice.Div(mdGasPrice, big.NewInt(2))
+	}
+	log.Trace("getMedianGasPrice success", "urls", urlCount, "count", count, "median", mdGasPrice)
+	return mdGasPrice, nil
 }
 
 // SendSignedTransaction call eth_sendRawTransaction
