@@ -52,6 +52,7 @@ UtxoAggregateToAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 MustRegisterAccount = false
 IsSwapoutToStringAddress = false
 EnableCheckBlockFork = false
+IsNullSwapoutNativeMemo = false
 
 # source chain config
 [SrcChain]

@@ -97,6 +97,7 @@ type ExtraConfig struct {
 	MustRegisterAccount      bool
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
 	EnableCheckBlockFork     bool
+	IsNullSwapoutNativeMemo  bool `toml:",omitempty" json:",omitempty"`
 }
 
 // GetAPIPort get api service port
@@ -131,6 +132,11 @@ func IsSwapoutToStringAddress() bool {
 // EnableCheckBlockFork enable check block fork
 func EnableCheckBlockFork() bool {
 	return GetExtraConfig() != nil && GetExtraConfig().EnableCheckBlockFork
+}
+
+// IsNullSwapoutNativeMemo set no unlock memo in building swapout tx
+func IsNullSwapoutNativeMemo() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().IsNullSwapoutNativeMemo
 }
 
 // IsDebugMode is debug mode, add more debugging log infos
