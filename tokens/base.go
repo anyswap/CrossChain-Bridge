@@ -3,6 +3,8 @@ package tokens
 import (
 	"math"
 	"math/big"
+
+	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 // transaction memo prefix
@@ -70,6 +72,23 @@ func (b *CrossChainBridgeBase) GetDcrmPublicKey(pairID string) string {
 		return tokenCfg.DcrmPubkey
 	}
 	return ""
+}
+
+// IsSwapTxOnChainAndFailed to make failed of swaptx
+func (s *TxStatus) IsSwapTxOnChainAndFailed(token *TokenConfig) bool {
+	if s == nil || s.BlockHeight == 0 {
+		return false // not on chain
+	}
+	if s.Receipt != nil { // for eth-like blockchain
+		receipt, ok := s.Receipt.(*types.RPCTxReceipt)
+		if !ok || receipt == nil || *receipt.Status != 1 {
+			return true
+		}
+		if token != nil && token.ContractAddress != "" && len(receipt.Logs) == 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // GetCrossChainBridge get bridge of specified endpoint
