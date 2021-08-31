@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tools"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
@@ -323,6 +324,12 @@ func (c *ChainConfig) CheckConfig() error {
 			c.callByContractWhitelist[key] = struct{}{}
 		}
 	}
+	log.Info("check chain config success",
+		"blockChain", c.BlockChain,
+		"fixedGasPrice", c.FixedGasPrice,
+		"maxGasPrice", c.MaxGasPrice,
+		"baseFeePercent", c.BaseFeePercent,
+	)
 	return nil
 }
 
@@ -421,7 +428,17 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if err != nil {
 		return err
 	}
-	return c.VerifyDcrmPublicKey()
+	err = c.VerifyDcrmPublicKey()
+	if err != nil {
+		return err
+	}
+	log.Info("check token config success",
+		"id", c.ID, "name", c.Name, "symbol", c.Symbol, "decimals", *c.Decimals,
+		"depositAddress", c.DepositAddress, "contractAddress", c.ContractAddress,
+		"maxSwap", c.maxSwap, "minSwap", c.minSwap,
+		"maxSwapFee", c.maxSwapFee, "minSwapFee", c.minSwapFee, "bigValThreshhold", c.bigValThreshhold,
+	)
+	return nil
 }
 
 // CalcAndStoreValue calc and store value (minus duplicate calculation)
