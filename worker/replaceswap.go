@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 
-	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -17,11 +17,15 @@ var (
 	errSwapTxIsOnChain    = errors.New("swaptx exist in chain")
 	errGetNonceFailed     = errors.New("get nonce failed")
 	errSwapNoncePassed    = errors.New("can not replace swap with old nonce")
+	errSwapNonceTooBig    = errors.New("forbid replace swap with too big nonce than latest")
 	errBuildTxFailed      = errors.New("build tx failed")
 	errSignTxFailed       = errors.New("sign tx failed")
 	errUpdateOldTxsFailed = errors.New("update old swaptxs failed")
+	errNotNonceSupport    = errors.New("not nonce support bridge")
 
 	updateOldSwapTxsLock sync.Mutex
+
+	maxDistanceOfSwapNonce = uint64(5)
 )
 
 // ReplaceSwapin api
@@ -46,35 +50,59 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 	if res.SwapHeight != 0 {
 		return nil, nil, errSwapTxWithHeight
 	}
-	bridge := tokens.GetCrossChainBridge(!isSwapin)
-	nonceSetter, ok := bridge.(tokens.NonceSetter)
-	if !ok {
-		return nil, nil, errors.New("not nonce support bridge")
-	}
-	if isSwapResultTxOnChain(nonceSetter, res) {
-		return nil, nil, errSwapTxIsOnChain
-	}
 
-	tokenCfg := bridge.GetTokenConfig(pairID)
-	if tokenCfg == nil {
-		return nil, nil, fmt.Errorf("no token config for pairID '%v'", pairID)
-	}
-	nonce, err := nonceSetter.GetPoolNonce(tokenCfg.DcrmAddress, "latest")
+	bridge := tokens.GetCrossChainBridge(!isSwapin)
+	err = checkIfSwapNonceHasPassed(bridge, res, true)
 	if err != nil {
-		return nil, nil, errGetNonceFailed
-	}
-	if nonce > res.SwapNonce && res.SwapNonce > 0 {
-		if isSwapResultTxOnChain(nonceSetter, res) {
-			return nil, nil, errSwapTxIsOnChain
-		}
-		if res.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
-			logWorker("replace", "mark swap result failed with nonce passed", "txid", txid, "pairID", pairID, "isSwapin", isSwapin, "swapnonce", res.SwapNonce, "latestnonce", nonce)
-			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
-		}
-		return nil, nil, errSwapNoncePassed
+		return nil, nil, err
 	}
 
 	return swap, res, nil
+}
+
+func checkIfSwapNonceHasPassed(bridge tokens.CrossChainBridge, res *mongodb.MgoSwapResult, isReplace bool) error {
+	nonceSetter, ok := bridge.(tokens.NonceSetter)
+	if !ok {
+		return errNotNonceSupport
+	}
+
+	// only check if nonce has passed when tx is not onchain.
+	if isSwapResultTxOnChain(nonceSetter, res) {
+		return errSwapTxIsOnChain
+	}
+
+	pairID := res.PairID
+	txid := res.TxID
+	bind := res.Bind
+	isSwapin := tokens.SwapType(res.SwapType) == tokens.SwapinType
+
+	tokenCfg := bridge.GetTokenConfig(pairID)
+	if tokenCfg == nil {
+		return fmt.Errorf("no token config for pairID '%v'", pairID)
+	}
+	nonce, err := nonceSetter.GetPoolNonce(tokenCfg.DcrmAddress, "latest")
+	if err != nil {
+		return errGetNonceFailed
+	}
+	if isReplace && res.SwapNonce > nonce+maxDistanceOfSwapNonce {
+		return errSwapNonceTooBig
+	}
+	if nonce > res.SwapNonce && res.SwapNonce > 0 {
+		var iden string
+		if isReplace {
+			iden = "[replace]"
+		} else {
+			iden = "[stable]"
+		}
+		if res.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
+			logWorkerWarn(iden, "mark swap result failed with nonce passed", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swaptime", res.Timestamp, "nowtime", now(), "swapnonce", res.SwapNonce, "latestnonce", nonce)
+			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
+		}
+		if isReplace {
+			return errSwapNoncePassed
+		}
+	}
+	return nil
 }
 
 func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash string, err error) {
@@ -92,14 +120,21 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 		return "", err
 	}
 
+	srcBridge := tokens.GetCrossChainBridge(isSwapin)
+	swapInfo, err := verifySwapTransaction(srcBridge, pairID, txid, bind, tokens.SwapTxType(swap.TxType))
+	if err != nil {
+		return "", fmt.Errorf("[replace] reverify swap failed, %w", err)
+	}
+	if swapInfo.Value.String() != res.Value {
+		return "", fmt.Errorf("[replace] reverify swap value mismatch, in db %v != %v", res.Value, swapInfo.Value)
+	}
+	if !strings.EqualFold(swapInfo.Bind, bind) {
+		return "", fmt.Errorf("[replace] reverify swap bind address mismatch, in db %v != %v", bind, swapInfo.Bind)
+	}
+
 	bridge := tokens.GetCrossChainBridge(!isSwapin)
 	tokenCfg := bridge.GetTokenConfig(pairID)
 	swapType := getSwapType(isSwapin)
-
-	value, err := common.GetBigIntFromStr(res.Value)
-	if err != nil {
-		return "", fmt.Errorf("wrong value %v", res.Value)
-	}
 
 	nonce := res.SwapNonce
 	args := &tokens.BuildTxArgs{
@@ -112,7 +147,7 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 			Bind:       bind,
 		},
 		From:        tokenCfg.DcrmAddress,
-		OriginValue: value,
+		OriginValue: swapInfo.Value,
 		Extra: &tokens.AllExtras{
 			EthExtra: &tokens.EthExtraArgs{
 				GasPrice: gasPrice,

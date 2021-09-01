@@ -136,6 +136,24 @@ func updateSwapResultHeight(swap *mongodb.MgoSwapResult, blockHeight, blockTime 
 	return err
 }
 
+func updateSwapTimestamp(txid, pairID, bind string, isSwapin bool) (err error) {
+	updates := &mongodb.SwapResultUpdateItems{
+		Status:    mongodb.KeepStatus,
+		Timestamp: now(),
+	}
+	if isSwapin {
+		err = mongodb.UpdateSwapinResult(txid, pairID, bind, updates)
+	} else {
+		err = mongodb.UpdateSwapoutResult(txid, pairID, bind, updates)
+	}
+	if err != nil {
+		logWorkerError("update", "updateSwapTimestamp", err, "txid", txid, "pairID", pairID, "bind", bind)
+	} else {
+		logWorker("update", "updateSwapTimestamp", "txid", txid, "pairID", pairID, "bind", bind)
+	}
+	return err
+}
+
 func updateSwapTx(txid, pairID, bind, swapTx string, isSwapin bool) (err error) {
 	updates := &mongodb.SwapResultUpdateItems{
 		Status:    mongodb.KeepStatus,

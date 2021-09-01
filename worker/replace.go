@@ -118,6 +118,12 @@ func processReplaceSwap(swap *mongodb.MgoSwapResult, isSwapin bool) {
 	if getSepTimeInFind(waitTimeToReplace) < swap.Timestamp {
 		return
 	}
+	bridge := tokens.GetCrossChainBridge(!isSwapin)
+	err := checkIfSwapNonceHasPassed(bridge, swap, true)
+	if err != nil {
+		return
+	}
+	_ = updateSwapTimestamp(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 	dispatchReplaceTask(swap)
 }
 
@@ -158,6 +164,9 @@ func getNonceSetter(isSwapin bool) tokens.NonceSetter {
 }
 
 func doReplaceSwap(swap *mongodb.MgoSwapResult) {
+	if swap.SwapNonce == 0 || swap.SwapHeight != 0 {
+		return
+	}
 	isSwapin := tokens.SwapType(swap.SwapType) == tokens.SwapinType
 	nonceSetter := getNonceSetter(isSwapin)
 	if nonceSetter == nil {
@@ -181,6 +190,9 @@ func doReplaceSwap(swap *mongodb.MgoSwapResult) {
 }
 
 func isTransactionOnChain(bridge tokens.NonceSetter, txHash string) bool {
+	if txHash == "" {
+		return false
+	}
 	blockHeight, _ := bridge.GetTxBlockInfo(txHash)
 	return blockHeight > 0
 }
