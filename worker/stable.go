@@ -13,7 +13,7 @@ var (
 	swapinStableStarter  sync.Once
 	swapoutStableStarter sync.Once
 
-	treatAsNoncePassedInterval = int64(300) // seconds
+	treatAsNoncePassedInterval = int64(600) // seconds
 )
 
 // StartStableJob stable job
@@ -126,6 +126,7 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 			_ = updateSwapTx(swap.TxID, swap.PairID, swap.Bind, swap.SwapTx, isSwapin)
 		}
 		if txStatus.IsSwapTxOnChainAndFailed(resBridge.GetTokenConfig(swap.PairID)) {
+			logWorker("stable", "mark swap result failed with wrong receipt status", "txid", swap.TxID, "pairID", swap.PairID, "isSwapin", isSwapin)
 			return markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 		}
 		return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)
@@ -165,6 +166,7 @@ func processUpdateSwapHeight(resBridge tokens.CrossChainBridge, swap *mongodb.Mg
 		}
 		if nonce > swap.SwapNonce &&
 			swap.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
+			logWorker("stable", "mark swap result failed with nonce passed", "txid", swap.TxID, "pairID", swap.PairID, "isSwapin", isSwapin, "swapnonce", swap.SwapNonce, "latestnonce", nonce)
 			_ = markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 			return errSwapNoncePassed
 		}

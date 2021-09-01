@@ -63,11 +63,12 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 	if err != nil {
 		return nil, nil, errGetNonceFailed
 	}
-	if nonce > res.SwapNonce {
+	if nonce > res.SwapNonce && res.SwapNonce > 0 {
 		if isSwapResultTxOnChain(nonceSetter, res) {
 			return nil, nil, errSwapTxIsOnChain
 		}
 		if res.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
+			logWorker("replace", "mark swap result failed with nonce passed", "txid", txid, "pairID", pairID, "isSwapin", isSwapin, "swapnonce", res.SwapNonce, "latestnonce", nonce)
 			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
 		}
 		return nil, nil, errSwapNoncePassed
