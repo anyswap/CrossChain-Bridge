@@ -1,11 +1,11 @@
 package worker
 
 import (
-	"container/ring"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -13,19 +13,28 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+	mapset "github.com/deckarep/golang-set"
+)
+
+const (
+	acceptAgree    = "AGREE"
+	acceptDisagree = "DISAGREE"
 )
 
 var (
 	acceptSignStarter sync.Once
 
-	acceptRing        *ring.Ring
-	acceptRingLock    sync.RWMutex
-	acceptRingMaxSize = 500
+	cachedAcceptInfos    = mapset.NewSet()
+	maxCachedAcceptInfos = 500
 
 	maxAcceptSignTimeInterval = int64(600) // seconds
 
 	retryInterval = 3 * time.Second
 	waitInterval  = 20 * time.Second
+
+	acceptInfoCh      = make(chan *dcrm.SignInfoData, 10)
+	maxAcceptRoutines = int64(10)
+	curAcceptRoutines = int64(0)
 
 	// those errors will be ignored in accepting
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
@@ -43,11 +52,12 @@ func StartAcceptSignJob() {
 	}
 	acceptSignStarter.Do(func() {
 		logWorker("accept", "start accept sign job")
-		acceptSign()
+		go startAcceptProducer()
+		go startAcceptConsumer()
 	})
 }
 
-func acceptSign() {
+func startAcceptProducer() {
 	for {
 		signInfo, err := dcrm.GetCurNodeSignInfo()
 		if err != nil {
@@ -55,86 +65,177 @@ func acceptSign() {
 			time.Sleep(retryInterval)
 			continue
 		}
-		logWorker("accept", "acceptSign", "count", len(signInfo))
+		logWorker("accept", "getCurNodeSignInfo", "count", len(signInfo))
 		for _, info := range signInfo {
+			if info == nil { // maybe a dcrm RPC problem
+				continue
+			}
 			keyID := info.Key
-			history := getAcceptSignHistory(keyID)
-			if history != nil {
-				logWorker("accept", "history sign", "keyID", keyID, "result", history.result)
-				_, _ = dcrm.DoAcceptSign(keyID, history.result, history.msgHash, history.msgContext)
+			if cachedAcceptInfos.Contains(keyID) {
+				logWorkerTrace("accept", "ignore cached accept sign info before dispatch", "keyID", keyID)
 				continue
 			}
-			agreeResult := "AGREE"
-			err := verifySignInfo(info)
-			switch err {
-			case errIdentifierMismatch,
-				errInitiatorMismatch,
-				errWrongMsgContext,
-				errExpiredSignInfo,
-				errInvalidSignInfo,
-				tokens.ErrUnknownPairID,
-				tokens.ErrNoBtcBridge,
-				tokens.ErrTxNotStable,
-				tokens.ErrTxNotFound:
-				logWorkerTrace("accept", "ignore sign", "keyID", keyID, "err", err)
-				continue
-			}
-			if err != nil {
-				logWorkerError("accept", "DISAGREE sign", err, "keyID", keyID)
-				agreeResult = "DISAGREE"
-			}
-			logWorker("accept", "dcrm DoAcceptSign", "keyID", keyID, "result", agreeResult)
-			res, err := dcrm.DoAcceptSign(keyID, agreeResult, info.MsgHash, info.MsgContext)
-			if err != nil {
-				logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res)
-			} else {
-				logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult)
-				addAcceptSignHistory(keyID, agreeResult, info.MsgHash, info.MsgContext)
-			}
+			logWorker("accept", "dispatch accept sign info", "keyID", keyID)
+			acceptInfoCh <- info // produce
 		}
 		time.Sleep(waitInterval)
 	}
 }
 
-func verifySignInfo(signInfo *dcrm.SignInfoData) error {
+func startAcceptConsumer() {
+	for {
+		info := <-acceptInfoCh // consume
+		// loop and check, break if free worker exist
+		for {
+			if atomic.LoadInt64(&curAcceptRoutines) < maxAcceptRoutines {
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+
+		atomic.AddInt64(&curAcceptRoutines, 1)
+		go processAcceptInfo(info)
+	}
+}
+
+func checkAndUpdateCachedAcceptInfoMap(keyID string) (ok bool) {
+	if cachedAcceptInfos.Contains(keyID) {
+		logWorkerTrace("accept", "ignore cached accept sign info in process", "keyID", keyID)
+		return false
+	}
+	if cachedAcceptInfos.Cardinality() >= maxCachedAcceptInfos {
+		cachedAcceptInfos.Pop()
+	}
+	cachedAcceptInfos.Add(keyID)
+	return true
+}
+
+func processAcceptInfo(info *dcrm.SignInfoData) {
+	defer atomic.AddInt64(&curAcceptRoutines, -1)
+
+	keyID := info.Key
+	if !checkAndUpdateCachedAcceptInfoMap(keyID) {
+		return
+	}
+	isProcessed := false
+	defer func() {
+		if !isProcessed {
+			cachedAcceptInfos.Remove(keyID)
+		}
+	}()
+
+	args, err := verifySignInfo(info)
+
+	ctx := []interface{}{
+		"keyID", keyID,
+	}
+	if args != nil {
+		ctx = append(ctx,
+			"identifier", args.Identifier,
+			"swaptype", args.SwapType.String(),
+			"pairID", args.PairID,
+			"swapID", args.SwapID,
+			"bind", args.Bind,
+		)
+	}
+
+	switch {
+	case errors.Is(err, tokens.ErrTxNotStable),
+		errors.Is(err, tokens.ErrTxNotFound),
+		errors.Is(err, tokens.ErrRPCQueryError):
+		ctx = append(ctx, "err", err)
+		logWorkerTrace("accept", "ignore sign", ctx...)
+		return
+	case errors.Is(err, errIdentifierMismatch):
+		ctx = append(ctx, "err", err)
+		logWorkerTrace("accept", "discard sign", ctx...)
+		isProcessed = true
+		return
+	case errors.Is(err, errInitiatorMismatch),
+		errors.Is(err, errWrongMsgContext),
+		errors.Is(err, errExpiredSignInfo),
+		errors.Is(err, errInvalidSignInfo),
+		errors.Is(err, tokens.ErrUnknownPairID),
+		errors.Is(err, tokens.ErrNoBtcBridge):
+		ctx = append(ctx, "err", err)
+		logWorker("accept", "discard sign", ctx...)
+		isProcessed = true
+		return
+	}
+
+	agreeResult := acceptAgree
+	if err != nil {
+		logWorkerError("accept", "DISAGREE sign", err, ctx...)
+		agreeResult = acceptDisagree
+	}
+	ctx = append(ctx, "result", agreeResult)
+
+	res, err := dcrm.DoAcceptSign(keyID, agreeResult, info.MsgHash, info.MsgContext)
+	if err != nil {
+		ctx = append(ctx, "rpcResult", res)
+		logWorkerError("accept", "accept sign job failed", err, ctx...)
+	} else {
+		logWorker("accept", "accept sign job finish", ctx...)
+		isProcessed = true
+	}
+}
+
+func getBuildTxArgsFromMsgContext(signInfo *dcrm.SignInfoData) (*tokens.BuildTxArgs, error) {
+	msgContext := signInfo.MsgContext
+	if len(msgContext) != 1 {
+		return nil, errWrongMsgContext
+	}
+	var args tokens.BuildTxArgs
+	err := json.Unmarshal([]byte(msgContext[0]), &args)
+	if err != nil {
+		return nil, errWrongMsgContext
+	}
+	return &args, nil
+}
+
+func verifySignInfo(signInfo *dcrm.SignInfoData) (args *tokens.BuildTxArgs, err error) {
 	timestamp, err := common.GetUint64FromStr(signInfo.TimeStamp)
 	if err != nil || int64(timestamp/1000)+maxAcceptSignTimeInterval < time.Now().Unix() {
 		logWorkerTrace("accept", "expired accept sign info", "signInfo", signInfo)
-		return errExpiredSignInfo
+		return nil, errExpiredSignInfo
 	}
 	if signInfo.Key == "" || signInfo.Account == "" || signInfo.GroupID == "" {
 		logWorkerWarn("accept", "invalid accept sign info", "signInfo", signInfo)
-		return errInvalidSignInfo
+		return nil, errInvalidSignInfo
 	}
 	if !params.IsDcrmInitiator(signInfo.Account) {
-		return errInitiatorMismatch
+		return nil, errInitiatorMismatch
+	}
+	args, err = getBuildTxArgsFromMsgContext(signInfo)
+	if err != nil {
+		return args, err
 	}
 	msgHash := signInfo.MsgHash
 	msgContext := signInfo.MsgContext
-	if len(msgContext) != 1 {
-		return errWrongMsgContext
-	}
-	var args tokens.BuildTxArgs
-	err = json.Unmarshal([]byte(msgContext[0]), &args)
-	if err != nil {
-		return errWrongMsgContext
-	}
 	switch args.Identifier {
 	case params.GetIdentifier():
 	case tokens.AggregateIdentifier:
 		if btc.BridgeInstance == nil {
-			return tokens.ErrNoBtcBridge
+			return args, tokens.ErrNoBtcBridge
 		}
 		logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
-		return btc.BridgeInstance.VerifyAggregateMsgHash(msgHash, &args)
+		err = btc.BridgeInstance.VerifyAggregateMsgHash(msgHash, args)
+		if err != nil {
+			return args, err
+		}
+		return args, nil
 	default:
-		return errIdentifierMismatch
+		return args, errIdentifierMismatch
 	}
-	logWorker("accept", "verifySignInfo", "msgHash", msgHash, "msgContext", msgContext)
-	return rebuildAndVerifyMsgHash(msgHash, &args)
+	logWorker("accept", "verifySignInfo", "keyID", signInfo.Key, "msgHash", msgHash, "msgContext", msgContext)
+	err = rebuildAndVerifyMsgHash(signInfo.Key, msgHash, args)
+	if err != nil {
+		return args, err
+	}
+	return args, nil
 }
 
-func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
+func rebuildAndVerifyMsgHash(keyID string, msgHash []string, args *tokens.BuildTxArgs) error {
 	var srcBridge, dstBridge tokens.CrossChainBridge
 	switch args.SwapType {
 	case tokens.SwapinType:
@@ -152,9 +253,18 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 		return tokens.ErrUnknownPairID
 	}
 
+	ctx := []interface{}{
+		"keyID", keyID,
+		"identifier", args.Identifier,
+		"swaptype", args.SwapType.String(),
+		"pairID", args.PairID,
+		"swapID", args.SwapID,
+		"bind", args.Bind,
+	}
+
 	swapInfo, err := verifySwapTransaction(srcBridge, args.PairID, args.SwapID, args.Bind, args.TxType)
 	if err != nil {
-		logWorkerError("accept", "verifySignInfo failed", err, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
+		logWorkerError("accept", "verifySignInfo failed", err, ctx...)
 		return err
 	}
 
@@ -166,60 +276,14 @@ func rebuildAndVerifyMsgHash(msgHash []string, args *tokens.BuildTxArgs) error {
 	}
 	rawTx, err := dstBridge.BuildRawTransaction(buildTxArgs)
 	if err != nil {
+		logWorkerError("accept", "build raw tx failed", err, ctx...)
 		return err
 	}
-	return dstBridge.VerifyMsgHash(rawTx, msgHash)
-}
-
-type acceptSignInfo struct {
-	keyID      string
-	result     string
-	msgHash    []string
-	msgContext []string
-}
-
-func addAcceptSignHistory(keyID, result string, msgHash, msgContext []string) {
-	// Create the new item as its own ring
-	item := ring.New(1)
-	item.Value = &acceptSignInfo{
-		keyID:      keyID,
-		result:     result,
-		msgHash:    msgHash,
-		msgContext: msgContext,
+	err = dstBridge.VerifyMsgHash(rawTx, msgHash)
+	if err != nil {
+		logWorkerError("accept", "verify message hash failed", err, ctx...)
+		return err
 	}
-
-	acceptRingLock.Lock()
-	defer acceptRingLock.Unlock()
-
-	if acceptRing == nil {
-		acceptRing = item
-	} else {
-		if acceptRing.Len() == acceptRingMaxSize {
-			// Drop the block out of the ring
-			acceptRing = acceptRing.Move(-1)
-			acceptRing.Unlink(1)
-			acceptRing = acceptRing.Move(1)
-		}
-		acceptRing.Move(-1).Link(item)
-	}
-}
-
-func getAcceptSignHistory(keyID string) *acceptSignInfo {
-	acceptRingLock.RLock()
-	defer acceptRingLock.RUnlock()
-
-	if acceptRing == nil {
-		return nil
-	}
-
-	r := acceptRing
-	for i := 0; i < r.Len(); i++ {
-		item := r.Value.(*acceptSignInfo)
-		if item.keyID == keyID {
-			return item
-		}
-		r = r.Prev()
-	}
-
+	logWorker("accept", "verify message hash success", ctx...)
 	return nil
 }
