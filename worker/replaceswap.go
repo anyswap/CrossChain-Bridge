@@ -68,7 +68,10 @@ func checkIfSwapNonceHasPassed(bridge tokens.CrossChainBridge, res *mongodb.MgoS
 
 	// only check if nonce has passed when tx is not onchain.
 	if isSwapResultTxOnChain(nonceSetter, res) {
-		return errSwapTxIsOnChain
+		if isReplace {
+			return errSwapTxIsOnChain
+		}
+		return nil
 	}
 
 	pairID := res.PairID
