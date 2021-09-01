@@ -13,7 +13,7 @@ var (
 	swapinStableStarter  sync.Once
 	swapoutStableStarter sync.Once
 
-	treatAsNoncePassedInterval = int64(300) // seconds
+	treatAsNoncePassedInterval = int64(600) // seconds
 )
 
 // StartStableJob stable job

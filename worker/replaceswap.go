@@ -50,15 +50,8 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 	if res.SwapHeight != 0 {
 		return nil, nil, errSwapTxWithHeight
 	}
-	bridge := tokens.GetCrossChainBridge(!isSwapin)
-	nonceSetter, ok := bridge.(tokens.NonceSetter)
-	if !ok {
-		return nil, nil, errNotNonceSupport
-	}
-	if isSwapResultTxOnChain(nonceSetter, res) {
-		return nil, nil, errSwapTxIsOnChain
-	}
 
+	bridge := tokens.GetCrossChainBridge(!isSwapin)
 	err = checkIfSwapNonceHasPassed(bridge, res, true)
 	if err != nil {
 		return nil, nil, err
@@ -76,6 +69,11 @@ func checkIfSwapNonceHasPassed(bridge tokens.CrossChainBridge, res *mongodb.MgoS
 	nonceSetter, ok := bridge.(tokens.NonceSetter)
 	if !ok {
 		return errNotNonceSupport
+	}
+
+	// only check if nonce has passed when tx is not onchain.
+	if isSwapResultTxOnChain(nonceSetter, res) {
+		return errSwapTxIsOnChain
 	}
 
 	pairID := res.PairID
