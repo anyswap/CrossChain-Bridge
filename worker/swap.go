@@ -1,11 +1,9 @@
 package worker
 
 import (
-	"container/ring"
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
@@ -16,9 +14,8 @@ import (
 )
 
 var (
-	swapRing        *ring.Ring
-	swapRingLock    sync.RWMutex
-	swapRingMaxSize = 1000
+	cachedSwapHistoty        = mapset.NewSet()
+	maxCachedSwapHistorySize = 1000
 
 	cachedSwapTasks    = mapset.NewSet()
 	maxCachedSwapTasks = 1000
@@ -281,10 +278,8 @@ func preventReswap(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	default:
 	}
 	if res.Status != mongodb.Reswapping {
-		history := getSwapHistory(isSwapin, res.TxID, res.Bind)
-		if history != nil {
-			logWorkerError("[doSwap]", "forbid reswap by cache", errAlreadySwapped,
-				"isSwapin", history.isSwapin, "txid", history.txid, "bind", history.bind, "swaptx", history.matchTx)
+		if isSwapHistoryExist(isSwapin, res.TxID, res.Bind) {
+			logWorkerError("[doSwap]", "forbid reswap by cache", errAlreadySwapped, "isSwapin", isSwapin, "txid", res.TxID, "bind", res.Bind)
 			_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, mongodb.TxProcessed, now(), "")
 			return errAlreadySwapped
 		}
@@ -494,54 +489,15 @@ func DeleteCachedSwap(isSwapin bool, txid, bind string) {
 	cachedSwapTasks.Remove(cacheKey)
 }
 
-type swapInfo struct {
-	isSwapin bool
-	txid     string
-	bind     string
-	matchTx  string
+func addSwapHistory(isSwapin bool, txid, bind string) {
+	if cachedSwapHistoty.Cardinality() >= maxCachedSwapHistorySize {
+		cachedSwapHistoty.Pop()
+	}
+	key := getSwapCacheKey(isSwapin, txid, bind)
+	cachedSwapHistoty.Add(key)
 }
 
-func addSwapHistory(isSwapin bool, txid, bind, matchTx string) {
-	// Create the new item as its own ring
-	item := ring.New(1)
-	item.Value = &swapInfo{
-		isSwapin: isSwapin,
-		txid:     txid,
-		bind:     bind,
-		matchTx:  matchTx,
-	}
-
-	swapRingLock.Lock()
-	defer swapRingLock.Unlock()
-
-	if swapRing == nil {
-		swapRing = item
-	} else {
-		if swapRing.Len() == swapRingMaxSize {
-			swapRing = swapRing.Move(-1)
-			swapRing.Unlink(1)
-			swapRing = swapRing.Move(1)
-		}
-		swapRing.Move(-1).Link(item)
-	}
-}
-
-func getSwapHistory(isSwapin bool, txid, bind string) *swapInfo {
-	swapRingLock.RLock()
-	defer swapRingLock.RUnlock()
-
-	if swapRing == nil {
-		return nil
-	}
-
-	r := swapRing
-	for i := 0; i < r.Len(); i++ {
-		item := r.Value.(*swapInfo)
-		if item.txid == txid && item.bind == bind && item.isSwapin == isSwapin {
-			return item
-		}
-		r = r.Prev()
-	}
-
-	return nil
+func isSwapHistoryExist(isSwapin bool, txid, bind string) bool {
+	key := getSwapCacheKey(isSwapin, txid, bind)
+	return cachedSwapHistoty.Contains(key)
 }

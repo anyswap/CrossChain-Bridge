@@ -137,11 +137,11 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 
 	fromTokenCfg := bridge.GetTokenConfig(pairID)
 	if fromTokenCfg == nil {
-		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "isSwapin", isSwapin)
+		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "txid", txid, "isSwapin", isSwapin)
 		return tokens.ErrUnknownPairID
 	}
 	if fromTokenCfg.DisableSwap {
-		logWorkerTrace("swap", "swap is disabled", "pairID", pairID, "isSwapin", isSwapin)
+		logWorkerTrace("swap", "swap is disabled", "pairID", pairID, "txid", txid, "isSwapin", isSwapin)
 		return tokens.ErrSwapIsClosed
 	}
 
@@ -200,7 +200,7 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 	case errors.Is(err, tokens.ErrBindAddressMismatch):
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
 	default:
-		logWorkerWarn("verify", "maybe not considered tx verify error", "err", err)
+		logWorkerWarn("verify", "maybe not considered tx verify error", "txid", txid, "bind", bind, "isSwapin", isSwapin, "err", err)
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
 	}
 
