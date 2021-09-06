@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	defaultAPIPort      = 11556
-	defServerConfigFile = "config.toml"
+	defaultAPIPort = 11556
 )
 
 var (
@@ -22,6 +21,8 @@ var (
 
 	// ServerAPIAddress server api address
 	ServerAPIAddress string
+	// swap server flag
+	IsSwapServer bool
 )
 
 // ServerConfig config items (decode from toml file)
@@ -137,14 +138,6 @@ func GetExtraConfig() *ExtraConfig {
 // LoadConfig load config
 func LoadConfig(configFile string, isServer bool) *ServerConfig {
 	loadConfigStarter.Do(func() {
-		if configFile == "" {
-			// find config file in the execute directory (default).
-			dir, err := common.ExecuteDir()
-			if err != nil {
-				log.Fatalf("LoadConfig error (get ExecuteDir): %v", err)
-			}
-			configFile = common.AbsolutePath(dir, defServerConfigFile)
-		}
 		log.Println("Config file is", configFile)
 		if !common.FileExist(configFile) {
 			log.Fatalf("LoadConfig error: config file %v not exist", configFile)
@@ -154,6 +147,7 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 			log.Fatalf("LoadConfig error (toml DecodeFile): %v", err)
 		}
 
+		IsSwapServer = isServer
 		SetConfig(config)
 		var bs []byte
 		if log.JSONFormat {

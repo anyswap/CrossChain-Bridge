@@ -247,7 +247,8 @@ func (b *Bridge) checkSwapinBindAddress(bindAddr string, allowContractAddress bo
 	if params.MustRegisterAccount() && !tools.IsAddressRegistered(bindAddr) {
 		return tokens.ErrTxSenderNotRegistered
 	}
-	if !allowContractAddress {
+	if params.IsSwapServer && !allowContractAddress &&
+		!b.ChainConfig.IsInCallByContractWhitelist(bindAddr) {
 		isContract, err := b.IsContractAddress(bindAddr)
 		if err != nil {
 			log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)
