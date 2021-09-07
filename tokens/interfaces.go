@@ -42,6 +42,7 @@ var (
 	ErrWrongSwapValue       = errors.New("wrong swap value")
 	ErrTxIncompatible       = errors.New("tx incompatible")
 	ErrTxWithWrongReceipt   = errors.New("tx with wrong receipt")
+	ErrEstimateGasFailed    = errors.New("estimate gas failed")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")

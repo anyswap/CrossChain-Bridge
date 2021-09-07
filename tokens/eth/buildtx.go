@@ -27,15 +27,11 @@ var (
 )
 
 func (b *Bridge) buildNonswapTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
-	extra, err := b.setDefaults(args)
+	err = b.setDefaults(args)
 	if err != nil {
 		return nil, err
 	}
-	var input []byte
-	if args.Input != nil {
-		input = *args.Input
-	}
-	return b.buildTx(args, extra, input)
+	return b.buildTx(args)
 }
 
 // BuildRawTransaction build raw tx
@@ -49,33 +45,25 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
-	extra, err := b.setDefaults(args)
+	err = b.setDefaults(args)
 	if err != nil {
 		return nil, err
 	}
 
-	var input []byte
-
 	switch args.SwapType {
 	case tokens.SwapinType:
 		err = b.buildSwapinTxInput(args)
-		if err != nil {
-			return nil, err
-		}
-		input = *args.Input
 	case tokens.SwapoutType:
 		err = b.buildSwapoutTxInput(args)
-		if err != nil {
-			return nil, err
-		}
-		if args.Input != nil {
-			input = *args.Input
-		}
 	default:
 		return nil, tokens.ErrUnknownSwapType
 	}
 
-	return b.buildTx(args, extra, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return b.buildTx(args)
 }
 
 func (b *Bridge) checkBuildTxArgs(args *tokens.BuildTxArgs) error {
@@ -108,10 +96,11 @@ func (b *Bridge) checkBuildTxArgs(args *tokens.BuildTxArgs) error {
 	return nil
 }
 
-func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, input []byte) (rawTx interface{}, err error) {
+func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var (
 		to        = common.HexToAddress(args.To)
 		value     = args.Value
+		extra     = args.Extra.EthExtra
 		nonce     = *extra.Nonce
 		gasLimit  = *extra.Gas
 		gasPrice  = extra.GasPrice
@@ -120,6 +109,19 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 
 		isDynamicFeeTx = b.ChainConfig.IsDynamicFeeTxEnabled
 	)
+
+	var input []byte
+	if args.Input != nil {
+		input = *args.Input
+	}
+
+	_, err = b.EstimateGas(args.From, args.To, args.Value, input)
+	if err != nil {
+		log.Error(fmt.Sprintf("build %s tx estimate gas failed", args.SwapType.String()),
+			"swapID", args.SwapID, "from", args.From, "to", args.To,
+			"value", args.Value, "data", common.ToHex(input), "err", err)
+		return nil, tokens.ErrEstimateGasFailed
+	}
 
 	needValue := big.NewInt(0)
 	if value != nil && value.Sign() > 0 {
@@ -168,34 +170,33 @@ func (b *Bridge) getMinReserveFee() *big.Int {
 	return minReserveFee
 }
 
-func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraArgs, err error) {
+func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (err error) {
 	if args.Value == nil {
 		args.Value = new(big.Int)
 	}
 	if args.Extra == nil || args.Extra.EthExtra == nil {
-		extra = &tokens.EthExtraArgs{}
-		args.Extra = &tokens.AllExtras{EthExtra: extra}
-	} else {
-		extra = args.Extra.EthExtra
+		args.Extra = &tokens.AllExtras{EthExtra: &tokens.EthExtraArgs{}}
 	}
+	extra := args.Extra.EthExtra
+
 	if b.ChainConfig.IsDynamicFeeTxEnabled {
 		if extra.GasTipCap == nil {
 			extra.GasTipCap, err = b.getGasTipCap(args)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 		if extra.GasFeeCap == nil {
 			extra.GasFeeCap, err = b.getGasFeeCap(args, extra.GasTipCap)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 		extra.GasPrice = nil
 	} else if extra.GasPrice == nil {
 		extra.GasPrice, err = b.getGasPrice(args)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		extra.GasTipCap = nil
 		extra.GasFeeCap = nil
@@ -203,14 +204,14 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 	if extra.Nonce == nil {
 		extra.Nonce, err = b.getAccountNonce(args.PairID, args.From, args.SwapType)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	if extra.Gas == nil {
 		extra.Gas = new(uint64)
 		*extra.Gas = b.getDefaultGasLimit(args.PairID)
 	}
-	return extra, nil
+	return nil
 }
 
 func (b *Bridge) getDefaultGasLimit(pairID string) (gasLimit uint64) {
