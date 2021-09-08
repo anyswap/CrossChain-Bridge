@@ -148,13 +148,18 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)
 	}
 
-	log.Info("build raw tx", "identifier", args.Identifier, "pairID", args.PairID,
-		"swapID", args.SwapID, "swapType", args.SwapType.String(),
-		"bind", args.Bind, "originValue", args.OriginValue, "swapValue", args.SwapValue,
-		"from", args.From, "to", to.String(), "value", value, "nonce", nonce,
-		"gasLimit", gasLimit, "gasPrice", gasPrice, "data", common.ToHex(input),
-		"gasTipCap", gasTipCap, "gasFeeCap", gasFeeCap, "chainID", b.SignerChainID,
-	)
+	ctx := []interface{}{"identifier", args.Identifier,
+		"chainID", b.SignerChainID, "pairID", args.PairID, "swapID", args.SwapID,
+		"from", args.From, "to", to.String(), "nonce", nonce, "bind", args.Bind,
+		"originValue", args.OriginValue, "swapValue", args.SwapValue,
+		"gasLimit", gasLimit, "data", common.ToHex(input),
+	}
+	if gasTipCap != nil || gasFeeCap != nil {
+		ctx = append(ctx, "gasTipCap", gasTipCap, "gasFeeCap", gasFeeCap)
+	} else {
+		ctx = append(ctx, "gasPrice", gasPrice)
+	}
+	log.Info(fmt.Sprintf("build %s raw tx", args.SwapType.String()), ctx...)
 
 	return rawTx, nil
 }
