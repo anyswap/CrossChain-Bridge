@@ -39,6 +39,7 @@ var (
 	ErrTxWithWrongReceipt   = errors.New("tx with wrong receipt")
 	ErrTxIncompatible       = errors.New("tx incompatible")
 	ErrRPCQueryError        = errors.New("rpc query error")
+	ErrEstimateGasFailed    = errors.New("estimate gas failed")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")

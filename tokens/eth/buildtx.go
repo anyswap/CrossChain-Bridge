@@ -92,6 +92,14 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		gasPrice = extra.GasPrice
 	)
 
+	_, err = b.EstimateGas(args.From, args.To, args.Value, input)
+	if err != nil {
+		log.Error(fmt.Sprintf("build %s tx estimate gas failed", args.SwapType.String()),
+			"swapID", args.SwapID, "from", args.From, "to", args.To,
+			"value", args.Value, "data", common.ToHex(input), "err", err)
+		return nil, tokens.ErrEstimateGasFailed
+	}
+
 	if args.SwapType == tokens.SwapoutType {
 		pairID := args.PairID
 		tokenCfg := b.GetTokenConfig(pairID)
