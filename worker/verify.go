@@ -3,6 +3,7 @@ package worker
 import (
 	"sync"
 
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -111,8 +112,11 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		return err
 	}
 
-	if swapInfo.Height != 0 &&
-		swapInfo.Height < *bridge.GetChainConfig().InitialHeight {
+	if err == tokens.ErrTxBeforeInitialHeight ||
+		(swapInfo.Height != 0 && swapInfo.Height < *bridge.GetChainConfig().InitialHeight) {
+		log.Warn("transaction before initial block height",
+			"initialHeight", *bridge.GetChainConfig().InitialHeight,
+			"blockHeight", swapInfo.Height)
 		err = tokens.ErrTxBeforeInitialHeight
 		return mongodb.UpdateSwapinStatus(txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
 	}

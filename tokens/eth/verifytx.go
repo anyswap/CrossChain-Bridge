@@ -211,15 +211,17 @@ func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxRece
 	txStatus := b.GetTransactionStatus(swapInfo.Hash)
 	swapInfo.Height = txStatus.BlockHeight  // Height
 	swapInfo.Timestamp = txStatus.BlockTime // Timestamp
+	if txStatus.BlockHeight == 0 {
+		return nil, tokens.ErrTxNotFound
+	}
+	if txStatus.Confirmations < *b.GetChainConfig().Confirmations {
+		return nil, tokens.ErrTxNotStable
+	}
+	if txStatus.BlockHeight < *b.ChainConfig.InitialHeight {
+		return nil, tokens.ErrTxBeforeInitialHeight
+	}
 	receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-	if !ok || receipt == nil {
-		return nil, tokens.ErrTxNotStable
-	}
-	if txStatus.BlockHeight == 0 ||
-		txStatus.Confirmations < *b.GetChainConfig().Confirmations {
-		return nil, tokens.ErrTxNotStable
-	}
-	if *receipt.Status != 1 {
+	if !ok || receipt == nil || *receipt.Status != 1 {
 		return nil, tokens.ErrTxWithWrongReceipt
 	}
 	return receipt, nil
