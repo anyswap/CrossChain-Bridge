@@ -47,7 +47,7 @@ type verifyTxTest struct {
 }
 
 var consArgsSlice = []*consArgs{
-	&consArgs{ // 0
+	{ // 0
 		args: []string{
 			nativeType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -59,7 +59,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: nil,
 	},
-	&consArgs{ // 1
+	{ // 1
 		args: []string{
 			nativeType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -71,7 +71,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: tokens.ErrTxWithWrongReceiver,
 	},
-	&consArgs{ // 2
+	{ // 2
 		args: []string{
 			swapinType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -89,7 +89,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: nil,
 	},
-	&consArgs{ //3
+	{ //3
 		args: []string{
 			swapinType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -107,7 +107,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: tokens.ErrTxWithWrongReceiver, // receiver and deposit address mismatch
 	},
-	&consArgs{ // 4
+	{ // 4
 		args: []string{
 			swapinType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -125,7 +125,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: tokens.ErrTxWithWrongContract, // to and contract address mismatch
 	},
-	&consArgs{ // 5
+	{ // 5
 		args: []string{
 			swapinType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -143,7 +143,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: nil, // allowCallFromContract is true, compare log address with contract address
 	},
-	&consArgs{ // 6
+	{ // 6
 		args: []string{
 			swapinType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -161,7 +161,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: tokens.ErrDepositLogNotFound, // log address mismatch
 	},
-	&consArgs{ // 7
+	{ // 7
 		args: []string{
 			swapinType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -179,7 +179,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: tokens.ErrDepositLogNotFound, // log topic mismatch
 	},
-	&consArgs{ // 8
+	{ // 8
 		args: []string{
 			swapoutType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -197,7 +197,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: nil,
 	},
-	&consArgs{ // 9
+	{ // 9
 		args: []string{
 			swapout2Type, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -214,7 +214,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: nil,
 	},
-	&consArgs{ // 10
+	{ // 10
 		args: []string{
 			swapout2Type, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -232,7 +232,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: tokens.ErrSwapoutLogNotFound, // log topic mismatch
 	},
-	&consArgs{ // 11
+	{ // 11
 		args: []string{
 			swapoutType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -250,7 +250,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: tokens.ErrSwapoutLogNotFound,
 	},
-	&consArgs{ // 12
+	{ // 12
 		args: []string{
 			swapoutType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -268,7 +268,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: tokens.ErrTxWithWrongContract,
 	},
-	&consArgs{ // 13
+	{ // 13
 		args: []string{
 			swapoutType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -286,7 +286,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: tokens.ErrTxWithWrongContract,
 	},
-	&consArgs{ // 14
+	{ // 14
 		args: []string{
 			swapoutType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
@@ -304,7 +304,7 @@ var consArgsSlice = []*consArgs{
 		},
 		wantErr: nil,
 	},
-	&consArgs{ // 14
+	{ // 14
 		args: []string{
 			swapoutType, // txtype
 			"0x1111111111111111111111111111111111111111", // from
