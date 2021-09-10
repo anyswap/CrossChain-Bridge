@@ -1,45 +1,54 @@
 package mongodb
 
 import (
-	"gopkg.in/mgo.v2"
+	"github.com/anyswap/CrossChain-Bridge/log"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+const (
+	tbSwapins           string = "Swapins"
+	tbSwapouts          string = "Swapouts"
+	tbSwapinResults     string = "SwapinResults"
+	tbSwapoutResults    string = "SwapoutResults"
+	tbP2shAddresses     string = "P2shAddresses"
+	tbSwapStatistics    string = "SwapStatistics"
+	tbLatestScanInfo    string = "LatestScanInfo"
+	tbRegisteredAddress string = "RegisteredAddress"
+	tbBlacklist         string = "Blacklist"
+	tbLatestSwapNonces  string = "LatestSwapNonces"
+	tbSwapHistory       string = "SwapHistory"
+	tbUsedRValues       string = "UsedRValues"
+
+	keyOfSrcLatestScanInfo string = "srclatest"
+	keyOfDstLatestScanInfo string = "dstlatest"
 )
 
 var (
-	collSwapin            *mgo.Collection
-	collSwapout           *mgo.Collection
-	collSwapinResult      *mgo.Collection
-	collSwapoutResult     *mgo.Collection
-	collP2shAddress       *mgo.Collection
-	collSwapStatistics    *mgo.Collection
-	collLatestScanInfo    *mgo.Collection
-	collRegisteredAddress *mgo.Collection
-	collBlacklist         *mgo.Collection
-	collLatestSwapNonces  *mgo.Collection
-	collSwapHistory       *mgo.Collection
-	collUsedRValue        *mgo.Collection
+	database *mongo.Database
+
+	collSwapin            *mongo.Collection
+	collSwapout           *mongo.Collection
+	collSwapinResult      *mongo.Collection
+	collSwapoutResult     *mongo.Collection
+	collP2shAddress       *mongo.Collection
+	collSwapStatistics    *mongo.Collection
+	collLatestScanInfo    *mongo.Collection
+	collRegisteredAddress *mongo.Collection
+	collBlacklist         *mongo.Collection
+	collLatestSwapNonces  *mongo.Collection
+	collSwapHistory       *mongo.Collection
+	collUsedRValue        *mongo.Collection
 )
 
-func isSwapin(collection *mgo.Collection) bool {
+func isSwapin(collection *mongo.Collection) bool {
 	return collection == collSwapin || collection == collSwapinResult
 }
 
-// do this when reconnect to the database
-func deinintCollections() {
-	collSwapin = database.C(tbSwapins)
-	collSwapout = database.C(tbSwapouts)
-	collSwapinResult = database.C(tbSwapinResults)
-	collSwapoutResult = database.C(tbSwapoutResults)
-	collP2shAddress = database.C(tbP2shAddresses)
-	collSwapStatistics = database.C(tbSwapStatistics)
-	collLatestScanInfo = database.C(tbLatestScanInfo)
-	collRegisteredAddress = database.C(tbRegisteredAddress)
-	collBlacklist = database.C(tbBlacklist)
-	collLatestSwapNonces = database.C(tbLatestSwapNonces)
-	collSwapHistory = database.C(tbSwapHistory)
-	collUsedRValue = database.C(tbUsedRValues)
-}
-
 func initCollections() {
+	database = client.Database(databaseName)
+
 	initCollection(tbSwapins, &collSwapin, "inittime", "status")
 	initCollection(tbSwapouts, &collSwapout, "inittime", "status")
 	initCollection(tbSwapinResults, &collSwapinResult, "from", "inittime")
@@ -52,24 +61,23 @@ func initCollections() {
 	initCollection(tbLatestSwapNonces, &collLatestSwapNonces, "address")
 	initCollection(tbSwapHistory, &collSwapHistory, "txid")
 	initCollection(tbUsedRValues, &collUsedRValue)
-
-	initDefaultValue()
 }
 
-func initCollection(table string, collection **mgo.Collection, indexKey ...string) {
-	*collection = database.C(table)
-	if len(indexKey) != 0 && indexKey[0] != "" {
-		_ = (*collection).EnsureIndexKey(indexKey...)
+func initCollection(table string, collection **mongo.Collection, indexKey ...string) {
+	*collection = database.Collection(table)
+	if len(indexKey) != 0 {
+		createOneIndex(*collection, indexKey...)
 	}
 }
 
-func initDefaultValue() {
-	_ = collLatestScanInfo.Insert(
-		&MgoLatestScanInfo{
-			Key: keyOfSrcLatestScanInfo,
-		},
-		&MgoLatestScanInfo{
-			Key: keyOfDstLatestScanInfo,
-		},
-	)
+func createOneIndex(coll *mongo.Collection, indexes ...string) {
+	keys := make([]bson.E, len(indexes))
+	for i, index := range indexes {
+		keys[i] = bson.E{Key: index, Value: 1}
+	}
+	model := mongo.IndexModel{Keys: keys}
+	_, err := coll.Indexes().CreateOne(clientCtx, model)
+	if err != nil {
+		log.Error("[mongodb] create indexes failed", "collection", coll.Name(), "indexes", indexes, "err", err)
+	}
 }

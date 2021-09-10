@@ -8,7 +8,9 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"gopkg.in/mgo.v2"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
@@ -29,7 +31,7 @@ func AddToBlacklist(address, pairID string) error {
 		PairID:    strings.ToLower(pairID),
 		Timestamp: time.Now().Unix(),
 	}
-	err := collBlacklist.Insert(mb)
+	_, err := collBlacklist.InsertOne(clientCtx, mb)
 	if err == nil {
 		log.Info("mongodb add to black list success", "address", address, "pairID", pairID)
 	} else {
@@ -40,7 +42,7 @@ func AddToBlacklist(address, pairID string) error {
 
 // RemoveFromBlacklist remove from blacklist
 func RemoveFromBlacklist(address, pairID string) error {
-	err := collBlacklist.RemoveId(getBlacklistKey(address, pairID))
+	_, err := collBlacklist.DeleteOne(clientCtx, bson.M{"_id": getBlacklistKey(address, pairID)})
 	if err == nil {
 		log.Info("mongodb remove from black list success", "address", address, "pairID", pairID)
 	} else {
@@ -52,11 +54,11 @@ func RemoveFromBlacklist(address, pairID string) error {
 // QueryBlacklist query if is blacked
 func QueryBlacklist(address, pairID string) (isBlacked bool, err error) {
 	var result MgoBlackAccount
-	err = collBlacklist.FindId(getBlacklistKey(address, pairID)).One(&result)
+	err = collBlacklist.FindOne(clientCtx, bson.M{"_id": getBlacklistKey(address, pairID)}).Decode(&result)
 	if err == nil {
 		return true, nil
 	}
-	if errors.Is(err, mgo.ErrNotFound) {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return false, nil
 	}
 	return false, err

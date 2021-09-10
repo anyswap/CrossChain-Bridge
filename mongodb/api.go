@@ -9,19 +9,22 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
-	maxCountOfResults = 5000
-	allPairs          = "all"
-	allAddresses      = "all"
+	allPairs     = "all"
+	allAddresses = "all"
 )
 
 var (
 	retryLock        sync.Mutex
 	updateResultLock sync.Mutex
+
+	maxCountOfResults = int64(1000)
 )
 
 // --------------- swapin and swapout uniform --------------------------------
@@ -85,11 +88,6 @@ func FindSwapinsWithPairIDAndStatus(pairID string, status SwapStatus, septime in
 	return findSwapsWithPairIDAndStatus(pairID, collSwapin, status, septime)
 }
 
-// GetCountOfSwapinsWithStatus get count of swapins with status
-func GetCountOfSwapinsWithStatus(pairID string, status SwapStatus) (int, error) {
-	return getCountWithStatus(collSwapin, pairID, status)
-}
-
 // --------------- swapout --------------------------------
 
 // AddSwapout add swapout
@@ -117,14 +115,9 @@ func FindSwapoutsWithPairIDAndStatus(pairID string, status SwapStatus, septime i
 	return findSwapsWithPairIDAndStatus(pairID, collSwapout, status, septime)
 }
 
-// GetCountOfSwapoutsWithStatus get count of swapout with status
-func GetCountOfSwapoutsWithStatus(pairID string, status SwapStatus) (int, error) {
-	return getCountWithStatus(collSwapout, pairID, status)
-}
-
 // ------------------ swapin / swapout common ------------------------
 
-func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
+func addSwap(collection *mongo.Collection, ms *MgoSwap) error {
 	if ms.TxID == "" || ms.PairID == "" || ms.Bind == "" {
 		log.Error("mongodb add swap with wrong key", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
 		return ErrWrongKey
@@ -132,7 +125,7 @@ func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
 	ms.PairID = strings.ToLower(ms.PairID)
 	ms.Key = GetSwapKey(ms.TxID, ms.PairID, ms.Bind)
 	ms.InitTime = common.NowMilli()
-	err := collection.Insert(ms)
+	_, err := collection.InsertOne(clientCtx, ms)
 	if err == nil {
 		log.Info("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
 	} else {
@@ -141,7 +134,7 @@ func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
 	return mgoError(err)
 }
 
-func updateSwapStatus(collection *mgo.Collection, txid, pairID, bind string, status SwapStatus, timestamp int64, memo string) error {
+func updateSwapStatus(collection *mongo.Collection, txid, pairID, bind string, status SwapStatus, timestamp int64, memo string) error {
 	pairID = strings.ToLower(pairID)
 	updates := bson.M{"status": status, "timestamp": timestamp}
 	if memo != "" {
@@ -157,7 +150,7 @@ func updateSwapStatus(collection *mgo.Collection, txid, pairID, bind string, sta
 			return nil
 		}
 	}
-	err := collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
+	_, err := collection.UpdateByID(clientCtx, GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
 	if err == nil {
 		printLog := log.Info
 		switch status {
@@ -177,7 +170,7 @@ func GetSwapKey(txid, pairID, bind string) string {
 	return strings.ToLower(txid + ":" + pairID + ":" + bind)
 }
 
-func findSwap(collection *mgo.Collection, txid, pairID, bind string) (*MgoSwap, error) {
+func findSwap(collection *mongo.Collection, txid, pairID, bind string) (*MgoSwap, error) {
 	result := &MgoSwap{}
 	err := findSwapOrSwapResult(result, collection, txid, pairID, bind)
 	if err != nil {
@@ -186,44 +179,58 @@ func findSwap(collection *mgo.Collection, txid, pairID, bind string) (*MgoSwap, 
 	return result, nil
 }
 
-func findSwapOrSwapResult(result interface{}, collection *mgo.Collection, txid, pairID, bind string) (err error) {
+func findSwapOrSwapResult(result interface{}, collection *mongo.Collection, txid, pairID, bind string) (err error) {
 	if bind != "" {
-		err = collection.FindId(GetSwapKey(txid, pairID, bind)).One(result)
+		err = collection.FindOne(clientCtx, bson.M{"_id": GetSwapKey(txid, pairID, bind)}).Decode(result)
 	} else {
 		qtxid := bson.M{"txid": txid}
 		qpair := bson.M{"pairid": strings.ToLower(pairID)}
 		queries := []bson.M{qtxid, qpair}
-		err = collection.Find(bson.M{"$and": queries}).One(result)
+		err = collection.FindOne(clientCtx, bson.M{"$and": queries}).Decode(result)
 	}
 	return mgoError(err)
 }
 
-func findSwapsWithStatus(collection *mgo.Collection, status SwapStatus, septime int64) (result []*MgoSwap, err error) {
+func findSwapsWithStatus(collection *mongo.Collection, status SwapStatus, septime int64) (result []*MgoSwap, err error) {
 	err = findSwapsOrSwapResultsWithStatus(&result, collection, status, septime)
 	return result, err
 }
 
-func findSwapsOrSwapResultsWithStatus(result interface{}, collection *mgo.Collection, status SwapStatus, septime int64) error {
+func findSwapsOrSwapResultsWithStatus(result interface{}, collection *mongo.Collection, status SwapStatus, septime int64) error {
 	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qtime, qstatus}
-	q := collection.Find(bson.M{"$and": queries}).Sort("inittime").Limit(maxCountOfResults)
-	return mgoError(q.All(result))
+	opts := &options.FindOptions{
+		Sort:  bson.D{{Key: "inittime", Value: 1}},
+		Limit: &maxCountOfResults,
+	}
+	cur, err := collection.Find(clientCtx, bson.M{"$and": queries}, opts)
+	if err != nil {
+		return mgoError(err)
+	}
+	return mgoError(cur.All(clientCtx, result))
 }
 
-func findSwapsWithPairIDAndStatus(pairID string, collection *mgo.Collection, status SwapStatus, septime int64) (result []*MgoSwap, err error) {
+func findSwapsWithPairIDAndStatus(pairID string, collection *mongo.Collection, status SwapStatus, septime int64) (result []*MgoSwap, err error) {
 	err = findSwapsOrSwapResultsWithPairIDAndStatus(&result, pairID, collection, status, septime)
 	return result, err
 }
 
-func findSwapsOrSwapResultsWithPairIDAndStatus(result interface{}, pairID string, collection *mgo.Collection, status SwapStatus, septime int64) error {
+func findSwapsOrSwapResultsWithPairIDAndStatus(result interface{}, pairID string, collection *mongo.Collection, status SwapStatus, septime int64) error {
 	pairID = strings.ToLower(pairID)
 	qpair := bson.M{"pairid": pairID}
 	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qpair, qtime, qstatus}
-	q := collection.Find(bson.M{"$and": queries}).Sort("inittime").Limit(maxCountOfResults)
-	return mgoError(q.All(result))
+	opts := &options.FindOptions{
+		Sort:  bson.D{{Key: "inittime", Value: 1}},
+		Limit: &maxCountOfResults,
+	}
+	cur, err := collection.Find(clientCtx, bson.M{"$and": queries}, opts)
+	if err != nil {
+		return mgoError(err)
+	}
+	return mgoError(cur.All(clientCtx, result))
 }
 
 // --------------- swapin result --------------------------------
@@ -264,26 +271,24 @@ func FindSwapResultsToReplace(status SwapStatus, septime int64, isSwapin bool) (
 	qheight := bson.M{"swapheight": 0}
 	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
 	queries := []bson.M{qstatus, qheight, qtime}
-	var collection *mgo.Collection
+	var collection *mongo.Collection
 	if isSwapin {
 		collection = collSwapinResult
 	} else {
 		collection = collSwapoutResult
 	}
+	limit := int64(5)
+	opts := &options.FindOptions{
+		Sort:  bson.D{{Key: "inittime", Value: 1}},
+		Limit: &limit,
+	}
+	cur, err := collection.Find(clientCtx, bson.M{"$and": queries}, opts)
+	if err != nil {
+		return nil, mgoError(err)
+	}
 	result := make([]*MgoSwapResult, 0, 20)
-	q := collection.Find(bson.M{"$and": queries}).Sort("inittime").Limit(5)
-	err := q.All(&result)
+	err = cur.All(clientCtx, &result)
 	return result, mgoError(err)
-}
-
-// GetCountOfSwapinResults get count of swapin results
-func GetCountOfSwapinResults(pairID string) (int, error) {
-	return getCount(collSwapinResult, pairID)
-}
-
-// GetCountOfSwapinResultsWithStatus get count of swapin results with status
-func GetCountOfSwapinResultsWithStatus(pairID string, status SwapStatus) (int, error) {
-	return getCountWithStatus(collSwapinResult, pairID, status)
 }
 
 // --------------- swapout result --------------------------------
@@ -318,19 +323,9 @@ func FindSwapoutResults(address, pairID string, offset, limit int, status string
 	return findSwapResults(collSwapoutResult, address, pairID, offset, limit, status)
 }
 
-// GetCountOfSwapoutResults get count of swapout results
-func GetCountOfSwapoutResults(pairID string) (int, error) {
-	return getCount(collSwapoutResult, pairID)
-}
-
-// GetCountOfSwapoutResultsWithStatus get count of swapout results with status
-func GetCountOfSwapoutResultsWithStatus(pairID string, status SwapStatus) (int, error) {
-	return getCountWithStatus(collSwapoutResult, pairID, status)
-}
-
 // ------------------ swapin / swapout result common ------------------------
 
-func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
+func addSwapResult(collection *mongo.Collection, ms *MgoSwapResult) error {
 	if ms.TxID == "" || ms.PairID == "" || ms.Bind == "" {
 		log.Error("mongodb add swap result with wrong key", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "isSwapin", isSwapin(collection))
 		return ErrWrongKey
@@ -338,7 +333,7 @@ func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
 	ms.PairID = strings.ToLower(ms.PairID)
 	ms.Key = GetSwapKey(ms.TxID, ms.PairID, ms.Bind)
 	ms.InitTime = common.NowMilli()
-	err := collection.Insert(ms)
+	_, err := collection.InsertOne(clientCtx, ms)
 	if err == nil {
 		log.Info("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection))
 	} else {
@@ -347,7 +342,7 @@ func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
 	return mgoError(err)
 }
 
-func updateSwapResult(collection *mgo.Collection, txid, pairID, bind string, items *SwapResultUpdateItems) error {
+func updateSwapResult(collection *mongo.Collection, txid, pairID, bind string, items *SwapResultUpdateItems) error {
 	pairID = strings.ToLower(pairID)
 	updates := bson.M{
 		"timestamp": items.Timestamp,
@@ -400,7 +395,7 @@ func updateSwapResult(collection *mgo.Collection, txid, pairID, bind string, ite
 			updates["swapnonce"] = items.SwapNonce
 		}
 	}
-	err := collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
+	_, err := collection.UpdateByID(clientCtx, GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
 	if err == nil {
 		log.Info("mongodb update swap result", "txid", txid, "pairID", pairID, "bind", bind, "updates", updates, "isSwapin", isSwapin(collection))
 	} else {
@@ -409,7 +404,7 @@ func updateSwapResult(collection *mgo.Collection, txid, pairID, bind string, ite
 	return mgoError(err)
 }
 
-func updateSwapResultStatus(collection *mgo.Collection, txid, pairID, bind string, status SwapStatus, timestamp int64, memo string) error {
+func updateSwapResultStatus(collection *mongo.Collection, txid, pairID, bind string, status SwapStatus, timestamp int64, memo string) error {
 	pairID = strings.ToLower(pairID)
 	updates := bson.M{"status": status, "timestamp": timestamp}
 	if memo != "" {
@@ -423,7 +418,7 @@ func updateSwapResultStatus(collection *mgo.Collection, txid, pairID, bind strin
 		updates["swaptime"] = 0
 		updates["swapnonce"] = 0
 	}
-	err := collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
+	_, err := collection.UpdateByID(clientCtx, GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
 	isSwapin := isSwapin(collection)
 	if err == nil {
 		log.Info("mongodb update swap result status", "txid", txid, "pairID", pairID, "bind", bind, "status", status, "isSwapin", isSwapin)
@@ -438,7 +433,7 @@ func updateSwapResultStatus(collection *mgo.Collection, txid, pairID, bind strin
 	return mgoError(err)
 }
 
-func findSwapResult(collection *mgo.Collection, txid, pairID, bind string) (*MgoSwapResult, error) {
+func findSwapResult(collection *mongo.Collection, txid, pairID, bind string) (*MgoSwapResult, error) {
 	result := &MgoSwapResult{}
 	err := findSwapOrSwapResult(result, collection, txid, pairID, bind)
 	if err != nil {
@@ -447,7 +442,7 @@ func findSwapResult(collection *mgo.Collection, txid, pairID, bind string) (*Mgo
 	return result, nil
 }
 
-func findSwapResultsWithStatus(collection *mgo.Collection, status SwapStatus, septime int64) (result []*MgoSwapResult, err error) {
+func findSwapResultsWithStatus(collection *mongo.Collection, status SwapStatus, septime int64) (result []*MgoSwapResult, err error) {
 	err = findSwapsOrSwapResultsWithStatus(&result, collection, status, septime)
 	return result, err
 }
@@ -467,9 +462,8 @@ func getStatusesFromStr(status string) []SwapStatus {
 	return result
 }
 
-func findSwapResults(collection *mgo.Collection, address, pairID string, offset, limit int, status string) ([]*MgoSwapResult, error) {
+func findSwapResults(collection *mongo.Collection, address, pairID string, offset, limit int, status string) ([]*MgoSwapResult, error) {
 	pairID = strings.ToLower(pairID)
-	result := make([]*MgoSwapResult, 0, 20)
 
 	var queries []bson.M
 
@@ -494,38 +488,31 @@ func findSwapResults(collection *mgo.Collection, address, pairID string, offset,
 		}
 	}
 
-	var q *mgo.Query
+	opts := &options.FindOptions{}
+	if limit >= 0 {
+		opts = opts.SetSort(bson.D{{Key: "inittime", Value: 1}}).
+			SetSkip(int64(offset)).SetLimit(int64(limit))
+	} else {
+		opts = opts.SetSort(bson.D{{Key: "inittime", Value: -1}}).
+			SetSkip(int64(offset)).SetLimit(int64(-limit))
+	}
+
+	var cur *mongo.Cursor
+	var err error
 	switch len(queries) {
 	case 0:
-		q = collection.Find(nil)
+		cur, err = collection.Find(clientCtx, bson.M{}, opts)
 	case 1:
-		q = collection.Find(queries[0])
+		cur, err = collection.Find(clientCtx, queries[0], opts)
 	default:
-		q = collection.Find(bson.M{"$and": queries})
+		cur, err = collection.Find(clientCtx, bson.M{"$and": queries}, opts)
 	}
-	if limit >= 0 {
-		q = q.Skip(offset).Limit(limit)
-	} else {
-		q = q.Sort("-inittime").Skip(offset).Limit(-limit)
-	}
-	err := q.All(&result)
 	if err != nil {
 		return nil, mgoError(err)
 	}
-	return result, nil
-}
-
-func getCount(collection *mgo.Collection, pairID string) (int, error) {
-	pairID = strings.ToLower(pairID)
-	return collection.Find(bson.M{"pairid": pairID}).Count()
-}
-
-func getCountWithStatus(collection *mgo.Collection, pairID string, status SwapStatus) (int, error) {
-	pairID = strings.ToLower(pairID)
-	qpair := bson.M{"pairid": pairID}
-	qstatus := bson.M{"status": status}
-	queries := []bson.M{qpair, qstatus}
-	return collection.Find(bson.M{"$and": queries}).Count()
+	result := make([]*MgoSwapResult, 0, 20)
+	err = cur.All(clientCtx, &result)
+	return result, mgoError(err)
 }
 
 // ------------------ statistics ------------------------
@@ -544,7 +531,7 @@ func updateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error 
 			TotalSwapoutValue:  "0",
 			TotalSwapoutFee:    "0",
 		}
-		_ = collSwapStatistics.Insert(curr)
+		_, _ = collSwapStatistics.InsertOne(clientCtx, curr)
 	}
 
 	addVal, _ := new(big.Int).SetString(value, 0)
@@ -572,7 +559,7 @@ func updateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error 
 		updates["totalswapoutvalue"] = curVal.String()
 		updates["totalswapoutfee"] = curFee.String()
 	}
-	err := collSwapStatistics.UpdateId(pairID, bson.M{"$set": updates})
+	_, err := collSwapStatistics.UpdateByID(clientCtx, pairID, bson.M{"$set": updates})
 	if err == nil {
 		log.Info("mongodb update swap statistics", "updates", updates)
 	} else {
@@ -585,7 +572,7 @@ func updateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error 
 func FindSwapStatistics(pairID string) (*MgoSwapStatistics, error) {
 	pairID = strings.ToLower(pairID)
 	var result MgoSwapStatistics
-	err := collSwapStatistics.FindId(pairID).One(&result)
+	err := collSwapStatistics.FindOne(clientCtx, bson.M{"_id": pairID}).Decode(&result)
 	return &result, mgoError(err)
 }
 
@@ -608,21 +595,6 @@ type SwapStatistics struct {
 func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
 	pairID = strings.ToLower(pairID)
 	stat := &SwapStatistics{PairID: pairID}
-
-	if curr, _ := FindSwapStatistics(pairID); curr != nil {
-		stat.StableSwapinCount = curr.StableSwapinCount
-		stat.TotalSwapinValue = curr.TotalSwapinValue
-		stat.TotalSwapinFee = curr.TotalSwapinFee
-		stat.StableSwapoutCount = curr.StableSwapoutCount
-		stat.TotalSwapoutValue = curr.TotalSwapoutValue
-		stat.TotalSwapoutFee = curr.TotalSwapoutFee
-	}
-
-	stat.TotalSwapinCount, _ = GetCountOfSwapinResults(pairID)
-	stat.TotalSwapoutCount, _ = GetCountOfSwapoutResults(pairID)
-	stat.PendingSwapinCount, _ = GetCountOfSwapinResultsWithStatus(pairID, MatchTxEmpty)
-	stat.PendingSwapoutCount, _ = GetCountOfSwapoutResultsWithStatus(pairID, MatchTxEmpty)
-
 	return stat, nil
 }
 
@@ -630,7 +602,8 @@ func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
 
 // AddP2shAddress add p2sh address
 func AddP2shAddress(ma *MgoP2shAddress) error {
-	err := collP2shAddress.Insert(ma)
+	ma.Timestamp = time.Now().Unix()
+	_, err := collP2shAddress.InsertOne(clientCtx, ma)
 	if err == nil {
 		log.Info("mongodb add p2sh address", "key", ma.Key, "p2shaddress", ma.P2shAddress)
 	} else {
@@ -642,7 +615,7 @@ func AddP2shAddress(ma *MgoP2shAddress) error {
 // FindP2shAddress find p2sh addrss through bind address
 func FindP2shAddress(key string) (*MgoP2shAddress, error) {
 	var result MgoP2shAddress
-	err := collP2shAddress.FindId(key).One(&result)
+	err := collP2shAddress.FindOne(clientCtx, bson.M{"_id": key}).Decode(&result)
 	if err != nil {
 		return nil, mgoError(err)
 	}
@@ -652,7 +625,7 @@ func FindP2shAddress(key string) (*MgoP2shAddress, error) {
 // FindP2shBindAddress find bind address through p2sh address
 func FindP2shBindAddress(p2shAddress string) (string, error) {
 	var result MgoP2shAddress
-	err := collP2shAddress.Find(bson.M{"p2shaddress": p2shAddress}).One(&result)
+	err := collP2shAddress.FindOne(clientCtx, bson.M{"p2shaddress": p2shAddress}).Decode(&result)
 	if err != nil {
 		return "", mgoError(err)
 	}
@@ -661,13 +634,17 @@ func FindP2shBindAddress(p2shAddress string) (string, error) {
 
 // FindP2shAddresses find p2sh address
 func FindP2shAddresses(offset, limit int) ([]*MgoP2shAddress, error) {
-	result := make([]*MgoP2shAddress, 0, limit)
-	q := collP2shAddress.Find(nil).Skip(offset).Limit(limit)
-	err := q.All(&result)
+	opts := options.Find().
+		SetSort(bson.D{{Key: "timestamp", Value: 1}}).
+		SetSkip(int64(offset)).
+		SetLimit(int64(limit))
+	cur, err := collP2shAddress.Find(clientCtx, bson.M{}, opts)
 	if err != nil {
 		return nil, mgoError(err)
 	}
-	return result, nil
+	result := make([]*MgoP2shAddress, 0, limit)
+	err = cur.All(clientCtx, &result)
+	return result, mgoError(err)
 }
 
 // ------------------ latest scan info ------------------------
@@ -691,7 +668,7 @@ func UpdateLatestScanInfo(isSrc bool, blockHeight uint64) error {
 		"blockheight": blockHeight,
 		"timestamp":   time.Now().Unix(),
 	}
-	err := collLatestScanInfo.UpdateId(key, bson.M{"$set": updates})
+	_, err := collLatestScanInfo.UpdateByID(clientCtx, key, bson.M{"$set": updates}, options.Update().SetUpsert(true))
 	if err == nil {
 		log.Info("mongodb update lastest scan info", "isSrc", isSrc, "updates", updates)
 	} else {
@@ -709,7 +686,7 @@ func FindLatestScanInfo(isSrc bool) (*MgoLatestScanInfo, error) {
 	} else {
 		key = keyOfDstLatestScanInfo
 	}
-	err := collLatestScanInfo.FindId(key).One(&result)
+	err := collLatestScanInfo.FindOne(clientCtx, bson.M{"_id": key}).Decode(&result)
 	return &result, mgoError(err)
 }
 
@@ -721,7 +698,7 @@ func AddRegisteredAddress(address string) error {
 		Key:       address,
 		Timestamp: time.Now().Unix(),
 	}
-	err := collRegisteredAddress.Insert(ma)
+	_, err := collRegisteredAddress.InsertOne(clientCtx, ma)
 	if err == nil {
 		log.Info("mongodb add register address", "key", ma.Key)
 	} else {
@@ -733,7 +710,7 @@ func AddRegisteredAddress(address string) error {
 // FindRegisteredAddress find register address
 func FindRegisteredAddress(key string) (*MgoRegisteredAddress, error) {
 	var result MgoRegisteredAddress
-	err := collRegisteredAddress.FindId(key).One(&result)
+	err := collRegisteredAddress.FindOne(clientCtx, bson.M{"_id": key}).Decode(&result)
 	if err != nil {
 		return nil, mgoError(err)
 	}
@@ -771,7 +748,7 @@ func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err err
 			SwapNonce: nonce,
 			Timestamp: time.Now().Unix(),
 		}
-		err = collLatestSwapNonces.Insert(ma)
+		_, err = collLatestSwapNonces.InsertOne(clientCtx, ma)
 	} else {
 		updates := bson.M{
 			"address":   strings.ToLower(address),
@@ -779,7 +756,7 @@ func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err err
 			"swapnonce": nonce,
 			"timestamp": time.Now().Unix(),
 		}
-		err = collLatestSwapNonces.UpdateId(key, bson.M{"$set": updates})
+		_, err = collLatestSwapNonces.UpdateByID(clientCtx, key, bson.M{"$set": updates})
 	}
 	if err == nil {
 		log.Info("mongodb update swap nonce success", "address", address, "nonce", nonce, "isSwapin", isSwapin)
@@ -792,7 +769,7 @@ func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err err
 // FindLatestSwapNonce find
 func FindLatestSwapNonce(key string) (*MgoLatestSwapNonce, error) {
 	var result MgoLatestSwapNonce
-	err := collLatestSwapNonces.FindId(key).One(&result)
+	err := collLatestSwapNonces.FindOne(clientCtx, bson.M{"_id": key}).Decode(&result)
 	if err != nil {
 		return nil, mgoError(err)
 	}
@@ -803,9 +780,19 @@ func FindLatestSwapNonce(key string) (*MgoLatestSwapNonce, error) {
 func LoadAllSwapNonces() (swapinNonces, swapoutNonces map[string]uint64) {
 	swapinNonces = make(map[string]uint64)
 	swapoutNonces = make(map[string]uint64)
-	var result MgoLatestSwapNonce
-	iter := collLatestSwapNonces.Find(nil).Iter()
-	for iter.Next(&result) {
+	cur, err := collLatestSwapNonces.Find(clientCtx, bson.M{})
+	if err != nil {
+		return swapinNonces, swapoutNonces
+	}
+	defer func() {
+		_ = cur.Close(clientCtx)
+	}()
+	for cur.Next(clientCtx) {
+		var result MgoLatestSwapNonce
+		err = cur.Decode(&result)
+		if err != nil {
+			continue
+		}
 		address := result.Address
 		if address == "" {
 			continue
@@ -825,13 +812,13 @@ func LoadAllSwapNonces() (swapinNonces, swapoutNonces map[string]uint64) {
 // AddSwapHistory add
 func AddSwapHistory(isSwapin bool, txid, bind, swaptx string) error {
 	item := &MgoSwapHistory{
-		Key:      bson.NewObjectId(),
+		Key:      newObjectID(),
 		IsSwapin: isSwapin,
 		TxID:     txid,
 		Bind:     bind,
 		SwapTx:   swaptx,
 	}
-	err := collSwapHistory.Insert(item)
+	_, err := collSwapHistory.InsertOne(clientCtx, item)
 	if err == nil {
 		log.Info("mongodb add swap history success", "txid", txid, "bind", bind, "isSwapin", isSwapin)
 	} else {
@@ -846,8 +833,12 @@ func GetSwapHistory(isSwapin bool, txid, bind string) ([]*MgoSwapHistory, error)
 	qbind := bson.M{"bind": bind}
 	qisswapin := bson.M{"isswapin": isSwapin}
 	queries := []bson.M{qtxid, qbind, qisswapin}
+	cur, err := collSwapHistory.Find(clientCtx, bson.M{"$and": queries})
+	if err != nil {
+		return nil, mgoError(err)
+	}
 	result := make([]*MgoSwapHistory, 0, 20)
-	err := collSwapHistory.Find(bson.M{"$and": queries}).All(&result)
+	err = cur.All(clientCtx, &result)
 	return result, mgoError(err)
 }
 
@@ -860,22 +851,22 @@ func AddUsedRValue(pubkey, r string) error {
 		Key:       key,
 		Timestamp: common.NowMilli(),
 	}
-	err := collUsedRValue.Insert(mr)
+	_, err := collUsedRValue.InsertOne(clientCtx, mr)
 	switch {
 	case err == nil:
 		log.Info("mongodb add used r success", "pubkey", pubkey, "r", r)
 		return nil
-	case mgo.IsDup(err):
+	case mongo.IsDuplicateKeyError(err):
 		log.Warn("mongodb add used r failed", "pubkey", pubkey, "r", r, "err", err)
 		return ErrItemIsDup
 	default:
 		old := &MgoUsedRValue{}
-		if collUsedRValue.FindId(key).One(old) == nil {
+		if collUsedRValue.FindOne(clientCtx, bson.M{"_id": key}).Decode(old) == nil {
 			log.Warn("mongodb add used r failed", "pubkey", pubkey, "r", r, "err", ErrItemIsDup)
 			return ErrItemIsDup
 		}
 
-		err = collUsedRValue.Insert(mr) // retry once
+		_, err = collUsedRValue.InsertOne(clientCtx, mr) // retry once
 		if err != nil {
 			log.Warn("mongodb add used r failed in retry", "pubkey", pubkey, "r", r, "err", err)
 		}

@@ -1,25 +1,7 @@
 package mongodb
 
 import (
-	"gopkg.in/mgo.v2/bson"
-)
-
-const (
-	tbSwapins           string = "Swapins"
-	tbSwapouts          string = "Swapouts"
-	tbSwapinResults     string = "SwapinResults"
-	tbSwapoutResults    string = "SwapoutResults"
-	tbP2shAddresses     string = "P2shAddresses"
-	tbSwapStatistics    string = "SwapStatistics"
-	tbLatestScanInfo    string = "LatestScanInfo"
-	tbRegisteredAddress string = "RegisteredAddress"
-	tbBlacklist         string = "Blacklist"
-	tbLatestSwapNonces  string = "LatestSwapNonces"
-	tbSwapHistory       string = "SwapHistory"
-	tbUsedRValues       string = "UsedRValues"
-
-	keyOfSrcLatestScanInfo string = "srclatest"
-	keyOfDstLatestScanInfo string = "dstlatest"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // MgoSwap registered swap
@@ -81,6 +63,7 @@ type SwapResultUpdateItems struct {
 type MgoP2shAddress struct {
 	Key         string `bson:"_id"`
 	P2shAddress string `bson:"p2shaddress"`
+	Timestamp   int64  `bson:"timestamp"`
 }
 
 // MgoRegisteredAddress key is address (in whitelist)
@@ -127,15 +110,19 @@ type MgoLatestSwapNonce struct {
 
 // MgoSwapHistory swap history
 type MgoSwapHistory struct {
-	Key      bson.ObjectId `bson:"_id"`
-	IsSwapin bool          `bson:"isswapin"`
-	TxID     string        `bson:"txid"`
-	Bind     string        `bson:"bind"`
-	SwapTx   string        `bson:"swaptx"`
+	Key      primitive.ObjectID `bson:"_id"`
+	IsSwapin bool               `bson:"isswapin"`
+	TxID     string             `bson:"txid"`
+	Bind     string             `bson:"bind"`
+	SwapTx   string             `bson:"swaptx"`
 }
 
 // MgoUsedRValue security enhancement
 type MgoUsedRValue struct {
 	Key       string `bson:"_id"` // r + pubkey
 	Timestamp int64  `bson:"timestamp"`
+}
+
+func newObjectID() primitive.ObjectID {
+	return primitive.NewObjectID()
 }

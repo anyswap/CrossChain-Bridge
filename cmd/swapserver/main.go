@@ -67,8 +67,15 @@ func swapserver(ctx *cli.Context) error {
 
 	tokens.SetTokenPairsDir(utils.GetTokenPairsDir(ctx))
 
+	appName := params.GetIdentifier()
 	dbConfig := config.Server.MongoDB
-	mongodb.MongoServerInit([]string{dbConfig.DBURL}, dbConfig.DBName, dbConfig.UserName, dbConfig.Password)
+	mongodb.MongoServerInit(
+		appName,
+		[]string{dbConfig.DBURL},
+		dbConfig.DBName,
+		dbConfig.UserName,
+		dbConfig.Password,
+	)
 
 	worker.StartWork(true)
 	time.Sleep(100 * time.Millisecond)
