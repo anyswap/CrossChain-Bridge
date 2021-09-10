@@ -159,6 +159,9 @@ func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxRece
 	swapInfo.Height = txStatus.BlockHeight  // Height
 	swapInfo.Timestamp = txStatus.BlockTime // Timestamp
 	if txStatus.BlockHeight < *b.ChainConfig.InitialHeight {
+		log.Warn("transaction before initial block height",
+			"initialHeight", *b.ChainConfig.InitialHeight,
+			"blockHeight", txStatus.BlockHeight)
 		return nil, tokens.ErrTxBeforeInitialHeight
 	}
 	if txStatus.Confirmations < *b.GetChainConfig().Confirmations {
