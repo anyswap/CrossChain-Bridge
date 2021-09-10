@@ -48,7 +48,6 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 And the following `API`s are for developing and debuging, you can ignore them
 
 - swap.GetNonceInfo
-- swap.GetSwapStatistics
 - swap.GetRawSwapin
 - swap.GetRawSwapinResult
 - swap.GetRawSwapout
@@ -369,7 +368,6 @@ limit 最大值为 100
 And the following `API`s are for developing and debuging, you can ignore them
 
 - GET /nonceinfo
-- GET /statistics/{pairid}
 - GET /swapin/{pairid}/{txid}/raw
 - GET /swapout/{pairid}/{txid}/raw
 - GET /swapin/{pairid}/{txid}/rawresult

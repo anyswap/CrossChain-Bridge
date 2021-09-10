@@ -60,15 +60,6 @@ func (s *RPCAPI) GetNonceInfo(r *http.Request, args *RPCNullArgs, result *swapap
 	return err
 }
 
-// GetSwapStatistics api
-func (s *RPCAPI) GetSwapStatistics(r *http.Request, pairID *string, result *swapapi.SwapStatistics) error {
-	res, err := swapapi.GetSwapStatistics(*pairID)
-	if err == nil && res != nil {
-		*result = *res
-	}
-	return err
-}
-
 // RPCTxAndPairIDArgs txid and pairID
 type RPCTxAndPairIDArgs struct {
 	TxID   string `json:"txid"`

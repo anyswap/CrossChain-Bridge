@@ -188,7 +188,7 @@ func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
 // GetLatestScanHeight get latest scanned block height
 func GetLatestScanHeight(isSrc bool) uint64 {
 	if mongodb.HasClient() {
-		for {
+		for i := 0; i < 3; i++ {
 			latestInfo, err := mongodb.FindLatestScanInfo(isSrc)
 			if err == nil {
 				height := latestInfo.BlockHeight
@@ -197,9 +197,10 @@ func GetLatestScanHeight(isSrc bool) uint64 {
 			}
 			time.Sleep(1 * time.Second)
 		}
+		return 0
 	}
 	var result mongodb.MgoLatestScanInfo
-	for {
+	for i := 0; i < 3; i++ {
 		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, "swap.GetLatestScanInfo", isSrc)
 		if err == nil {
 			height := result.BlockHeight
@@ -208,6 +209,7 @@ func GetLatestScanHeight(isSrc bool) uint64 {
 		}
 		time.Sleep(1 * time.Second)
 	}
+	return 0
 }
 
 // LoopGetLatestBlockNumber loop and get latest block number

@@ -13,7 +13,6 @@ const (
 	tbSwapinResults     string = "SwapinResults"
 	tbSwapoutResults    string = "SwapoutResults"
 	tbP2shAddresses     string = "P2shAddresses"
-	tbSwapStatistics    string = "SwapStatistics"
 	tbLatestScanInfo    string = "LatestScanInfo"
 	tbRegisteredAddress string = "RegisteredAddress"
 	tbBlacklist         string = "Blacklist"
@@ -33,7 +32,6 @@ var (
 	collSwapinResult      *mongo.Collection
 	collSwapoutResult     *mongo.Collection
 	collP2shAddress       *mongo.Collection
-	collSwapStatistics    *mongo.Collection
 	collLatestScanInfo    *mongo.Collection
 	collRegisteredAddress *mongo.Collection
 	collBlacklist         *mongo.Collection
@@ -54,7 +52,6 @@ func initCollections() {
 	initCollection(tbSwapinResults, &collSwapinResult, "from", "inittime")
 	initCollection(tbSwapoutResults, &collSwapoutResult, "from", "inittime")
 	initCollection(tbP2shAddresses, &collP2shAddress, "p2shaddress")
-	initCollection(tbSwapStatistics, &collSwapStatistics)
 	initCollection(tbLatestScanInfo, &collLatestScanInfo)
 	initCollection(tbRegisteredAddress, &collRegisteredAddress)
 	initCollection(tbBlacklist, &collBlacklist)

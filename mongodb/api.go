@@ -1,8 +1,8 @@
 package mongodb
 
 import (
+	"errors"
 	"fmt"
-	"math/big"
 	"strings"
 	"sync"
 	"time"
@@ -425,11 +425,6 @@ func updateSwapResultStatus(collection *mongo.Collection, txid, pairID, bind str
 	} else {
 		log.Debug("mongodb update swap result status", "txid", txid, "pairID", pairID, "bind", bind, "status", status, "isSwapin", isSwapin, "err", err)
 	}
-	if status == MatchTxStable {
-		if swapResult, errq := findSwapResult(collection, txid, pairID, bind); errq == nil {
-			_ = updateSwapStatistics(pairID, swapResult.Value, swapResult.SwapValue, isSwapin)
-		}
-	}
 	return mgoError(err)
 }
 
@@ -513,89 +508,6 @@ func findSwapResults(collection *mongo.Collection, address, pairID string, offse
 	result := make([]*MgoSwapResult, 0, 20)
 	err = cur.All(clientCtx, &result)
 	return result, mgoError(err)
-}
-
-// ------------------ statistics ------------------------
-
-func updateSwapStatistics(pairID, value, swapValue string, isSwapin bool) error {
-	pairID = strings.ToLower(pairID)
-	curr, _ := FindSwapStatistics(pairID)
-	if curr == nil {
-		curr = &MgoSwapStatistics{
-			Key:                pairID,
-			PairID:             pairID,
-			StableSwapinCount:  0,
-			TotalSwapinValue:   "0",
-			TotalSwapinFee:     "0",
-			StableSwapoutCount: 0,
-			TotalSwapoutValue:  "0",
-			TotalSwapoutFee:    "0",
-		}
-		_, _ = collSwapStatistics.InsertOne(clientCtx, curr)
-	}
-
-	addVal, _ := new(big.Int).SetString(value, 0)
-	addSwapVal, _ := new(big.Int).SetString(swapValue, 0)
-	addSwapFee := new(big.Int).Sub(addVal, addSwapVal)
-
-	curVal := big.NewInt(0)
-	curFee := big.NewInt(0)
-
-	updates := bson.M{}
-	if isSwapin {
-		curVal.SetString(curr.TotalSwapinValue, 0)
-		curFee.SetString(curr.TotalSwapinFee, 0)
-		curVal.Add(curVal, addSwapVal)
-		curFee.Add(curFee, addSwapFee)
-		updates["swapincount"] = curr.StableSwapinCount + 1
-		updates["totalswapinvalue"] = curVal.String()
-		updates["totalswapinfee"] = curFee.String()
-	} else {
-		curVal.SetString(curr.TotalSwapoutValue, 0)
-		curFee.SetString(curr.TotalSwapoutFee, 0)
-		curVal.Add(curVal, addSwapVal)
-		curFee.Add(curFee, addSwapFee)
-		updates["swapoutcount"] = curr.StableSwapoutCount + 1
-		updates["totalswapoutvalue"] = curVal.String()
-		updates["totalswapoutfee"] = curFee.String()
-	}
-	_, err := collSwapStatistics.UpdateByID(clientCtx, pairID, bson.M{"$set": updates})
-	if err == nil {
-		log.Info("mongodb update swap statistics", "updates", updates)
-	} else {
-		log.Debug("mongodb update swap statistics", "updates", updates, "err", err)
-	}
-	return mgoError(err)
-}
-
-// FindSwapStatistics find swap statistics
-func FindSwapStatistics(pairID string) (*MgoSwapStatistics, error) {
-	pairID = strings.ToLower(pairID)
-	var result MgoSwapStatistics
-	err := collSwapStatistics.FindOne(clientCtx, bson.M{"_id": pairID}).Decode(&result)
-	return &result, mgoError(err)
-}
-
-// SwapStatistics rpc return struct
-type SwapStatistics struct {
-	PairID              string
-	TotalSwapinCount    int
-	TotalSwapoutCount   int
-	PendingSwapinCount  int
-	PendingSwapoutCount int
-	StableSwapinCount   int
-	TotalSwapinValue    string
-	TotalSwapinFee      string
-	StableSwapoutCount  int
-	TotalSwapoutValue   string
-	TotalSwapoutFee     string
-}
-
-// GetSwapStatistics get swap statistics
-func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
-	pairID = strings.ToLower(pairID)
-	stat := &SwapStatistics{PairID: pairID}
-	return stat, nil
 }
 
 // ------------------ p2sh address ------------------------
@@ -687,6 +599,9 @@ func FindLatestScanInfo(isSrc bool) (*MgoLatestScanInfo, error) {
 		key = keyOfDstLatestScanInfo
 	}
 	err := collLatestScanInfo.FindOne(clientCtx, bson.M{"_id": key}).Decode(&result)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return &result, nil
+	}
 	return &result, mgoError(err)
 }
 

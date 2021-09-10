@@ -81,12 +81,6 @@ func GetNonceInfo() (*SwapNonceInfo, error) {
 	}, nil
 }
 
-// GetSwapStatistics api
-func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
-	log.Debug("[api] receive GetSwapStatistics", "pairID", pairID)
-	return mongodb.GetSwapStatistics(pairID)
-}
-
 // GetRawSwapin api
 func GetRawSwapin(txid, pairID, bindAddr *string) (*Swap, error) {
 	return mongodb.FindSwapin(*txid, *pairID, *bindAddr)

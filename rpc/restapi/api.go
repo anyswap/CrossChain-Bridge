@@ -77,14 +77,6 @@ func NonceInfoHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-// StatisticsHandler handler
-func StatisticsHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	pairID := vars["pairid"]
-	res, err := swapapi.GetSwapStatistics(pairID)
-	writeResponse(w, res, err)
-}
-
 func getBindParam(r *http.Request) string {
 	vals := r.URL.Query()
 	bindVals, exist := vals["bind"]

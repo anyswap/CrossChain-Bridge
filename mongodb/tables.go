@@ -72,18 +72,6 @@ type MgoRegisteredAddress struct {
 	Timestamp int64  `bson:"timestamp"`
 }
 
-// MgoSwapStatistics swap statistics
-type MgoSwapStatistics struct {
-	Key                string `bson:"_id"` // pairid
-	PairID             string `bson:"pairid"`
-	StableSwapinCount  int    `bson:"swapincount"`
-	TotalSwapinValue   string `bson:"totalswapinvalue"`
-	TotalSwapinFee     string `bson:"totalswapinfee"`
-	StableSwapoutCount int    `bson:"swapoutcount"`
-	TotalSwapoutValue  string `bson:"totalswapoutvalue"`
-	TotalSwapoutFee    string `bson:"totalswapoutfee"`
-}
-
 // MgoLatestScanInfo latest scan info
 type MgoLatestScanInfo struct {
 	Key         string `bson:"_id"`
