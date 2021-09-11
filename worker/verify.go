@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
@@ -150,10 +151,11 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		return err
 	}
 
-	if swapInfo.Height != 0 &&
-		swapInfo.Height < *bridge.GetChainConfig().InitialHeight {
-		err = tokens.ErrTxBeforeInitialHeight
-		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
+	if errors.Is(err, tokens.ErrTxBeforeInitialHeight) ||
+		(swapInfo.Height != 0 && swapInfo.Height < *bridge.GetChainConfig().InitialHeight) {
+		memo := fmt.Sprintf("%v. blockHeight=%v initialHeight=%v",
+			tokens.ErrTxBeforeInitialHeight, swapInfo.Height, *bridge.GetChainConfig().InitialHeight)
+		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), memo)
 	}
 	isBlacked, errf := isInBlacklist(swapInfo)
 	if errf != nil {
