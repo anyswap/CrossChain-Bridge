@@ -1,19 +1,30 @@
 package eth
 
 import (
-	"math/big"
-	"time"
-
 	"github.com/anyswap/CrossChain-Bridge/common"
+	mapset "github.com/deckarep/golang-set"
 )
+
+var (
+	cachedContractAddrs    = mapset.NewSet()
+	maxCachedContractAddrs = 50
+
+	cachedNoncontractAddrs    = mapset.NewSet()
+	maxNoncachedContractAddrs = 500
+)
+
+// ShouldCheckAddressMixedCase check address mixed case
+// eg. RSK chain do not check mixed case or not same as eth
+func (b *Bridge) ShouldCheckAddressMixedCase() bool {
+	return true
+}
 
 // IsValidAddress check address
 func (b *Bridge) IsValidAddress(address string) bool {
 	if !common.IsHexAddress(address) {
 		return false
 	}
-	// RSK chain do not check mixed case
-	if b.SignerChainID.Cmp(big.NewInt(30)) == 0 {
+	if !b.ShouldCheckAddressMixedCase() {
 		return true
 	}
 	unprefixedHex, ok, hasUpperChar := common.GetUnprefixedHex(address)
@@ -28,14 +39,35 @@ func (b *Bridge) IsValidAddress(address string) bool {
 
 // IsContractAddress is contract address
 func (b *Bridge) IsContractAddress(address string) (bool, error) {
-	var code []byte
-	var err error
-	for i := 0; i < retryRPCCount; i++ {
-		code, err = b.GetCode(address)
-		if err == nil {
-			return len(code) > 1, nil // unexpect RSK getCode return 0x00
-		}
-		time.Sleep(retryRPCInterval)
+	if cachedNoncontractAddrs.Contains(address) {
+		return false, nil
 	}
-	return false, err
+	if cachedContractAddrs.Contains(address) {
+		return true, nil
+	}
+
+	code, err := b.getContractCode(address)
+	if err != nil {
+		return false, err
+	}
+	if len(code) > 1 { // unexpect RSK getCode return 0x00
+		addCachedContractAddr(address)
+		return true, nil
+	}
+	addNoncachedContractAddr(address)
+	return false, nil
+}
+
+func addNoncachedContractAddr(address string) {
+	if cachedNoncontractAddrs.Cardinality() >= maxNoncachedContractAddrs {
+		cachedNoncontractAddrs.Pop()
+	}
+	cachedNoncontractAddrs.Add(address)
+}
+
+func addCachedContractAddr(address string) {
+	if cachedContractAddrs.Cardinality() >= maxCachedContractAddrs {
+		cachedContractAddrs.Pop()
+	}
+	cachedContractAddrs.Add(address)
 }
