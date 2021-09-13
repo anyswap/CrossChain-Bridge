@@ -10,7 +10,9 @@ Admins = [
 
 # modgodb database connection config (server only)
 [Server.MongoDB]
-DBURL = "localhost:27017"
+# DBURLs is prefered if exists. forbids set both DBURL and DBURLs.
+#DBURL = "localhost:27017,localhost:12345"
+#DBURLs = ["localhost:27017", "localhost:12345"]
 DBName = "databasename"
 UserName = "username"
 Password = "password"

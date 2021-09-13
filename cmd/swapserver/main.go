@@ -71,7 +71,7 @@ func swapserver(ctx *cli.Context) error {
 	dbConfig := config.Server.MongoDB
 	mongodb.MongoServerInit(
 		appName,
-		[]string{dbConfig.DBURL},
+		dbConfig.DBURLs,
 		dbConfig.DBName,
 		dbConfig.UserName,
 		dbConfig.Password,

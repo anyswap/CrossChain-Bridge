@@ -2,11 +2,19 @@ package params
 
 import (
 	"errors"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 )
+
+var blankOrCommaSepRegexp = regexp.MustCompile(`[\s,]+`) // blank or comma separated
+
+func splitStringByBlankOrComma(str string) []string {
+	return blankOrCommaSepRegexp.Split(strings.TrimSpace(str), -1)
+}
 
 // CheckConfig check config
 func CheckConfig(isServer bool) (err error) {
@@ -79,8 +87,28 @@ func (c *ServerConfig) CheckConfig() error {
 	if c.MongoDB == nil {
 		return errors.New("server must config 'Server.MongoDB'")
 	}
+	if err := c.MongoDB.CheckConfig(); err != nil {
+		return err
+	}
 	if c.APIServer == nil {
 		return errors.New("server must config 'Server.APIServer'")
+	}
+	return nil
+}
+
+// CheckConfig check mongodb config
+func (c *MongoDBConfig) CheckConfig() error {
+	if c.DBName == "" {
+		return errors.New("mongodb must config 'DBName'")
+	}
+	if c.DBURL == "" && len(c.DBURLs) == 0 {
+		return errors.New("mongodb must config 'DBURL' or 'DBURLs'")
+	}
+	if c.DBURL != "" {
+		if len(c.DBURLs) != 0 {
+			return errors.New("mongodb can not config both 'DBURL' and 'DBURLs'")
+		}
+		c.DBURLs = splitStringByBlankOrComma(c.DBURL)
 	}
 	return nil
 }
