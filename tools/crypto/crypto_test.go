@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -155,7 +156,14 @@ func TestLoadECDSAFile(t *testing.T) {
 
 	key0, err := LoadECDSA(fileName0)
 	if err != nil {
-		t.Fatal(err)
+		// in windows wsl2 `WriteFile` can not hold `0400` file mode
+		if !strings.Contains(err.Error(), "unsafe file permissions") {
+			t.Fatal(err)
+		}
+		key0, err = ToECDSA(common.FromHex(testPrivHex))
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 	checkKey(key0)
 }
