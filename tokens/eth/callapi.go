@@ -11,7 +11,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tools/rlp"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
@@ -336,40 +335,47 @@ func getMedianGasPrice(urlsSlice ...[]string) (*big.Int, error) {
 }
 
 // SendSignedTransaction call eth_sendRawTransaction
-func (b *Bridge) SendSignedTransaction(tx *types.Transaction) error {
-	data, err := rlp.EncodeToBytes(tx)
+func (b *Bridge) SendSignedTransaction(tx *types.Transaction) (txHash string, err error) {
+	data, err := tx.MarshalBinary()
 	if err != nil {
-		return err
+		return "", err
 	}
-	txHash := tx.Hash().Hex()
 	hexData := common.ToHex(data)
 	gateway := b.GatewayConfig
-	success1, _ := sendRawTransaction(txHash, hexData, gateway.APIAddressExt)
-	success2, err := sendRawTransaction(txHash, hexData, gateway.APIAddress)
-	if success1 || success2 {
-		return nil
+	txHash, _ = sendRawTransaction(hexData, gateway.APIAddressExt)
+	txHash2, err := sendRawTransaction(hexData, gateway.APIAddress)
+	if txHash != "" {
+		return txHash, nil
 	}
-	return err
+	if txHash2 != "" {
+		return txHash2, nil
+	}
+	return "", err
 }
 
-func sendRawTransaction(txHash, hexData string, urls []string) (success bool, err error) {
+func sendRawTransaction(hexData string, urls []string) (txHash string, err error) {
 	if len(urls) == 0 {
-		return false, errEmptyURLs
+		return "", errEmptyURLs
 	}
-	var result interface{}
+	var result string
 	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_sendRawTransaction", hexData)
-		if err == nil {
-			log.Trace("call eth_sendRawTransaction success", "txHash", txHash, "url", url)
-			success = true
-		} else {
-			log.Trace("call eth_sendRawTransaction failed", "txHash", txHash, "url", url, "err", err)
+		if err != nil {
+			log.Error("call eth_sendRawTransaction failed", "txHash", result, "url", url, "err", err)
+			continue
+		}
+		log.Trace("call eth_sendRawTransaction success", "txHash", result, "url", url)
+		if txHash == "" {
+			txHash = result
 		}
 	}
-	if success {
-		return true, nil
+	if txHash != "" {
+		return txHash, nil
 	}
-	return false, err
+	if err != nil {
+		return "", tokens.ErrRPCQueryError
+	}
+	return "", errors.New("call eth_sendRawTransaction failed")
 }
 
 // ChainID call eth_chainId

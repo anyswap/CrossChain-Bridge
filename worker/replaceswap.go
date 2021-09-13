@@ -178,7 +178,11 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 	if err != nil {
 		return "", errUpdateOldTxsFailed
 	}
-	err = sendSignedTransaction(bridge, signedTx, txid, pairID, bind, isSwapin, true)
+	sentTxHash, err := sendSignedTransaction(bridge, signedTx, txid, pairID, bind, isSwapin, true)
+	if err == nil && txHash != sentTxHash {
+		logWorkerError("replaceSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", nonce, "txHash", txHash, "sentTxHash", sentTxHash)
+		_ = replaceSwapResult(txid, pairID, bind, sentTxHash, isSwapin)
+	}
 	return txHash, err
 }
 

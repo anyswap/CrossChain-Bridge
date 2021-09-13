@@ -26,7 +26,8 @@ var (
 	swapinTaskChanMap  = make(map[string]chan *tokens.BuildTxArgs)
 	swapoutTaskChanMap = make(map[string]chan *tokens.BuildTxArgs)
 
-	errAlreadySwapped = errors.New("already swapped")
+	errAlreadySwapped     = errors.New("already swapped")
+	errSendTxWithDiffHash = errors.New("send tx with different hash")
 )
 
 // StartSwapJob swap job
@@ -361,15 +362,15 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	swapTxNonce := args.GetTxNonce()
+	swapNonce := args.GetTxNonce()
 
 	// update database before sending transaction
-	addSwapHistory(txid, bind, originValue, txHash, swapTxNonce, isSwapin)
+	addSwapHistory(txid, bind, originValue, txHash, swapNonce, isSwapin)
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(pairID, originValue, isSwapin).String(),
 		SwapType:  swapType,
-		SwapNonce: swapTxNonce,
+		SwapNonce: swapNonce,
 	}
 	err = updateSwapResult(txid, pairID, bind, matchTx)
 	if err != nil {
@@ -384,7 +385,15 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	return sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin, false)
+	sentTxHash, err := sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin, false)
+	if err == nil {
+		logWorker("doSwap", "send tx success", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash)
+		if txHash != sentTxHash {
+			logWorkerError("doSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash, "sentTxHash", sentTxHash)
+			_ = replaceSwapResult(txid, pairID, bind, sentTxHash, isSwapin)
+		}
+	}
+	return err
 }
 
 // DeleteCachedSwap delete cached swap
