@@ -43,7 +43,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	if err != nil {
 		return nil, "", err
 	}
-	if !b.ChainConfig.IsDynamicFeeTxEnabled {
+	if !b.ChainConfig.EnableDynamicFeeTx {
 		gasPrice, errt := b.getGasPrice(args)
 		if errt == nil && args.Extra.EthExtra.GasPrice.Cmp(gasPrice) < 0 {
 			log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction update gas price", "txid", args.SwapID, "oldGasPrice", args.Extra.EthExtra.GasPrice, "newGasPrice", gasPrice)

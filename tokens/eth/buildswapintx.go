@@ -41,7 +41,7 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) (err error) {
 }
 
 func (b *Bridge) adjustSwapValue(args *tokens.BuildTxArgs, swapValue *big.Int) (*big.Int, error) {
-	isDynamicFeeTx := b.ChainConfig.IsDynamicFeeTxEnabled
+	isDynamicFeeTx := b.ChainConfig.EnableDynamicFeeTx
 	if isDynamicFeeTx {
 		return swapValue, nil
 	}

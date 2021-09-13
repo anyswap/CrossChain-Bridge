@@ -91,7 +91,7 @@ func (b *Bridge) VerifyChainID() {
 
 // MakeSigner make signer
 func (b *Bridge) MakeSigner(chainID *big.Int) types.Signer {
-	if b.ChainConfig.IsDynamicFeeTxEnabled {
+	if b.ChainConfig.EnableDynamicFeeTx {
 		return types.MakeSigner("London", chainID)
 	}
 	return types.MakeSigner("EIP155", chainID)

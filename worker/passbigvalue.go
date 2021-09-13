@@ -22,6 +22,10 @@ func StartPassBigValueJob() {
 func startPassBigValSwapinJob() {
 	logWorker("passbigval", "start pass big value swapin job")
 	defer mongodb.MgoWaitGroup.Done()
+	if !tokens.SrcBridge.GetChainConfig().EnablePassBigValue {
+		logWorker("replace", "stop pass big value swapin job as disabled")
+		return
+	}
 	for {
 		res, err := findBigValSwapins()
 		if err != nil {
@@ -55,6 +59,10 @@ func startPassBigValSwapinJob() {
 func startPassBigValSwapoutJob() {
 	logWorker("passbigval", "start pass big value swapout job")
 	defer mongodb.MgoWaitGroup.Done()
+	if !tokens.DstBridge.GetChainConfig().EnablePassBigValue {
+		logWorker("replace", "stop pass big value swapout job as disabled")
+		return
+	}
 	for {
 		res, err := findBigValSwapouts()
 		if err != nil {

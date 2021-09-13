@@ -107,7 +107,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		gasTipCap = extra.GasTipCap
 		gasFeeCap = extra.GasFeeCap
 
-		isDynamicFeeTx = b.ChainConfig.IsDynamicFeeTxEnabled
+		isDynamicFeeTx = b.ChainConfig.EnableDynamicFeeTx
 	)
 
 	var input []byte
@@ -184,7 +184,7 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (err error) {
 	}
 	extra := args.Extra.EthExtra
 
-	if b.ChainConfig.IsDynamicFeeTxEnabled {
+	if b.ChainConfig.EnableDynamicFeeTx {
 		if extra.GasTipCap == nil {
 			extra.GasTipCap, err = b.getGasTipCap(args)
 			if err != nil {

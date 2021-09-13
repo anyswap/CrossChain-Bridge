@@ -28,12 +28,19 @@ type BtcExtraConfig struct {
 
 // ChainConfig struct
 type ChainConfig struct {
-	BlockChain     string
-	NetID          string
-	Confirmations  *uint64
-	InitialHeight  *uint64
-	EnableScan     bool
-	EnableScanPool bool
+	BlockChain    string
+	NetID         string
+	Confirmations *uint64
+	InitialHeight *uint64
+
+	// judge by the 'from' chain (eg. src for swapin)
+	EnableScan         bool
+	EnableScanPool     bool
+	EnablePassBigValue bool
+
+	// judge by the 'to' chain (eg. dst for swapin)
+	EnableReplaceSwap  bool
+	EnableDynamicFeeTx bool
 
 	CallByContractWhitelist []string `json:",omitempty"`
 
@@ -44,16 +51,14 @@ type ChainConfig struct {
 	ReplacePlusGasPricePercent uint64 `json:",omitempty"`
 	WaitTimeToReplace          int64  // seconds
 	MaxReplaceCount            int
-	EnableReplaceSwap          bool
 	FixedGasPrice              string `json:",omitempty"`
 	MaxGasPrice                string `json:",omitempty"`
 
-	IsDynamicFeeTxEnabled bool
-	PlusGasTipCapPercent  uint64
-	PlusGasFeeCapPercent  uint64
-	BlockCountFeeHistory  int
-	MaxGasTipCap          string
-	MaxGasFeeCap          string
+	PlusGasTipCapPercent uint64
+	PlusGasFeeCapPercent uint64
+	BlockCountFeeHistory int
+	MaxGasTipCap         string
+	MaxGasFeeCap         string
 
 	// cached values
 	fixedGasPrice *big.Int
@@ -411,7 +416,7 @@ func (c *ChainConfig) CheckConfig(isServer bool) error {
 			c.callByContractWhitelist[key] = struct{}{}
 		}
 	}
-	if c.IsDynamicFeeTxEnabled {
+	if c.EnableDynamicFeeTx {
 		if c.MaxGasTipCap != "" {
 			bi, err := common.GetBigIntFromStr(c.MaxGasTipCap)
 			if err != nil {
