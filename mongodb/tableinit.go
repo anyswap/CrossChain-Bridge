@@ -10,7 +10,6 @@ var (
 	collSwapinResult      *mgo.Collection
 	collSwapoutResult     *mgo.Collection
 	collP2shAddress       *mgo.Collection
-	collSwapStatistics    *mgo.Collection
 	collLatestScanInfo    *mgo.Collection
 	collRegisteredAddress *mgo.Collection
 	collBlacklist         *mgo.Collection
@@ -29,7 +28,6 @@ func deinintCollections() {
 	collSwapinResult = database.C(tbSwapinResults)
 	collSwapoutResult = database.C(tbSwapoutResults)
 	collP2shAddress = database.C(tbP2shAddresses)
-	collSwapStatistics = database.C(tbSwapStatistics)
 	collLatestScanInfo = database.C(tbLatestScanInfo)
 	collRegisteredAddress = database.C(tbRegisteredAddress)
 	collBlacklist = database.C(tbBlacklist)
@@ -43,7 +41,6 @@ func initCollections() {
 	initCollection(tbSwapinResults, &collSwapinResult, "from", "inittime")
 	initCollection(tbSwapoutResults, &collSwapoutResult, "from", "inittime")
 	initCollection(tbP2shAddresses, &collP2shAddress, "p2shaddress")
-	initCollection(tbSwapStatistics, &collSwapStatistics)
 	initCollection(tbLatestScanInfo, &collLatestScanInfo)
 	initCollection(tbRegisteredAddress, &collRegisteredAddress)
 	initCollection(tbBlacklist, &collBlacklist)

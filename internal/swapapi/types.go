@@ -14,9 +14,6 @@ type Swap = mongodb.MgoSwap
 // SwapResult type alias
 type SwapResult = mongodb.MgoSwapResult
 
-// SwapStatistics type alias
-type SwapStatistics = mongodb.SwapStatistics
-
 // LatestScanInfo type alias
 type LatestScanInfo = mongodb.MgoLatestScanInfo
 

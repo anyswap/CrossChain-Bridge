@@ -6,7 +6,6 @@ const (
 	tbSwapinResults     string = "SwapinResults"
 	tbSwapoutResults    string = "SwapoutResults"
 	tbP2shAddresses     string = "P2shAddresses"
-	tbSwapStatistics    string = "SwapStatistics"
 	tbLatestScanInfo    string = "LatestScanInfo"
 	tbRegisteredAddress string = "RegisteredAddress"
 	tbBlacklist         string = "Blacklist"
@@ -80,18 +79,6 @@ type MgoP2shAddress struct {
 type MgoRegisteredAddress struct {
 	Key       string `bson:"_id"`
 	Timestamp int64  `bson:"timestamp"`
-}
-
-// MgoSwapStatistics swap statistics
-type MgoSwapStatistics struct {
-	Key                string `bson:"_id"` // pairid
-	PairID             string `bson:"pairid"`
-	StableSwapinCount  int    `bson:"swapincount"`
-	TotalSwapinValue   string `bson:"totalswapinvalue"`
-	TotalSwapinFee     string `bson:"totalswapinfee"`
-	StableSwapoutCount int    `bson:"swapoutcount"`
-	TotalSwapoutValue  string `bson:"totalswapoutvalue"`
-	TotalSwapoutFee    string `bson:"totalswapoutfee"`
 }
 
 // MgoLatestScanInfo latest scan info
