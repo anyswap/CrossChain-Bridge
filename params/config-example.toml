@@ -62,16 +62,16 @@ InitialHeight = 0
 EnableScan = false
 # whether enable scan txs in pool
 EnableScanPool = false
-# whether scan transaction receipt logs
-ScanReceipt = false
+# enable pass big value swap job
+EnablePassBigValue = false
+# enable replace swap job
+EnableReplaceSwap = false
 # max gas price fluct percent
 MaxGasPriceFluctPercent = 10
 # wait time to replace swapout match tx
 WaitTimeToReplace = 900
 # max replace swap count
 MaxReplaceCount = 20
-# enable replace swap job
-EnableReplaceSwap = false
 
 # source blockchain gateway config
 [SrcGateway]
@@ -90,8 +90,10 @@ InitialHeight = 0
 EnableScan = false
 # whether enable scan txs in pool
 EnableScanPool = false
-# whether scan transaction receipt logs
-ScanReceipt = false
+# enable pass big value swap job
+EnablePassBigValue = false
+# enable replace swap job
+EnableReplaceSwap = false
 # base fee percent, must be in range [-90, 500]
 BaseFeePercent = 0
 # max gas price fluct percent
@@ -100,8 +102,6 @@ MaxGasPriceFluctPercent = 10
 WaitTimeToReplace = 900
 # max replace swap count
 MaxReplaceCount = 20
-# enable replace swap job
-EnableReplaceSwap = false
 # use fixed gas price (no adjust)
 FixedGasPrice = "5000000001"
 # maximum gas price

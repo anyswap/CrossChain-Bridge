@@ -192,12 +192,10 @@ func (b *Bridge) verifySwapoutTxStable(txHash string) (swapInfos []*tokens.TxSwa
 func (b *Bridge) verifySwapoutTxUnstable(txHash string) (swapInfos []*tokens.TxSwapInfo, errs []error) {
 	commonInfo := &tokens.TxSwapInfo{}
 	commonInfo.Hash = txHash // Hash
-	if b.ChainConfig.ScanReceipt {
-		receipt, _, _ := b.GetTransactionReceipt(txHash)
-		if receipt != nil {
-			commonInfo.Height = receipt.BlockNumber.ToInt().Uint64() // Height
-			return b.verifySwapoutTxWithReceipt(commonInfo, receipt)
-		}
+	receipt, _, _ := b.GetTransactionReceipt(txHash)
+	if receipt != nil {
+		commonInfo.Height = receipt.BlockNumber.ToInt().Uint64() // Height
+		return b.verifySwapoutTxWithReceipt(commonInfo, receipt)
 	}
 	tx, err := b.GetTransactionByHash(txHash)
 	if err != nil {
