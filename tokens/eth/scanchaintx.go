@@ -145,10 +145,11 @@ func (b *Bridge) quickSyncRange(ctx context.Context, idx, start, end uint64, wg 
 	chainName := b.ChainConfig.BlockChain
 	log.Printf("[scanchain] id=%v begin %v syncRange start=%v end=%v", idx, chainName, start, end)
 
+QUICK_SYNC_LOOP:
 	for h := start; h < end; {
 		select {
 		case <-ctx.Done():
-			break
+			break QUICK_SYNC_LOOP
 		default:
 		}
 		block, err := b.GetBlockByNumber(new(big.Int).SetUint64(h))

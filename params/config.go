@@ -21,7 +21,7 @@ var (
 
 	// ServerAPIAddress server api address
 	ServerAPIAddress string
-	// swap server flag
+	// IsSwapServer swap server flag
 	IsSwapServer bool
 )
 

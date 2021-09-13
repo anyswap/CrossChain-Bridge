@@ -252,7 +252,7 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		time.Sleep(retrySendTxInterval)
 	}
 	if err != nil {
-		logWorkerError("sendtx", "update swap status to TxSwapFailed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		logWorkerError("sendtx", "send tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
 	}
 	if !isReplace {

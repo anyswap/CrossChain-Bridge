@@ -1,3 +1,4 @@
+// Package colxdev dev tools to output compressed public key.
 package main
 
 import (
@@ -17,6 +18,7 @@ func main() {
 	fmt.Println(addr)
 }
 
+// ToCompressedPublicKey to compressed public key
 func ToCompressedPublicKey(pkData []byte) ([]byte, error) {
 	pubKey, err := btcec.ParsePubKey(pkData, btcec.S256())
 	if err != nil {

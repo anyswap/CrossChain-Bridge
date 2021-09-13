@@ -160,8 +160,7 @@ func updateSwapStatus(collection *mgo.Collection, txid, pairID, bind string, sta
 	err := collection.UpdateId(GetSwapKey(txid, pairID, bind), bson.M{"$set": updates})
 	if err == nil {
 		printLog := log.Info
-		switch status {
-		case TxVerifyFailed, TxSwapFailed:
+		if status == TxVerifyFailed {
 			printLog = log.Warn
 		}
 		printLog("mongodb update swap status", "txid", txid, "pairID", pairID, "bind", bind, "status", status, "isSwapin", isSwapin(collection))

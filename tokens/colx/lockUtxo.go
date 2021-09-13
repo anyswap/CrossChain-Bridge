@@ -9,8 +9,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 )
 
-var lockedUtxos map[utxokey]int = make(map[utxokey]int)
-var unlockConds map[utxokey](func() bool) = make(map[utxokey](func() bool))
+var lockedUtxos = make(map[utxokey]int)
+var unlockConds = make(map[utxokey]func() bool)
 var utxoLock sync.RWMutex
 
 type utxokey struct {
@@ -19,10 +19,11 @@ type utxokey struct {
 }
 
 var (
-	ErrUtxoLocked = fmt.Errorf("[Locked utxo] Utxo is already locked")
-	ErrNotLocked  = fmt.Errorf("[Locked utxo] Utxo is not locked")
+	errUtxoLocked = fmt.Errorf("[Locked utxo] Utxo is already locked")
+	errNotLocked  = fmt.Errorf("[Locked utxo] Utxo is not locked")
 )
 
+// IsUtxoLocked is utxo locked
 func (b *Bridge) IsUtxoLocked(txhash string, vout int) bool {
 	txhash = strings.ToUpper(txhash)
 	key := utxokey{txhash: txhash, vout: vout}
@@ -38,11 +39,13 @@ func (b *Bridge) isUtxoLocked(key utxokey) bool {
 // defaultUnlockCond unlock utxo after 5 days
 var defaultUnlockCond = after(3600 * 120)
 
+// LockUtxo lock utxo
 func (b *Bridge) LockUtxo(txhash string, vout int) error {
 	// Use default unlock cond
 	return b.LockUtxoWithCond(txhash, vout, defaultUnlockCond)
 }
 
+// LockUtxoWithCond lock utxo with condition
 func (b *Bridge) LockUtxoWithCond(txhash string, vout int, cond func() bool) error {
 	txhash = strings.ToUpper(txhash)
 	key := utxokey{txhash: txhash, vout: vout}
@@ -58,7 +61,7 @@ func after(seconds int64) func() bool {
 
 func (b *Bridge) lockUtxo(key utxokey, cond func() bool) error {
 	if b.isUtxoLocked(key) {
-		return ErrUtxoLocked
+		return errUtxoLocked
 	}
 	utxoLock.Lock()
 	defer utxoLock.Unlock()
@@ -67,6 +70,7 @@ func (b *Bridge) lockUtxo(key utxokey, cond func() bool) error {
 	return nil
 }
 
+// UnlockUtxo unlock utxo
 func (b *Bridge) UnlockUtxo(txhash string, vout int) {
 	txhash = strings.ToUpper(txhash)
 	key := utxokey{txhash: txhash, vout: vout}
@@ -80,6 +84,7 @@ func (b *Bridge) unlockUtxo(key utxokey) {
 	delete(unlockConds, key)
 }
 
+// SetUnlockUtxoCond set unlock utxo condition
 func (b *Bridge) SetUnlockUtxoCond(txhash string, vout int, cond func() bool) error {
 	txhash = strings.ToUpper(txhash)
 	key := utxokey{txhash: txhash, vout: vout}
@@ -90,12 +95,13 @@ func (b *Bridge) setUnlockUtxoCond(key utxokey, cond func() bool) error {
 	utxoLock.Lock()
 	defer utxoLock.Unlock()
 	if lockedUtxos[key] != 1 {
-		return ErrNotLocked
+		return errNotLocked
 	}
 	unlockConds[key] = cond
 	return nil
 }
 
+// StartMonitLockedUtxo start monitor locked utxo
 func (b *Bridge) StartMonitLockedUtxo() {
 	log.Info("Start monit locked utxo")
 	for {

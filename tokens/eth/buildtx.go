@@ -59,6 +59,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 				args.To = args.Bind
 				input = b.getUnlockCoinMemo(args)
 			}
+		default:
 		}
 	} else {
 		input = *args.Input
