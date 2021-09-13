@@ -45,6 +45,17 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 [swap.RegisterAddress](#swapregisteraddress)  
 [swap.GetRegisteredAddress](#swapgetregisteredaddress)  
 
+And the following `API`s are for developing and debuging, you can ignore them
+
+- swap.GetNonceInfo
+- swap.GetRawSwapin
+- swap.GetRawSwapinResult
+- swap.GetRawSwapout
+- swap.GetRawSwapoutResult
+- swap.IsValidSwapinBindAddress
+- swap.IsValidSwapoutBindAddress
+- swap.GetLatestScanInfo
+
 ### swap.GetServerInfo
 
 查询服务信息
@@ -185,9 +196,11 @@ pairids 为 pairid 通过逗号拼接在一起的字符串
 
 查询换进置换历史，支持分页，从 offset (默认0) 开始选取前 limit (默认20) 项
 
+`status` 为状态码通过逗号的拼接字符串，默认为空。
+
 ##### 参数：
 ```shell
-[{"address":"账户地址", "pairid":"交易对", "offset":offset, "limit":limit}]
+[{"address":"账户地址", "pairid":"交易对", "offset":offset, "limit":limit, "status":"9,10"}]
 ```
 
 address 为 all 表示所有历史
@@ -203,9 +216,11 @@ limit 最大值为 100
 
 查询换出置换历史，支持分页，从 offset (默认0) 开始选取前 limit (默认20) 项
 
+`status` 为状态码通过逗号的拼接字符串，默认为空。
+
 ##### 参数：
 ```shell
-[{"address":"账户地址", "pairid":"交易对", "offset":offset, "limit":limit}]
+[{"address":"账户地址", "pairid":"交易对", "offset":offset, "limit":limit, "status":"9,10"}]
 ```
 
 address 为 all 表示所有历史
@@ -297,23 +312,23 @@ pairids 为 pairid 通过逗号拼接在一起的字符串
 
 查询换出置换，txid 为销毁交易哈希
 
-### GET /swapin/history/{pairid}/{address}?offset=0&limit=20
+### GET /swapin/history/{pairid}/{address}?offset=0&limit=20&&status=9,10
 
 查询换进置换历史，支持分页，addess 为账户地址
 
 pairid 为 all 表示所有交易对  
-address 为 all 表示所有账户
+address 为 all 表示所有账户  
+limit 最大值为 100  
+`status` 为状态码通过逗号的拼接字符串，默认为空。
 
-limit 最大值为 100
-
-### GET /swapout/history/{pairid}/{address}?offset=0&limit=20
+### GET /swapout/history/{pairid}/{address}?offset=0&limit=20&&status=9,10
 
 查询换出置换历史，支持分页，addess 为账户地址
 
 pairid 为 all 表示所有交易对  
-address 为 all 表示所有账户
-
-limit 最大值为 100
+address 为 all 表示所有账户  
+limit 最大值为 100  
+`status` 为状态码通过逗号的拼接字符串，默认为空。
 
 ### POST /swapin/post/{pairid}/{txid}
 
@@ -348,3 +363,12 @@ limit 最大值为 100
 ### POST /register/{address}
 
 注册账户地址 (ETH like 专用接口)
+
+
+And the following `API`s are for developing and debuging, you can ignore them
+
+- GET /nonceinfo
+- GET /swapin/{pairid}/{txid}/raw
+- GET /swapout/{pairid}/{txid}/raw
+- GET /swapin/{pairid}/{txid}/rawresult
+- GET /swapout/{pairid}/{txid}/rawresult

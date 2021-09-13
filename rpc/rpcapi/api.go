@@ -1,3 +1,4 @@
+// Package rpcapi provides JSON RPC service.
 package rpcapi
 
 import (
@@ -48,15 +49,6 @@ func (s *RPCAPI) GetTokenPairsInfo(r *http.Request, pairIDs *string, result *map
 		*result = res
 	}
 	return nil
-}
-
-// GetSwapStatistics api
-func (s *RPCAPI) GetSwapStatistics(r *http.Request, pairID *string, result *swapapi.SwapStatistics) error {
-	res, err := swapapi.GetSwapStatistics(*pairID)
-	if err == nil && res != nil {
-		*result = *res
-	}
-	return err
 }
 
 // RPCTxAndPairIDArgs txid and pairID
