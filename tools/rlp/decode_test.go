@@ -237,8 +237,9 @@ func TestStreamList(t *testing.T) {
 		t.Fatalf("List returned invalid length, got %d, want 8", len)
 	}
 
+	var v uint64
 	for i := uint64(1); i <= 8; i++ {
-		v, err := s.Uint()
+		v, err = s.Uint()
 		if err != nil {
 			t.Fatalf("Uint error: %v", err)
 		}
@@ -247,7 +248,7 @@ func TestStreamList(t *testing.T) {
 		}
 	}
 
-	if _, err := s.Uint(); err != ErrEOL {
+	if _, err = s.Uint(); err != ErrEOL {
 		t.Errorf("Uint error mismatch, got %v, want %v", err, ErrEOL)
 	}
 	if err = s.ListEnd(); err != nil {

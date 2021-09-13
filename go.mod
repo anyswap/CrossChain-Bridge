@@ -36,6 +36,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1
 	github.com/tebeka/strftime v0.1.5 // indirect
+	github.com/tendermint/go-amino v0.16.0
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
