@@ -64,6 +64,8 @@ EnableScan = false
 EnableScanPool = false
 # enable pass big value swap job
 EnablePassBigValue = false
+# enable check tx block hash (prevent in orphan block)
+EnableCheckTxBlockHash = false
 # enable replace swap job
 EnableReplaceSwap = false
 # max gas price fluct percent
@@ -92,6 +94,8 @@ EnableScan = false
 EnableScanPool = false
 # enable pass big value swap job
 EnablePassBigValue = false
+# enable check tx block hash (prevent in orphan block)
+EnableCheckTxBlockHash = false
 # enable replace swap job
 EnableReplaceSwap = false
 # base fee percent, must be in range [-90, 500]

@@ -59,9 +59,9 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) error {
 
 func getTxByHash(b *Bridge, txHash string, withExt bool) (*types.RPCTransaction, error) {
 	gateway := b.GatewayConfig
-	tx, err := getTransactionByHash(txHash, gateway.APIAddress)
+	tx, err := b.getTransactionByHash(txHash, gateway.APIAddress)
 	if err != nil && withExt && len(gateway.APIAddressExt) > 0 {
-		tx, err = getTransactionByHash(txHash, gateway.APIAddressExt)
+		tx, err = b.getTransactionByHash(txHash, gateway.APIAddressExt)
 	}
 	return tx, err
 }

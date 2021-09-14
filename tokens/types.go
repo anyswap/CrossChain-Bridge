@@ -34,9 +34,10 @@ type ChainConfig struct {
 	InitialHeight *uint64
 
 	// judge by the 'from' chain (eg. src for swapin)
-	EnableScan         bool
-	EnableScanPool     bool
-	EnablePassBigValue bool
+	EnableScan             bool
+	EnableScanPool         bool
+	EnablePassBigValue     bool
+	EnableCheckTxBlockHash bool
 
 	// judge by the 'to' chain (eg. dst for swapin)
 	EnableReplaceSwap bool
