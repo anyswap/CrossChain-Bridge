@@ -70,6 +70,8 @@ EnableScan = false
 EnableScanPool = false
 # enable pass big value swap job
 EnablePassBigValue = false
+# enable check tx block hash (prevent in orphan block)
+EnableCheckTxBlockHash = false
 # enable replace swap job
 EnableReplaceSwap = false
 # enable building dynamic fee tx
@@ -104,6 +106,8 @@ EnableScan = false
 EnableScanPool = false
 # enable pass big value swap job
 EnablePassBigValue = false
+# enable check tx block hash (prevent in orphan block)
+EnableCheckTxBlockHash = false
 # enable replace swap job
 EnableReplaceSwap = false
 # enable building dynamic fee tx
