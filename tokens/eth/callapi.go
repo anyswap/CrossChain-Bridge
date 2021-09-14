@@ -226,7 +226,7 @@ func (b *Bridge) checkTxBlockHash(blockNumber *hexutil.Big, blockHash *common.Ha
 		log.Warn("get block by number failed", "number", blockNumber.String(), "err", err)
 		return errBlockNotFound
 	}
-	if block.Hash == nil || *block.Hash != *blockHash {
+	if *block.Hash != *blockHash {
 		log.Warn("tx block hash mismatch", "number", blockNumber.String(), "have", blockHash.String(), "want", block.Hash.String())
 		return errTxBlockHashMismatch
 	}

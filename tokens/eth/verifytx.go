@@ -198,7 +198,7 @@ func (b *Bridge) getReceipt(swapInfo *tokens.TxSwapInfo, allowUnstable bool) (*t
 	}
 	receipt, _, err := b.GetTransactionReceipt(swapInfo.Hash)
 	if err != nil {
-		return nil, nil // if receipt not found, then verify raw tx input
+		return nil, err
 	}
 	swapInfo.Height = receipt.BlockNumber.ToInt().Uint64() // Height
 	if *receipt.Status != 1 {
