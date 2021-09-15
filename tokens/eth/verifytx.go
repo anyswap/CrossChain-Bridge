@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -198,7 +199,11 @@ func (b *Bridge) getReceipt(swapInfo *tokens.TxSwapInfo, allowUnstable bool) (*t
 	}
 	receipt, _, err := b.GetTransactionReceipt(swapInfo.Hash)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, errTxReceiptNotFound) {
+			return nil, tokens.ErrTxNotFound
+		}
+		log.Error("get tx receipt failed", "hash", swapInfo.Hash, "err", err)
+		return nil, tokens.ErrTxWithWrongReceipt
 	}
 	swapInfo.Height = receipt.BlockNumber.ToInt().Uint64() // Height
 	if *receipt.Status != 1 {

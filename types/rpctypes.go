@@ -40,6 +40,7 @@ type RPCBlock struct {
 type RPCTransaction struct {
 	Type         hexutil.Uint64  `json:"type"`
 	Hash         *common.Hash    `json:"hash"`
+	TxIndex      *hexutil.Uint   `json:"transactionIndex"`
 	BlockNumber  *hexutil.Big    `json:"blockNumber"`
 	BlockHash    *common.Hash    `json:"blockHash"`
 	From         *common.Address `json:"from"`
