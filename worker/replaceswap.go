@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	errSwapWithErrStatus  = errors.New("swap with error status to replace")
 	errSwapTxWithHeight   = errors.New("swaptx with block height")
 	errSwapTxIsOnChain    = errors.New("swaptx exist in chain")
 	errGetNonceFailed     = errors.New("get nonce failed")
@@ -49,6 +50,9 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 	}
 	if res.SwapHeight != 0 {
 		return nil, nil, errSwapTxWithHeight
+	}
+	if res.Status != mongodb.MatchTxNotStable {
+		return nil, nil, errSwapWithErrStatus
 	}
 
 	bridge := tokens.GetCrossChainBridge(!isSwapin)
