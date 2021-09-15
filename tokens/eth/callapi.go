@@ -19,7 +19,7 @@ var (
 	errEmptyURLs           = errors.New("empty URLs")
 	errTxHashMismatch      = errors.New("tx hash mismatch with rpc result")
 	errTxBlockHashMismatch = errors.New("tx block hash mismatch with rpc result")
-	errTxMissBlockInfo     = errors.New("tx miss block info")
+	errTxReceiptNotFound   = errors.New("tx receipt not found")
 	errBlockNotFound       = errors.New("block not found")
 )
 
@@ -156,11 +156,6 @@ func (b *Bridge) getTransactionByHash(txHash string, urls []string) (result *typ
 			if !common.IsEqualIgnoreCase(result.Hash.Hex(), txHash) {
 				return nil, errTxHashMismatch
 			}
-			if b.ChainConfig.EnableCheckTxBlockHash {
-				if err = b.checkTxBlockHash(result.BlockNumber, result.BlockHash); err != nil {
-					return nil, err
-				}
-			}
 			return result, nil
 		}
 	}
@@ -168,6 +163,19 @@ func (b *Bridge) getTransactionByHash(txHash string, urls []string) (result *typ
 		return nil, tokens.ErrRPCQueryError
 	}
 	return nil, errors.New("tx not found")
+}
+
+// GetTransactionByBlockNumberAndIndex get tx by block number and tx index
+func (b *Bridge) GetTransactionByBlockNumberAndIndex(blockNumber *big.Int, txIndex uint, url string) (result *types.RPCTransaction, err error) {
+	return getTransactionByBlockNumberAndIndex(blockNumber, txIndex, url)
+}
+
+func getTransactionByBlockNumberAndIndex(blockNumber *big.Int, txIndex uint, url string) (result *types.RPCTransaction, err error) {
+	err = client.RPCPost(&result, url, "eth_getTransactionByBlockNumberAndIndex", types.ToBlockNumArg(blockNumber), hexutil.Uint64(txIndex))
+	if err == nil && result != nil {
+		return result, nil
+	}
+	return nil, errors.New("get tx by block number and index failed")
 }
 
 // GetPendingTransactions call eth_pendingTransactions
@@ -222,33 +230,34 @@ func (b *Bridge) getTransactionReceipt(txHash string, urls []string) (result *ty
 	for _, url := range urls {
 		err = client.RPCPost(&result, url, "eth_getTransactionReceipt", txHash)
 		if err == nil && result != nil {
+			if result.BlockNumber == nil || result.BlockHash == nil || result.TxIndex == nil {
+				return nil, "", errTxReceiptNotFound
+			}
 			if !common.IsEqualIgnoreCase(result.TxHash.Hex(), txHash) {
 				return nil, "", errTxHashMismatch
 			}
+			_, err = getTransactionByBlockNumberAndIndex(result.BlockNumber.ToInt(), uint(*result.TxIndex), url)
+			if err != nil {
+				return nil, "", err
+			}
 			if b.ChainConfig.EnableCheckTxBlockHash {
-				if err = b.checkTxBlockHash(result.BlockNumber, result.BlockHash); err != nil {
+				if err = b.checkTxBlockHash(result.BlockNumber.ToInt(), *result.BlockHash); err != nil {
 					return nil, "", err
 				}
 			}
 			return result, url, nil
 		}
 	}
-	if err != nil {
-		return nil, "", tokens.ErrRPCQueryError
-	}
-	return nil, "", errors.New("tx receipt not found")
+	return nil, "", errTxReceiptNotFound
 }
 
-func (b *Bridge) checkTxBlockHash(blockNumber *hexutil.Big, blockHash *common.Hash) error {
-	if blockNumber == nil || blockHash == nil {
-		return errTxMissBlockInfo
-	}
-	block, err := b.GetBlockByNumber(blockNumber.ToInt())
+func (b *Bridge) checkTxBlockHash(blockNumber *big.Int, blockHash common.Hash) error {
+	block, err := b.GetBlockByNumber(blockNumber)
 	if err != nil {
 		log.Warn("get block by number failed", "number", blockNumber.String(), "err", err)
 		return errBlockNotFound
 	}
-	if *block.Hash != *blockHash {
+	if *block.Hash != blockHash {
 		log.Warn("tx block hash mismatch", "number", blockNumber.String(), "have", blockHash.String(), "want", block.Hash.String())
 		return errTxBlockHashMismatch
 	}
