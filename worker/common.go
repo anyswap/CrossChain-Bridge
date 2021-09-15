@@ -173,9 +173,10 @@ func updateSwapTx(txid, pairID, bind, swapTx string, isSwapin bool) (err error) 
 	return err
 }
 
-func updateOldSwapTxs(txid, pairID, bind string, oldSwapTxs []string, isSwapin bool) (err error) {
+func updateOldSwapTxs(txid, pairID, bind, swapTx string, oldSwapTxs []string, isSwapin bool) (err error) {
 	updates := &mongodb.SwapResultUpdateItems{
 		Status:     mongodb.KeepStatus,
+		SwapTx:     swapTx,
 		OldSwapTxs: oldSwapTxs,
 		Timestamp:  now(),
 	}
@@ -185,9 +186,9 @@ func updateOldSwapTxs(txid, pairID, bind string, oldSwapTxs []string, isSwapin b
 		err = mongodb.UpdateSwapoutResult(txid, pairID, bind, updates)
 	}
 	if err != nil {
-		logWorkerError("update", "updateOldSwapTxs", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptxs", len(oldSwapTxs))
+		logWorkerError("update", "updateOldSwapTxs", err, "txid", txid, "pairID", pairID, "bind", bind, "swapTx", swapTx, "swaptxs", len(oldSwapTxs))
 	} else {
-		logWorker("update", "updateOldSwapTxs", "txid", txid, "pairID", pairID, "bind", bind, "swaptxs", len(oldSwapTxs))
+		logWorker("update", "updateOldSwapTxs", "txid", txid, "pairID", pairID, "bind", bind, "swapTx", swapTx, "swaptxs", len(oldSwapTxs))
 	}
 	return err
 }

@@ -214,7 +214,7 @@ func replaceSwapResult(txid, pairID, bind, txHash string, isSwapin bool) (err er
 		}
 	}
 	swapType := tokens.SwapType(res.SwapType).String()
-	err = updateOldSwapTxs(txid, pairID, bind, oldSwapTxs, isSwapin)
+	err = updateOldSwapTxs(txid, pairID, bind, txHash, oldSwapTxs, isSwapin)
 	if err != nil {
 		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", res.SwapNonce)
 	} else {
