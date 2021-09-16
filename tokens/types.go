@@ -44,16 +44,18 @@ type ChainConfig struct {
 
 	CallByContractWhitelist []string `json:",omitempty"`
 
+	MinReserveFee           string
+	BaseFeePercent          int64
 	MaxGasPriceFluctPercent uint64 `json:",omitempty"`
 	WaitTimeToReplace       int64  // seconds
 	MaxReplaceCount         int
 	FixedGasPrice           string `json:",omitempty"`
 	MaxGasPrice             string `json:",omitempty"`
-	BaseFeePercent          int64
 
 	// calced value
 	fixedGasPrice *big.Int
 	maxGasPrice   *big.Int
+	minReserveFee *big.Int
 
 	callByContractWhitelist map[string]struct{}
 }
@@ -316,6 +318,13 @@ func (c *ChainConfig) CheckConfig() error {
 		}
 		c.maxGasPrice = maxGasPrice
 	}
+	if c.MinReserveFee != "" {
+		bi, ok := new(big.Int).SetString(c.MinReserveFee, 10)
+		if !ok {
+			return fmt.Errorf("wrong 'MinReserveFee' value '%v'", c.MinReserveFee)
+		}
+		c.minReserveFee = bi
+	}
 	if len(c.CallByContractWhitelist) > 0 {
 		c.callByContractWhitelist = make(map[string]struct{}, len(c.CallByContractWhitelist))
 		for _, addr := range c.CallByContractWhitelist {
@@ -352,6 +361,11 @@ func (c *ChainConfig) GetMaxGasPrice() *big.Int {
 		return new(big.Int).Set(c.maxGasPrice) // clone
 	}
 	return nil
+}
+
+// GetMinReserveFee get min reserve fee
+func (c *ChainConfig) GetMinReserveFee() *big.Int {
+	return c.minReserveFee
 }
 
 // CheckConfig check token config

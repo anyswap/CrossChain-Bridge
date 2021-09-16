@@ -121,7 +121,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		needValue = value
 	}
 	if args.SwapType != tokens.NoSwapType {
-		needValue = new(big.Int).Add(needValue, getMinReserveFee())
+		needValue = new(big.Int).Add(needValue, b.getMinReserveFee())
 	} else {
 		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
@@ -142,14 +142,13 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 	return rawTx, nil
 }
 
-func getMinReserveFee() *big.Int {
+func (b *Bridge) getMinReserveFee() *big.Int {
 	if minReserveFee != nil {
 		return minReserveFee
 	}
-	if params.GetExtraConfig() == nil || params.GetExtraConfig().MinReserveFee == "" {
-		minReserveFee = big.NewInt(1e16) // default 0.01 ETH
-	} else {
-		minReserveFee, _ = new(big.Int).SetString(params.GetExtraConfig().MinReserveFee, 10)
+	minReserveFee = b.ChainConfig.GetMinReserveFee()
+	if minReserveFee == nil {
+		minReserveFee = big.NewInt(1e17) // default 0.1 ETH
 	}
 	return minReserveFee
 }

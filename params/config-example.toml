@@ -31,7 +31,6 @@ ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 [Extra]
 IsDebugMode = false
 IsSwapoutToStringAddress = false
-MinReserveFee = "10000000000000000"
 
 # customize fees in building btc transaction (btc only)
 [BtcExtra]
@@ -70,6 +69,8 @@ EnablePassBigValue = false
 EnableCheckTxBlockHash = false
 # enable replace swap job
 EnableReplaceSwap = false
+# minimum reserve coin for gas provide
+MinReserveFee = "100000000000000000"
 # max gas price fluct percent
 MaxGasPriceFluctPercent = 10
 # wait time to replace swapout match tx
@@ -100,6 +101,8 @@ EnablePassBigValue = false
 EnableCheckTxBlockHash = false
 # enable replace swap job
 EnableReplaceSwap = false
+# minimum reserve coin for gas provide
+MinReserveFee = "100000000000000000"
 # base fee percent, must be in range [-90, 500]
 BaseFeePercent = 0
 # max gas price fluct percent
