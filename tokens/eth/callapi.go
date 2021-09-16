@@ -24,7 +24,10 @@ var (
 )
 
 func wrapRPCQueryError(err error, method string) error {
-	return fmt.Errorf("%w: call '%s' failed, err='%v'", tokens.ErrRPCQueryError, method, err)
+	if err != nil {
+		return fmt.Errorf("%w: call '%s' failed, err='%v'", tokens.ErrRPCQueryError, method, err)
+	}
+	return fmt.Errorf("%w: call '%s' failed", tokens.ErrRPCQueryError, method)
 }
 
 // GetLatestBlockNumberOf call eth_blockNumber
@@ -437,7 +440,7 @@ func (b *Bridge) NetworkID() (*big.Int, error) {
 			return version, nil
 		}
 	}
-	return nil, tokens.ErrRPCQueryError
+	return nil, wrapRPCQueryError(err, "net_version")
 }
 
 // GetSignerChainID default way to get signer chain id
@@ -603,7 +606,7 @@ func (b *Bridge) GetBaseFee(blockCount int) (*big.Int, error) {
 	if length > 0 {
 		return feeHistory.BaseFee[length-1].ToInt(), nil
 	}
-	return nil, tokens.ErrRPCQueryError
+	return nil, wrapRPCQueryError(err, "eth_feeHistory")
 }
 
 // EstimateGas call eth_estimateGas

@@ -123,7 +123,7 @@ func (b *Bridge) checkSwapinBindAddress(bindAddr string, allowContractAddress bo
 		isContract, err := b.IsContractAddress(bindAddr)
 		if err != nil {
 			log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)
-			return tokens.ErrRPCQueryError
+			return err
 		}
 		if isContract {
 			return tokens.ErrBindAddrIsContract
