@@ -45,13 +45,16 @@ type ServerConfig struct {
 // DcrmConfig dcrm related config
 type DcrmConfig struct {
 	Disable       bool
+	APIPrefix     string
+	RPCTimeout    uint64
+	SignTimeout   uint64
 	GroupID       *string
 	NeededOracles *uint32
 	TotalOracles  *uint32
 	Mode          uint32 // 0:managed 1:private (default 0)
 	Initiators    []string
 	DefaultNode   *DcrmNodeConfig
-	OtherNodes    []*DcrmNodeConfig
+	OtherNodes    []*DcrmNodeConfig `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmNodeConfig dcrm node config
@@ -154,6 +157,14 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 		}
 
 		IsSwapServer = isServer
+		if isServer {
+			config.Oracle = nil
+		} else {
+			config.MongoDB = nil
+			config.APIServer = nil
+			config.Admins = nil
+		}
+
 		SetConfig(config)
 		var bs []byte
 		if log.JSONFormat {

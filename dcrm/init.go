@@ -1,3 +1,4 @@
+// Package dcrm is a client of dcrm server, doing the sign and accept tasks.
 package dcrm
 
 import (
@@ -23,11 +24,15 @@ var (
 	dcrmSigner = types.MakeSigner("EIP155", big.NewInt(dcrmWalletServiceID))
 	dcrmToAddr = common.HexToAddress(dcrmToAddress)
 
+	dcrmAPIPrefix     = "dcrm_" // default prefix
 	dcrmGroupID       string
 	dcrmThreshold     string
 	dcrmMode          string
 	dcrmNeededOracles uint32
 	dcrmTotalOracles  uint32
+
+	dcrmRPCTimeout  = 10                // default to 10 seconds
+	dcrmSignTimeout = 120 * time.Second // default to 120 seconds
 
 	defaultDcrmNode   *NodeInfo
 	allInitiatorNodes []*NodeInfo // server only
@@ -50,6 +55,17 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 		return
 	}
 
+	if dcrmConfig.APIPrefix != "" {
+		dcrmAPIPrefix = dcrmConfig.APIPrefix
+	}
+
+	if dcrmConfig.RPCTimeout > 0 {
+		dcrmRPCTimeout = int(dcrmConfig.RPCTimeout)
+	}
+	if dcrmConfig.SignTimeout > 0 {
+		dcrmSignTimeout = time.Duration(dcrmConfig.SignTimeout * uint64(time.Second))
+	}
+
 	setDcrmGroup(*dcrmConfig.GroupID, dcrmConfig.Mode, *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
 	setDefaultDcrmNodeInfo(initDcrmNodeInfo(dcrmConfig.DefaultNode, isServer))
 
@@ -63,6 +79,7 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 	initAllEnodes()
 
 	verifyInitiators(dcrmConfig.Initiators)
+	log.Info("init dcrm success", "signTimeout", dcrmSignTimeout.String(), "isServer", isServer)
 }
 
 // setDefaultDcrmNodeInfo set default dcrm node info
