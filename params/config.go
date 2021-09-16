@@ -86,7 +86,9 @@ type MongoDBConfig struct {
 
 // ExtraConfig extra config
 type ExtraConfig struct {
-	IsDebugMode   bool `toml:",omitempty" json:",omitempty"`
+	IsDebugMode              bool `toml:",omitempty" json:",omitempty"`
+	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
+
 	MinReserveFee string
 }
 
@@ -107,6 +109,11 @@ func GetIdentifier() string {
 // MustRegisterAccount flag
 func MustRegisterAccount() bool {
 	return GetConfig().MustRegisterAccount
+}
+
+// IsSwapoutToStringAddress swapout to string address (eg. btc)
+func IsSwapoutToStringAddress() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().IsSwapoutToStringAddress
 }
 
 // IsDebugMode is debug mode, add more debugging log infos
