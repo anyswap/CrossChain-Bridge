@@ -88,7 +88,7 @@ func checkTokenConfig() (err error) {
 
 // LoadConfig load config
 func LoadConfig(configFile string) *RiskConfig {
-	log.Printf("Config file is '%v'\n", configFile)
+	log.Printf("Config file is '%v'", configFile)
 	if !common.FileExist(configFile) {
 		log.Fatalf("LoadConfig error: config file '%v' not exist", configFile)
 	}

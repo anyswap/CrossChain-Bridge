@@ -40,7 +40,7 @@ func GetServerInfo() (*ServerInfo, error) {
 	}
 	return &ServerInfo{
 		Identifier:          config.Identifier,
-		MustRegisterAccount: config.MustRegisterAccount,
+		MustRegisterAccount: params.MustRegisterAccount(),
 		SrcChain:            config.SrcChain,
 		DestChain:           config.DestChain,
 		PairIDs:             tokens.GetAllPairIDs(),
@@ -172,6 +172,9 @@ func RetrySwapin(txid, pairID *string) (*PostResult, error) {
 	}
 	txidstr := *txid
 	pairIDStr := *pairID
+	if err := basicCheckSwapRegister(tokens.SrcBridge, pairIDStr); err != nil {
+		return nil, err
+	}
 	swapInfo, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr, true)
 	if err != nil {
 		return nil, newRPCError(-32099, "retry swapin failed! "+err.Error())
@@ -197,10 +200,24 @@ func Swapout(txid, pairID *string) (*PostResult, error) {
 	return swap(txid, pairID, false)
 }
 
+func basicCheckSwapRegister(bridge tokens.CrossChainBridge, pairIDStr string) error {
+	tokenCfg := bridge.GetTokenConfig(pairIDStr)
+	if tokenCfg == nil {
+		return tokens.ErrUnknownPairID
+	}
+	if tokenCfg.DisableSwap {
+		return tokens.ErrSwapIsClosed
+	}
+	return nil
+}
+
 func swap(txid, pairID *string, isSwapin bool) (*PostResult, error) {
 	txidstr := *txid
 	pairIDStr := *pairID
 	bridge := tokens.GetCrossChainBridge(isSwapin)
+	if err := basicCheckSwapRegister(bridge, pairIDStr); err != nil {
+		return nil, err
+	}
 	swapInfo, err := bridge.VerifyTransaction(pairIDStr, txidstr, true)
 	var txType tokens.SwapTxType
 	if isSwapin {
@@ -311,6 +328,9 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	pairID := btc.PairID
 	if swap, _ := mongodb.FindSwapin(txidstr, pairID, *bindAddr); swap != nil {
 		return nil, mongodb.ErrItemIsDup
+	}
+	if err := basicCheckSwapRegister(btc.BridgeInstance, pairID); err != nil {
+		return nil, err
 	}
 	swapInfo, err := btc.BridgeInstance.VerifyP2shTransaction(pairID, txidstr, *bindAddr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
