@@ -155,34 +155,25 @@ func reswap(txid, pairID, bind string, isSwapin bool) error {
 
 func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
 	swapType := tokens.SwapType(res.SwapType)
-	switch swapType {
-	case tokens.SwapinType:
-	case tokens.SwapoutType:
-	default:
-		return fmt.Errorf("swap type is %v, can not reswap", swapType.String())
+	if (isSwapin && swapType != tokens.SwapinType) || (!isSwapin && swapType != tokens.SwapoutType) {
+		return fmt.Errorf("wrong swap type %v (isSwapin=%v)", swapType.String(), isSwapin)
 	}
-	switch res.Status {
-	case MatchTxNotStable:
-	case MatchTxFailed:
-	default:
+	if res.Status != MatchTxFailed {
 		return fmt.Errorf("swap result status is %v, can not reswap", res.Status.String())
 	}
+
 	if res.SwapTx == "" {
 		return errors.New("swap without swaptx")
 	}
+
 	bridge := tokens.GetCrossChainBridge(!isSwapin)
-	isSwapTxExist := isSwapResultTxExist(bridge, res)
-	if isSwapTxExist && res.Status != MatchTxFailed {
-		return errors.New("swaptx exist in chain or pool")
+	txStatus, txHash := getSwapResultsTxStatus(bridge, res)
+	if txStatus != nil && txStatus.BlockHeight > 0 &&
+		!txStatus.IsSwapTxOnChainAndFailed(bridge.GetTokenConfig(res.PairID)) {
+		_ = UpdateSwapResultStatus(isSwapin, res.TxID, res.PairID, res.Bind, MatchTxNotStable, time.Now().Unix(), "")
+		return fmt.Errorf("swap succeed with swaptx %v", txHash)
 	}
-	txStatus, err := bridge.GetTransactionStatus(res.SwapTx)
-	if err == nil && txStatus != nil && txStatus.BlockHeight > 0 {
-		if res.Status != MatchTxFailed {
-			return errors.New("swaptx exist on chain and is not mark failed")
-		} else if !txStatus.IsSwapTxOnChainAndFailed(bridge.GetTokenConfig(res.PairID)) {
-			return fmt.Errorf("swap succeed with swaptx %v", res.SwapTx)
-		}
-	}
+
 	return checkReswapNonce(bridge, res)
 }
 
@@ -236,22 +227,15 @@ func ManualManageSwap(txid, pairID, bind, memo string, isSwapin, isPass bool) er
 	return fmt.Errorf("swap status is %v, can not operate. txid=%v pairID=%v bind=%v isSwapin=%v isPass=%v", swap.Status.String(), txid, pairID, bind, isSwapin, isPass)
 }
 
-func isTransactionExist(bridge tokens.CrossChainBridge, txHash string) bool {
-	if txHash == "" {
-		return false
-	}
-	_, err := bridge.GetTransaction(txHash)
-	return err == nil
-}
-
-func isSwapResultTxExist(bridge tokens.CrossChainBridge, res *MgoSwapResult) bool {
-	if isTransactionExist(bridge, res.SwapTx) {
-		return true
+func getSwapResultsTxStatus(bridge tokens.CrossChainBridge, res *MgoSwapResult) (status *tokens.TxStatus, txHash string) {
+	var err error
+	if status, err = bridge.GetTransactionStatus(res.SwapTx); err == nil {
+		return status, res.SwapTx
 	}
 	for _, tx := range res.OldSwapTxs {
-		if isTransactionExist(bridge, tx) {
-			return true
+		if status, err = bridge.GetTransactionStatus(tx); err == nil {
+			return status, tx
 		}
 	}
-	return false
+	return nil, ""
 }
