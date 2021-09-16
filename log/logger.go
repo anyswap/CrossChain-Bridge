@@ -1,3 +1,4 @@
+// Package log is a wrapper of logrus.
 package log
 
 import (
@@ -82,6 +83,21 @@ func WithFields(ctx ...interface{}) *logrus.Entry {
 		}
 	}
 	return logrus.WithFields(fields)
+}
+
+// PrintFunc print function prototype
+type PrintFunc func(msg string, ctx ...interface{})
+
+// GetPrintFuncOr get log func of default
+func GetPrintFuncOr(predicate func() bool, targetFunc, otherFunc PrintFunc) PrintFunc {
+	if predicate() {
+		return targetFunc
+	}
+	return otherFunc
+}
+
+// Null don't output anything
+func Null(string, ...interface{}) {
 }
 
 // Trace trace

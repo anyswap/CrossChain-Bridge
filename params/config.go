@@ -83,6 +83,7 @@ type MongoDBConfig struct {
 
 // ExtraConfig extra config
 type ExtraConfig struct {
+	IsDebugMode   bool `toml:",omitempty" json:",omitempty"`
 	MinReserveFee string
 }
 
@@ -103,6 +104,11 @@ func GetIdentifier() string {
 // MustRegisterAccount flag
 func MustRegisterAccount() bool {
 	return GetConfig().MustRegisterAccount
+}
+
+// IsDebugMode is debug mode, add more debugging log infos
+func IsDebugMode() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().IsDebugMode
 }
 
 // IsDcrmEnabled is dcrm enabled (for dcrm sign)
