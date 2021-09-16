@@ -170,7 +170,7 @@ func (b *Bridge) getMinReserveFee() *big.Int {
 	}
 	minReserveFee = b.ChainConfig.GetMinReserveFee()
 	if minReserveFee == nil {
-		minReserveFee = big.NewInt(1e16) // default 0.01 ETH
+		minReserveFee = big.NewInt(1e17) // default 0.1 ETH
 	}
 	return minReserveFee
 }

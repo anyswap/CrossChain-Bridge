@@ -400,7 +400,7 @@ func (c *ChainConfig) CheckConfig(isServer bool) error {
 	if c.MinReserveFee != "" {
 		bi, ok := new(big.Int).SetString(c.MinReserveFee, 10)
 		if !ok {
-			return errors.New("wrong 'MinReserveFee' in extra config")
+			return fmt.Errorf("wrong 'MinReserveFee' value '%v'", c.MinReserveFee)
 		}
 		c.minReserveFee = bi
 	}
