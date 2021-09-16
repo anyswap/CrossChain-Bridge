@@ -469,15 +469,12 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	txHash, err := sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
+	txHash, err := sendSignedTransaction(resBridge, signedTx, args)
 	if err == nil {
 		logWorker("doSwap", "send tx success", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash)
 		if txHash != signTxHash {
 			logWorkerError("doSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash, "signTxHash", signTxHash)
 			_ = replaceSwapResult(txid, pairID, bind, txHash, matchTx.SwapValue, isSwapin)
-		}
-		if nonceSetter, ok := resBridge.(tokens.NonceSetter); ok {
-			nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
 		}
 	}
 	return err

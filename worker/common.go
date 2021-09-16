@@ -251,10 +251,12 @@ func verifySwapTransaction(bridge tokens.CrossChainBridge, pairID, txid, bind st
 	return swapInfo, err
 }
 
-func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin bool) (txHash string, err error) {
+func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, args *tokens.BuildTxArgs) (txHash string, err error) {
 	var (
 		retrySendTxCount    = 3
 		retrySendTxInterval = 1 * time.Second
+		txid, pairID, bind  = args.SwapID, args.PairID, args.Bind
+		isSwapin            = args.SwapType == tokens.SwapinType
 	)
 	for i := 0; i < retrySendTxCount; i++ {
 		txHash, err = bridge.SendTransaction(signedTx)
@@ -277,6 +279,8 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 	if nonceSetter == nil {
 		return txHash, err
 	}
+
+	nonceSetter.SetNonce(pairID, args.GetTxNonce()+1) // increase for next usage
 
 	// update swap result tx height in goroutine
 	go func() {
