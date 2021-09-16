@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	mapset "github.com/deckarep/golang-set"
 )
@@ -154,8 +154,6 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		return err
 	}
 
-	logWorker("swap", "start process swap", "pairID", pairID, "txid", txid, "bind", bind, "status", swap.Status, "isSwapin", isSwapin, "value", res.Value)
-
 	fromTokenCfg, toTokenCfg := tokens.GetTokenConfigsByDirection(pairID, isSwapin)
 	if fromTokenCfg == nil || toTokenCfg == nil {
 		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "isSwapin", isSwapin)
@@ -181,22 +179,32 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		return err
 	}
 
-	value, err := common.GetBigIntFromStr(res.Value)
+	logWorker("swap", "start process swap", "pairID", pairID, "txid", txid, "bind", bind, "status", swap.Status, "isSwapin", isSwapin, "value", res.Value)
+
+	srcBridge := tokens.GetCrossChainBridge(isSwapin)
+	swapInfo, err := verifySwapTransaction(srcBridge, pairID, txid, bind, tokens.SwapTxType(swap.TxType))
 	if err != nil {
-		return fmt.Errorf("wrong value %v", res.Value)
+		return fmt.Errorf("[doSwap] reverify swap failed, %w", err)
+	}
+	if swapInfo.Value.String() != res.Value {
+		return fmt.Errorf("[doSwap] reverify swap value mismatch, in db %v != %v", res.Value, swapInfo.Value)
+	}
+	if !strings.EqualFold(swapInfo.Bind, bind) {
+		return fmt.Errorf("[doSwap] reverify swap bind address mismatch, in db %v != %v", bind, swapInfo.Bind)
 	}
 
 	swapType := getSwapType(isSwapin)
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
-			PairID:   pairID,
-			SwapID:   txid,
-			SwapType: swapType,
-			TxType:   tokens.SwapTxType(swap.TxType),
-			Bind:     bind,
+			Identifier: params.GetIdentifier(),
+			PairID:     pairID,
+			SwapID:     txid,
+			SwapType:   swapType,
+			TxType:     tokens.SwapTxType(swap.TxType),
+			Bind:       bind,
 		},
 		From:        toTokenCfg.DcrmAddress,
-		OriginValue: value,
+		OriginValue: swapInfo.Value,
 	}
 
 	return dispatchSwapTask(args)
