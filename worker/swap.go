@@ -393,7 +393,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	sentTxHash, err := sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin, false)
+	sentTxHash, err := sendSignedTransaction(resBridge, signedTx, args)
 	if err == nil {
 		logWorker("doSwap", "send tx success", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash)
 		if txHash != sentTxHash {

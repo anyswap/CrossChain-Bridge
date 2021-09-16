@@ -238,27 +238,28 @@ func verifySwapTransaction(bridge tokens.CrossChainBridge, pairID, txid, bind st
 	return swapInfo, err
 }
 
-func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin, isReplace bool) (txHash string, err error) {
+func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, args *tokens.BuildTxArgs) (txHash string, err error) {
 	var (
 		retrySendTxCount    = 3
 		retrySendTxInterval = 1 * time.Second
+		txid, pairID, bind  = args.SwapID, args.PairID, args.Bind
+		isSwapin            = args.SwapType == tokens.SwapinType
 	)
 	for i := 0; i < retrySendTxCount; i++ {
 		txHash, err = bridge.SendTransaction(signedTx)
 		if err == nil {
-			logWorker("sendtx", "send tx success", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "isReplace", isReplace, "txHash", txHash)
+			logWorker("sendtx", "send tx success", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "txHash", txHash)
 			break
 		}
 		time.Sleep(retrySendTxInterval)
 	}
 	if err != nil {
-		logWorkerError("sendtx", "send tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "isReplace", isReplace, "txHash", txHash)
+		logWorkerError("sendtx", "send tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "txHash", txHash)
 		return txHash, err
 	}
-	if !isReplace {
-		if nonceSetter, ok := bridge.(tokens.NonceSetter); ok {
-			nonceSetter.IncreaseNonce(pairID, 1)
-		}
+
+	if nonceSetter, ok := bridge.(tokens.NonceSetter); ok {
+		nonceSetter.SetNonce(pairID, args.GetTxNonce()+1) // increase for next usage
 	}
 	return txHash, nil
 }
