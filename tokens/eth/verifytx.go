@@ -24,7 +24,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	txStatus.BlockHash = txr.BlockHash.String()
 	if txStatus.BlockHeight != 0 {
 		for i := 0; i < 3; i++ {
-			latest, err := b.GetLatestBlockNumberOf(url)
+			latest, err := b.Inherit.GetLatestBlockNumberOf(url)
 			if err == nil {
 				if latest > txStatus.BlockHeight {
 					txStatus.Confirmations = latest - txStatus.BlockHeight

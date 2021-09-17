@@ -18,8 +18,14 @@ const (
 	netCustom  = "custom"
 )
 
+// InheritInterface inherit interface
+type InheritInterface interface {
+	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
+}
+
 // Bridge eth bridge
 type Bridge struct {
+	Inherit InheritInterface
 	*tokens.CrossChainBridgeBase
 	*NonceSetterBase
 	Signer        types.Signer
@@ -28,10 +34,12 @@ type Bridge struct {
 
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	return &Bridge{
+	bridge := &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
 		NonceSetterBase:      NewNonceSetterBase(),
 	}
+	bridge.Inherit = bridge
+	return bridge
 }
 
 // SetChainAndGateway set chain and gateway config
