@@ -46,6 +46,10 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 	swapInfo.To = txRecipient                              // To
 	swapInfo.From = strings.ToLower(receipt.From.String()) // From
 
+	if common.IsEqualIgnoreCase(swapInfo.From, token.DcrmAddress) {
+		return tokens.ErrTxWithWrongSender
+	}
+
 	if !token.AllowSwapoutFromContract &&
 		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) &&
 		!b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
