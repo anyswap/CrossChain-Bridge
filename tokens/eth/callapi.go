@@ -16,6 +16,7 @@ import (
 )
 
 var (
+	errNotFound               = errors.New("not found")
 	errEmptyURLs              = errors.New("empty URLs")
 	errTxInOrphanBlock        = errors.New("tx is in orphan block")
 	errTxHashMismatch         = errors.New("tx hash mismatch with rpc result")
@@ -23,11 +24,19 @@ var (
 	errTxReceiptMissBlockInfo = errors.New("tx receipt missing block info")
 )
 
-func wrapRPCQueryError(err error, method string) error {
-	if err != nil {
-		return fmt.Errorf("%w: call '%s' failed, err='%v'", tokens.ErrRPCQueryError, method, err)
+func wrapRPCQueryError(err error, method string, params ...interface{}) error {
+	if err == nil {
+		err = errNotFound
 	}
-	return fmt.Errorf("%w: call '%s' failed", tokens.ErrRPCQueryError, method)
+	return fmt.Errorf("%w: call '%s %v' failed, err='%v'", tokens.ErrRPCQueryError, method, params, err)
+}
+
+// RPCCall common RPC calling
+func RPCCall(result interface{}, url, method string, params ...interface{}) error {
+	if err := client.RPCPost(&result, url, method, params...); err != nil {
+		return wrapRPCQueryError(err, method, params)
+	}
+	return nil
 }
 
 // GetLatestBlockNumberOf call eth_blockNumber
@@ -91,7 +100,7 @@ func getBlockByHash(blockHash string, urls []string) (result *types.RPCBlock, er
 			return result, nil
 		}
 	}
-	return nil, wrapRPCQueryError(err, "eth_getBlockByHash")
+	return nil, wrapRPCQueryError(err, "eth_getBlockByHash", blockHash)
 }
 
 // GetBlockByNumber call eth_getBlockByNumber
@@ -107,7 +116,7 @@ func (b *Bridge) GetBlockByNumber(number *big.Int) (*types.RPCBlock, error) {
 			return result, nil
 		}
 	}
-	return nil, wrapRPCQueryError(err, "eth_getBlockByNumber")
+	return nil, wrapRPCQueryError(err, "eth_getBlockByNumber", number)
 }
 
 // GetBlockHash impl
@@ -161,12 +170,19 @@ func (b *Bridge) getTransactionByHash(txHash string, urls []string) (result *typ
 			return result, nil
 		}
 	}
-	return nil, wrapRPCQueryError(err, "eth_getTransactionByHash")
+	return nil, wrapRPCQueryError(err, "eth_getTransactionByHash", txHash)
 }
 
 // GetTransactionByBlockNumberAndIndex get tx by block number and tx index
-func (b *Bridge) GetTransactionByBlockNumberAndIndex(blockNumber *big.Int, txIndex uint, url string) (result *types.RPCTransaction, err error) {
-	return getTransactionByBlockNumberAndIndex(blockNumber, txIndex, url)
+func (b *Bridge) GetTransactionByBlockNumberAndIndex(blockNumber *big.Int, txIndex uint) (result *types.RPCTransaction, err error) {
+	gateway := b.GatewayConfig
+	for _, url := range gateway.APIAddress {
+		result, err = getTransactionByBlockNumberAndIndex(blockNumber, txIndex, url)
+		if err == nil && result != nil {
+			return result, nil
+		}
+	}
+	return nil, wrapRPCQueryError(err, "eth_getTransactionByBlockNumberAndIndex", blockNumber, txIndex)
 }
 
 func getTransactionByBlockNumberAndIndex(blockNumber *big.Int, txIndex uint, url string) (result *types.RPCTransaction, err error) {
@@ -174,7 +190,7 @@ func getTransactionByBlockNumberAndIndex(blockNumber *big.Int, txIndex uint, url
 	if err == nil && result != nil {
 		return result, nil
 	}
-	return nil, wrapRPCQueryError(err, "eth_getTransactionByBlockNumberAndIndex")
+	return nil, wrapRPCQueryError(err, "eth_getTransactionByBlockNumberAndIndex", blockNumber, txIndex)
 }
 
 // GetPendingTransactions call eth_pendingTransactions
@@ -250,7 +266,7 @@ func (b *Bridge) getTransactionReceipt(txHash string, urls []string) (result *ty
 			return result, url, nil
 		}
 	}
-	return nil, "", wrapRPCQueryError(err, "eth_getTransactionReceipt")
+	return nil, "", wrapRPCQueryError(err, "eth_getTransactionReceipt", txHash)
 }
 
 func (b *Bridge) checkTxBlockHash(blockNumber *big.Int, blockHash common.Hash) error {
@@ -321,7 +337,7 @@ func getMaxPoolNonce(account common.Address, height string, urls []string) (maxN
 	if success {
 		return maxNonce, nil
 	}
-	return 0, wrapRPCQueryError(err, "eth_getTransactionCount")
+	return 0, wrapRPCQueryError(err, "eth_getTransactionCount", account, height)
 }
 
 // SuggestPrice call eth_gasPrice
@@ -484,7 +500,7 @@ func getCode(contract string, urls []string) ([]byte, error) {
 			return []byte(result), nil
 		}
 	}
-	return nil, wrapRPCQueryError(err, "eth_getCode")
+	return nil, wrapRPCQueryError(err, "eth_getCode", contract)
 }
 
 // CallContract call eth_call
@@ -507,7 +523,7 @@ func (b *Bridge) CallContract(contract string, data hexutil.Bytes, blockNumber s
 		logFunc := log.GetPrintFuncOr(params.IsDebugMode, log.Info, log.Trace)
 		logFunc("call CallContract failed", "contract", contract, "data", data, "err", err)
 	}
-	return "", wrapRPCQueryError(err, "eth_call")
+	return "", wrapRPCQueryError(err, "eth_call", contract)
 }
 
 // GetBalance call eth_getBalance
@@ -522,7 +538,7 @@ func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 			return result.ToInt(), nil
 		}
 	}
-	return nil, wrapRPCQueryError(err, "eth_getBalance")
+	return nil, wrapRPCQueryError(err, "eth_getBalance", account)
 }
 
 // SuggestGasTipCap call eth_maxPriorityFeePerGas
@@ -589,7 +605,7 @@ func getFeeHistory(urls []string, blockCount int, rewardPercentiles []float64) (
 		}
 	}
 	log.Warn("get fee history failed", "blockCount", blockCount, "err", err)
-	return nil, wrapRPCQueryError(err, "eth_feeHistory")
+	return nil, wrapRPCQueryError(err, "eth_feeHistory", blockCount)
 }
 
 // GetBaseFee get base fee
@@ -610,7 +626,7 @@ func (b *Bridge) GetBaseFee(blockCount int) (*big.Int, error) {
 	if length > 0 {
 		return feeHistory.BaseFee[length-1].ToInt(), nil
 	}
-	return nil, wrapRPCQueryError(err, "eth_feeHistory")
+	return nil, wrapRPCQueryError(err, "eth_feeHistory", blockCount)
 }
 
 // EstimateGas call eth_estimateGas
