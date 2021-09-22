@@ -251,12 +251,14 @@ func (b *Bridge) getTransactionReceipt(txHash string, urls []string) (result *ty
 			if !common.IsEqualIgnoreCase(result.TxHash.Hex(), txHash) {
 				return nil, "", errTxHashMismatch
 			}
-			tx, errt := getTransactionByBlockNumberAndIndex(result.BlockNumber.ToInt(), uint(*result.TxIndex), url)
-			if errt != nil {
-				return nil, "", errt
-			}
-			if !common.IsEqualIgnoreCase(tx.Hash.Hex(), txHash) {
-				return nil, "", errTxInOrphanBlock
+			if b.ChainConfig.EnableCheckTxBlockIndex {
+				tx, errt := getTransactionByBlockNumberAndIndex(result.BlockNumber.ToInt(), uint(*result.TxIndex), url)
+				if errt != nil {
+					return nil, "", errt
+				}
+				if !common.IsEqualIgnoreCase(tx.Hash.Hex(), txHash) {
+					return nil, "", errTxInOrphanBlock
+				}
 			}
 			if b.ChainConfig.EnableCheckTxBlockHash {
 				if err = b.checkTxBlockHash(result.BlockNumber.ToInt(), *result.BlockHash); err != nil {

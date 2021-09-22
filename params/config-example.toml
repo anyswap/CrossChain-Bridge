@@ -67,6 +67,8 @@ EnableScanPool = false
 EnablePassBigValue = false
 # enable check tx block hash (prevent in orphan block)
 EnableCheckTxBlockHash = false
+# enable check tx block index (prevent in orphan block)
+EnableCheckTxBlockIndex = false
 # enable replace swap job
 EnableReplaceSwap = false
 # minimum reserve coin for gas provide
@@ -99,6 +101,8 @@ EnableScanPool = false
 EnablePassBigValue = false
 # enable check tx block hash (prevent in orphan block)
 EnableCheckTxBlockHash = false
+# enable check tx block index (prevent in orphan block)
+EnableCheckTxBlockIndex = false
 # enable replace swap job
 EnableReplaceSwap = false
 # minimum reserve coin for gas provide
