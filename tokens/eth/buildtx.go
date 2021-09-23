@@ -115,14 +115,6 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		input = *args.Input
 	}
 
-	_, err = b.EstimateGas(args.From, args.To, args.Value, input)
-	if err != nil {
-		log.Error(fmt.Sprintf("build %s tx estimate gas failed", args.SwapType.String()),
-			"swapID", args.SwapID, "from", args.From, "to", args.To,
-			"value", args.Value, "data", common.ToHex(input), "err", err)
-		return nil, tokens.ErrEstimateGasFailed
-	}
-
 	needValue := big.NewInt(0)
 	if value != nil && value.Sign() > 0 {
 		needValue = value
@@ -213,8 +205,26 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (err error) {
 		}
 	}
 	if extra.Gas == nil {
+		var input []byte
+		if args.Input != nil {
+			input = *args.Input
+		}
+
+		esGasLimit, errf := b.EstimateGas(args.From, args.To, args.Value, input)
+		if errf != nil {
+			log.Error(fmt.Sprintf("build %s tx estimate gas failed", args.SwapType.String()),
+				"swapID", args.SwapID, "from", args.From, "to", args.To,
+				"value", args.Value, "data", common.ToHex(input), "err", errf)
+			return tokens.ErrEstimateGasFailed
+		}
+
+		esGasLimit += esGasLimit * 30 / 100
+		defGasLimit := b.getDefaultGasLimit(args.PairID)
+		if esGasLimit < defGasLimit {
+			esGasLimit = defGasLimit
+		}
 		extra.Gas = new(uint64)
-		*extra.Gas = b.getDefaultGasLimit(args.PairID)
+		*extra.Gas = esGasLimit
 	}
 	return nil
 }
