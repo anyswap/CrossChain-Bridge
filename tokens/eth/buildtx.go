@@ -68,7 +68,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		}
 	}
 
-	extra, err := b.setDefaults(args)
+	extra, err := b.setDefaults(args, input)
 	if err != nil {
 		return nil, err
 	}
@@ -92,14 +92,6 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		gasLimit = *extra.Gas
 		gasPrice = extra.GasPrice
 	)
-
-	_, err = b.EstimateGas(args.From, args.To, args.Value, input)
-	if err != nil {
-		log.Error(fmt.Sprintf("build %s tx estimate gas failed", args.SwapType.String()),
-			"swapID", args.SwapID, "from", args.From, "to", args.To,
-			"value", args.Value, "data", common.ToHex(input), "err", err)
-		return nil, tokens.ErrEstimateGasFailed
-	}
 
 	if args.SwapType == tokens.SwapoutType {
 		pairID := args.PairID
@@ -153,7 +145,7 @@ func (b *Bridge) getMinReserveFee() *big.Int {
 	return minReserveFee
 }
 
-func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraArgs, err error) {
+func (b *Bridge) setDefaults(args *tokens.BuildTxArgs, input []byte) (extra *tokens.EthExtraArgs, err error) {
 	if args.Value == nil {
 		args.Value = new(big.Int)
 	}
@@ -176,8 +168,21 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (extra *tokens.EthExtraAr
 		}
 	}
 	if extra.Gas == nil {
+		esGasLimit, errf := b.EstimateGas(args.From, args.To, args.Value, input)
+		if errf != nil {
+			log.Error(fmt.Sprintf("build %s tx estimate gas failed", args.SwapType.String()),
+				"swapID", args.SwapID, "from", args.From, "to", args.To,
+				"value", args.Value, "data", common.ToHex(input), "err", errf)
+			return nil, tokens.ErrEstimateGasFailed
+		}
+
+		esGasLimit += esGasLimit * 30 / 100
+		defGasLimit := b.getDefaultGasLimit(args.PairID)
+		if esGasLimit < defGasLimit {
+			esGasLimit = defGasLimit
+		}
 		extra.Gas = new(uint64)
-		*extra.Gas = b.getDefaultGasLimit(args.PairID)
+		*extra.Gas = esGasLimit
 	}
 	return extra, nil
 }
