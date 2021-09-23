@@ -52,7 +52,8 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) error {
 	signer := b.Signer
 	sigHash := signer.Hash(tx)
 	if sigHash.String() != msgHash {
-		log.Trace("message hash mismatch", "want", msgHash, "have", sigHash.String())
+		logFunc := log.GetPrintFuncOr(params.IsDebugMode, log.Info, log.Trace)
+		logFunc("message hash mismatch", "want", msgHash, "have", sigHash.String(), "tx", tx.RawStr())
 		return tokens.ErrMsgHashMismatch
 	}
 	return nil
