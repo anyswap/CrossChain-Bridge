@@ -12,6 +12,15 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
+var (
+	// ensure Bridge impl tokens.CrossChainBridge
+	_ tokens.CrossChainBridge = &Bridge{}
+	// ensure Bridge impl tokens.NonceSetter
+	_ tokens.NonceSetter = &Bridge{}
+	// ensure Bridge impl InheritInterface
+	_ InheritInterface = &Bridge{}
+)
+
 const (
 	netMainnet = "mainnet"
 	netRinkeby = "rinkeby"
