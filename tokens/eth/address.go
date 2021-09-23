@@ -46,7 +46,7 @@ func (b *Bridge) IsContractAddress(address string) (bool, error) {
 		return true, nil
 	}
 
-	code, err := b.getContractCode(address)
+	code, err := b.getContractCode(address, false)
 	if err != nil {
 		return false, err
 	}
