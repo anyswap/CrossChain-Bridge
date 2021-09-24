@@ -1,6 +1,7 @@
 package kusama
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -9,11 +10,15 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
-func wrapRPCQueryError(err error, method string) error {
-	if err != nil {
-		return fmt.Errorf("%w: call '%s' failed, err='%v'", tokens.ErrRPCQueryError, method, err)
+var (
+	errNotFound = errors.New("not found")
+)
+
+func wrapRPCQueryError(err error, method string, params ...interface{}) error {
+	if err == nil {
+		err = errNotFound
 	}
-	return fmt.Errorf("%w: call '%s' failed", tokens.ErrRPCQueryError, method)
+	return fmt.Errorf("%w: call '%s %v' failed, err='%v'", tokens.ErrRPCQueryError, method, params, err)
 }
 
 // ------------------------ kusama override apis -----------------------------
@@ -65,5 +70,5 @@ func (b *Bridge) ksmGetHeader(blockHash string, urls []string) (result *KsmHeade
 			return result, nil
 		}
 	}
-	return nil, wrapRPCQueryError(err, "chain_getHeader")
+	return nil, wrapRPCQueryError(err, "chain_getHeader", blockHash)
 }
