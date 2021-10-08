@@ -36,6 +36,7 @@ var (
 	// Kusama ecosystem chain (eg. Moonriver)
 	KusamaNetworkAndChainIDMap = map[string]*big.Int{
 		"moonriver": big.NewInt(1285),
+		"shiden":    big.NewInt(336),
 	}
 )
 
