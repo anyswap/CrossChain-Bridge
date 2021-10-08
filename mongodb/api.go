@@ -277,9 +277,9 @@ func FindSwapResultsToReplace(status SwapStatus, septime int64, isSwapin bool) (
 	} else {
 		collection = collSwapoutResult
 	}
-	limit := int64(5)
+	limit := int64(20)
 	opts := &options.FindOptions{
-		Sort:  bson.D{{Key: "inittime", Value: 1}},
+		Sort:  bson.D{{Key: "swapnonce", Value: 1}},
 		Limit: &limit,
 	}
 	cur, err := collection.Find(clientCtx, bson.M{"$and": queries}, opts)
