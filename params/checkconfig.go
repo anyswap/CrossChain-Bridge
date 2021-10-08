@@ -26,7 +26,7 @@ func CheckConfig(isServer bool) (err error) {
 		if config.APIServer == nil {
 			return errors.New("server must config 'APIServer'")
 		}
-	} else if config.SrcChain.EnableScan || config.DestChain.EnableScan {
+	} else {
 		err = config.Oracle.CheckConfig()
 		if err != nil {
 			return err
