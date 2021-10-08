@@ -55,6 +55,12 @@ func ServerInfoHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// OracleInfoHandler handler
+func OracleInfoHandler(w http.ResponseWriter, r *http.Request) {
+	res := swapapi.GetOraclesHeartbeat()
+	writeResponse(w, res, nil)
+}
+
 // TokenPairInfoHandler handler
 func TokenPairInfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

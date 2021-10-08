@@ -32,6 +32,28 @@ func (s *RPCAPI) GetServerInfo(r *http.Request, args *RPCNullArgs, result *swapa
 	return err
 }
 
+// HeartbeatArgs heartbeat args
+type HeartbeatArgs struct {
+	Enode     string `json:"enode"`
+	Timestamp int64  `json:"timestamp"`
+}
+
+// UpdateOracleHeartbeat api
+func (s *RPCAPI) UpdateOracleHeartbeat(r *http.Request, args *HeartbeatArgs, result *string) error {
+	err := swapapi.UpdateOracleHeartbeat(args.Enode, args.Timestamp)
+	if err != nil {
+		return err
+	}
+	*result = "Success"
+	return nil
+}
+
+// GetOraclesHeartbeat api
+func (s *RPCAPI) GetOraclesHeartbeat(r *http.Request, args *RPCNullArgs, result *map[string]string) error {
+	*result = swapapi.GetOraclesHeartbeat()
+	return nil
+}
+
 // GetTokenPairInfo api
 func (s *RPCAPI) GetTokenPairInfo(r *http.Request, pairID *string, result *tokens.TokenPairConfig) error {
 	res, err := swapapi.GetTokenPairInfo(*pairID)

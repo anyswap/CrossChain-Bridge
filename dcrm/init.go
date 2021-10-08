@@ -132,6 +132,16 @@ func GetGroupID() string {
 	return dcrmGroupID
 }
 
+// GetSelfEnode get self enode
+func GetSelfEnode() string {
+	return selfEnode
+}
+
+// GetAllEnodes get all enodes
+func GetAllEnodes() []string {
+	return allEnodes
+}
+
 // setDcrmRPCAddress set dcrm node rpc address
 func (ni *NodeInfo) setDcrmRPCAddress(url string) {
 	ni.dcrmRPCAddress = url

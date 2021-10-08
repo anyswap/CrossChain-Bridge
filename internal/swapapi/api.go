@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
@@ -18,6 +19,8 @@ var (
 	errNotBtcBridge      = newRPCError(-32096, "bridge is not btc")
 	errTokenPairNotExist = newRPCError(-32095, "token pair not exist")
 	errSwapCannotRetry   = newRPCError(-32094, "swap can not retry")
+
+	oraclesHeartbeats = make(map[string]int64) // key is enode
 )
 
 func newRPCError(ec rpcjson.ErrorCode, message string) error {
@@ -46,6 +49,44 @@ func GetServerInfo() (*ServerInfo, error) {
 		PairIDs:             tokens.GetAllPairIDs(),
 		Version:             params.VersionWithMeta,
 	}, nil
+}
+
+// UpdateOracleHeartbeat api
+func UpdateOracleHeartbeat(oracle string, timestamp int64) error {
+	var exist bool
+	for _, enode := range dcrm.GetAllEnodes() {
+		if strings.EqualFold(oracle, enode) {
+			if !strings.EqualFold(oracle, dcrm.GetSelfEnode()) {
+				exist = true
+			}
+			break
+		}
+	}
+	if !exist {
+		return newRPCError(-32000, "wrong oracle info")
+	}
+	key := strings.ToLower(oracle)
+	oldTime := oraclesHeartbeats[key]
+	if timestamp > oldTime && timestamp < time.Now().Unix()+60 {
+		oraclesHeartbeats[key] = timestamp
+	}
+	return nil
+}
+
+// GetOraclesHeartbeat api
+func GetOraclesHeartbeat() map[string]string {
+	result := make(map[string]string, len(oraclesHeartbeats))
+	for enode, timestamp := range oraclesHeartbeats {
+		startIndex := strings.Index(enode, "enode://")
+		endIndex := strings.Index(enode, "@")
+		if startIndex == -1 || endIndex == -1 {
+			continue
+		}
+		enodeID := enode[startIndex+8 : endIndex]
+		timeStr := time.Unix(timestamp, 0).Format(time.RFC3339)
+		result[strings.ToLower(enodeID)] = timeStr
+	}
+	return result
 }
 
 // GetTokenPairInfo api
