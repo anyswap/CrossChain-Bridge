@@ -28,8 +28,10 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 *以下为了简洁对每个 API 说明只列出`参数`和`返回值`两项*
 
-[swap.GetServerInfo](#swapgetserverinfo)  
 [swap.GetVersionInfo](#swapgetversioninfo)  
+[swap.GetServerInfo](#swapgetserverinfo)  
+[swap.GetOraclesHeartbeat](#swapgetoraclesheartbeat)  
+[swap.UpdateOracleHeartbeat](#swapupdateoracleheartbeat)  
 [swap.GetTokenPairInfo](#swapgettokenpairinfo)  
 [swap.GetTokenPairsInfo](#swapgettokenpairsinfo)  
 [swap.Swapin](#swapswapin)  
@@ -56,6 +58,19 @@ And the following `API`s are for developing and debuging, you can ignore them
 - swap.IsValidSwapoutBindAddress
 - swap.GetLatestScanInfo
 
+### swap.GetVersionInfo
+
+查询版本信息
+
+##### 参数：
+```text
+[] (空)
+```
+##### 返回值：
+```text
+成功返回版本信息，失败返回错误。
+```
+
 ### swap.GetServerInfo
 
 查询服务信息
@@ -69,9 +84,9 @@ And the following `API`s are for developing and debuging, you can ignore them
 成功返回服务信息，失败返回错误。
 ```
 
-### swap.GetVersionInfo
+### swap.GetOraclesHeartbeat
 
-查询版本信息
+查询 oracle 信息
 
 ##### 参数：
 ```text
@@ -79,7 +94,20 @@ And the following `API`s are for developing and debuging, you can ignore them
 ```
 ##### 返回值：
 ```text
-成功返回版本信息，失败返回错误。
+成功返回 oracle 信息，失败返回错误。
+```
+
+### swap.UpdateOracleHeartbeat
+
+更新 oracle 信息
+
+##### 参数：
+```text
+[{"enode":"enode信息", "timestamp":"更新时间戳"}]
+```
+##### 返回值：
+```text
+成功返回 Success，失败返回错误。
 ```
 
 ### swap.GetTokenPairInfo
@@ -286,13 +314,17 @@ limit 最大值为 100
 
 ## RESTful API Reference
 
+### GEt /versioninfo
+
+查询版本信息
+
 ### GEt /serverinfo
 
 查询服务信息
 
-### GEt /versioninfo
+### GEt /oracleinfo
 
-查询版本信息
+查询 oracle 信息
 
 ### GEt /pairinfo/{pairid}
 
