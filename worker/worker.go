@@ -30,6 +30,8 @@ func StartWork(isServer bool) {
 		StartAcceptSignJob()
 		time.Sleep(interval)
 		AddTokenPairDynamically()
+		time.Sleep(interval)
+		StartReportStatJob()
 		return
 	}
 
