@@ -35,8 +35,7 @@ func CheckConfig(isServer bool) (err error) {
 			return err
 		}
 	} else {
-		enableScan := config.SrcChain.EnableScan || config.DestChain.EnableScan
-		err = config.Oracle.CheckConfig(enableScan)
+		err = config.Oracle.CheckConfig()
 		if err != nil {
 			return err
 		}
@@ -167,7 +166,7 @@ func (c *DcrmNodeConfig) CheckConfig(isServer bool) (err error) {
 }
 
 // CheckConfig check oracle config
-func (c *OracleConfig) CheckConfig(enableScan bool) (err error) {
+func (c *OracleConfig) CheckConfig() (err error) {
 	if c == nil {
 		return errors.New("oracle must config 'Oracle'")
 	}
@@ -186,11 +185,8 @@ func (c *OracleConfig) CheckConfig(enableScan bool) (err error) {
 	}
 	if err != nil {
 		log.Warn("oracle connect ServerAPIAddress failed", "ServerAPIAddress", ServerAPIAddress, "err", err)
-		if enableScan {
-			return err
-		}
 	}
-	return nil
+	return err
 }
 
 // CheckConfig extra config

@@ -217,6 +217,7 @@ func LoadConfig(configFile string, isServer bool) *BridgeConfig {
 		if err := CheckConfig(isServer); err != nil {
 			log.Fatalf("Check config failed. %v", err)
 		}
+		log.Info("Check config success", "isServer", isServer, "configFile", configFile)
 	})
 	return bridgeConfig
 }

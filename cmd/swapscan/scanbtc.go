@@ -131,7 +131,7 @@ func (scanner *btcSwapScanner) verifyOptions() {
 	oracle := &params.OracleConfig{
 		ServerAPIAddress: scanner.swapServer,
 	}
-	err := oracle.CheckConfig(true)
+	err := oracle.CheckConfig()
 	if err != nil {
 		log.Fatalf("check swap server failed. %v", err)
 	}
