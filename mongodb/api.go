@@ -267,10 +267,10 @@ func FindSwapinResults(address, pairID string, offset, limit int, status string)
 
 // FindSwapResultsToReplace find swap results to replace
 func FindSwapResultsToReplace(status SwapStatus, septime int64, isSwapin bool) ([]*MgoSwapResult, error) {
+	qtime := bson.M{"inittime": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
 	qheight := bson.M{"swapheight": 0}
-	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
-	queries := []bson.M{qstatus, qheight, qtime}
+	queries := []bson.M{qtime, qstatus, qheight}
 	var collection *mongo.Collection
 	if isSwapin {
 		collection = collSwapinResult
