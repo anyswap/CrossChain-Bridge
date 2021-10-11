@@ -31,6 +31,7 @@ ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 [Extra]
 IsDebugMode = false
 IsSwapoutToStringAddress = false
+IsNullSwapoutNativeMemo = false
 
 # customize fees in building btc transaction (btc only)
 [BtcExtra]

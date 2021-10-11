@@ -77,6 +77,9 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 }
 
 func (b *Bridge) getUnlockCoinMemo(args *tokens.BuildTxArgs) (input []byte) {
+	if params.IsNullSwapoutNativeMemo() {
+		return input
+	}
 	isContract, err := b.IsContractAddress(args.Bind)
 	if err == nil && !isContract {
 		input = []byte(tokens.UnlockMemoPrefix + args.SwapID)
