@@ -3,6 +3,7 @@ package swapapi
 import (
 	"encoding/hex"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
@@ -20,7 +21,7 @@ var (
 	errTokenPairNotExist = newRPCError(-32095, "token pair not exist")
 	errSwapCannotRetry   = newRPCError(-32094, "swap can not retry")
 
-	oraclesHeartbeats = make(map[string]int64) // key is enode
+	oraclesHeartbeats sync.Map // string -> int64 // key is enode
 )
 
 func newRPCError(ec rpcjson.ErrorCode, message string) error {
@@ -66,26 +67,33 @@ func UpdateOracleHeartbeat(oracle string, timestamp int64) error {
 		return newRPCError(-32000, "wrong oracle info")
 	}
 	key := strings.ToLower(oracle)
-	oldTime := oraclesHeartbeats[key]
-	if timestamp > oldTime && timestamp < time.Now().Unix()+60 {
-		oraclesHeartbeats[key] = timestamp
+	value, ok := oraclesHeartbeats.Load(key)
+	if ok {
+		oldTime := value.(int64)
+		if timestamp > oldTime && timestamp < time.Now().Unix()+60 {
+			oraclesHeartbeats.Store(key, timestamp)
+		}
+	} else {
+		oraclesHeartbeats.Store(key, timestamp)
 	}
 	return nil
 }
 
 // GetOraclesHeartbeat api
 func GetOraclesHeartbeat() map[string]string {
-	result := make(map[string]string, len(oraclesHeartbeats))
-	for enode, timestamp := range oraclesHeartbeats {
+	result := make(map[string]string, 4)
+	oraclesHeartbeats.Range(func(k, v interface{}) bool {
+		enode := k.(string)
 		startIndex := strings.Index(enode, "enode://")
 		endIndex := strings.Index(enode, "@")
-		if startIndex == -1 || endIndex == -1 {
-			continue
+		if startIndex != -1 && endIndex != -1 {
+			enodeID := enode[startIndex+8 : endIndex]
+			timestamp := v.(int64)
+			timeStr := time.Unix(timestamp, 0).Format(time.RFC3339)
+			result[strings.ToLower(enodeID)] = timeStr
 		}
-		enodeID := enode[startIndex+8 : endIndex]
-		timeStr := time.Unix(timestamp, 0).Format(time.RFC3339)
-		result[strings.ToLower(enodeID)] = timeStr
-	}
+		return true
+	})
 	return result
 }
 
