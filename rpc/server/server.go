@@ -27,6 +27,10 @@ func StartAPIServer() {
 	apiPort := params.GetAPIPort()
 	apiServer := params.GetConfig().APIServer
 	allowedOrigins := apiServer.AllowedOrigins
+	maxRequestsLimit := apiServer.MaxRequestsLimit
+	if maxRequestsLimit <= 0 {
+		maxRequestsLimit = 10 // default value
+	}
 
 	corsOptions := []handlers.CORSOption{
 		handlers.AllowedMethods([]string{"GET", "POST"}),
@@ -39,7 +43,11 @@ func StartAPIServer() {
 	}
 
 	log.Info("JSON RPC service listen and serving", "port", apiPort, "allowedOrigins", allowedOrigins)
-	lmt := tollbooth.NewLimiter(10, &limiter.ExpirableOptions{DefaultExpirationTTL: time.Hour})
+	lmt := tollbooth.NewLimiter(float64(maxRequestsLimit),
+		&limiter.ExpirableOptions{
+			DefaultExpirationTTL: 600 * time.Second,
+		},
+	)
 	handler := tollbooth.LimitHandler(lmt, handlers.CORS(corsOptions...)(router))
 	svr := http.Server{
 		Addr:         fmt.Sprintf(":%v", apiPort),
