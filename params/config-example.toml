@@ -23,6 +23,8 @@ Password = "password"
 Port = 11556
 # CORS config
 AllowedOrigins = []
+# Maximum number of requests to limit per second
+MaxRequestsLimit = 10
 
 # oracle config (oracle only)
 [Oracle]
