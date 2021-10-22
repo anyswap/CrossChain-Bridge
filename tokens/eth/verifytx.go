@@ -146,7 +146,7 @@ func (b *Bridge) getReceipt(swapInfo *tokens.TxSwapInfo, allowUnstable bool) (*t
 		return nil, err
 	}
 	swapInfo.Height = receipt.BlockNumber.ToInt().Uint64() // Height
-	if *receipt.Status != 1 {
+	if !receipt.IsStatusOk() {
 		return nil, tokens.ErrTxWithWrongReceipt
 	}
 	return receipt, nil
@@ -172,7 +172,7 @@ func (b *Bridge) getStableReceipt(swapInfo *tokens.TxSwapInfo) (*types.RPCTxRece
 		return nil, tokens.ErrTxNotStable
 	}
 	receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-	if !ok || receipt == nil || *receipt.Status != 1 {
+	if !ok || !receipt.IsStatusOk() {
 		return nil, tokens.ErrTxWithWrongReceipt
 	}
 	return receipt, nil

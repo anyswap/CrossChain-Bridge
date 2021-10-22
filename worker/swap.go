@@ -304,7 +304,7 @@ func preventReswapByHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
 			}
 			if txStatus.Receipt != nil {
 				receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-				if ok && *receipt.Status == 1 {
+				if ok && receipt.IsStatusOk() {
 					alreadySwapped = true
 					break
 				}
