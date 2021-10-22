@@ -82,7 +82,7 @@ func (s *TxStatus) IsSwapTxOnChainAndFailed(token *TokenConfig) bool {
 	}
 	if s.Receipt != nil { // for eth-like blockchain
 		receipt, ok := s.Receipt.(*types.RPCTxReceipt)
-		if !ok || receipt == nil || *receipt.Status != 1 {
+		if !ok || !receipt.IsStatusOk() {
 			return true
 		}
 		if token != nil && token.ContractAddress != "" && len(receipt.Logs) == 0 {

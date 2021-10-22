@@ -99,6 +99,11 @@ type RPCTxReceipt struct {
 	Logs        []*RPCLog       `json:"logs"`
 }
 
+// IsStatusOk is status ok
+func (r *RPCTxReceipt) IsStatusOk() bool {
+	return r != nil && r.Status != nil && *r.Status == 1
+}
+
 // FilterQuery struct
 type FilterQuery struct {
 	BlockHash *common.Hash
