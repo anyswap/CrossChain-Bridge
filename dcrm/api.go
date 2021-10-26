@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -97,7 +99,9 @@ func GetSignStatus(key, rpcAddr string) (*SignStatus, error) {
 }
 
 // GetCurNodeSignInfo call getCurNodeSignInfo
-func GetCurNodeSignInfo() ([]*SignInfoData, error) {
+// filter out invalid sign info and
+// filter out expired sign info if `expiredInterval` is greater than 0
+func GetCurNodeSignInfo(expiredInterval int64) ([]*SignInfoData, error) {
 	var result SignInfoResp
 	err := httpPost(&result, "getCurNodeSignInfo", defaultDcrmNode.keyWrapper.Address.String())
 	if err != nil {
@@ -106,7 +110,21 @@ func GetCurNodeSignInfo() ([]*SignInfoData, error) {
 	if result.Status != successStatus {
 		return nil, newWrongStatusError("getCurNodeSignInfo", result.Status, result.Error)
 	}
-	return result.Data, nil
+	signInfoSortedSlice := make(SignInfoSortedSlice, 0, len(result.Data))
+	for _, signInfo := range result.Data {
+		if !signInfo.IsValid() {
+			log.Trace("filter out invalid sign info", "signInfo", signInfo)
+			continue
+		}
+		signInfo.timestamp, _ = common.GetUint64FromStr(signInfo.TimeStamp)
+		if expiredInterval > 0 && int64(signInfo.timestamp/1000)+expiredInterval < time.Now().Unix() {
+			log.Trace("filter out expired sign info", "signInfo", signInfo)
+			continue
+		}
+		signInfoSortedSlice = append(signInfoSortedSlice, signInfo)
+	}
+	sort.Stable(signInfoSortedSlice)
+	return signInfoSortedSlice, nil
 }
 
 // Sign call sign
