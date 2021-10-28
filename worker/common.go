@@ -206,6 +206,19 @@ func updateOldSwapTxs(txid, pairID, bind, swapTx string, oldSwapTxs, oldSwapVals
 	return err
 }
 
+func markSwapResultUnstable(txid, pairID, bind string, isSwapin bool) (err error) {
+	status := mongodb.MatchTxNotStable
+	timestamp := now()
+	memo := "" // unchange
+	err = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, status, timestamp, memo)
+	if err != nil {
+		logWorkerError("checkfailedswap", "markSwapResultUnstable", err, "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin)
+	} else {
+		logWorker("checkfailedswap", "markSwapResultUnstable", "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin)
+	}
+	return err
+}
+
 func markSwapResultStable(txid, pairID, bind string, isSwapin bool) (err error) {
 	status := mongodb.MatchTxStable
 	timestamp := now()

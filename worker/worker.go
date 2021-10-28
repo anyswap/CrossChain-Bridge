@@ -51,4 +51,7 @@ func StartWork(isServer bool) {
 	time.Sleep(interval)
 
 	StartAggregateJob()
+	time.Sleep(interval)
+
+	StartCheckFailedSwapJob()
 }
