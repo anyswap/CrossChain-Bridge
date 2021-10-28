@@ -70,14 +70,6 @@ func checkIfSwapNonceHasPassed(bridge tokens.CrossChainBridge, res *mongodb.MgoS
 		return errNotNonceSupport
 	}
 
-	// only check if nonce has passed when tx is not onchain.
-	if isSwapResultTxOnChain(nonceSetter, res) {
-		if isReplace {
-			return errSwapTxIsOnChain
-		}
-		return nil
-	}
-
 	pairID := res.PairID
 	txid := res.TxID
 	bind := res.Bind
@@ -94,6 +86,15 @@ func checkIfSwapNonceHasPassed(bridge tokens.CrossChainBridge, res *mongodb.MgoS
 	if isReplace && res.SwapNonce > nonce+maxDistanceOfSwapNonce {
 		return errSwapNonceTooBig
 	}
+
+	// only check if nonce has passed when tx is not onchain.
+	if isSwapResultTxOnChain(nonceSetter, res) {
+		if isReplace {
+			return errSwapTxIsOnChain
+		}
+		return nil
+	}
+
 	if nonce > res.SwapNonce && res.SwapNonce > 0 {
 		var iden string
 		if isReplace {
@@ -102,7 +103,13 @@ func checkIfSwapNonceHasPassed(bridge tokens.CrossChainBridge, res *mongodb.MgoS
 			iden = "[stable]"
 		}
 		if res.Timestamp < getSepTimeInFind(treatAsNoncePassedInterval) {
-			logWorkerWarn(iden, "mark swap result failed with nonce passed", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swaptime", res.Timestamp, "nowtime", now(), "swapnonce", res.SwapNonce, "latestnonce", nonce)
+			if isSwapResultTxOnChain(nonceSetter, res) { // recheck
+				if isReplace {
+					return errSwapTxIsOnChain
+				}
+				return nil
+			}
+			logWorkerWarn(iden, "mark swap result failed with nonce passed", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swaptime", res.Timestamp, "nowtime", now(), "swapNonce", res.SwapNonce, "latestNonce", nonce)
 			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
 		}
 		if isReplace {
