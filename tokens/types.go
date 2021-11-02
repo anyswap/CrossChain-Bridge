@@ -95,7 +95,14 @@ type BuildTxArgs struct {
 	Memo        string     `json:"memo,omitempty"`
 	Input       *[]byte    `json:"input,omitempty"`
 	Extra       *AllExtras `json:"extra,omitempty"`
-	ReplaceNum  uint64     `json:"replaceNum,omitempty"`
+}
+
+// GetReplaceNum get rplace swap count
+func (args *BuildTxArgs) GetReplaceNum() uint64 {
+	if args.Extra != nil {
+		return args.Extra.ReplaceNum
+	}
+	return 0
 }
 
 // GetExtraArgs get extra args
@@ -136,8 +143,9 @@ func (args *BuildTxArgs) GetTxGasPrice() *big.Int {
 
 // AllExtras struct
 type AllExtras struct {
-	BtcExtra *BtcExtraArgs `json:"btcExtra,omitempty"`
-	EthExtra *EthExtraArgs `json:"ethExtra,omitempty"`
+	BtcExtra   *BtcExtraArgs `json:"btcExtra,omitempty"`
+	EthExtra   *EthExtraArgs `json:"ethExtra,omitempty"`
+	ReplaceNum uint64        `json:"replaceNum,omitempty"`
 }
 
 // EthExtraArgs struct

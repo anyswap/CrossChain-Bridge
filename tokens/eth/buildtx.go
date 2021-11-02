@@ -145,6 +145,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		"from", args.From, "to", to.String(), "nonce", nonce, "bind", args.Bind,
 		"originValue", args.OriginValue, "swapValue", args.SwapValue,
 		"gasLimit", gasLimit, "data", common.ToHex(input),
+		"replaceNum", args.GetReplaceNum(),
 	}
 	if gasTipCap != nil || gasFeeCap != nil {
 		ctx = append(ctx, "gasTipCap", gasTipCap, "gasFeeCap", gasFeeCap)
@@ -286,8 +287,9 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 		return nil, tokens.ErrUnknownPairID
 	}
 	addPercent := tokenCfg.PlusGasPricePercentage
-	if args.ReplaceNum > 0 {
-		addPercent += args.ReplaceNum * b.ChainConfig.ReplacePlusGasPricePercent
+	replaceNum := args.GetReplaceNum()
+	if replaceNum > 0 {
+		addPercent += replaceNum * b.ChainConfig.ReplacePlusGasPricePercent
 	}
 	if addPercent > tokens.MaxPlusGasPricePercentage {
 		addPercent = tokens.MaxPlusGasPricePercentage
@@ -308,7 +310,7 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 				newGasPrice = minGasPrice
 			}
 		}
-		if args.ReplaceNum == 0 { // exclude replace situation
+		if replaceNum == 0 { // exclude replace situation
 			latestGasPrice = newGasPrice
 		}
 	}
@@ -374,8 +376,9 @@ func (b *Bridge) getGasTipCap(args *tokens.BuildTxArgs) (gasTipCap *big.Int, err
 	}
 
 	addPercent := b.ChainConfig.PlusGasTipCapPercent
-	if args.ReplaceNum > 0 {
-		addPercent += args.ReplaceNum * b.ChainConfig.ReplacePlusGasPricePercent
+	replaceNum := args.GetReplaceNum()
+	if replaceNum > 0 {
+		addPercent += replaceNum * b.ChainConfig.ReplacePlusGasPricePercent
 	}
 	if addPercent > tokens.MaxPlusGasPricePercentage {
 		addPercent = tokens.MaxPlusGasPricePercentage

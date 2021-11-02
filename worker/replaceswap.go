@@ -173,12 +173,12 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 		},
 		From:        tokenCfg.DcrmAddress,
 		OriginValue: swapInfo.Value,
-		ReplaceNum:  replaceNum,
 		Extra: &tokens.AllExtras{
 			EthExtra: &tokens.EthExtraArgs{
 				GasPrice: gasPrice,
 				Nonce:    &nonce,
 			},
+			ReplaceNum: replaceNum,
 		},
 	}
 	rawTx, err := bridge.BuildRawTransaction(args)
