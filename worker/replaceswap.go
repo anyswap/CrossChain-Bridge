@@ -151,6 +151,10 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 	swapType := getSwapType(isSwapin)
 
 	nonce := res.SwapNonce
+	replaceNum := uint64(len(res.OldSwapTxs))
+	if replaceNum == 0 {
+		replaceNum++
+	}
 	args := &tokens.BuildTxArgs{
 		SwapInfo: tokens.SwapInfo{
 			Identifier: params.GetIdentifier(),
@@ -167,6 +171,7 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 				GasPrice: gasPrice,
 				Nonce:    &nonce,
 			},
+			ReplaceNum: replaceNum,
 		},
 	}
 	rawTx, err := bridge.BuildRawTransaction(args)

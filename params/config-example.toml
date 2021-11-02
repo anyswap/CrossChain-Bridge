@@ -78,6 +78,8 @@ EnableReplaceSwap = false
 MinReserveFee = "100000000000000000"
 # max gas price fluct percent
 MaxGasPriceFluctPercent = 10
+# extra added gas price percent for replace swap
+ReplacePlusGasPricePercent = 1
 # wait time to replace swapout match tx
 WaitTimeToReplace = 900
 # max replace swap count
@@ -114,6 +116,8 @@ MinReserveFee = "100000000000000000"
 BaseFeePercent = 0
 # max gas price fluct percent
 MaxGasPriceFluctPercent = 10
+# extra added gas price percent for replace swap
+ReplacePlusGasPricePercent = 1
 # wait time to replace swapin match tx
 WaitTimeToReplace = 900
 # max replace swap count

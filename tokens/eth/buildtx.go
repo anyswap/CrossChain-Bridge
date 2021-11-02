@@ -132,7 +132,9 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		"swapID", args.SwapID, "swapType", args.SwapType,
 		"bind", args.Bind, "originValue", args.OriginValue,
 		"from", args.From, "to", to.String(), "value", value, "nonce", nonce,
-		"gasLimit", gasLimit, "gasPrice", gasPrice, "data", common.ToHex(input))
+		"gasLimit", gasLimit, "gasPrice", gasPrice, "data", common.ToHex(input),
+		"replaceNum", args.GetReplaceNum(),
+	)
 
 	return rawTx, nil
 }
@@ -240,6 +242,13 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 		return nil, tokens.ErrUnknownPairID
 	}
 	addPercent := tokenCfg.PlusGasPricePercentage
+	replaceNum := args.GetReplaceNum()
+	if replaceNum > 0 {
+		addPercent += replaceNum * b.ChainConfig.ReplacePlusGasPricePercent
+	}
+	if addPercent > tokens.MaxPlusGasPricePercentage {
+		addPercent = tokens.MaxPlusGasPricePercentage
+	}
 	newGasPrice = new(big.Int).Set(oldGasPrice) // clone from old
 	if addPercent > 0 {
 		newGasPrice.Mul(newGasPrice, big.NewInt(int64(100+addPercent)))
@@ -256,7 +265,9 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 				newGasPrice = minGasPrice
 			}
 		}
-		latestGasPrice = newGasPrice
+		if replaceNum == 0 { // exclude replace situation
+			latestGasPrice = newGasPrice
+		}
 	}
 	return newGasPrice, nil
 }

@@ -13,6 +13,8 @@ const (
 	LockMemoPrefix   = "SWAPTO:"
 	UnlockMemoPrefix = "SWAPTX:"
 	AggregateMemo    = "aggregate"
+
+	MaxPlusGasPricePercentage = uint64(100)
 )
 
 // common variables
