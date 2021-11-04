@@ -492,7 +492,7 @@ func findSwapResults(collection *mgo.Collection, address, pairID string, offset,
 		q = collection.Find(bson.M{"$and": queries})
 	}
 	if limit >= 0 {
-		q = q.Skip(offset).Limit(limit)
+		q = q.Sort("inittime").Skip(offset).Limit(limit)
 	} else {
 		q = q.Sort("-inittime").Skip(offset).Limit(-limit)
 	}

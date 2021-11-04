@@ -38,8 +38,8 @@ func deinintCollections() {
 func initCollections() {
 	initCollection(tbSwapins, &collSwapin, "inittime", "status")
 	initCollection(tbSwapouts, &collSwapout, "inittime", "status")
-	initCollection(tbSwapinResults, &collSwapinResult, "from", "inittime")
-	initCollection(tbSwapoutResults, &collSwapoutResult, "from", "inittime")
+	initCollection(tbSwapinResults, &collSwapinResult, "inittime", "status")
+	initCollection(tbSwapoutResults, &collSwapoutResult, "inittime", "status")
 	initCollection(tbP2shAddresses, &collP2shAddress, "p2shaddress")
 	initCollection(tbLatestScanInfo, &collLatestScanInfo)
 	initCollection(tbRegisteredAddress, &collRegisteredAddress)
