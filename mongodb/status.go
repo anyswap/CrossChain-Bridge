@@ -71,12 +71,7 @@ func (status SwapStatus) CanManualMakePass() bool {
 
 // CanManualMakeFail can manual make fail
 func (status SwapStatus) CanManualMakeFail() bool {
-	switch status {
-	case TxNotStable, TxNotSwapped:
-		return true
-	default:
-		return false
-	}
+	return status != TxProcessed
 }
 
 // CanRetry can retry
