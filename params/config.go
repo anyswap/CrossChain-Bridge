@@ -34,6 +34,7 @@ type BridgeConfig struct {
 	SrcGateway  *tokens.GatewayConfig
 	DestChain   *tokens.ChainConfig
 	DestGateway *tokens.GatewayConfig
+	TokenPrice  *tokens.TokenPriceConfig
 	Server      *ServerConfig          `toml:",omitempty" json:",omitempty"`
 	Oracle      *OracleConfig          `toml:",omitempty" json:",omitempty"`
 	BtcExtra    *tokens.BtcExtraConfig `toml:",omitempty" json:",omitempty"`
@@ -169,6 +170,7 @@ func GetConfig() *BridgeConfig {
 // SetConfig set bridge config
 func SetConfig(config *BridgeConfig) {
 	bridgeConfig = config
+	tokens.TokenPriceCfg = config.TokenPrice
 }
 
 // GetServerConfig get server config
@@ -184,6 +186,11 @@ func GetOracleConfig() *OracleConfig {
 // GetExtraConfig get extra config
 func GetExtraConfig() *ExtraConfig {
 	return GetConfig().Extra
+}
+
+// GetTokenPriceConfig get token price config
+func GetTokenPriceConfig() *tokens.TokenPriceConfig {
+	return GetConfig().TokenPrice
 }
 
 // LoadConfig load config

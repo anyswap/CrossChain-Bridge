@@ -89,6 +89,7 @@ type ChainConfig struct {
 	MaxGasFeeCap         string
 
 	// cached values
+	chainID       *big.Int
 	fixedGasPrice *big.Int
 	maxGasPrice   *big.Int
 	minReserveFee *big.Int
@@ -96,6 +97,12 @@ type ChainConfig struct {
 	maxGasFeeCap  *big.Int
 
 	callByContractWhitelist map[string]struct{}
+}
+
+// TokenPriceConfig struct
+type TokenPriceConfig struct {
+	Contract   string
+	APIAddress []string
 }
 
 // TokenConfig struct
@@ -116,7 +123,8 @@ type TokenConfig struct {
 	SwapFeeRate            *float64
 	MaximumSwapFee         *float64
 	MinimumSwapFee         *float64
-	PlusGasPricePercentage uint64 `json:",omitempty"`
+	TokenPrice             float64 `toml:"-"`
+	PlusGasPricePercentage uint64  `json:",omitempty"`
 	DisableSwap            bool
 	IsDelegateContract     bool
 	DelegateToken          string `json:",omitempty"`
@@ -250,7 +258,7 @@ func (c *ChainConfig) CheckConfig(isServer bool) error {
 
 // CheckConfig check token config
 //nolint:funlen,gocyclo // keep TokenConfig check as whole
-func (c *TokenConfig) CheckConfig(isSrc bool) error {
+func (c *TokenConfig) CheckConfig(isSrc bool) (err error) {
 	if c.Decimals == nil {
 		return errors.New("token must config 'Decimals'")
 	}
@@ -333,9 +341,12 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	} else if c.DelegateToken != "" {
 		return errors.New("token forbid config 'DelegateToken' if 'IsDelegateContract' is false")
 	}
-	// calc value and store
+	err = c.loadTokenPrice(isSrc)
+	if err != nil {
+		return err
+	}
 	c.CalcAndStoreValue()
-	err := c.LoadDcrmAddressPrivateKey()
+	err = c.LoadDcrmAddressPrivateKey()
 	if err != nil {
 		return err
 	}
@@ -350,6 +361,16 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 		"maxSwapFee", c.maxSwapFee, "minSwapFee", c.minSwapFee, "bigValThreshhold", c.bigValThreshhold,
 	)
 	return nil
+}
+
+// SetChainID set chainID
+func (c *ChainConfig) SetChainID(chainID *big.Int) {
+	c.chainID = chainID
+}
+
+// GetChainID get chainID
+func (c *ChainConfig) GetChainID() *big.Int {
+	return c.chainID
 }
 
 // IsInCallByContractWhitelist is in call by contract whitelist

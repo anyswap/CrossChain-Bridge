@@ -9,7 +9,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
-	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 // Bridge etc bridge inherit from eth bridge
@@ -59,8 +58,7 @@ func (b *Bridge) VerifyChainID() {
 		log.Fatalf("gateway chainID '%v' is not '%v'", chainID, b.ChainConfig.NetID)
 	}
 
-	b.SignerChainID = chainID
-	b.Signer = types.MakeSigner("EIP155", chainID)
+	b.MakeSigner(chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
 }

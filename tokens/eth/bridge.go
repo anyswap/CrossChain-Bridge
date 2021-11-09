@@ -99,18 +99,19 @@ func (b *Bridge) VerifyChainID() {
 		log.Fatalf("gateway chainID '%v' is not '%v'", chainID, b.ChainConfig.NetID)
 	}
 
-	b.SignerChainID = chainID
-	b.Signer = b.MakeSigner(chainID)
+	b.MakeSigner(chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
 }
 
 // MakeSigner make signer
-func (b *Bridge) MakeSigner(chainID *big.Int) types.Signer {
+func (b *Bridge) MakeSigner(chainID *big.Int) {
+	b.SignerChainID = chainID
+	b.ChainConfig.SetChainID(chainID)
 	if b.ChainConfig.EnableDynamicFeeTx {
-		return types.MakeSigner("London", chainID)
+		b.Signer = types.MakeSigner("London", chainID)
 	}
-	return types.MakeSigner("EIP155", chainID)
+	b.Signer = types.MakeSigner("EIP155", chainID)
 }
 
 // VerifyTokenConfig verify token config
