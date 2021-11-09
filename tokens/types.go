@@ -55,11 +55,22 @@ type ChainConfig struct {
 	MaxGasPrice                string `json:",omitempty"`
 
 	// calced value
+	chainID       *big.Int
 	fixedGasPrice *big.Int
 	maxGasPrice   *big.Int
 	minReserveFee *big.Int
 
 	callByContractWhitelist map[string]struct{}
+}
+
+// SetChainID set chainID
+func (c *ChainConfig) SetChainID(chainID *big.Int) {
+	c.chainID = chainID
+}
+
+// GetChainID get chainID
+func (c *ChainConfig) GetChainID() *big.Int {
+	return c.chainID
 }
 
 // IsInCallByContractWhitelist is in call by contract whitelist
@@ -97,6 +108,12 @@ type BlocknetCoreAPIArgs struct {
 	DisableTLS  bool
 }
 
+// TokenPriceConfig struct
+type TokenPriceConfig struct {
+	Contract   string
+	APIAddress []string
+}
+
 // TokenConfig struct
 type TokenConfig struct {
 	ID                     string `json:",omitempty"`
@@ -115,7 +132,8 @@ type TokenConfig struct {
 	SwapFeeRate            *float64
 	MaximumSwapFee         *float64
 	MinimumSwapFee         *float64
-	PlusGasPricePercentage uint64 `json:",omitempty"`
+	TokenPrice             float64 `toml:"-"`
+	PlusGasPricePercentage uint64  `json:",omitempty"`
 	DisableSwap            bool
 	IsDelegateContract     bool
 	DelegateToken          string `json:",omitempty"`
@@ -381,7 +399,7 @@ func (c *ChainConfig) GetMinReserveFee() *big.Int {
 
 // CheckConfig check token config
 //nolint:gocyclo // keep TokenConfig check as whole
-func (c *TokenConfig) CheckConfig(isSrc bool) error {
+func (c *TokenConfig) CheckConfig(isSrc bool) (err error) {
 	if c.Decimals == nil {
 		return errors.New("token must config 'Decimals'")
 	}
@@ -452,9 +470,12 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 			return errors.New("wrong 'DelegateToken' address")
 		}
 	}
-	// calc value and store
+	err = c.loadTokenPrice(isSrc)
+	if err != nil {
+		return err
+	}
 	c.CalcAndStoreValue()
-	err := c.LoadDcrmAddressPrivateKey()
+	err = c.LoadDcrmAddressPrivateKey()
 	if err != nil {
 		return err
 	}

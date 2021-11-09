@@ -25,6 +25,11 @@ AllowedOrigins = []
 # Maximum number of requests to limit per second
 MaxRequestsLimit = 10
 
+# token price configed in contract on chain
+[TokenPrice]
+Contract = "0x1111111111111111111111111111111111111111"
+APIAddress = ["http://127.0.0.1:8711", "http://127.0.0.1:8722"]
+
 # oracle config (oracle only)
 [Oracle]
 # post swap register RPC requests to this server

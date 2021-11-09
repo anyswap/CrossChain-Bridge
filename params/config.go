@@ -31,6 +31,7 @@ type ServerConfig struct {
 	MustRegisterAccount bool             `toml:",omitempty" json:",omitempty"`
 	MongoDB             *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
 	APIServer           *APIServerConfig `toml:",omitempty" json:",omitempty"`
+	TokenPrice          *tokens.TokenPriceConfig
 	SrcChain            *tokens.ChainConfig
 	SrcGateway          *tokens.GatewayConfig
 	DestChain           *tokens.ChainConfig
@@ -151,11 +152,17 @@ func GetConfig() *ServerConfig {
 // SetConfig set config items
 func SetConfig(config *ServerConfig) {
 	serverConfig = config
+	tokens.TokenPriceCfg = config.TokenPrice
 }
 
 // GetExtraConfig get extra config
 func GetExtraConfig() *ExtraConfig {
 	return GetConfig().Extra
+}
+
+// GetTokenPriceConfig get token price config
+func GetTokenPriceConfig() *tokens.TokenPriceConfig {
+	return GetConfig().TokenPrice
 }
 
 // LoadConfig load config

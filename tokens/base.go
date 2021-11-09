@@ -28,6 +28,8 @@ var (
 	DstLatestBlockHeight uint64
 
 	IsDcrmDisabled bool
+
+	TokenPriceCfg *TokenPriceConfig
 )
 
 // CrossChainBridgeBase base bridge

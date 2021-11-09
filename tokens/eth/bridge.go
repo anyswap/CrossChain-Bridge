@@ -110,10 +110,16 @@ func (b *Bridge) VerifyChainID() {
 		log.Fatalf("unsupported ethereum network %v", networkID)
 	}
 
-	b.SignerChainID = chainID
-	b.Signer = types.MakeSigner("EIP155", chainID)
+	b.MakeSigner(chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
+}
+
+// MakeSigner make signer
+func (b *Bridge) MakeSigner(chainID *big.Int) {
+	b.SignerChainID = chainID
+	b.ChainConfig.SetChainID(chainID)
+	b.Signer = types.MakeSigner("EIP155", chainID)
 }
 
 // VerifyTokenConfig verify token config

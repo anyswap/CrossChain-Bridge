@@ -41,6 +41,7 @@ var (
 	ErrTxIncompatible       = errors.New("tx incompatible")
 	ErrRPCQueryError        = errors.New("rpc query error")
 	ErrEstimateGasFailed    = errors.New("estimate gas failed")
+	ErrMissTokenPrice       = errors.New("miss token price")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
