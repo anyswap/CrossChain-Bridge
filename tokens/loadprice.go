@@ -1,6 +1,10 @@
 package tokens
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -24,7 +28,6 @@ func callContract(contract string, urls []string, data hexutil.Bytes, blockNumbe
 }
 
 func (c *TokenConfig) loadTokenPrice(isSrc bool) (err error) {
-	c.TokenPrice = 0
 	if TokenPriceCfg == nil {
 		return nil
 	}
@@ -55,22 +58,66 @@ func (c *TokenConfig) loadTokenPrice(isSrc bool) (err error) {
 		return ErrMissTokenPrice
 	}
 
-	// convert to token amount
-	*c.MaximumSwap /= c.TokenPrice
-	*c.MinimumSwap /= c.TokenPrice
-	*c.BigValueThreshold /= c.TokenPrice
-	*c.MaximumSwapFee /= c.TokenPrice
-	*c.MinimumSwapFee /= c.TokenPrice
-
-	log.Info("load token price and convert to token amount success",
-		"token", c.ContractAddress,
-		"price", c.TokenPrice,
-		"maxSwap", *c.MaximumSwap,
-		"minSwap", *c.MinimumSwap,
-		"bigSwap", *c.BigValueThreshold,
-		"maxSwapFee", *c.MaximumSwapFee,
-		"minSwapFee", *c.MinimumSwapFee,
-	)
-
+	log.Info("load token price success", "token", c.ContractAddress, "name", c.Name, "price", c.TokenPrice)
 	return nil
+}
+
+// reload specified pairIDs' token prices. if no pairIDs, then reload all.
+func reloadTokenPrices(pairIDs []string) {
+	var pairCfgs []*TokenPairConfig
+	if len(pairIDs) == 0 {
+		allPairsCfg := GetTokenPairsConfig()
+		pairCfgs = make([]*TokenPairConfig, 0, len(allPairsCfg))
+		for _, pairCfg := range allPairsCfg {
+			pairCfgs = append(pairCfgs, pairCfg)
+		}
+	} else {
+		pairCfgs = make([]*TokenPairConfig, 0, len(pairIDs))
+		for _, pairID := range pairIDs {
+			if pairCfg := GetTokenPairConfig(pairID); pairCfg != nil {
+				pairCfgs = append(pairCfgs, pairCfg)
+			}
+		}
+	}
+	reloadAllSuccess := true
+	for _, pairCfg := range pairCfgs {
+		oldPrice := pairCfg.SrcToken.TokenPrice
+		err := pairCfg.SrcToken.loadTokenPrice(true)
+		if err == nil {
+			if pairCfg.SrcToken.TokenPrice != oldPrice {
+				pairCfg.SrcToken.CalcAndStoreValue()
+			}
+		} else {
+			reloadAllSuccess = false
+			log.Error("reload token price failed", "name", pairCfg.SrcToken.Name, "token", pairCfg.SrcToken.ContractAddress, "err", err)
+		}
+
+		oldPrice = pairCfg.DestToken.TokenPrice
+		err = pairCfg.DestToken.loadTokenPrice(false)
+		if err == nil {
+			if pairCfg.DestToken.TokenPrice != oldPrice {
+				pairCfg.DestToken.CalcAndStoreValue()
+			}
+		} else {
+			reloadAllSuccess = false
+			log.Error("reload token price failed", "name", pairCfg.SrcToken.Name, "token", pairCfg.DestToken.ContractAddress, "err", err)
+		}
+	}
+	if reloadAllSuccess {
+		if len(pairIDs) == 0 {
+			log.Info("reload token price success", "pairIDs", "all")
+		} else {
+			log.Info("reload token price success", "pairIDs", pairIDs)
+		}
+	}
+}
+
+func watchAndReloadTokenPrices() {
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGUSR1)
+	for {
+		sig := <-signalChan
+		log.Info("receive signal to reload token prices", "signal", sig)
+		reloadTokenPrices(nil)
+	}
 }
