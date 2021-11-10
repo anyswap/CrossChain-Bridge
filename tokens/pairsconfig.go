@@ -216,6 +216,9 @@ func LoadTokenPairsConfig(check bool) {
 		log.Fatal("load token pair config error", "err", err)
 	}
 	SetTokenPairsConfig(pairsConfig, check)
+	if TokenPriceCfg != nil {
+		go watchAndReloadTokenPrices()
+	}
 }
 
 // LoadTokenPairsConfigInDir load token pairs config

@@ -341,6 +341,7 @@ func (c *TokenConfig) CheckConfig(isSrc bool) (err error) {
 	} else if c.DelegateToken != "" {
 		return errors.New("token forbid config 'DelegateToken' if 'IsDelegateContract' is false")
 	}
+	c.TokenPrice = 0
 	err = c.loadTokenPrice(isSrc)
 	if err != nil {
 		return err
@@ -357,10 +358,36 @@ func (c *TokenConfig) CheckConfig(isSrc bool) (err error) {
 	log.Info("check token config success",
 		"id", c.ID, "name", c.Name, "symbol", c.Symbol, "decimals", *c.Decimals,
 		"depositAddress", c.DepositAddress, "contractAddress", c.ContractAddress,
-		"maxSwap", c.maxSwap, "minSwap", c.minSwap,
-		"maxSwapFee", c.maxSwapFee, "minSwapFee", c.minSwapFee, "bigValThreshhold", c.bigValThreshhold,
 	)
 	return nil
+}
+
+// CalcAndStoreValue calc and store value (minus duplicate calculation)
+func (c *TokenConfig) CalcAndStoreValue() {
+	maxSwap := *c.MaximumSwap
+	minSwap := *c.MinimumSwap
+	bigSwap := *c.BigValueThreshold
+	maxFee := *c.MaximumSwapFee
+	minFee := *c.MinimumSwapFee
+	if c.TokenPrice > 0 {
+		// convert to token amount
+		maxSwap /= c.TokenPrice
+		minSwap /= c.TokenPrice
+		bigSwap /= c.TokenPrice
+		maxFee /= c.TokenPrice
+		minFee /= c.TokenPrice
+	}
+	smallBiasValue := 0.0001
+	c.maxSwap = ToBits(maxSwap+smallBiasValue, *c.Decimals)
+	c.minSwap = ToBits(minSwap-smallBiasValue, *c.Decimals)
+	c.maxSwapFee = ToBits(maxFee, *c.Decimals)
+	c.minSwapFee = ToBits(minFee, *c.Decimals)
+	c.bigValThreshhold = ToBits(bigSwap+smallBiasValue, *c.Decimals)
+	log.Info("calc and store token swap and fee success",
+		"name", c.Name, "decimals", *c.Decimals, "contractAddress", c.ContractAddress,
+		"maxSwap", c.maxSwap, "minSwap", c.minSwap, "bigValThreshhold", c.bigValThreshhold,
+		"maxSwapFee", c.maxSwapFee, "minSwapFee", c.minSwapFee, "swapFeeRate", c.SwapFeeRate,
+	)
 }
 
 // SetChainID set chainID
@@ -421,16 +448,6 @@ func (c *TokenConfig) IsErc20() bool {
 // IsProxyErc20 return if token is proxy contract of erc20
 func (c *TokenConfig) IsProxyErc20() bool {
 	return strings.EqualFold(c.ID, "ProxyERC20")
-}
-
-// CalcAndStoreValue calc and store value (minus duplicate calculation)
-func (c *TokenConfig) CalcAndStoreValue() {
-	smallBiasValue := 0.0001
-	c.maxSwap = ToBits(*c.MaximumSwap+smallBiasValue, *c.Decimals)
-	c.minSwap = ToBits(*c.MinimumSwap-smallBiasValue, *c.Decimals)
-	c.maxSwapFee = ToBits(*c.MaximumSwapFee, *c.Decimals)
-	c.minSwapFee = ToBits(*c.MinimumSwapFee, *c.Decimals)
-	c.bigValThreshhold = ToBits(*c.BigValueThreshold+smallBiasValue, *c.Decimals)
 }
 
 // GetDcrmAddressPrivateKey get private key
