@@ -1,3 +1,4 @@
+// Package colx implements the bridge interfaces for colx blockchain.
 package colx
 
 import (

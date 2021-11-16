@@ -13,7 +13,7 @@ var (
 	swapinStableStarter  sync.Once
 	swapoutStableStarter sync.Once
 
-	treatAsNoncePassedInterval = int64(300) // seconds
+	treatAsNoncePassedInterval = int64(600) // seconds
 )
 
 // StartStableJob stable job
@@ -146,7 +146,7 @@ func processSwapStable(swap *mongodb.MgoSwapResult, isSwapin bool) (err error) {
 			_ = updateSwapResultTx(swap.TxID, swap.PairID, swap.Bind, swap.SwapTx, swap.SwapValue, isSwapin, mongodb.KeepStatus)
 		}
 		if txStatus.IsSwapTxOnChainAndFailed(resBridge.GetTokenConfig(swap.PairID)) {
-			logWorkerWarn("[stable]", "mark swap result failed with confirms", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "swaptime", swap.Timestamp, "nowtime", now(), "confirmations", txStatus.Confirmations)
+			logWorkerWarn("stable", "mark swap result failed with wrong status", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "swaptime", swap.Timestamp, "nowtime", now(), "confirmations", txStatus.Confirmations)
 			return markSwapResultFailed(swap.TxID, swap.PairID, swap.Bind, isSwapin)
 		}
 		return markSwapResultStable(swap.TxID, swap.PairID, swap.Bind, isSwapin)

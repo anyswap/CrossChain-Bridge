@@ -1,3 +1,4 @@
+// Package dcrm is a client of dcrm server, doing the sign and accept tasks.
 package dcrm
 
 import (
@@ -23,11 +24,15 @@ var (
 	dcrmSigner = types.MakeSigner("EIP155", big.NewInt(dcrmWalletServiceID))
 	dcrmToAddr = common.HexToAddress(dcrmToAddress)
 
+	dcrmAPIPrefix     = "dcrm_" // default prefix
 	dcrmGroupID       string
 	dcrmThreshold     string
 	dcrmMode          string
 	dcrmNeededOracles uint32
 	dcrmTotalOracles  uint32
+
+	dcrmRPCTimeout  = 10                // default to 10 seconds
+	dcrmSignTimeout = 120 * time.Second // default to 120 seconds
 
 	defaultDcrmNode   *NodeInfo
 	allInitiatorNodes []*NodeInfo // server only
@@ -50,6 +55,17 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 		return
 	}
 
+	if dcrmConfig.APIPrefix != "" {
+		dcrmAPIPrefix = dcrmConfig.APIPrefix
+	}
+
+	if dcrmConfig.RPCTimeout > 0 {
+		dcrmRPCTimeout = int(dcrmConfig.RPCTimeout)
+	}
+	if dcrmConfig.SignTimeout > 0 {
+		dcrmSignTimeout = time.Duration(dcrmConfig.SignTimeout * uint64(time.Second))
+	}
+
 	setDcrmGroup(*dcrmConfig.GroupID, dcrmConfig.Mode, *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
 	setDefaultDcrmNodeInfo(initDcrmNodeInfo(dcrmConfig.DefaultNode, isServer))
 
@@ -63,6 +79,7 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 	initAllEnodes()
 
 	verifyInitiators(dcrmConfig.Initiators)
+	log.Info("init dcrm success", "signTimeout", dcrmSignTimeout.String(), "isServer", isServer)
 }
 
 // setDefaultDcrmNodeInfo set default dcrm node info
@@ -115,6 +132,16 @@ func GetGroupID() string {
 	return dcrmGroupID
 }
 
+// GetSelfEnode get self enode
+func GetSelfEnode() string {
+	return selfEnode
+}
+
+// GetAllEnodes get all enodes
+func GetAllEnodes() []string {
+	return allEnodes
+}
+
 // setDcrmRPCAddress set dcrm node rpc address
 func (ni *NodeInfo) setDcrmRPCAddress(url string) {
 	ni.dcrmRPCAddress = url
@@ -160,7 +187,7 @@ func initSelfEnode() {
 			return
 		}
 		log.Error("can't get enode info", "rpcAddr", defaultDcrmNode.dcrmRPCAddress, "err", err)
-		time.Sleep(3 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 }
 
@@ -191,7 +218,7 @@ func verifySignGroupInfo(rpcAddr, groupID string, isSignGroup, includeSelf bool)
 		groupInfo, err := GetGroupByID(groupID, rpcAddr)
 		if err != nil {
 			log.Error("get group info failed", "groupID", groupID, "err", err)
-			time.Sleep(3 * time.Second)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 		log.Info("get dcrm group info success", "groupInfo", groupInfo)
@@ -199,9 +226,7 @@ func verifySignGroupInfo(rpcAddr, groupID string, isSignGroup, includeSelf bool)
 			log.Fatal("dcrm group member count mismatch", "groupID", dcrmGroupID, "have", groupInfo.Count, "want", memberCount)
 		}
 		if uint32(len(groupInfo.Enodes)) != memberCount {
-			log.Error("get group info enodes count mismatch", "groupID", groupID, "have", len(groupInfo.Enodes), "want", memberCount)
-			time.Sleep(3 * time.Second)
-			continue
+			log.Fatal("get group info enodes count mismatch", "groupID", groupID, "have", len(groupInfo.Enodes), "want", memberCount)
 		}
 		exist := isEnodeExistIn(selfEnode, groupInfo.Enodes)
 		if exist != includeSelf {

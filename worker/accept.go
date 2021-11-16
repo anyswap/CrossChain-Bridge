@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
-	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -31,7 +30,7 @@ var (
 	maxAcceptSignTimeInterval = int64(600) // seconds
 
 	retryInterval = 3 * time.Second
-	waitInterval  = 3 * time.Second
+	waitInterval  = 20 * time.Second
 
 	acceptInfoCh      = make(chan *dcrm.SignInfoData, 10)
 	maxAcceptRoutines = int64(10)
@@ -41,8 +40,6 @@ var (
 	errIdentifierMismatch = errors.New("cross chain bridge identifier mismatch")
 	errInitiatorMismatch  = errors.New("initiator mismatch")
 	errWrongMsgContext    = errors.New("wrong msg context")
-	errInvalidSignInfo    = errors.New("invalid sign info")
-	errExpiredSignInfo    = errors.New("expired sign info")
 )
 
 // StartAcceptSignJob accept job
@@ -50,6 +47,10 @@ func StartAcceptSignJob() {
 	if !params.IsDcrmEnabled() {
 		logWorker("accept", "no need to start accept sign job as dcrm is disabled")
 		return
+	}
+	getAcceptListInterval := params.GetOracleConfig().GetAcceptListInterval
+	if getAcceptListInterval > 0 {
+		waitInterval = time.Duration(getAcceptListInterval) * time.Second
 	}
 	acceptSignStarter.Do(func() {
 		logWorker("accept", "start accept sign job")
@@ -64,19 +65,22 @@ func StartAcceptSignJob() {
 func startAcceptProducer() {
 	i := 0
 	for {
-		signInfo, err := dcrm.GetCurNodeSignInfo()
+		signInfo, err := dcrm.GetCurNodeSignInfo(maxAcceptSignTimeInterval)
 		if err != nil {
 			logWorkerError("accept", "getCurNodeSignInfo failed", err)
 			time.Sleep(retryInterval)
 			continue
 		}
 		i++
-		if i%20 == 0 {
+		if i%7 == 0 {
 			logWorker("accept", "getCurNodeSignInfo", "count", len(signInfo))
 		}
 		for _, info := range signInfo {
 			if utils.IsCleanuping() {
 				return
+			}
+			if info == nil { // maybe a dcrm RPC problem
+				continue
 			}
 			keyID := info.Key
 			if cachedAcceptInfos.Contains(keyID) {
@@ -144,34 +148,56 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 		}
 	}()
 
-	agreeResult := acceptAgree
 	args, err := verifySignInfo(info)
+
+	ctx := []interface{}{
+		"keyID", keyID,
+	}
+	if args != nil {
+		ctx = append(ctx,
+			"identifier", args.Identifier,
+			"swaptype", args.SwapType.String(),
+			"pairID", args.PairID,
+			"swapID", args.SwapID,
+			"bind", args.Bind,
+		)
+	}
+
 	switch {
 	case errors.Is(err, tokens.ErrTxNotStable),
 		errors.Is(err, tokens.ErrTxNotFound),
 		errors.Is(err, tokens.ErrRPCQueryError):
-		logWorkerTrace("accept", "ignore sign", "keyID", keyID, "err", err)
+		ctx = append(ctx, "err", err)
+		logWorkerTrace("accept", "ignore sign", ctx...)
 		return
-	case errors.Is(err, errIdentifierMismatch),
-		errors.Is(err, errInitiatorMismatch),
+	case errors.Is(err, errIdentifierMismatch):
+		ctx = append(ctx, "err", err)
+		logWorkerTrace("accept", "discard sign", ctx...)
+		isProcessed = true
+		return
+	case errors.Is(err, errInitiatorMismatch),
 		errors.Is(err, errWrongMsgContext),
-		errors.Is(err, errExpiredSignInfo),
-		errors.Is(err, errInvalidSignInfo),
 		errors.Is(err, tokens.ErrUnknownPairID),
 		errors.Is(err, tokens.ErrNoBtcBridge):
-		logWorker("accept", "ignore sign", "keyID", keyID, "err", err)
+		ctx = append(ctx, "err", err)
+		logWorker("accept", "discard sign", ctx...)
 		isProcessed = true
 		return
 	}
+
+	agreeResult := acceptAgree
 	if err != nil {
-		logWorkerError("accept", "DISAGREE sign", err, "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
+		logWorkerError("accept", "DISAGREE sign", err, ctx...)
 		agreeResult = acceptDisagree
 	}
+	ctx = append(ctx, "result", agreeResult)
+
 	res, err := dcrm.DoAcceptSign(keyID, agreeResult, info.MsgHash, info.MsgContext)
 	if err != nil {
-		logWorkerError("accept", "accept sign job failed", err, "keyID", keyID, "result", res, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
+		ctx = append(ctx, "rpcResult", res)
+		logWorkerError("accept", "accept sign job failed", err, ctx...)
 	} else {
-		logWorker("accept", "accept sign job finish", "keyID", keyID, "result", agreeResult, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
+		logWorker("accept", "accept sign job finish", ctx...)
 		isProcessed = true
 	}
 }
@@ -190,15 +216,6 @@ func getBuildTxArgsFromMsgContext(signInfo *dcrm.SignInfoData) (*tokens.BuildTxA
 }
 
 func verifySignInfo(signInfo *dcrm.SignInfoData) (args *tokens.BuildTxArgs, err error) {
-	timestamp, err := common.GetUint64FromStr(signInfo.TimeStamp)
-	if err != nil || int64(timestamp/1000)+maxAcceptSignTimeInterval < time.Now().Unix() {
-		logWorkerTrace("accept", "expired accept sign info", "signInfo", signInfo)
-		return nil, errExpiredSignInfo
-	}
-	if signInfo.Key == "" || signInfo.Account == "" || signInfo.GroupID == "" {
-		logWorkerWarn("accept", "invalid accept sign info", "signInfo", signInfo)
-		return nil, errInvalidSignInfo
-	}
 	if !params.IsDcrmInitiator(signInfo.Account) {
 		return nil, errInitiatorMismatch
 	}
@@ -256,9 +273,18 @@ func rebuildAndVerifyMsgHash(keyID string, msgHash []string, args *tokens.BuildT
 		return tokens.ErrUnknownPairID
 	}
 
+	ctx := []interface{}{
+		"keyID", keyID,
+		"identifier", args.Identifier,
+		"swaptype", args.SwapType.String(),
+		"pairID", args.PairID,
+		"swapID", args.SwapID,
+		"bind", args.Bind,
+	}
+
 	swapInfo, err := verifySwapTransaction(srcBridge, args.PairID, args.SwapID, args.Bind, args.TxType)
 	if err != nil {
-		logWorkerError("accept", "verifySignInfo failed", err, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType)
+		logWorkerError("accept", "verifySignInfo failed", err, ctx...)
 		return err
 	}
 
@@ -270,15 +296,18 @@ func rebuildAndVerifyMsgHash(keyID string, msgHash []string, args *tokens.BuildT
 	}
 	rawTx, err := dstBridge.BuildRawTransaction(buildTxArgs)
 	if err != nil {
+		logWorkerError("accept", "build raw tx failed", err, ctx...)
 		return err
 	}
 	err = dstBridge.VerifyMsgHash(rawTx, msgHash)
 	if err != nil {
+		logWorkerError("accept", "verify message hash failed", err, ctx...)
 		return err
 	}
 	if lvldbHandle != nil && args.GetTxNonce() > 0 { // only for eth like chain
 		go saveAcceptRecord(dstBridge, keyID, buildTxArgs, rawTx)
 	}
+	logWorker("accept", "verify message hash success", ctx...)
 	return nil
 }
 
@@ -289,15 +318,27 @@ func saveAcceptRecord(bridge tokens.CrossChainBridge, keyID string, args *tokens
 	if !ok {
 		return
 	}
+
+	ctx := []interface{}{
+		"keyID", keyID,
+		"identifier", args.Identifier,
+		"swaptype", args.SwapType.String(),
+		"pairID", args.PairID,
+		"swapID", args.SwapID,
+		"bind", args.Bind,
+	}
+
 	swapTx, err := impl.GetSignedTxHashOfKeyID(keyID, args.PairID, rawTx)
 	if err != nil {
-		logWorkerError("accept", "get signed tx hash failed", err, "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType.String())
+		logWorkerError("accept", "get signed tx hash failed", err, ctx...)
 		return
 	}
+	ctx = append(ctx, "swaptx", swapTx)
+
 	err = AddAcceptRecord(args, swapTx)
 	if err != nil {
-		logWorkerError("accept", "save accept record to db failed", err, "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType.String(), "swaptx", swapTx)
+		logWorkerError("accept", "save accept record to db failed", err, ctx...)
 		return
 	}
-	logWorker("accept", "save accept record to db sucess", "keyID", keyID, "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swaptype", args.SwapType.String(), "swaptx", swapTx)
+	logWorker("accept", "save accept record to db sucess", ctx...)
 }

@@ -21,7 +21,7 @@ func SafeReadFile(file string) ([]byte, error) {
 	if fi.Mode() != 0400 {
 		return nil, errUnsafeFilePermissions
 	}
-	return ioutil.ReadFile(file)
+	return ioutil.ReadFile(file) // nolint:gosec // ok
 }
 
 // LoadKeyStore load keystore from keyfile and passfile

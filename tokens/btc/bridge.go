@@ -1,3 +1,4 @@
+// Package btc implements the bridge interfaces for btc blockchain.
 package btc
 
 import (

@@ -97,12 +97,12 @@ func RPCPostRequest(url string, req *Request, result interface{}) error {
 	}
 	resp, err := HTTPPost(url, reqBody, nil, nil, req.Timeout)
 	if err != nil {
-		log.Trace("post rpc error", "url", url, "method", req.Method, "err", err)
+		log.Trace("post rpc error", "url", url, "request", req, "err", err)
 		return err
 	}
 	err = getResultFromJSONResponse(result, resp)
 	if err != nil {
-		log.Trace("post rpc error", "url", url, "method", req.Method, "err", err)
+		log.Trace("post rpc error", "url", url, "request", req, "err", err)
 	}
 	return err
 }

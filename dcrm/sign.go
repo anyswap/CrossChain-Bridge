@@ -20,7 +20,6 @@ import (
 const (
 	pingCount     = 3
 	retrySignLoop = 3
-	signTimeout   = 120 * time.Second
 )
 
 var (
@@ -47,12 +46,12 @@ func pingDcrmNode(nodeInfo *NodeInfo) (err error) {
 }
 
 // DoSignOne dcrm sign single msgHash with context msgContext
-func DoSignOne(signPubkey, msgHash, msgContext string, keytypeArg ...string) (keyID string, rsvs []string, err error) {
+func DoSignOne(signPubkey, msgHash, msgContext string) (keyID string, rsvs []string, err error) {
 	return DoSign(signPubkey, []string{msgHash}, []string{msgContext})
 }
 
 // DoSign dcrm sign msgHash with context msgContext
-func DoSign(signPubkey string, msgHash, msgContext []string, keytypeArg ...string) (keyID string, rsvs []string, err error) {
+func DoSign(signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
 	if !params.IsDcrmEnabled() {
 		return "", nil, errSignIsDisabled
 	}
@@ -71,7 +70,7 @@ func DoSign(signPubkey string, msgHash, msgContext []string, keytypeArg ...strin
 			startIndex := randIndex.Int64()
 			i := startIndex
 			for {
-				keyID, rsvs, err = doSignImpl(dcrmNode, i, signPubkey, msgHash, msgContext, keytypeArg...)
+				keyID, rsvs, err = doSignImpl(dcrmNode, i, signPubkey, msgHash, msgContext)
 				if err == nil {
 					return keyID, rsvs, nil
 				}
@@ -87,21 +86,17 @@ func DoSign(signPubkey string, msgHash, msgContext []string, keytypeArg ...strin
 	return "", nil, errDoSignFailed
 }
 
-func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msgHash, msgContext []string, keytypeArg ...string) (keyID string, rsvs []string, err error) {
+func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
 	nonce, err := GetSignNonce(dcrmNode.dcrmUser.String(), dcrmNode.dcrmRPCAddress)
 	if err != nil {
 		return "", nil, err
-	}
-	var keytype string = "ECDSA"
-	if len(keytypeArg) > 0 && keytypeArg[0] == "ED25519" {
-		keytype = "ED25519"
 	}
 	txdata := SignData{
 		TxType:     "SIGN",
 		PubKey:     signPubkey,
 		MsgHash:    msgHash,
 		MsgContext: msgContext,
-		Keytype:    keytype,
+		Keytype:    "ECDSA",
 		GroupID:    dcrmNode.signGroups[signGroupIndex],
 		ThresHold:  dcrmThreshold,
 		Mode:       dcrmMode,
@@ -144,10 +139,10 @@ func GetSignStatusByKeyID(keyID string) (rsvs []string, err error) {
 }
 
 func getSignResult(keyID, rpcAddr string) (rsvs []string, err error) {
-	log.Info("start get sign status", "keyID", keyID, "rpcAddr", rpcAddr)
+	log.Info("start get sign status", "keyID", keyID)
 	var signStatus *SignStatus
 	i := 0
-	signTimer := time.NewTimer(signTimeout)
+	signTimer := time.NewTimer(dcrmSignTimeout)
 	defer signTimer.Stop()
 LOOP_GET_SIGN_STATUS:
 	for {

@@ -82,7 +82,7 @@ func CheckAcceptRecord(args *tokens.BuildTxArgs) (err error) {
 		if errt == nil && txStatus != nil && txStatus.BlockHeight > 0 { // on chain
 			if txStatus.Receipt != nil { // for eth like chain
 				receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-				if ok && *receipt.Status == 1 {
+				if ok && receipt.IsStatusOk() {
 					log.Warn("[accept] found already swapped tx", "key", key, "value", value)
 					alreadySwapped = true
 					break
@@ -92,7 +92,7 @@ func CheckAcceptRecord(args *tokens.BuildTxArgs) (err error) {
 				alreadySwapped = true
 				break
 			}
-		} else if tx, _ := resBridge.GetTransaction(oldSwapTx); tx != nil { // in tx pool
+		} else if tx, err := resBridge.GetTransaction(oldSwapTx); err == nil { // in tx pool
 			etx, ok := tx.(*types.RPCTransaction)
 			if !ok {
 				log.Warn("[accept] find already swapped tx in pool", "key", key, "value", value)
@@ -100,7 +100,7 @@ func CheckAcceptRecord(args *tokens.BuildTxArgs) (err error) {
 				break
 			}
 
-			if value+allowReswapTimeInterval <= nowTime {
+			if args.Reswapping && value+allowReswapTimeInterval <= nowTime {
 				continue // allow reswap old enough
 			}
 

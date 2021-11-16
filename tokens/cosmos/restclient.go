@@ -208,7 +208,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 		}
 
 		if txResult.Code == 0 && status.BlockHeight > 0 {
-			status.PrioriFinalized = true // asserts that tx has finalized, no need to check everything again
+			status.Finalized = true // asserts that tx has finalized, no need to check everything again
 		}
 		return
 	}

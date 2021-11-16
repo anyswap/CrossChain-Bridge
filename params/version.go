@@ -1,3 +1,4 @@
+// Package params provides common version info and config items.
 package params
 
 import (
@@ -8,7 +9,7 @@ import (
 const (
 	VersionMajor = 0  // Major version component of the current release
 	VersionMinor = 3  // Minor version component of the current release
-	VersionPatch = 8  // Patch version component of the current release
+	VersionPatch = 9  // Patch version component of the current release
 	VersionMeta  = "" // Version metadata to append to the version string
 )
 

@@ -48,7 +48,7 @@ func MustRun(cmd *exec.Cmd) {
 
 // MustRunCommand wrap MustRun
 func MustRunCommand(cmd string, args ...string) {
-	MustRun(exec.Command(cmd, args...))
+	MustRun(exec.Command(cmd, args...)) // nolint:gosec // ok
 }
 
 var warnedAboutGit bool
@@ -56,7 +56,7 @@ var warnedAboutGit bool
 // RunGit runs a git subcommand and returns its output.
 // The command must complete successfully.
 func RunGit(args ...string) string {
-	cmd := exec.Command("git", args...)
+	cmd := exec.Command("git", args...) // nolint:gosec // ok
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
@@ -74,7 +74,7 @@ func RunGit(args ...string) string {
 
 // readGitFile returns content of file in .git directory.
 func readGitFile(file string) string {
-	content, err := ioutil.ReadFile(path.Join(".git", file))
+	content, err := ioutil.ReadFile(path.Join(".git", file)) // nolint:gosec // ok
 	if err != nil {
 		return ""
 	}

@@ -1,3 +1,4 @@
+// Package eth implements the bridge interfaces for eth-like blockchain.
 package eth
 
 import (
@@ -12,9 +13,23 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
+var (
+	// ensure Bridge impl tokens.CrossChainBridge
+	_ tokens.CrossChainBridge = &Bridge{}
+	// ensure Bridge impl tokens.NonceSetter
+	_ tokens.NonceSetter = &Bridge{}
+	// ensure Bridge impl InheritInterface
+	_ InheritInterface = &Bridge{}
+)
+
+// InheritInterface inherit interface
+type InheritInterface interface {
+	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
+}
+
 // Bridge eth bridge
 type Bridge struct {
-	Inherit interface{}
+	Inherit InheritInterface
 	*tokens.CrossChainBridgeBase
 	*NonceSetterBase
 	Signer        types.Signer
@@ -23,10 +38,12 @@ type Bridge struct {
 
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	return &Bridge{
+	bridge := &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
 		NonceSetterBase:      NewNonceSetterBase(),
 	}
+	bridge.Inherit = bridge
+	return bridge
 }
 
 // SetChainAndGateway set chain and gateway config
@@ -82,10 +99,19 @@ func (b *Bridge) VerifyChainID() {
 		log.Fatalf("gateway chainID '%v' is not '%v'", chainID, b.ChainConfig.NetID)
 	}
 
-	b.SignerChainID = chainID
-	b.Signer = types.MakeSigner("EIP155", chainID)
+	b.MakeSigner(chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
+}
+
+// MakeSigner make signer
+func (b *Bridge) MakeSigner(chainID *big.Int) {
+	b.SignerChainID = chainID
+	b.ChainConfig.SetChainID(chainID)
+	if b.ChainConfig.EnableDynamicFeeTx {
+		b.Signer = types.MakeSigner("London", chainID)
+	}
+	b.Signer = types.MakeSigner("EIP155", chainID)
 }
 
 // VerifyTokenConfig verify token config
@@ -135,10 +161,12 @@ func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) error {
 		}
 		log.Info(tokenCfg.Symbol+" verify decimals success", "address", checkToken, "decimals", configedDecimals)
 
-		if err := b.VerifyErc20ContractAddress(checkToken, tokenCfg.ContractCodeHash, tokenCfg.IsProxyErc20()); err != nil {
-			return fmt.Errorf("wrong token address: %v, %w", checkToken, err)
+		if !tokenCfg.IsMappingTokenProxy {
+			if err := b.VerifyErc20ContractAddress(checkToken, tokenCfg.ContractCodeHash, tokenCfg.IsProxyErc20()); err != nil {
+				return fmt.Errorf("wrong token address: %v, %w", checkToken, err)
+			}
+			log.Info("verify token address pass", "address", checkToken)
 		}
-		log.Info("verify token address pass", "address", checkToken)
 	}
 	return nil
 }
@@ -151,8 +179,8 @@ func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsValidAddress(contractAddr) {
 		return fmt.Errorf("invalid contract address: %v", contractAddr)
 	}
-	if b.IsSrc && !(tokenCfg.IsErc20() || tokenCfg.IsProxyErc20() || tokenCfg.IsDelegateContract) {
-		return fmt.Errorf("source token %v is not ERC20, ProxyERC20 or delegated", contractAddr)
+	if b.IsSrc && !(tokenCfg.IsErc20() || tokenCfg.IsProxyErc20() || tokenCfg.IsDelegateContract || tokenCfg.IsMappingTokenProxy) {
+		return fmt.Errorf("source token %v is not ERC20, ProxyERC20 or delegated or MappingTokenProxy", contractAddr)
 	}
 	if tokenCfg.IsDelegateContract && !tokenCfg.IsAnyswapAdapter && !b.IsSrc {
 		// keccak256 'proxyToken()' is '0x4faaefae'
@@ -165,7 +193,7 @@ func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
 			return fmt.Errorf("mismatch 'DelegateToken', has %v, want %v", tokenCfg.DelegateToken, proxyToken.String())
 		}
 	}
-	if !b.IsSrc {
+	if !b.IsSrc && !tokenCfg.IsMappingTokenProxy {
 		err := b.VerifyAnyswapContractAddress(contractAddr)
 		if err != nil {
 			return fmt.Errorf("wrong anyswap contract address: %v, %w", contractAddr, err)

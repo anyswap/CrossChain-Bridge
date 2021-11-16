@@ -32,6 +32,12 @@ var (
 	OkexNetworkAndChainIDMap = map[string]*big.Int{
 		"mainnet": big.NewInt(66),
 	}
+
+	// Kusama ecosystem chain (eg. Moonriver)
+	KusamaNetworkAndChainIDMap = map[string]*big.Int{
+		"moonriver": big.NewInt(1285),
+		"shiden":    big.NewInt(336),
+	}
 )
 
 // IsCustomNetwork is custom network

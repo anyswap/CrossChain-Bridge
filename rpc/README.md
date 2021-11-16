@@ -28,9 +28,12 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 
 *以下为了简洁对每个 API 说明只列出`参数`和`返回值`两项*
 
-[swap.GetServerInfo](#swapgetserverinfo)  
 [swap.GetVersionInfo](#swapgetversioninfo)  
+[swap.GetServerInfo](#swapgetserverinfo)  
+[swap.GetOraclesHeartbeat](#swapgetoraclesheartbeat)  
+[swap.UpdateOracleHeartbeat](#swapupdateoracleheartbeat)  
 [swap.GetTokenPairInfo](#swapgettokenpairinfo)  
+[swap.GetTokenPairsInfo](#swapgettokenpairsinfo)  
 [swap.Swapin](#swapswapin)  
 [swap.P2shSwapin](#swapp2shswapin)  
 [swap.RetrySwapin](#swapretryswapin)  
@@ -47,7 +50,6 @@ curl -X POST -H "Content-Type:application/json" --data '{"jsonrpc":"2.0","method
 And the following `API`s are for developing and debuging, you can ignore them
 
 - swap.GetNonceInfo
-- swap.GetSwapStatistics
 - swap.GetRawSwapin
 - swap.GetRawSwapinResult
 - swap.GetRawSwapout
@@ -55,19 +57,6 @@ And the following `API`s are for developing and debuging, you can ignore them
 - swap.IsValidSwapinBindAddress
 - swap.IsValidSwapoutBindAddress
 - swap.GetLatestScanInfo
-
-### swap.GetServerInfo
-
-查询服务信息
-
-##### 参数：
-```text
-[] (空)
-```
-##### 返回值：
-```text
-成功返回服务信息，失败返回错误。
-```
 
 ### swap.GetVersionInfo
 
@@ -82,6 +71,45 @@ And the following `API`s are for developing and debuging, you can ignore them
 成功返回版本信息，失败返回错误。
 ```
 
+### swap.GetServerInfo
+
+查询服务信息
+
+##### 参数：
+```text
+[] (空)
+```
+##### 返回值：
+```text
+成功返回服务信息，失败返回错误。
+```
+
+### swap.GetOraclesHeartbeat
+
+查询 oracle 信息
+
+##### 参数：
+```text
+[] (空)
+```
+##### 返回值：
+```text
+成功返回 oracle 信息，失败返回错误。
+```
+
+### swap.UpdateOracleHeartbeat
+
+更新 oracle 信息
+
+##### 参数：
+```text
+[{"enode":"enode信息", "timestamp":"更新时间戳"}]
+```
+##### 返回值：
+```text
+成功返回 Success，失败返回错误。
+```
+
 ### swap.GetTokenPairInfo
 
 查询交易对信息
@@ -93,6 +121,21 @@ And the following `API`s are for developing and debuging, you can ignore them
 ##### 返回值：
 ```text
 成功返回交易对信息，失败返回错误。
+```
+
+### swap.GetTokenPairsInfo
+
+批量查询交易对信息
+pairids 为 pairid 通过逗号拼接在一起的字符串
+当 pairids 为 all 时查询所有交易对信息
+
+##### 参数：
+```text
+["pairids"]
+```
+##### 返回值：
+```text
+成功返回指定的交易对信息，失败返回错误。
 ```
 
 ### swap.Swapin
@@ -271,17 +314,27 @@ limit 最大值为 100
 
 ## RESTful API Reference
 
-### GEt /serverinfo
-
-查询服务信息
-
 ### GEt /versioninfo
 
 查询版本信息
 
+### GEt /serverinfo
+
+查询服务信息
+
+### GEt /oracleinfo
+
+查询 oracle 信息
+
 ### GEt /pairinfo/{pairid}
 
 查询交易对信息
+
+### GEt /pairsinfo/{pairids}
+
+批量查询交易对信息
+pairids 为 pairid 通过逗号拼接在一起的字符串
+当 pairids 为 all 时查询所有交易对信息
 
 ### GET /swapin/{pairid}/{txid}?bind=绑定地址
 
@@ -347,7 +400,6 @@ limit 最大值为 100
 And the following `API`s are for developing and debuging, you can ignore them
 
 - GET /nonceinfo
-- GET /statistics/{pairid}
 - GET /swapin/{pairid}/{txid}/raw
 - GET /swapout/{pairid}/{txid}/raw
 - GET /swapin/{pairid}/{txid}/rawresult

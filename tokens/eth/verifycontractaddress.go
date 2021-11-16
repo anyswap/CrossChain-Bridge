@@ -10,6 +10,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
+	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 var (
@@ -60,22 +61,28 @@ var erc20CodeParts = map[string][]byte{
 	"LogApproval":  common.FromHex("0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"),
 }
 
-func (b *Bridge) getContractCode(contract string) (code []byte, err error) {
+func (b *Bridge) getContractCode(contract string, onlyContractAddress bool) (code []byte, err error) {
+	isSpecialCase := types.IsOkexChain(b.SignerChainID)
 	retryCount := 3
-	for i := 0; i < retryCount; i++ {
+	for i := 0; ; i++ {
 		code, err = b.GetCode(contract)
-		if err == nil {
+		if err != nil {
+			log.Warn("get contract code failed", "contract", contract, "err", err)
+		} else if len(code) > 0 {
+			break
+		} else if onlyContractAddress {
+			log.Warn("get contract code failed", "contract", contract, "err", "empty byte code")
+		} else if i >= retryCount || !isSpecialCase {
 			break
 		}
-		log.Warn("get contract code failed", "contract", contract, "err", err)
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 	return code, err
 }
 
 // VerifyContractCode verify contract code
 func (b *Bridge) VerifyContractCode(contract string, codePartsSlice ...map[string][]byte) (err error) {
-	code, err := b.getContractCode(contract)
+	code, err := b.getContractCode(contract, true)
 	if err != nil {
 		return err
 	}
@@ -107,7 +114,7 @@ func VerifySwapContractCode(code []byte) (err error) {
 // VerifyErc20ContractAddress verify erc20 contract
 // For proxy contract delegating erc20 contract, verify its contract code hash
 func (b *Bridge) VerifyErc20ContractAddress(contract, codeHash string, isProxy bool) (err error) {
-	code, err := b.getContractCode(contract)
+	code, err := b.getContractCode(contract, true)
 	if err != nil {
 		return err
 	}

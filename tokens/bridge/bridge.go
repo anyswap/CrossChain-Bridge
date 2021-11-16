@@ -1,3 +1,4 @@
+// Package bridge init crosschain bridges.
 package bridge
 
 import (
@@ -15,8 +16,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/etc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
+	"github.com/anyswap/CrossChain-Bridge/tokens/kusama"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
-	"github.com/anyswap/CrossChain-Bridge/tokens/solana"
 	"github.com/anyswap/CrossChain-Bridge/tokens/terra"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
@@ -41,10 +42,10 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return cosmos.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "TERRA"):
 		return terra.NewCrossChainBridge(isSrc)
-	case strings.HasPrefix(blockChainIden, "SOLANA"):
-		return solana.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "COLOSSUS") || strings.HasPrefix(blockChainIden, "COLX"):
 		return colx.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "KUSAMA"):
+		return kusama.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
 		return nil
@@ -85,43 +86,43 @@ func InitCrossChainBridge(isServer bool) {
 				log.Crit("check oracle config failed", "err", err)
 			}
 		}
-
-		tokens.SrcBridge.SetChainAndGateway(srcChain, srcGateway)
-		log.Info("Init bridge source", "source", srcID, "gateway", srcGateway)
-
-		tokens.DstBridge.SetChainAndGateway(dstChain, dstGateway)
-		log.Info("Init bridge destation", "dest", dstID, "gateway", dstGateway)
-
-		tokens.SrcNonceSetter, _ = tokens.SrcBridge.(tokens.NonceSetter)
-		tokens.DstNonceSetter, _ = tokens.DstBridge.(tokens.NonceSetter)
-
-		tokens.SrcForkChecker, _ = tokens.SrcBridge.(tokens.ForkChecker)
-		tokens.DstForkChecker, _ = tokens.DstBridge.(tokens.ForkChecker)
-
-		tokens.SrcStableConfirmations = *tokens.SrcBridge.GetChainConfig().Confirmations
-		tokens.DstStableConfirmations = *tokens.DstBridge.GetChainConfig().Confirmations
-
-		tools.AdjustGatewayOrder(true)
-		tools.AdjustGatewayOrder(false)
-
-		tokens.IsDcrmDisabled = cfg.Dcrm.Disable
-		tokens.LoadTokenPairsConfig(true)
-
-		switch BlockChain {
-		case "BITCOIN":
-			btc.Init(cfg.BtcExtra)
-		case "LITECOIN":
-			ltc.Init(cfg.BtcExtra)
-		case "BLOCK":
-			block.Init(cfg.BtcExtra)
-		case "COSMOS", "TERRA":
-			tokens.SrcBridge.(cosmos.CosmosBridgeInterface).AfterConfig()
-		case "COLX":
-			colx.Init(cfg.BtcExtra)
-		}
-
-		dcrm.Init(cfg.Dcrm, isServer)
-
-		log.Info("Init bridge success", "isServer", isServer, "dcrmEnabled", !cfg.Dcrm.Disable)
 	}
+
+	tokens.SrcBridge.SetChainAndGateway(srcChain, srcGateway)
+	log.Info("Init bridge source", "source", srcID, "gateway", srcGateway)
+
+	tokens.DstBridge.SetChainAndGateway(dstChain, dstGateway)
+	log.Info("Init bridge destation", "dest", dstID, "gateway", dstGateway)
+
+	tokens.SrcNonceSetter, _ = tokens.SrcBridge.(tokens.NonceSetter)
+	tokens.DstNonceSetter, _ = tokens.DstBridge.(tokens.NonceSetter)
+
+	tokens.SrcForkChecker, _ = tokens.SrcBridge.(tokens.ForkChecker)
+	tokens.DstForkChecker, _ = tokens.DstBridge.(tokens.ForkChecker)
+
+	tokens.SrcStableConfirmations = *tokens.SrcBridge.GetChainConfig().Confirmations
+	tokens.DstStableConfirmations = *tokens.DstBridge.GetChainConfig().Confirmations
+
+	tools.AdjustGatewayOrder(true)
+	tools.AdjustGatewayOrder(false)
+
+	tokens.IsDcrmDisabled = cfg.Dcrm.Disable
+	tokens.LoadTokenPairsConfig(true)
+
+	switch BlockChain {
+	case "BITCOIN":
+		btc.Init(cfg.BtcExtra)
+	case "LITECOIN":
+		ltc.Init(cfg.BtcExtra)
+	case "BLOCK":
+		block.Init(cfg.BtcExtra)
+	case "COSMOS", "TERRA":
+		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).AfterConfig()
+	case "COLX":
+		colx.Init(cfg.BtcExtra)
+	}
+
+	dcrm.Init(cfg.Dcrm, isServer)
+
+	log.Info("Init bridge success", "isServer", isServer, "dcrmEnabled", !cfg.Dcrm.Disable)
 }

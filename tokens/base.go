@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
@@ -37,6 +38,7 @@ var (
 
 	IsDcrmDisabled bool
 
+	TokenPriceCfg            *TokenPriceConfig
 	IsSwapoutToStringAddress bool = false
 )
 
@@ -94,7 +96,7 @@ func (s *TxStatus) IsSwapTxOnChainAndFailed(token *TokenConfig) bool {
 	}
 	if s.Receipt != nil { // for eth-like blockchain
 		receipt, ok := s.Receipt.(*types.RPCTxReceipt)
-		if !ok || receipt == nil || *receipt.Status != 1 {
+		if !ok || !receipt.IsStatusOk() {
 			return true
 		}
 		if token != nil && token.ContractAddress != "" && len(receipt.Logs) == 0 {
@@ -191,7 +193,23 @@ func CalcSwappedValue(pairID string, value *big.Int, isSrc bool) *big.Int {
 		swapFee = token.maxSwapFee
 	}
 
+	var adjustBaseFee *big.Int
+	if GetNonceSetter(!isSrc) != nil { // eth-like
+		chainCfg := GetCrossChainBridge(!isSrc).GetChainConfig()
+		if chainCfg.BaseFeePercent != 0 && token.minSwapFee.Sign() > 0 {
+			adjustBaseFee = new(big.Int).Set(token.minSwapFee)
+			adjustBaseFee.Mul(adjustBaseFee, big.NewInt(chainCfg.BaseFeePercent))
+			adjustBaseFee.Div(adjustBaseFee, big.NewInt(100))
+			swapFee = new(big.Int).Add(swapFee, adjustBaseFee)
+			if swapFee.Sign() < 0 {
+				swapFee = big.NewInt(0)
+			}
+		}
+	}
+
 	if value.Cmp(swapFee) <= 0 {
+		log.Warn("check swap value failed", "pairID", pairID, "value", value, "isSrc", isSrc,
+			"minSwapFee", token.minSwapFee, "adjustBaseFee", adjustBaseFee, "swapFee", swapFee)
 		return big.NewInt(0)
 	}
 

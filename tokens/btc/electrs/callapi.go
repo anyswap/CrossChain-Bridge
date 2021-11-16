@@ -1,3 +1,4 @@
+// Package electrs get or post RPC queries to electrs server.
 package electrs
 
 import (

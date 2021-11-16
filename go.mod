@@ -11,8 +11,6 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.0.0
 	github.com/cosmos/cosmos-sdk v0.39.2
 	github.com/deckarep/golang-set v1.7.1
-	github.com/dfuse-io/binary v0.0.0-20210216024852-4ae6830a495d
-	github.com/dfuse-io/solana-go v0.2.0
 	github.com/didip/tollbooth/v6 v6.1.1
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
@@ -39,12 +37,13 @@ require (
 	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txrules v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.0.0
-	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/pborman/uuid v1.2.1
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/afero v1.2.2 // indirect
+	github.com/spf13/cobra v1.1.1 // indirect
+	github.com/spf13/viper v1.7.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/tebeka/strftime v0.1.5 // indirect
@@ -52,10 +51,10 @@ require (
 	github.com/tendermint/tendermint v0.33.9
 	github.com/tendermint/tm-db v0.5.2 // indirect
 	github.com/terra-project/core v0.4.2
+	github.com/tidwall/pretty v1.0.2 // indirect
 	github.com/urfave/cli/v2 v2.3.0
-	github.com/ybbus/jsonrpc v2.1.2+incompatible
+	go.mongodb.org/mongo-driver v1.7.4
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
-	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 )
 
 replace github.com/gogo/protobuf v1.3.3 => github.com/regen-network/protobuf v1.3.3-alpha.regen.1

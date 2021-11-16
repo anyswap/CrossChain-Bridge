@@ -206,6 +206,19 @@ func updateOldSwapTxs(txid, pairID, bind, swapTx string, oldSwapTxs, oldSwapVals
 	return err
 }
 
+func markSwapResultUnstable(txid, pairID, bind string, isSwapin bool) (err error) {
+	status := mongodb.MatchTxNotStable
+	timestamp := now()
+	memo := "" // unchange
+	err = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, status, timestamp, memo)
+	if err != nil {
+		logWorkerError("checkfailedswap", "markSwapResultUnstable", err, "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin)
+	} else {
+		logWorker("checkfailedswap", "markSwapResultUnstable", "txid", txid, "pairID", pairID, "bind", bind, "isSwapin", isSwapin)
+	}
+	return err
+}
+
 func markSwapResultStable(txid, pairID, bind string, isSwapin bool) (err error) {
 	status := mongodb.MatchTxStable
 	timestamp := now()
@@ -251,10 +264,12 @@ func verifySwapTransaction(bridge tokens.CrossChainBridge, pairID, txid, bind st
 	return swapInfo, err
 }
 
-func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, txid, pairID, bind string, isSwapin bool) (txHash string, err error) {
+func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{}, args *tokens.BuildTxArgs) (txHash string, err error) {
 	var (
 		retrySendTxCount    = 3
 		retrySendTxInterval = 1 * time.Second
+		txid, pairID, bind  = args.SwapID, args.PairID, args.Bind
+		isSwapin            = args.SwapType == tokens.SwapinType
 	)
 	for i := 0; i < retrySendTxCount; i++ {
 		txHash, err = bridge.SendTransaction(signedTx)
@@ -265,7 +280,7 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		time.Sleep(retrySendTxInterval)
 	}
 	if txHash != "" {
-		addSwapHistory(isSwapin, txid, bind, txHash)
+		addSwapHistory(isSwapin, txid, bind)
 		_ = mongodb.AddSwapHistory(isSwapin, txid, bind, txHash)
 	}
 	if err != nil {
@@ -277,6 +292,8 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 	if nonceSetter == nil {
 		return txHash, err
 	}
+
+	nonceSetter.SetNonce(pairID, args.GetTxNonce()+1) // increase for next usage
 
 	// update swap result tx height in goroutine
 	go func() {

@@ -1,3 +1,4 @@
+// Package colxdev dev tools to output compressed public key.
 package main
 
 import (

@@ -8,6 +8,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
@@ -25,7 +26,11 @@ func (b *Bridge) verifySwapoutTx(swapInfo *tokens.TxSwapInfo, allowUnstable bool
 	}
 
 	if !allowUnstable {
-		log.Info("verify swapout stable pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+		log.Info("verify swapout stable pass",
+			"identifier", params.GetIdentifier(), "pairID", swapInfo.PairID,
+			"from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind,
+			"value", swapInfo.Value, "txid", swapInfo.Hash,
+			"height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 
 	return swapInfo, nil
@@ -36,15 +41,20 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 		return tokens.ErrTxWithWrongContract
 	}
 
-	if !token.AllowSwapoutFromContract &&
-		!common.IsEqualIgnoreCase(receipt.Recipient.String(), token.ContractAddress) {
-		return tokens.ErrTxWithWrongContract
-	}
-
 	txRecipient := strings.ToLower(receipt.Recipient.String())
 	swapInfo.TxTo = txRecipient                            // TxTo
 	swapInfo.To = txRecipient                              // To
 	swapInfo.From = strings.ToLower(receipt.From.String()) // From
+
+	if common.IsEqualIgnoreCase(swapInfo.From, token.DcrmAddress) {
+		return tokens.ErrTxWithWrongSender
+	}
+
+	if !token.AllowSwapoutFromContract &&
+		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) &&
+		!b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
+		return tokens.ErrTxWithWrongContract
+	}
 
 	bindAddress, value, err := parseSwapoutTxLogs(receipt.Logs, token.ContractAddress)
 	if err != nil {

@@ -209,6 +209,12 @@ func reverify(args *admin.CallArgs, result *string) (err error) {
 	if err != nil {
 		return err
 	}
+	isSwapin := operation == swapinOp
+	bridge := tokens.GetCrossChainBridge(isSwapin)
+	_, err = bridge.VerifyTransaction(pairID, txid, true)
+	if err != nil {
+		return err
+	}
 	switch operation {
 	case swapinOp:
 		err = mongodb.ReverifySwapin(txid, pairID, bind)

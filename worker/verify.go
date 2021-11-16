@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
@@ -137,11 +138,11 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 
 	fromTokenCfg := bridge.GetTokenConfig(pairID)
 	if fromTokenCfg == nil {
-		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "isSwapin", isSwapin)
+		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "txid", txid, "isSwapin", isSwapin)
 		return tokens.ErrUnknownPairID
 	}
 	if fromTokenCfg.DisableSwap {
-		logWorkerTrace("swap", "swap is disabled", "pairID", pairID, "isSwapin", isSwapin)
+		logWorkerTrace("swap", "swap is disabled", "pairID", pairID, "txid", txid, "isSwapin", isSwapin)
 		return tokens.ErrSwapIsClosed
 	}
 
@@ -150,10 +151,11 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		return err
 	}
 
-	if swapInfo.Height != 0 &&
-		swapInfo.Height < *bridge.GetChainConfig().InitialHeight {
-		err = tokens.ErrTxBeforeInitialHeight
-		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
+	if errors.Is(err, tokens.ErrTxBeforeInitialHeight) ||
+		(swapInfo.Height != 0 && swapInfo.Height < *bridge.GetChainConfig().InitialHeight) {
+		memo := fmt.Sprintf("%v. blockHeight=%v initialHeight=%v",
+			tokens.ErrTxBeforeInitialHeight, swapInfo.Height, *bridge.GetChainConfig().InitialHeight)
+		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), memo)
 	}
 	isBlacked, errf := isInBlacklist(swapInfo)
 	if errf != nil {
@@ -200,7 +202,7 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 	case errors.Is(err, tokens.ErrBindAddressMismatch):
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
 	default:
-		logWorkerWarn("verify", "maybe not considered tx verify error", "err", err)
+		logWorkerWarn("verify", "maybe not considered tx verify error", "txid", txid, "bind", bind, "isSwapin", isSwapin, "err", err)
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
 	}
 

@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	rpcjson "github.com/gorilla/rpc/v2/json2"
-	"gopkg.in/mgo.v2"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func newError(ec rpcjson.ErrorCode, message string) error {
@@ -16,10 +16,10 @@ func newError(ec rpcjson.ErrorCode, message string) error {
 
 func mgoError(err error) error {
 	if err != nil {
-		if errors.Is(err, mgo.ErrNotFound) {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return ErrItemNotFound
 		}
-		if mgo.IsDup(err) {
+		if mongo.IsDuplicateKeyError(err) {
 			return ErrItemIsDup
 		}
 		return newError(-32001, "mgoError: "+err.Error())

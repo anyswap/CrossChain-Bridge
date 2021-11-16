@@ -1,3 +1,4 @@
+// Package client provides methods to do http GET / POST request.
 package client
 
 import (

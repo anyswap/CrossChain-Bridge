@@ -1,3 +1,4 @@
+// Package ltc implements the bridge interfaces for ltc blockchain.
 package ltc
 
 import (

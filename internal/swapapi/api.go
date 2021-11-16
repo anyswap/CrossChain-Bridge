@@ -2,10 +2,11 @@ package swapapi
 
 import (
 	"encoding/hex"
-	"fmt"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
@@ -19,6 +20,8 @@ var (
 	errNotBtcBridge      = newRPCError(-32096, "bridge is not btc")
 	errTokenPairNotExist = newRPCError(-32095, "token pair not exist")
 	errSwapCannotRetry   = newRPCError(-32094, "swap can not retry")
+
+	oraclesHeartbeats sync.Map // string -> int64 // key is enode
 )
 
 func newRPCError(ec rpcjson.ErrorCode, message string) error {
@@ -41,12 +44,57 @@ func GetServerInfo() (*ServerInfo, error) {
 	}
 	return &ServerInfo{
 		Identifier:          config.Identifier,
-		MustRegisterAccount: config.MustRegisterAccount,
+		MustRegisterAccount: params.MustRegisterAccount(),
 		SrcChain:            config.SrcChain,
 		DestChain:           config.DestChain,
 		PairIDs:             tokens.GetAllPairIDs(),
 		Version:             params.VersionWithMeta,
 	}, nil
+}
+
+// UpdateOracleHeartbeat api
+func UpdateOracleHeartbeat(oracle string, timestamp int64) error {
+	var exist bool
+	for _, enode := range dcrm.GetAllEnodes() {
+		if strings.EqualFold(oracle, enode) {
+			if !strings.EqualFold(oracle, dcrm.GetSelfEnode()) {
+				exist = true
+			}
+			break
+		}
+	}
+	if !exist {
+		return newRPCError(-32000, "wrong oracle info")
+	}
+	key := strings.ToLower(oracle)
+	value, ok := oraclesHeartbeats.Load(key)
+	if ok {
+		oldTime := value.(int64)
+		if timestamp > oldTime && timestamp < time.Now().Unix()+60 {
+			oraclesHeartbeats.Store(key, timestamp)
+		}
+	} else {
+		oraclesHeartbeats.Store(key, timestamp)
+	}
+	return nil
+}
+
+// GetOraclesHeartbeat api
+func GetOraclesHeartbeat() map[string]string {
+	result := make(map[string]string, 4)
+	oraclesHeartbeats.Range(func(k, v interface{}) bool {
+		enode := k.(string)
+		startIndex := strings.Index(enode, "enode://")
+		endIndex := strings.Index(enode, "@")
+		if startIndex != -1 && endIndex != -1 {
+			enodeID := enode[startIndex+8 : endIndex]
+			timestamp := v.(int64)
+			timeStr := time.Unix(timestamp, 0).Format(time.RFC3339)
+			result[strings.ToLower(enodeID)] = timeStr
+		}
+		return true
+	})
+	return result
 }
 
 // GetTokenPairInfo api
@@ -58,6 +106,21 @@ func GetTokenPairInfo(pairID string) (*tokens.TokenPairConfig, error) {
 	return pairCfg, nil
 }
 
+// GetTokenPairsInfo api
+func GetTokenPairsInfo(pairIDs string) (map[string]*tokens.TokenPairConfig, error) {
+	var pairIDSlice []string
+	if strings.EqualFold(pairIDs, "all") {
+		pairIDSlice = tokens.GetAllPairIDs()
+	} else {
+		pairIDSlice = strings.Split(pairIDs, ",")
+	}
+	result := make(map[string]*tokens.TokenPairConfig, len(pairIDSlice))
+	for _, pairID := range pairIDSlice {
+		result[pairID] = tokens.GetTokenPairConfig(pairID)
+	}
+	return result, nil
+}
+
 // GetNonceInfo api
 func GetNonceInfo() (*SwapNonceInfo, error) {
 	swapinNonces, swapoutNonces := mongodb.LoadAllSwapNonces()
@@ -65,12 +128,6 @@ func GetNonceInfo() (*SwapNonceInfo, error) {
 		SwapinNonces:  swapinNonces,
 		SwapoutNonces: swapoutNonces,
 	}, nil
-}
-
-// GetSwapStatistics api
-func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
-	log.Debug("[api] receive GetSwapStatistics", "pairID", pairID)
-	return mongodb.GetSwapStatistics(pairID)
 }
 
 // GetRawSwapin api
@@ -382,60 +439,4 @@ func RegisterAddress(address string) (*PostResult, error) {
 func GetRegisteredAddress(address string) (*RegisteredAddress, error) {
 	address = strings.ToLower(address)
 	return mongodb.FindRegisteredAddress(address)
-}
-
-// AddSwapAgreement add swapin agreement
-func AddSwapAgreement(args map[string]interface{}) (*PostResult, error) {
-	agreement, err := tokens.AgreementFromArgs(args)
-	if err != nil {
-		return nil, err
-	}
-	bz, err := tokens.TokenCDC.MarshalJSON(agreement)
-	if err != nil {
-		return nil, err
-	}
-	err = mongodb.AddSwapAgreement(agreement.Type(), agreement.Key(), fmt.Sprintf("%X", bz))
-	if err != nil {
-		return nil, err
-	}
-	return &SuccessPostResult, nil
-}
-
-// CancelSwapAgreement cancel swapin agreement
-func CancelSwapAgreement(pkey string) (*PostResult, error) {
-	err := mongodb.CancelSwapAgreement(pkey)
-	if err != nil {
-		return nil, err
-	}
-	return &SuccessPostResult, nil
-}
-
-func UpdateSwapAgreement(args map[string]interface{}) (*PostResult, error) {
-	agreement, err := tokens.AgreementFromArgs(args)
-	if err != nil {
-		return nil, err
-	}
-	bz, err := tokens.TokenCDC.MarshalJSON(agreement)
-	if err != nil {
-		return nil, err
-	}
-	err = mongodb.UpdateSwapAgreement(agreement.Type(), agreement.Key(), fmt.Sprintf("%X", bz))
-	if err != nil {
-		return nil, err
-	}
-	return &SuccessPostResult, nil
-}
-
-// GetSwapAgreement get swapin agreement
-func GetSwapAgreement(pkey string) (SwapAgreement, error) {
-	mp, err := mongodb.FindSwapAgreement(pkey)
-	if err != nil {
-		return nil, err
-	}
-	return ConvertMgoSwapAgreementToSwapAgreement(mp)
-}
-
-// GetLatestScannedSolanaTxid api
-func GetLatestScannedSolanaTxid(address string) string {
-	return mongodb.FindLatestSolanaTxid(address)
 }

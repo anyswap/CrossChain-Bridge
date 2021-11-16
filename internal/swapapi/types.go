@@ -14,17 +14,11 @@ type Swap = mongodb.MgoSwap
 // SwapResult type alias
 type SwapResult = mongodb.MgoSwapResult
 
-// SwapStatistics type alias
-type SwapStatistics = mongodb.SwapStatistics
-
 // LatestScanInfo type alias
 type LatestScanInfo = mongodb.MgoLatestScanInfo
 
 // RegisteredAddress type alias
 type RegisteredAddress = mongodb.MgoRegisteredAddress
-
-// SwapAgreement type alias
-type SwapAgreement = tokens.SwapAgreement
 
 // ServerInfo server info
 type ServerInfo struct {

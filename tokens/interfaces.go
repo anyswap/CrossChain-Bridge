@@ -1,3 +1,4 @@
+// Package tokens defines the common interfaces and supported bridges in sub directories.
 package tokens
 
 import (
@@ -41,6 +42,8 @@ var (
 	ErrWrongSwapValue       = errors.New("wrong swap value")
 	ErrTxIncompatible       = errors.New("tx incompatible")
 	ErrTxWithWrongReceipt   = errors.New("tx with wrong receipt")
+	ErrEstimateGasFailed    = errors.New("estimate gas failed")
+	ErrMissTokenPrice       = errors.New("miss token price")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")

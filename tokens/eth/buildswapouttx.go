@@ -5,6 +5,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
@@ -48,6 +49,9 @@ func (b *Bridge) buildSwapoutTxInput(args *tokens.BuildTxArgs) (err error) {
 }
 
 func (b *Bridge) getUnlockCoinMemo(args *tokens.BuildTxArgs) (input []byte) {
+	if params.IsNullSwapoutNativeMemo() {
+		return input
+	}
 	isContract, err := b.IsContractAddress(args.Bind)
 	if err == nil && !isContract {
 		input = []byte(tokens.UnlockMemoPrefix + args.SwapID)

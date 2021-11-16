@@ -1,11 +1,9 @@
 package worker
 
 import (
-	"container/ring"
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
@@ -16,9 +14,8 @@ import (
 )
 
 var (
-	swapRing        *ring.Ring
-	swapRingLock    sync.RWMutex
-	swapRingMaxSize = 1000
+	cachedSwapHistoty        = mapset.NewSet()
+	maxCachedSwapHistorySize = 1000
 
 	cachedSwapTasks    = mapset.NewSet()
 	maxCachedSwapTasks = 1000
@@ -229,6 +226,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 			SwapType:   swapType,
 			TxType:     tokens.SwapTxType(swap.TxType),
 			Bind:       bind,
+			Reswapping: res.Status == mongodb.Reswapping,
 		},
 		From:        dcrmAddress,
 		OriginValue: swapInfo.Value,
@@ -280,10 +278,8 @@ func preventReswap(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	default:
 	}
 	if res.Status != mongodb.Reswapping {
-		history := getSwapHistory(isSwapin, res.TxID, res.Bind)
-		if history != nil {
-			logWorkerError("[doSwap]", "forbid reswap by cache", errAlreadySwapped,
-				"isSwapin", history.isSwapin, "txid", history.txid, "bind", history.bind, "swaptx", history.matchTx)
+		if isSwapHistoryExist(isSwapin, res.TxID, res.Bind) {
+			logWorkerError("[doSwap]", "forbid reswap by cache", errAlreadySwapped, "isSwapin", isSwapin, "txid", res.TxID, "bind", res.Bind)
 			_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, mongodb.TxProcessed, now(), "")
 			return errAlreadySwapped
 		}
@@ -308,7 +304,7 @@ func preventReswapByHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
 			}
 			if txStatus.Receipt != nil {
 				receipt, ok := txStatus.Receipt.(*types.RPCTxReceipt)
-				if ok && *receipt.Status == 1 {
+				if ok && receipt.IsStatusOk() {
 					alreadySwapped = true
 					break
 				}
@@ -473,15 +469,12 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		return err
 	}
 
-	txHash, err := sendSignedTransaction(resBridge, signedTx, txid, pairID, bind, isSwapin)
+	txHash, err := sendSignedTransaction(resBridge, signedTx, args)
 	if err == nil {
 		logWorker("doSwap", "send tx success", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash)
 		if txHash != signTxHash {
 			logWorkerError("doSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash, "signTxHash", signTxHash)
 			_ = replaceSwapResult(txid, pairID, bind, txHash, matchTx.SwapValue, isSwapin)
-		}
-		if nonceSetter, ok := resBridge.(tokens.NonceSetter); ok {
-			nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
 		}
 	}
 	return err
@@ -493,54 +486,15 @@ func DeleteCachedSwap(isSwapin bool, txid, bind string) {
 	cachedSwapTasks.Remove(cacheKey)
 }
 
-type swapInfo struct {
-	isSwapin bool
-	txid     string
-	bind     string
-	matchTx  string
+func addSwapHistory(isSwapin bool, txid, bind string) {
+	if cachedSwapHistoty.Cardinality() >= maxCachedSwapHistorySize {
+		cachedSwapHistoty.Pop()
+	}
+	key := getSwapCacheKey(isSwapin, txid, bind)
+	cachedSwapHistoty.Add(key)
 }
 
-func addSwapHistory(isSwapin bool, txid, bind, matchTx string) {
-	// Create the new item as its own ring
-	item := ring.New(1)
-	item.Value = &swapInfo{
-		isSwapin: isSwapin,
-		txid:     txid,
-		bind:     bind,
-		matchTx:  matchTx,
-	}
-
-	swapRingLock.Lock()
-	defer swapRingLock.Unlock()
-
-	if swapRing == nil {
-		swapRing = item
-	} else {
-		if swapRing.Len() == swapRingMaxSize {
-			swapRing = swapRing.Move(-1)
-			swapRing.Unlink(1)
-			swapRing = swapRing.Move(1)
-		}
-		swapRing.Move(-1).Link(item)
-	}
-}
-
-func getSwapHistory(isSwapin bool, txid, bind string) *swapInfo {
-	swapRingLock.RLock()
-	defer swapRingLock.RUnlock()
-
-	if swapRing == nil {
-		return nil
-	}
-
-	r := swapRing
-	for i := 0; i < r.Len(); i++ {
-		item := r.Value.(*swapInfo)
-		if item.txid == txid && item.bind == bind && item.isSwapin == isSwapin {
-			return item
-		}
-		r = r.Prev()
-	}
-
-	return nil
+func isSwapHistoryExist(isSwapin bool, txid, bind string) bool {
+	key := getSwapCacheKey(isSwapin, txid, bind)
+	return cachedSwapHistoty.Contains(key)
 }

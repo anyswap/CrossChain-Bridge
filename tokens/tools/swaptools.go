@@ -1,9 +1,8 @@
+// Package tools provides tools for scanning and registering swaps.
 package tools
 
 import (
-	"encoding/hex"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
@@ -22,7 +21,7 @@ var (
 
 // IsSwapExist is swapin exist
 func IsSwapExist(txid, pairID, bind string, isSwapin bool) bool {
-	if mongodb.HasSession() {
+	if mongodb.HasClient() {
 		swap, _ := mongodb.FindSwap(isSwapin, txid, pairID, bind)
 		return swap != nil
 	}
@@ -78,7 +77,7 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 		}
 		isServer := dcrm.IsSwapServer()
 		log.Info("[scan] register swap", "pairID", pairID, "isSwapin", isSwapin, "isServer", isServer, "tx", txid, "bind", bind)
-		if isServer && mongodb.HasSession() {
+		if isServer && mongodb.HasClient() {
 			var memo string
 			if verifyError != nil {
 				memo = verifyError.Error()
@@ -136,7 +135,7 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 	isServer := dcrm.IsSwapServer()
 	bind := swapInfo.Bind
 	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid, "bind", bind)
-	if isServer && mongodb.HasSession() {
+	if isServer && mongodb.HasClient() {
 		var memo string
 		if verifyError != nil {
 			memo = verifyError.Error()
@@ -171,7 +170,7 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 
 // GetP2shBindAddress get p2sh bind address
 func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
-	if mongodb.HasSession() {
+	if mongodb.HasClient() {
 		bindAddress, _ = mongodb.FindP2shBindAddress(p2shAddress)
 		return bindAddress
 	}
@@ -186,35 +185,10 @@ func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
 	return ""
 }
 
-// GetLatestScannedSolanaTxid get latest scanned solana txid
-func GetLatestScannedSolanaTxid(address string) string {
-	if mongodb.HasSession() {
-		return mongodb.FindLatestSolanaTxid(address)
-	}
-	var result = ""
-	for {
-		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetLatestScannedSolanaTxid", address)
-		if err == nil {
-			txid := result
-			log.Info("GetLatestScannedSolanaTxid", "txid", txid)
-			return txid
-		}
-		time.Sleep(1 * time.Second)
-	}
-}
-
-// UpdateLatestScannedSolanaTxid updates latest scanned solana txid
-func UpdateLatestScannedSolanaTxid(address, txid string) error {
-	if dcrm.IsSwapServer() {
-		return mongodb.UpdateLatestSolanaTxid(address, txid)
-	}
-	return nil
-}
-
 // GetLatestScanHeight get latest scanned block height
 func GetLatestScanHeight(isSrc bool) uint64 {
-	if mongodb.HasSession() {
-		for {
+	if mongodb.HasClient() {
+		for i := 0; i < 3; i++ {
 			latestInfo, err := mongodb.FindLatestScanInfo(isSrc)
 			if err == nil {
 				height := latestInfo.BlockHeight
@@ -223,9 +197,10 @@ func GetLatestScanHeight(isSrc bool) uint64 {
 			}
 			time.Sleep(1 * time.Second)
 		}
+		return 0
 	}
 	var result mongodb.MgoLatestScanInfo
-	for {
+	for i := 0; i < 3; i++ {
 		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, "swap.GetLatestScanInfo", isSrc)
 		if err == nil {
 			height := result.BlockHeight
@@ -234,6 +209,7 @@ func GetLatestScanHeight(isSrc bool) uint64 {
 		}
 		time.Sleep(1 * time.Second)
 	}
+	return 0
 }
 
 // LoopGetLatestBlockNumber loop and get latest block number
@@ -251,7 +227,7 @@ func LoopGetLatestBlockNumber(b tokens.CrossChainBridge) uint64 {
 
 // UpdateLatestScanInfo update latest scan info
 func UpdateLatestScanInfo(isSrc bool, height uint64) error {
-	if dcrm.IsSwapServer() && mongodb.HasSession() {
+	if dcrm.IsSwapServer() && mongodb.HasClient() {
 		return mongodb.UpdateLatestScanInfo(isSrc, height)
 	}
 	return nil
@@ -259,7 +235,7 @@ func UpdateLatestScanInfo(isSrc bool, height uint64) error {
 
 // IsAddressRegistered is address registered
 func IsAddressRegistered(address string) bool {
-	if mongodb.HasSession() {
+	if mongodb.HasClient() {
 		result, _ := mongodb.FindRegisteredAddress(address)
 		return result != nil
 	}
@@ -272,32 +248,6 @@ func IsAddressRegistered(address string) bool {
 		time.Sleep(retryRPCInterval)
 	}
 	return false
-}
-
-// GetSwapAgreement find swapin agreement
-func GetSwapAgreement(pkey string) (tokens.SwapAgreement, error) {
-	mp, err := mongodb.FindSwapAgreement(pkey)
-	if err != nil {
-		return nil, err
-	}
-	return ConvertMgoSwapAgreementToSwapAgreement(mp)
-}
-
-// ConvertMgoSwapAgreementToSwapAgreement convert
-func ConvertMgoSwapAgreementToSwapAgreement(mp *mongodb.MgoSwapAgreement) (tokens.SwapAgreement, error) {
-	bz, err := hex.DecodeString(mp.Value)
-	if err != nil {
-		return nil, err
-	}
-	var p tokens.SwapAgreement
-	err = tokens.TokenCDC.UnmarshalJSON(bz, &p)
-	if err != nil {
-		return nil, err
-	}
-	if strings.EqualFold(p.Type(), mp.Type) == false {
-		return nil, errors.New("Swapin agreement type not match")
-	}
-	return p, nil
 }
 
 // AdjustGatewayOrder adjust gateway order by block height
@@ -326,6 +276,10 @@ func AdjustGatewayOrder(isSrc bool) {
 		log.Info("adjust dest gateways", "result", weightedAPIs)
 	}
 
+	if !params.EnableCheckBlockFork() {
+		return
+	}
+
 	if len(gateway.APIAddressExt) == 0 {
 		return
 	}
@@ -342,6 +296,7 @@ func AdjustGatewayOrder(isSrc bool) {
 	}
 
 	retryCount := 3
+	shouldPanic := false
 	retrySleepInterval := 3 * time.Second
 	time.Sleep(retrySleepInterval)
 	for i := 1; i <= retryCount; i++ {
@@ -358,10 +313,25 @@ func AdjustGatewayOrder(isSrc bool) {
 			log.Info("[detect] check block hash success", "height", checkPointHeight, "hash", hash1, "isSrc", isSrc, "count", i, "stable", stableHeight)
 			return
 		}
-		if i == retryCount {
-			log.Fatal("[detect] check block hash failed", "height", checkPointHeight, "hash1", hash1, "hash2", hash2, "isSrc", isSrc, "count", i, "stable", stableHeight)
+		failedContext := []interface{}{
+			"height", checkPointHeight,
+			"hash1", hash1, "hash2", hash2,
+			"isSrc", isSrc, "count", i, "stable", stableHeight,
 		}
-		log.Warn("[detect] check block hash failed", "height", checkPointHeight, "hash1", hash1, "hash2", hash2, "isSrc", isSrc, "count", i, "stable", stableHeight)
+		if i == retryCount {
+			if shouldPanic {
+				log.Fatal("[detect] check block hash failed", failedContext...)
+			}
+			// recheck of previous check point, and panic if still mismatch
+			shouldPanic, i = true, -1
+			if checkPointHeight > stableHeight {
+				checkPointHeight -= stableHeight
+			} else {
+				checkPointHeight = 0
+			}
+		} else {
+			log.Warn("[detect] check block hash failed", failedContext...)
+		}
 		time.Sleep(retrySleepInterval)
 	}
 }

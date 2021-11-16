@@ -1,3 +1,4 @@
+// Package rpcapi provides JSON RPC service.
 package rpcapi
 
 import (
@@ -31,6 +32,28 @@ func (s *RPCAPI) GetServerInfo(r *http.Request, args *RPCNullArgs, result *swapa
 	return err
 }
 
+// HeartbeatArgs heartbeat args
+type HeartbeatArgs struct {
+	Enode     string `json:"enode"`
+	Timestamp int64  `json:"timestamp"`
+}
+
+// UpdateOracleHeartbeat api
+func (s *RPCAPI) UpdateOracleHeartbeat(r *http.Request, args *HeartbeatArgs, result *string) error {
+	err := swapapi.UpdateOracleHeartbeat(args.Enode, args.Timestamp)
+	if err != nil {
+		return err
+	}
+	*result = "Success"
+	return nil
+}
+
+// GetOraclesHeartbeat api
+func (s *RPCAPI) GetOraclesHeartbeat(r *http.Request, args *RPCNullArgs, result *map[string]string) error {
+	*result = swapapi.GetOraclesHeartbeat()
+	return nil
+}
+
 // GetTokenPairInfo api
 func (s *RPCAPI) GetTokenPairInfo(r *http.Request, pairID *string, result *tokens.TokenPairConfig) error {
 	res, err := swapapi.GetTokenPairInfo(*pairID)
@@ -40,18 +63,19 @@ func (s *RPCAPI) GetTokenPairInfo(r *http.Request, pairID *string, result *token
 	return err
 }
 
+// GetTokenPairsInfo api
+// nolint:gocritic // rpc need result of pointer type
+func (s *RPCAPI) GetTokenPairsInfo(r *http.Request, pairIDs *string, result *map[string]*tokens.TokenPairConfig) error {
+	res, err := swapapi.GetTokenPairsInfo(*pairIDs)
+	if err == nil && res != nil {
+		*result = res
+	}
+	return nil
+}
+
 // GetNonceInfo api
 func (s *RPCAPI) GetNonceInfo(r *http.Request, args *RPCNullArgs, result *swapapi.SwapNonceInfo) error {
 	res, err := swapapi.GetNonceInfo()
-	if err == nil && res != nil {
-		*result = *res
-	}
-	return err
-}
-
-// GetSwapStatistics api
-func (s *RPCAPI) GetSwapStatistics(r *http.Request, pairID *string, result *swapapi.SwapStatistics) error {
-	res, err := swapapi.GetSwapStatistics(*pairID)
 	if err == nil && res != nil {
 		*result = *res
 	}
@@ -292,49 +316,4 @@ func (s *RPCAPI) GetRegisteredAddress(r *http.Request, address *string, result *
 		*result = *res
 	}
 	return err
-}
-
-type SwapAgreementArgs map[string](interface{})
-
-// AddSwapAgreement api
-func (s *RPCAPI) AddSwapAgreement(r *http.Request, args *SwapAgreementArgs, result *swapapi.PostResult) error {
-	res, err := swapapi.AddSwapAgreement(*args)
-	if err == nil && res != nil {
-		*result = *res
-	}
-	return err
-}
-
-// CancelSwapAgreement api
-func (s *RPCAPI) CancelSwapAgreement(r *http.Request, pkey *string, result *swapapi.PostResult) error {
-	res, err := swapapi.CancelSwapAgreement(*pkey)
-	if err == nil && res != nil {
-		*result = *res
-	}
-	return err
-}
-
-// UpdateSwapAgreement api
-func (s *RPCAPI) UpdateSwapAgreement(r *http.Request, args *SwapAgreementArgs, result *swapapi.PostResult) error {
-	res, err := swapapi.UpdateSwapAgreement(*args)
-	if err == nil && res != nil {
-		*result = *res
-	}
-	return err
-}
-
-// GetSwapAgreement api
-func (s *RPCAPI) GetSwapAgreement(r *http.Request, pkey *string, result *swapapi.SwapAgreement) error {
-	res, err := swapapi.GetSwapAgreement(*pkey)
-	if err == nil && res != nil {
-		*result = res
-	}
-	return err
-}
-
-// GetLatestScanInfo api
-func (s *RPCAPI) GetLatestScannedSolanaTxid(r *http.Request, address *string, result *string) error {
-	res := swapapi.GetLatestScannedSolanaTxid(*address)
-	*result = res
-	return nil
 }

@@ -1,3 +1,4 @@
+// Package restapi provides RESTful RPC service.
 package restapi
 
 import (
@@ -7,6 +8,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/internal/swapapi"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/gorilla/mux"
 )
@@ -21,20 +23,24 @@ func writeResponse(w http.ResponseWriter, resp interface{}, err error) {
 		writeErrResponse(w, err)
 		return
 	}
+	writeJSONResponse(w, jsonData)
+}
+
+func writeJSONResponse(w http.ResponseWriter, jsonData []byte) {
 	// Note: must set header before write header
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonData)
+	_, err := w.Write(jsonData)
 	if err != nil {
-		fmt.Println("write response error:", err)
+		log.Warn("write response error", "data", common.ToHex(jsonData), "err", err)
 	}
 }
 
 func writeErrResponse(w http.ResponseWriter, err error) {
 	// Note: must set header before write header
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, err.Error())
+	fmt.Fprint(w, err.Error())
 }
 
 // VersionInfoHandler handler
@@ -49,6 +55,12 @@ func ServerInfoHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// OracleInfoHandler handler
+func OracleInfoHandler(w http.ResponseWriter, r *http.Request) {
+	res := swapapi.GetOraclesHeartbeat()
+	writeResponse(w, res, nil)
+}
+
 // TokenPairInfoHandler handler
 func TokenPairInfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -57,17 +69,17 @@ func TokenPairInfoHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-// NonceInfoHandler handler
-func NonceInfoHandler(w http.ResponseWriter, r *http.Request) {
-	res, err := swapapi.GetNonceInfo()
+// TokenPairsInfoHandler handler
+func TokenPairsInfoHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	pairIDs := vars["pairids"]
+	res, err := swapapi.GetTokenPairsInfo(pairIDs)
 	writeResponse(w, res, err)
 }
 
-// StatisticsHandler handler
-func StatisticsHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	pairID := vars["pairid"]
-	res, err := swapapi.GetSwapStatistics(pairID)
+// NonceInfoHandler handler
+func NonceInfoHandler(w http.ResponseWriter, r *http.Request) {
+	res, err := swapapi.GetNonceInfo()
 	writeResponse(w, res, err)
 }
 
@@ -270,53 +282,3 @@ func GetRegisteredAddress(w http.ResponseWriter, r *http.Request) {
 	res, err := swapapi.GetRegisteredAddress(address)
 	writeResponse(w, res, err)
 }
-
-/*
-// AddSwapAgreement handler
-func AddSwapAgreement(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	var obj = make(map[string]interface{})
-	for k, v := range vars {
-		var x interface{}
-		err := json.Unmarshal([]byte(v), &x)
-		if err != nil {
-			x = v
-		}
-		obj[k] = x
-	}
-	res, err := swapapi.AddSwapAgreement(obj)
-	writeResponse(w, res, err)
-}
-
-// CancelSwapAgreement handler
-func CancelSwapAgreement(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	pkey := vars["pkey"]
-	res, err := swapapi.CancelSwapAgreement(pkey)
-	writeResponse(w, res, err)
-}
-
-// UpdateSwapAgreement handler
-func UpdateSwapAgreement(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	var obj = make(map[string]interface{})
-	for k, v := range vars {
-		var x interface{}
-		err := json.Unmarshal([]byte(v), &x)
-		if err != nil {
-			x = v
-		}
-		obj[k] = x
-	}
-	res, err := swapapi.UpdateSwapAgreement(obj)
-	writeResponse(w, res, err)
-}
-
-// GetSwapAgreement handler
-func GetSwapAgreement(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	pkey := vars["pkey"]
-	res, err := swapapi.GetSwapAgreement(pkey)
-	writeResponse(w, res, err)
-}
-*/

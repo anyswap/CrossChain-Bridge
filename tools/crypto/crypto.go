@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
+// Package crypto provides facilities for ecdsa encryption and decryption.
 package crypto
 
 import (
@@ -23,6 +24,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"math/big"
 	"os"
@@ -49,23 +51,46 @@ var (
 
 var errInvalidPubkey = errors.New("invalid secp256k1 public key")
 
+// KeccakState wraps sha3.state. In addition to the usual hash methods, it also supports
+// Read to get a variable amount of data from the hash state. Read is faster than Sum
+// because it doesn't copy the internal state, but also modifies the internal state.
+type KeccakState interface {
+	hash.Hash
+	Read([]byte) (int, error)
+}
+
+// NewKeccakState creates a new KeccakState
+func NewKeccakState() KeccakState {
+	return sha3.NewLegacyKeccak256().(KeccakState)
+}
+
+// HashData hashes the provided data using the KeccakState and returns a 32 byte hash
+func HashData(kh KeccakState, data []byte) (h common.Hash) {
+	kh.Reset()
+	_, _ = kh.Write(data)
+	_, _ = kh.Read(h[:])
+	return h
+}
+
 // Keccak256 calculates and returns the Keccak256 hash of the input data.
 func Keccak256(data ...[]byte) []byte {
-	d := sha3.NewLegacyKeccak256()
+	b := make([]byte, 32)
+	d := NewKeccakState()
 	for _, b := range data {
 		_, _ = d.Write(b)
 	}
-	return d.Sum(nil)
+	_, _ = d.Read(b)
+	return b
 }
 
 // Keccak256Hash calculates and returns the Keccak256 hash of the input data,
 // converting it to an internal Hash data structure.
 func Keccak256Hash(data ...[]byte) (h common.Hash) {
-	d := sha3.NewLegacyKeccak256()
+	d := NewKeccakState()
 	for _, b := range data {
 		_, _ = d.Write(b)
 	}
-	d.Sum(h[:0])
+	_, _ = d.Read(h[:])
 	return h
 }
 
@@ -174,11 +199,13 @@ func LoadECDSA(file string) (*ecdsa.PrivateKey, error) {
 	if fi.Mode() != 0400 {
 		return nil, errors.New("unsafe file permissions, want 0400")
 	}
-	fd, err := os.Open(file)
+	fd, err := os.Open(file) // nolint:gosec // ok
 	if err != nil {
 		return nil, err
 	}
-	defer fd.Close()
+	defer func() {
+		_ = fd.Close()
+	}()
 	if _, err = io.ReadFull(fd, buf); err != nil {
 		return nil, err
 	}

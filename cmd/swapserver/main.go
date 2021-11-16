@@ -1,3 +1,4 @@
+// Command swapserver start the server node.
 package main
 
 import (
@@ -66,8 +67,15 @@ func swapserver(ctx *cli.Context) error {
 
 	tokens.SetTokenPairsDir(utils.GetTokenPairsDir(ctx))
 
-	dbConfig := config.MongoDB
-	mongodb.MongoServerInit([]string{dbConfig.DBURL}, dbConfig.DBName, dbConfig.UserName, dbConfig.Password)
+	appName := params.GetIdentifier()
+	dbConfig := config.Server.MongoDB
+	mongodb.MongoServerInit(
+		appName,
+		dbConfig.DBURLs,
+		dbConfig.DBName,
+		dbConfig.UserName,
+		dbConfig.Password,
+	)
 
 	worker.StartWork(true)
 	time.Sleep(100 * time.Millisecond)
