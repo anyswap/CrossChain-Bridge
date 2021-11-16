@@ -4,13 +4,11 @@ on:
   pull_request:
 jobs:
   test:
+    name: run
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v2
+    - uses: actions/checkout@master
+    - name: run test
+      uses: cedrickring/golang-action@1.5.2
       with:
-        go-version: '1.17'
-    - run: |
-        go run build/ci.go install ./cmd/...
-        go build -v ./...
-        go test ./...
+        args: make test

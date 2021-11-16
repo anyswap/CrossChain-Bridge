@@ -1,5 +1,5 @@
 # a short string to identify the bridge
-Identifier = "BLOCK2ETH"
+Identifier = "COSMOS2ETH"
 
 # administrators who can do admin work like maintain blacklist etc.
 Admins = [
@@ -26,51 +26,24 @@ AllowedOrigins = []
 # post swap register RPC requests to this server
 ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 
-# customize fees in building btc transaction (btc only)
-[BtcExtra]
-# minimum relay fee of tx (much greater than BTC!!!)
-MinRelayFee = 3000
-# relay fee per kilobytes
-MinRelayFeePerKb = 10000
-# maximum relay fee per kilobytes
-MaxRelayFeePerKb = 500000
-# plus percentage of estimate fee to speed tx packing
-PlusFeePercentage = 0
-# estimate smart fee with such many target blocks
-EstimateFeeBlocks = 6
-# aggregate if have more than so many utxos
-UtxoAggregateMinCount = 20
-# aggregate if have more than so many value
-UtxoAggregateMinValue = 1000000 # unit satoshi
-# aggreate to this address
-UtxoAggregateToAddress = "BpeGP9ooFTGSsdcysmMMgbRCqYQgpjrCsE"
-
 # source chain config
 [SrcChain]
-BlockChain = "BLOCK"
-NetID = "Mainnet"
+BlockChain = "COSMOS"
+NetID = "cosmos-hub4"
 # tx should be in chain with at least so many confirmations to be valid on source chain
 Confirmations = 0 # suggest >= 6 for Mainnet
 # only tx with block height >= this initial height should be considered valid on source chain
 InitialHeight = 0
 # whether enable scan blocks and register swaps
-EnableScan = false
+EnableScan = true
 
 # source blockchain gateway config
 [SrcGateway]
-APIAddress = ["5.189.139.168:51515"]
-[SrcGateway.Extras]
-[SrcGateway.Extras.BlockExtra]
-UTXOAPIAddresses = ["https://plugin-dev.core.cloudchainsinc.com"]
-[[SrcGateway.Extras.BlockExtra.CoreAPIs]]
-APIAddress:"5.189.139.168:51515"
-RPCUser:"xxmm"
-RPCPassword:"123456"
-DisableTLS: true
+APIAddress = [""]
 
 # dest chain config
 [DestChain]
-BlockChain = "Ethereum"
+BlockChain = "ETHEREUM"
 NetID = "Rinkeby"
 # tx should be in chain with at least so many confirmations to be valid on source chain
 Confirmations = 0 # suggest >= 30 for Mainnet

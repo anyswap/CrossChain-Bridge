@@ -38,7 +38,7 @@ var (
 	LogMaxAgeFlag = &cli.Uint64Flag{
 		Name:  "maxage",
 		Usage: "log max age (unit hour)",
-		Value: 7200,
+		Value: 720,
 	}
 	// VerbosityFlag -v|--verbosity
 	VerbosityFlag = &cli.Uint64Flag{

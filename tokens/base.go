@@ -38,7 +38,8 @@ var (
 
 	IsDcrmDisabled bool
 
-	TokenPriceCfg *TokenPriceConfig
+	TokenPriceCfg            *TokenPriceConfig
+	IsSwapoutToStringAddress bool = false
 )
 
 // CrossChainBridgeBase base bridge

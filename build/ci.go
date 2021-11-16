@@ -1,5 +1,3 @@
-// Package build provide customized methods to build project.
-// It can add external infos (eg. gitCommit, gitDate) to the version sub command.
 package main
 
 import (
@@ -45,7 +43,7 @@ func doInstall(cmdline []string) {
 	if !strings.Contains(runtime.Version(), "devel") {
 		// Figure out the minor version number since we can't textually compare (1.10 < 1.9)
 		var minor int
-		_, _ = fmt.Sscanf(strings.TrimPrefix(runtime.Version(), "go1."), "%d", &minor)
+		fmt.Sscanf(strings.TrimPrefix(runtime.Version(), "go1."), "%d", &minor)
 
 		if minor < 12 {
 			log.Println("You have Go version", runtime.Version())

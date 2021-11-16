@@ -1,19 +1,19 @@
-PairID = "BLOCK"
+PairID = "TERRA"
 
 # source token config
 [SrcToken]
 # ID must be ERC20 if source token is erc20 token
-ID = "BLOCK"
-Name = "BlockNet"
-Symbol = "BLOCK"
-Decimals = 8
-Description = "BlockNet"
+ID = "LUNA"
+Name = "Luna coin"
+Symbol = "LUNA"
+Decimals = 6
+Description = "Luna coin"
 # if ID is ERC20, this is the erc20 token's contract address
 ContractAddress = ""
 # deposit to this address to make swap
-DepositAddress = "BpeGP9ooFTGSsdcysmMMgbRCqYQgpjrCsE"
+DepositAddress = "terra1qj05rkrpphd55dawh7qxxmd2c72g57j2r0nlp3"
 # withdraw from this address
-DcrmAddress = "BpeGP9ooFTGSsdcysmMMgbRCqYQgpjrCsE"
+DcrmAddress = "terra1qj05rkrpphd55dawh7qxxmd2c72g57j2r0nlp3"
 # dcrm address public key
 DcrmPubkey = "045c8648793e4867af465691685000ae841dccab0b011283139d2eae454b569d5789f01632e13a75a5aad8480140e895dd671cae3639f935750bea7ae4b5a2512e"
 # maximum deposit value
@@ -33,16 +33,18 @@ PlusGasPricePercentage = 15 # plus 15% gas price
 BigValueThreshold = 5.0
 # disable deposit function if this flag is true
 DisableSwap = false
+# Unit name
+Unit = "uluna"
 
 # dest token config
 [DestToken]
-ID = "anyBLOCK"
-Name = "BlockNet coin"
-Symbol = "anyBLOCK"
-Decimals = 8
-Description = "cross chain bridge BLOCK with anyBLOCK"
+ID = "anyLUNA"
+Name = "ANY LUNA"
+Symbol = "anyLUNA"
+Decimals = 6
+Description = ""
 # mapping erc20 token address
-ContractAddress = "0xe1b02a6255ac84485cc5df2c457acedcb59fd536"
+ContractAddress = ""
 # mapping erc20 token creator
 DcrmAddress = "0xbF0A46d3700E23a98F38079cE217742c92Bb66bC"
 # dcrm address public key

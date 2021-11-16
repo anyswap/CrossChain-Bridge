@@ -12,12 +12,13 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/block"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/colx"
+	"github.com/anyswap/CrossChain-Bridge/tokens/cosmos"
 	"github.com/anyswap/CrossChain-Bridge/tokens/etc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
 	"github.com/anyswap/CrossChain-Bridge/tokens/kusama"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
-	"github.com/anyswap/CrossChain-Bridge/tokens/okex"
+	"github.com/anyswap/CrossChain-Bridge/tokens/terra"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
@@ -35,10 +36,12 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return etc.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "ETHEREUM"):
 		return eth.NewCrossChainBridge(isSrc)
-	case strings.HasPrefix(blockChainIden, "OKEX"):
-		return okex.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "COSMOS"):
+		return cosmos.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "TERRA"):
+		return terra.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "COLOSSUS") || strings.HasPrefix(blockChainIden, "COLX"):
 		return colx.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "KUSAMA"):
@@ -67,6 +70,23 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.SrcBridge = NewCrossChainBridge(srcID, true)
 	tokens.DstBridge = NewCrossChainBridge(dstID, false)
 	log.Info("New bridge finished", "source", srcID, "sourceNet", srcNet, "dest", dstID, "destNet", dstNet)
+	BlockChain := strings.ToUpper(srcChain.BlockChain)
+	switch BlockChain {
+	case "COSMOS", "TERRA", "BITCOIN", "LITECOIN", "BLOCK", "COLX":
+		tokens.IsSwapoutToStringAddress = true
+	}
+
+	switch BlockChain {
+	case "COSMOS", "TERRA":
+		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).BeforeConfig()
+		if !isServer && params.ServerAPIAddress == "" && btc.BridgeInstance != nil {
+			// btc need oracle config to post rpc to swap server
+			err := params.GetConfig().Oracle.CheckConfig()
+			if err != nil {
+				log.Crit("check oracle config failed", "err", err)
+			}
+		}
+	}
 
 	tokens.SrcBridge.SetChainAndGateway(srcChain, srcGateway)
 	log.Info("Init bridge source", "source", srcID, "gateway", srcGateway)
@@ -89,7 +109,6 @@ func InitCrossChainBridge(isServer bool) {
 	tokens.IsDcrmDisabled = cfg.Dcrm.Disable
 	tokens.LoadTokenPairsConfig(true)
 
-	BlockChain := strings.ToUpper(srcChain.BlockChain)
 	switch BlockChain {
 	case "BITCOIN":
 		btc.Init(cfg.BtcExtra)
@@ -97,10 +116,10 @@ func InitCrossChainBridge(isServer bool) {
 		ltc.Init(cfg.BtcExtra)
 	case "BLOCK":
 		block.Init(cfg.BtcExtra)
+	case "COSMOS", "TERRA":
+		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).AfterConfig()
 	case "COLX":
 		colx.Init(cfg.BtcExtra)
-	default:
-		cfg.BtcExtra = nil
 	}
 
 	dcrm.Init(cfg.Dcrm, isServer)

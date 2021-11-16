@@ -71,6 +71,7 @@ type TxStatus struct {
 	BlockHeight   uint64      `json:"block_height"`
 	BlockHash     string      `json:"block_hash"`
 	BlockTime     uint64      `json:"block_time"`
+	Finalized     bool        `json:"Finalized"`
 }
 
 // SwapInfo struct

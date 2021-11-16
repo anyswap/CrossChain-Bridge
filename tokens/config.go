@@ -105,6 +105,13 @@ type TokenPriceConfig struct {
 	APIAddress []string
 }
 
+type KeyType string
+
+const (
+	ECDSAKeyType   KeyType = "ecdsa"
+	ED25519KeyType KeyType = "ed25519"
+)
+
 // TokenConfig struct
 type TokenConfig struct {
 	ID                     string `json:",omitempty"`
@@ -135,11 +142,14 @@ type TokenConfig struct {
 	AllowSwapinFromContract  bool   `json:",omitempty"`
 	AllowSwapoutFromContract bool   `json:",omitempty"`
 
+	PrivateKeyType KeyType `json:"ecdsa"`
+
 	// use private key address instead
 	DcrmAddressKeyStore string `json:"-"`
 	DcrmAddressPassword string `json:"-"`
 	DcrmAddressKeyFile  string `json:"-"`
 	dcrmAddressPriKey   *ecdsa.PrivateKey
+	//dcrmAddressED25519PriKey *ed25519.PrivateKey
 
 	// calced value
 	maxSwap          *big.Int
@@ -147,6 +157,8 @@ type TokenConfig struct {
 	maxSwapFee       *big.Int
 	minSwapFee       *big.Int
 	bigValThreshhold *big.Int
+
+	Unit string // Cosmos coin unit denom
 }
 
 // CheckConfig check chain config

@@ -1,4 +1,3 @@
-// Package riskctrl do the audit job and send warning emails when finds illegal situations.
 package riskctrl
 
 import (

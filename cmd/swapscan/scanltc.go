@@ -11,43 +11,21 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 	"github.com/urfave/cli/v2"
 )
 
 var (
-	mongoURLFlag = &cli.StringFlag{
-		Name:  "mongoURL",
-		Usage: "mongodb URL",
-		Value: "localhost:27017",
-	}
-	dbNameFlag = &cli.StringFlag{
-		Name:  "dbName",
-		Usage: "database name",
-	}
-	dbUserFlag = &cli.StringFlag{
-		Name:  "dbUser",
-		Usage: "database user name",
-	}
-	dbPassFlag = &cli.StringFlag{
-		Name:  "dbPass",
-		Usage: "database password",
-	}
-	testnetFlag = &cli.BoolFlag{
-		Name:  "testnet",
-		Usage: "use testnet",
-	}
-
-	scanBtcCommand = &cli.Command{
-		Action:    scanBtc,
-		Name:      "scanbtc",
-		Usage:     "scan swap on btc",
+	scanLtcCommand = &cli.Command{
+		Action:    scanLtc,
+		Name:      "scanltc",
+		Usage:     "scan swap on ltc",
 		ArgsUsage: " ",
 		Description: `
-scan swap on btc
+scan swap on ltc
 `,
 		Flags: []cli.Flag{
 			testnetFlag,
@@ -64,11 +42,9 @@ scan swap on btc
 			utils.JobsFlag,
 		},
 	}
-
-	swapRPCTimeout = 60 // seconds
 )
 
-type btcSwapScanner struct {
+type ltcSwapScanner struct {
 	useTestnet     bool
 	gateway        string
 	swapServer     string
@@ -81,12 +57,12 @@ type btcSwapScanner struct {
 	rpcInterval   time.Duration
 	rpcRetryCount int
 
-	bridge *btc.Bridge
+	bridge *ltc.Bridge
 }
 
-func scanBtc(ctx *cli.Context) error {
+func scanLtc(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
-	scanner := &btcSwapScanner{
+	scanner := &ltcSwapScanner{
 		rpcInterval:   1 * time.Second,
 		rpcRetryCount: 3,
 	}
@@ -117,7 +93,7 @@ func scanBtc(ctx *cli.Context) error {
 	return nil
 }
 
-func (scanner *btcSwapScanner) verifyOptions() {
+func (scanner *ltcSwapScanner) verifyOptions() {
 	if !scanner.bridge.IsValidAddress(scanner.depositAddress) {
 		log.Fatalf("invalid deposit address '%v'", scanner.depositAddress)
 	}
@@ -147,7 +123,7 @@ func (scanner *btcSwapScanner) verifyOptions() {
 	}
 }
 
-func (scanner *btcSwapScanner) initMongodb(ctx *cli.Context) {
+func (scanner *ltcSwapScanner) initMongodb(ctx *cli.Context) {
 	dbURL := ctx.String(mongoURLFlag.Name)
 	dbName := ctx.String(dbNameFlag.Name)
 	userName := ctx.String(dbUserFlag.Name)
@@ -157,12 +133,12 @@ func (scanner *btcSwapScanner) initMongodb(ctx *cli.Context) {
 	}
 }
 
-func (scanner *btcSwapScanner) initBridge() {
-	scanner.bridge = btc.NewCrossChainBridge(true)
+func (scanner *ltcSwapScanner) initBridge() {
+	scanner.bridge = ltc.NewCrossChainBridge(true)
 	scanner.bridge.GatewayConfig = &tokens.GatewayConfig{
 		APIAddress: []string{scanner.gateway},
 	}
-	btcDecimals := uint8(8)
+	ltcDecimals := uint8(8)
 	netID := "Mainnet"
 	if scanner.useTestnet {
 		netID = "TestNet3"
@@ -173,23 +149,23 @@ func (scanner *btcSwapScanner) initBridge() {
 		Confirmations: &scanner.stableHeight,
 	}
 	pairConfig := &tokens.TokenPairConfig{
-		PairID: btc.PairID,
+		PairID: ltc.PairID,
 		SrcToken: &tokens.TokenConfig{
-			ID:             "BTC",
-			Name:           "BTC",
-			Symbol:         "BTC",
-			Decimals:       &btcDecimals,
+			ID:             "LTC",
+			Name:           "LTC",
+			Symbol:         "LTC",
+			Decimals:       &ltcDecimals,
 			DepositAddress: scanner.depositAddress,
 		},
 	}
 	pairsConfig := make(map[string]*tokens.TokenPairConfig)
-	pairsConfig[btc.PairID] = pairConfig
+	pairsConfig[ltc.PairID] = pairConfig
 	tokens.SetTokenPairsConfig(pairsConfig, false)
 	tokens.SrcBridge = scanner.bridge
 	tokens.DstBridge = eth.NewCrossChainBridge(false)
 }
 
-func (scanner *btcSwapScanner) run() {
+func (scanner *ltcSwapScanner) run() {
 	start := scanner.startHeight
 	wend := scanner.endHeight
 	if wend == 0 {
@@ -208,7 +184,7 @@ func (scanner *btcSwapScanner) run() {
 }
 
 // nolint:dupl // in diff sub command
-func (scanner *btcSwapScanner) doScanRangeJob(start, end uint64) {
+func (scanner *ltcSwapScanner) doScanRangeJob(start, end uint64) {
 	if start >= end {
 		return
 	}
@@ -234,7 +210,7 @@ func (scanner *btcSwapScanner) doScanRangeJob(start, end uint64) {
 	}
 }
 
-func (scanner *btcSwapScanner) scanRange(job, from, to uint64, wg *sync.WaitGroup) {
+func (scanner *ltcSwapScanner) scanRange(job, from, to uint64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.Info(fmt.Sprintf("[%v] start scan range", job), "from", from, "to", to)
 
@@ -245,11 +221,11 @@ func (scanner *btcSwapScanner) scanRange(job, from, to uint64, wg *sync.WaitGrou
 	log.Info(fmt.Sprintf("[%v] scan range finish", job), "from", from, "to", to)
 }
 
-func (scanner *btcSwapScanner) scanPool() {
+func (scanner *ltcSwapScanner) scanPool() {
 	scanner.bridge.StartPoolTransactionScanJob()
 }
 
-func (scanner *btcSwapScanner) scanLoop(from uint64) {
+func (scanner *ltcSwapScanner) scanLoop(from uint64) {
 	stable := scanner.stableHeight
 	log.Info("start scan loop", "from", from, "stable", stable)
 	for {
@@ -264,7 +240,7 @@ func (scanner *btcSwapScanner) scanLoop(from uint64) {
 	}
 }
 
-func (scanner *btcSwapScanner) loopGetBlockHash(height uint64) string {
+func (scanner *ltcSwapScanner) loopGetBlockHash(height uint64) string {
 	for {
 		blockHash, err := scanner.bridge.GetBlockHash(height)
 		if err == nil {
@@ -275,9 +251,9 @@ func (scanner *btcSwapScanner) loopGetBlockHash(height uint64) string {
 	}
 }
 
-func (scanner *btcSwapScanner) scanBlock(job, height uint64, cache bool) {
+func (scanner *ltcSwapScanner) scanBlock(job, height uint64, cache bool) {
 	blockHash := scanner.loopGetBlockHash(height)
-	if cache && btcCachedBlocks.isScanned(blockHash) {
+	if cache && ltcCachedBlocks.isScanned(blockHash) {
 		return
 	}
 	block, err := scanner.bridge.GetBlock(blockHash)
@@ -308,12 +284,12 @@ func (scanner *btcSwapScanner) scanBlock(job, height uint64, cache bool) {
 	}
 
 	if cache {
-		btcCachedBlocks.addBlock(blockHash)
+		ltcCachedBlocks.addBlock(blockHash)
 	}
 	log.Info(fmt.Sprintf("[%v] scan block %v finish", job, height))
 }
 
-func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
+func (scanner *ltcSwapScanner) processTx(tx *electrs.ElectTx) {
 	txid := *tx.Txid
 	p2shBindAddrs, err := scanner.bridge.CheckSwapinTxType(tx)
 	if err != nil {
@@ -328,7 +304,7 @@ func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 			}
 			var result interface{}
 			for i := 0; i < scanner.rpcRetryCount; i++ {
-				err = client.RPCPostWithTimeout(swapRPCTimeout, &result, scanner.swapServer, "swap.P2shSwapin", args)
+				err = client.RPCPost(&result, scanner.swapServer, "swap.P2shSwapin", args)
 				if tokens.ShouldRegisterSwapForError(err) {
 					break
 				}
@@ -343,18 +319,18 @@ func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 		if !rightReceiver || value == 0 {
 			return
 		}
-		bindAddress, bindOk := btc.GetBindAddressFromMemoScipt(memoScript)
+		bindAddress, bindOk := ltc.GetBindAddressFromMemoScipt(memoScript)
 		if !bindOk {
 			return
 		}
-		log.Info("post swapin register", "txid", txid, "pairid", btc.PairID, "bind", bindAddress)
+		log.Info("post swapin register", "txid", txid, "pairid", ltc.PairID, "bind", bindAddress)
 		args := map[string]interface{}{
 			"txid":   txid,
-			"pairid": btc.PairID,
+			"pairid": ltc.PairID,
 		}
 		var result interface{}
 		for i := 0; i < scanner.rpcRetryCount; i++ {
-			err = client.RPCPostWithTimeout(swapRPCTimeout, &result, scanner.swapServer, "swap.Swapin", args)
+			err = client.RPCPost(&result, scanner.swapServer, "swap.Swapin", args)
 			if tokens.ShouldRegisterSwapForError(err) {
 				break
 			}
@@ -366,28 +342,8 @@ func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 	}
 }
 
-var btcCachedBlocks = &cachedSacnnedBlocks{
+var ltcCachedBlocks = &cachedSacnnedBlocks{
 	capacity:  100,
 	nextIndex: 0,
 	hashes:    make([]string, 100),
-}
-
-type cachedSacnnedBlocks struct {
-	capacity  int
-	nextIndex int
-	hashes    []string
-}
-
-func (cache *cachedSacnnedBlocks) addBlock(blockHash string) {
-	cache.hashes[cache.nextIndex] = blockHash
-	cache.nextIndex = (cache.nextIndex + 1) % cache.capacity
-}
-
-func (cache *cachedSacnnedBlocks) isScanned(blockHash string) bool {
-	for _, b := range cache.hashes {
-		if b == blockHash {
-			return true
-		}
-	}
-	return false
 }

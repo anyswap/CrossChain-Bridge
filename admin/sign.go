@@ -1,4 +1,3 @@
-// Package admin provides methods to sign message and to verify signed message
 package admin
 
 import (

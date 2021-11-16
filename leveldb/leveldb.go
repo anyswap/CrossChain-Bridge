@@ -1,4 +1,3 @@
-// Package leveldb is a wrapper of goleveldb.
 package leveldb
 
 import (

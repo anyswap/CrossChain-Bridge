@@ -2,7 +2,7 @@
 .PHONY: swapserver swaporacle
 
 GOBIN = ./build/bin
-GOCMD = env GO111MODULE=on GOPROXY=https://goproxy.io,direct go
+GOCMD = env GO111MODULE=on GOPROXY=https://goproxy.io go
 
 swapserver:
 	$(GOCMD) run build/ci.go install ./cmd/swapserver
