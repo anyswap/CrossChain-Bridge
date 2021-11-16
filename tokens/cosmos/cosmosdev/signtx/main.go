@@ -53,6 +53,7 @@ var ChainID = "tequila-0004"
 
 //var ChainID = "stargate-final"
 
+/*
 func genKeyX() {
 	priv := secp256k1.GenPrivKey()
 	privkeyHex := hex.EncodeToString(priv.Bytes())
@@ -64,10 +65,11 @@ func genKeyX() {
 	address, _ := sdk.AccAddressFromHex(pubkeyAddress.String())
 	fmt.Printf("Address: %v\n", address.String())
 }
+*/
 
 func main() {
-	//genKey()
-	//sendTx()
+	genKey()
+	sendTx()
 	broadcastTx()
 }
 
@@ -134,13 +136,13 @@ func sendTx() {
 	}
 	memo := "lalalalalalala"
 
-	feeAmount := sdk.Coins{sdk.Coin{"ukrw", sdk.NewInt(55000000)}}
+	feeAmount := sdk.Coins{sdk.Coin{Denom: "ukrw", Amount: sdk.NewInt(55000000)}}
 	//feeAmount := sdk.Coins{sdk.Coin{"umuon", sdk.NewInt(50000)}}
 	gas := uint64(300000)
 	fee := authtypes.NewStdFee(gas, feeAmount)
 
 	signBytes := StdSignBytes(ChainID, accountNumber, sequence, fee, msgs, memo)
-	signString := fmt.Sprintf("%s", signBytes)
+	signString := string(signBytes)
 	signString = strings.Replace(signString, "cosmos-sdk", "bank", 1)
 	fmt.Printf("\nSign string:\n%v\n", signString)
 	signBytes = []byte(signString)
@@ -152,7 +154,10 @@ func sendTx() {
 	//privBytes1, _ := hex.DecodeString("1a05233ffa885bf369b5ff1ec829114975243fc7dbdbaabdee0cb9e4185dd678") // stargate-final
 	copy(privBytes[:], privBytes1[:33])
 	priv := secp256k1.PrivKeySecp256k1(privBytes)
-	signature, err := priv.Sign(signBytes)
+	signature, signerr := priv.Sign(signBytes)
+	if signerr != nil {
+		log.Fatal(signerr)
+	}
 
 	stdsig := authtypes.StdSignature{
 		PubKey:    priv.PubKey(),
@@ -233,10 +238,13 @@ func sendTx() {
 		log.Fatal(err)
 	}
 	var req1 rest.BroadcastReq
-	body, err := ioutil.ReadAll(r.Body)
-	err = CDC.UnmarshalJSON(body, &req1)
+	body, readerr := ioutil.ReadAll(r.Body)
+	if readerr != nil {
+		log.Fatal(readerr)
+	}
+	unmarshalerr := CDC.UnmarshalJSON(body, &req1)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(unmarshalerr)
 	}
 	fmt.Printf("\nreq1.Tx:\n%+v\n", req1.Tx)
 	txBytes2, err := CDC.MarshalBinaryLengthPrefixed(req1.Tx)

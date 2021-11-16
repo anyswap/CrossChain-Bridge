@@ -13,7 +13,7 @@ import (
 func newTestBridge() *Bridge {
 	b := &Bridge{Bridge: cosmos.NewCrossChainBridge(true)}
 	b.BeforeConfig()
-	params.SetConfig(&params.ServerConfig{
+	params.SetConfig(&params.BridgeConfig{
 		Identifier: "TEQUILA2RINKEBY",
 	})
 	cosmos.GetFeeAmount = b.FeeGetter()
@@ -31,9 +31,9 @@ func TestAddress(t *testing.T) {
 	assert.Nil(t, err1)
 	assert.Nil(t, err2)
 	assert.Nil(t, err3)
-	assert.Equal(t, fmt.Sprintf("%s", addr1), "terra1tgfzuquds5y3au839k3j7uxtxmf238mrspja4w")
-	assert.Equal(t, fmt.Sprintf("%s", addr2), "terra10rf55rx37vrtc4ws7l8v950whvwq9znmk7d9ka")
-	assert.Equal(t, fmt.Sprintf("%s", addr3), "terra1fg9wpzn3289sklzz67928lfgmu7c7ckp7l7fph")
+	assert.Equal(t, addr1, "terra1tgfzuquds5y3au839k3j7uxtxmf238mrspja4w")
+	assert.Equal(t, addr2, "terra10rf55rx37vrtc4ws7l8v950whvwq9znmk7d9ka")
+	assert.Equal(t, addr3, "terra1fg9wpzn3289sklzz67928lfgmu7c7ckp7l7fph")
 	fmt.Printf("addr1: %v\n", addr1)
 	fmt.Printf("addr2: %v\n", addr2)
 	fmt.Printf("addr2: %v\n", addr3)

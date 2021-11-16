@@ -2,7 +2,6 @@ package tokens
 
 import (
 	"crypto/ecdsa"
-	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"math/big"
@@ -146,11 +145,11 @@ type TokenConfig struct {
 	PrivateKeyType KeyType `json:"ecdsa"`
 
 	// use private key address instead
-	DcrmAddressKeyStore      string `json:"-"`
-	DcrmAddressPassword      string `json:"-"`
-	DcrmAddressKeyFile       string `json:"-"`
-	dcrmAddressPriKey        *ecdsa.PrivateKey
-	dcrmAddressED25519PriKey *ed25519.PrivateKey
+	DcrmAddressKeyStore string `json:"-"`
+	DcrmAddressPassword string `json:"-"`
+	DcrmAddressKeyFile  string `json:"-"`
+	dcrmAddressPriKey   *ecdsa.PrivateKey
+	//dcrmAddressED25519PriKey *ed25519.PrivateKey
 
 	// calced value
 	maxSwap          *big.Int

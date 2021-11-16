@@ -64,7 +64,7 @@ func (b *Bridge) AfterConfig() {
 		b.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
 		b.SupportedCoins["MNT"] = cosmos.CosmosCoin{"umnt", 6}
 	*/
-	if luna, ok := b.SupportedCoins["LUNA"]; ok == false || luna.Denom != "uluna" || luna.Decimal != 6 {
+	if luna, ok := b.SupportedCoins["LUNA"]; !ok || luna.Denom != "uluna" || luna.Decimal != 6 {
 		log.Info("Terra init coins", "luna", luna, "ok", ok, "check denom", (luna.Denom != "uluna"), "check decimal", luna.Decimal != 6)
 		log.Fatalf("Terra bridge must have Luna token config")
 	}
@@ -89,7 +89,7 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
 	chainID := strings.ToLower(b.ChainConfig.NetID)
-	if cosmos.ChainIDs[chainID] == false {
+	if !cosmos.ChainIDs[chainID] {
 		log.Fatalf("unsupported cosmos network: %v", b.ChainConfig.NetID)
 	}
 }
@@ -158,7 +158,7 @@ func (b *Bridge) FeeGetter() func(pairID string) authtypes.StdFee {
 
 // TerraSignBytesModifier is used to build terra special sign bytes
 var TerraSignBytesModifier = func(bz []byte) []byte {
-	signString := fmt.Sprintf("%s", bz)
+	signString := string(bz)
 	signString = strings.Replace(signString, "cosmos-sdk/MsgSend", "bank/MsgSend", -1)
 	signString = strings.Replace(signString, "cosmos-sdk/MsgMultiSend", "bank/MsgMultiSend", -1)
 	return []byte(signString)

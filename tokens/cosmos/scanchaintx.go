@@ -15,9 +15,8 @@ var (
 	quickSyncFinish  bool
 	quickSyncWorkers = uint64(4)
 
-	maxScanHeight          = uint64(100)
-	retryIntervalInScanJob = 3 * time.Second
-	restIntervalInScanJob  = 3 * time.Second
+	maxScanHeight         = uint64(100)
+	restIntervalInScanJob = 3 * time.Second
 )
 
 func (b *Bridge) getStartAndLatestHeight() (start, latest uint64) {
@@ -161,7 +160,7 @@ func (b *Bridge) quickSyncRange(ctx context.Context, idx, start, end uint64, wg 
 	}
 
 	for h := start; h < end; {
-		h2 := h
+		var h2 uint64
 		if end-h > 100 {
 			h2 = h + 100
 

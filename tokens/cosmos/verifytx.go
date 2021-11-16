@@ -23,7 +23,7 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 	}
 
 	txHash := tx.Hash()
-	if strings.EqualFold(txHash, msgHash[0]) == true {
+	if strings.EqualFold(txHash, msgHash[0]) {
 		return nil
 	}
 	return errors.New("msg hash not match")
@@ -86,7 +86,7 @@ func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swap
 				if tokenCfg == nil {
 					continue
 				}
-				if b.EqualAddress(msgsend.ToAddress.String(), tokenCfg.DepositAddress) == false {
+				if !b.EqualAddress(msgsend.ToAddress.String(), tokenCfg.DepositAddress) {
 					continue
 				}
 				swapInfo := &tokens.TxSwapInfo{}
@@ -117,7 +117,7 @@ func (b *Bridge) verifySwapinTx(txresp sdk.TxResponse, allowUnstable bool) (swap
 					if tokenCfg == nil {
 						continue
 					}
-					if b.EqualAddress(output.Address.String(), tokenCfg.DepositAddress) == false {
+					if !b.EqualAddress(output.Address.String(), tokenCfg.DepositAddress) {
 						continue
 					}
 					swapInfo := &tokens.TxSwapInfo{}
@@ -236,7 +236,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 				if tokenCfg == nil {
 					continue
 				}
-				if b.EqualAddress(msgsend.ToAddress.String(), tokenCfg.DepositAddress) == false {
+				if !b.EqualAddress(msgsend.ToAddress.String(), tokenCfg.DepositAddress) {
 					continue
 				}
 				swapInfo := &tokens.TxSwapInfo{}
@@ -267,7 +267,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 					if tokenCfg == nil {
 						continue
 					}
-					if b.EqualAddress(output.Address.String(), tokenCfg.DepositAddress) == false {
+					if !b.EqualAddress(output.Address.String(), tokenCfg.DepositAddress) {
 						continue
 					}
 					swapInfo := &tokens.TxSwapInfo{}

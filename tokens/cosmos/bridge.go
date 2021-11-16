@@ -43,18 +43,18 @@ func (b *Bridge) AfterConfig() {
 
 	switch b.ChainConfig.NetID {
 	case "stargate-final":
-		if umuon, ok := b.SupportedCoins["MUON"]; ok == false || umuon.Denom != "umuon" || umuon.Decimal != 6 {
+		if umuon, ok := b.SupportedCoins["MUON"]; !ok || umuon.Denom != "umuon" || umuon.Decimal != 6 {
 			log.Fatalf("Cosmos post-stargate bridge must have MUON token config")
 		}
 		b.MainCoin = b.SupportedCoins["MUON"]
 	case "cosmos-hub4":
-		if atom, ok := b.SupportedCoins["ATOM"]; ok == false || atom.Denom != "uatom" || atom.Decimal != 9 {
+		if atom, ok := b.SupportedCoins["ATOM"]; !ok || atom.Denom != "uatom" || atom.Decimal != 9 {
 			log.Fatalf("Cosmos pre-stargate bridge must have Atom token config")
 		}
 		b.MainCoin = b.SupportedCoins["ATOM"]
 	default:
-		if atom, ok := b.SupportedCoins["ATOM"]; ok == false || atom.Denom != "uatom" || atom.Decimal != 9 {
-			if umuon, ok := b.SupportedCoins["MUON"]; ok == false || umuon.Denom != "umuon" || umuon.Decimal != 9 {
+		if atom, ok := b.SupportedCoins["ATOM"]; !ok || atom.Denom != "uatom" || atom.Decimal != 9 {
+			if umuon, ok := b.SupportedCoins["MUON"]; !ok || umuon.Denom != "umuon" || umuon.Decimal != 9 {
 				log.Fatalf("Cosmos bridge must have one of Atom or Muon token config")
 			}
 		}
@@ -80,8 +80,8 @@ func (b *Bridge) GetCoin(name string) (CosmosCoin, bool) {
 	coin, ok := b.SupportedCoins[name]
 	if !ok {
 		b.LoadCoins()
+		coin, ok = b.SupportedCoins[name]
 	}
-	coin, ok = b.SupportedCoins[name]
 	return coin, ok
 }
 
@@ -120,7 +120,7 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
 	chainID := strings.ToLower(b.ChainConfig.NetID)
-	if ChainIDs[chainID] == false {
+	if !ChainIDs[chainID] {
 		log.Fatalf("unsupported cosmos network: %v", b.ChainConfig.NetID)
 	}
 }
@@ -163,17 +163,17 @@ func (b *Bridge) FeeGetter() func(pairID string) authtypes.StdFee {
 	switch b.ChainConfig.NetID {
 	case "stargate-final":
 		return func(pairID string) authtypes.StdFee {
-			feeAmount := sdk.Coins{sdk.Coin{"umuon", sdk.NewInt(3000)}}
+			feeAmount := sdk.Coins{sdk.Coin{Denom: "umuon", Amount: sdk.NewInt(3000)}}
 			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 		}
 	case "cosmos-hub4":
 		return func(pairID string) authtypes.StdFee {
-			feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
+			feeAmount := sdk.Coins{sdk.Coin{Denom: "uatom", Amount: sdk.NewInt(3000)}}
 			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 		}
 	default:
 		return func(pairID string) authtypes.StdFee {
-			feeAmount := sdk.Coins{sdk.Coin{"uatom", sdk.NewInt(3000)}}
+			feeAmount := sdk.Coins{sdk.Coin{Denom: "uatom", Amount: sdk.NewInt(3000)}}
 			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 		}
 	}

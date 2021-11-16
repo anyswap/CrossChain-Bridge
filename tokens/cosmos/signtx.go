@@ -21,7 +21,6 @@ import (
 )
 
 const (
-	retryGetSignStatusCount    = 70
 	retryGetSignStatusInterval = 10 * time.Second
 )
 
@@ -35,13 +34,13 @@ func (b *Bridge) verifyTransactionWithArgs(tx StdSignContent, args *tokens.Build
 		return errors.New("msg types error")
 	}
 	switch {
-	case strings.EqualFold(args.From, msg.FromAddress.String()) == false:
+	case !strings.EqualFold(args.From, msg.FromAddress.String()):
 		return fmt.Errorf("[cosmos verify transaction with args] From address not match, args.From: %v, msg.FromAddress: %v", args.From, msg.FromAddress.String())
-	case strings.EqualFold(msg.FromAddress.String(), tokenCfg.DcrmAddress) == false:
+	case !strings.EqualFold(msg.FromAddress.String(), tokenCfg.DcrmAddress):
 		return fmt.Errorf("[cosmos verify transaction with args] From address is not dcrm address, args.From: %v, dcrm address: %v", msg.FromAddress.String(), tokenCfg.DcrmAddress)
-	case b.IsValidAddress(args.Bind) == false:
+	case !b.IsValidAddress(args.Bind):
 		return fmt.Errorf("[cosmos verify transaction with args] Invalid to address: %v", args.Bind)
-	case strings.EqualFold(args.Bind, msg.ToAddress.String()) == false:
+	case !strings.EqualFold(args.Bind, msg.ToAddress.String()):
 		return fmt.Errorf("[cosmos verify transaction with args] To address not match, args.To: %v, msg.ToAddress: %v", args.Bind, msg.ToAddress.String())
 	default:
 	}
@@ -122,7 +121,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		Signatures:     []authtypes.StdSignature{stdsig},
 	}
 
-	if pubkey.VerifyBytes(tx.SignBytes(), signatureBytes) == false {
+	if !pubkey.VerifyBytes(tx.SignBytes(), signatureBytes) {
 		log.Error("Dcrm sign verify error")
 		return nil, "", errors.New("wrong signature")
 	}
