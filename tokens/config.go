@@ -409,6 +409,11 @@ func (c *ChainConfig) IsInCallByContractWhitelist(caller string) bool {
 	return exist
 }
 
+// IsFixedGasPrice is fixed gas price
+func (c *ChainConfig) IsFixedGasPrice() bool {
+	return c.fixedGasPrice != nil
+}
+
 // GetFixedGasPrice get fixed gas price
 func (c *ChainConfig) GetFixedGasPrice() *big.Int {
 	if c.fixedGasPrice != nil {
