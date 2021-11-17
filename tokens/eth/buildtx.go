@@ -206,18 +206,21 @@ func (b *Bridge) getDefaultGasLimit(pairID string) (gasLimit uint64) {
 func (b *Bridge) getGasPrice(args *tokens.BuildTxArgs) (price *big.Int, err error) {
 	fixedGasPrice := b.ChainConfig.GetFixedGasPrice()
 	if fixedGasPrice != nil {
-		return fixedGasPrice, nil
-	}
-
-	for i := 0; i < retryRPCCount; i++ {
-		price, err = b.SuggestPrice()
-		if err == nil {
-			break
+		price = fixedGasPrice
+		if args.GetReplaceNum() == 0 {
+			return price, nil
 		}
-		time.Sleep(retryRPCInterval)
-	}
-	if err != nil {
-		return nil, err
+	} else {
+		for i := 0; i < retryRPCCount; i++ {
+			price, err = b.SuggestPrice()
+			if err == nil {
+				break
+			}
+			time.Sleep(retryRPCInterval)
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if args != nil && args.SwapType != tokens.NoSwapType {
@@ -241,7 +244,10 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 	if tokenCfg == nil {
 		return nil, tokens.ErrUnknownPairID
 	}
-	addPercent := tokenCfg.PlusGasPricePercentage
+	addPercent := uint64(0)
+	if !b.ChainConfig.IsFixedGasPrice() {
+		addPercent = tokenCfg.PlusGasPricePercentage
+	}
 	replaceNum := args.GetReplaceNum()
 	if replaceNum > 0 {
 		addPercent += replaceNum * b.ChainConfig.ReplacePlusGasPricePercent

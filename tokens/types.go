@@ -358,6 +358,11 @@ func (c *ChainConfig) CheckConfig() error {
 	return nil
 }
 
+// IsFixedGasPrice is fixed gas price
+func (c *ChainConfig) IsFixedGasPrice() bool {
+	return c.fixedGasPrice != nil
+}
+
 // GetFixedGasPrice get fixed gas price
 func (c *ChainConfig) GetFixedGasPrice() *big.Int {
 	if c.fixedGasPrice != nil {
