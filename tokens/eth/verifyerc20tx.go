@@ -100,7 +100,7 @@ func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 	if swapInfo.Bind == swapInfo.To {
 		return tokens.ErrTxWithWrongSender
 	}
-	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
+	if !tokens.CheckSwapValue(swapInfo, b.IsSrc) {
 		return tokens.ErrTxWithWrongValue
 	}
 	token := b.GetTokenConfig(swapInfo.PairID)

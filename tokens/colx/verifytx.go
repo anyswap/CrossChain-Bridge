@@ -141,7 +141,7 @@ func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 	if swapInfo.From == swapInfo.To {
 		return tokens.ErrTxWithWrongSender
 	}
-	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
+	if !tokens.CheckSwapValue(swapInfo, b.IsSrc) {
 		return tokens.ErrTxWithWrongValue
 	}
 	if !tokens.DstBridge.IsValidAddress(swapInfo.Bind) {

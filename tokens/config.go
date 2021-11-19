@@ -135,6 +135,8 @@ type TokenConfig struct {
 	AllowSwapinFromContract  bool   `json:",omitempty"`
 	AllowSwapoutFromContract bool   `json:",omitempty"`
 
+	BigValueWhitelist []string `json:",omitempty"`
+
 	// use private key address instead
 	DcrmAddressKeyStore string `json:"-"`
 	DcrmAddressPassword string `json:"-"`
@@ -147,6 +149,8 @@ type TokenConfig struct {
 	maxSwapFee       *big.Int
 	minSwapFee       *big.Int
 	bigValThreshhold *big.Int
+
+	bigValueWhitelist map[string]struct{}
 }
 
 // CheckConfig check chain config
@@ -355,6 +359,19 @@ func (c *TokenConfig) CheckConfig(isSrc bool) (err error) {
 	if err != nil {
 		return err
 	}
+	if len(c.BigValueWhitelist) > 0 {
+		c.bigValueWhitelist = make(map[string]struct{}, len(c.BigValueWhitelist))
+		for _, addr := range c.BigValueWhitelist {
+			if !common.IsHexAddress(addr) {
+				return fmt.Errorf("wrong address '%v' in 'BigValueWhitelist'", addr)
+			}
+			key := strings.ToLower(addr)
+			if _, exist := c.bigValueWhitelist[key]; exist {
+				return fmt.Errorf("duplicate address '%v' in 'BigValueWhitelist'", addr)
+			}
+			c.bigValueWhitelist[key] = struct{}{}
+		}
+	}
 	log.Info("check token config success",
 		"id", c.ID, "name", c.Name, "symbol", c.Symbol, "decimals", *c.Decimals,
 		"depositAddress", c.DepositAddress, "contractAddress", c.ContractAddress,
@@ -387,6 +404,7 @@ func (c *TokenConfig) CalcAndStoreValue() {
 		"name", c.Name, "decimals", *c.Decimals, "contractAddress", c.ContractAddress,
 		"maxSwap", c.maxSwap, "minSwap", c.minSwap, "bigValThreshhold", c.bigValThreshhold,
 		"maxSwapFee", c.maxSwapFee, "minSwapFee", c.minSwapFee, "swapFeeRate", c.SwapFeeRate,
+		"bigValueWhitelist", c.bigValueWhitelist,
 	)
 }
 
@@ -453,6 +471,15 @@ func (c *TokenConfig) IsErc20() bool {
 // IsProxyErc20 return if token is proxy contract of erc20
 func (c *TokenConfig) IsProxyErc20() bool {
 	return strings.EqualFold(c.ID, "ProxyERC20")
+}
+
+// IsInBigValueWhitelist is in big value whitelist
+func (c *TokenConfig) IsInBigValueWhitelist(caller string) bool {
+	if c.bigValueWhitelist == nil {
+		return false
+	}
+	_, exist := c.bigValueWhitelist[strings.ToLower(caller)]
+	return exist
 }
 
 // GetDcrmAddressPrivateKey get private key

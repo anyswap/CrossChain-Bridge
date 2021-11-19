@@ -21,7 +21,7 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) (err error) {
 		return errInvalidReceiverAddress
 	}
 
-	swapValue := tokens.CalcSwappedValue(args.PairID, args.OriginValue, true)
+	swapValue := tokens.CalcSwappedValue(args.PairID, args.OriginValue, true, args.OriginFrom, args.OriginTxTo)
 	swapValue, err = b.adjustSwapValue(args, swapValue)
 	if err != nil {
 		return err

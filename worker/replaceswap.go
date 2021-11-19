@@ -172,6 +172,8 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 			Bind:       bind,
 		},
 		From:        tokenCfg.DcrmAddress,
+		OriginFrom:  swap.From,
+		OriginTxTo:  swap.TxTo,
 		OriginValue: swapInfo.Value,
 		Extra: &tokens.AllExtras{
 			EthExtra: &tokens.EthExtraArgs{

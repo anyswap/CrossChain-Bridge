@@ -229,6 +229,8 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 			Reswapping: res.Status == mongodb.Reswapping,
 		},
 		From:        dcrmAddress,
+		OriginFrom:  swap.From,
+		OriginTxTo:  swap.TxTo,
 		OriginValue: swapInfo.Value,
 	}
 
@@ -454,7 +456,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	if args.SwapValue != nil {
 		matchTx.SwapValue = args.SwapValue.String()
 	} else {
-		matchTx.SwapValue = tokens.CalcSwappedValue(pairID, args.OriginValue, isSwapin).String()
+		matchTx.SwapValue = tokens.CalcSwappedValue(pairID, args.OriginValue, isSwapin, res.From, res.TxTo).String()
 	}
 	err = updateSwapResult(txid, pairID, bind, matchTx)
 	if err != nil {
