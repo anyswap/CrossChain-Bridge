@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -59,7 +60,7 @@ func StartAPIServer() {
 	}
 	go func() {
 		if err := svr.ListenAndServe(); err != nil {
-			if err == http.ErrServerClosed && utils.IsCleanuping() {
+			if errors.Is(err, http.ErrServerClosed) && utils.IsCleanuping() {
 				return
 			}
 			log.Fatal("ListenAndServe error", "err", err)
