@@ -125,6 +125,8 @@ type TokenConfig struct {
 	AllowSwapinFromContract  bool   `json:",omitempty"`
 	AllowSwapoutFromContract bool   `json:",omitempty"`
 
+	BigValueWhitelist []string `json:",omitempty"`
+
 	// use private key address instead
 	DcrmAddressKeyStore string `json:"-"`
 	DcrmAddressPassword string `json:"-"`
@@ -137,6 +139,17 @@ type TokenConfig struct {
 	maxSwapFee       *big.Int
 	minSwapFee       *big.Int
 	bigValThreshhold *big.Int
+
+	bigValueWhitelist map[string]struct{}
+}
+
+// IsInBigValueWhitelist is in big value whitelist
+func (c *TokenConfig) IsInBigValueWhitelist(caller string) bool {
+	if c.bigValueWhitelist == nil {
+		return false
+	}
+	_, exist := c.bigValueWhitelist[strings.ToLower(caller)]
+	return exist
 }
 
 // IsErc20 return if token is erc20
@@ -227,11 +240,18 @@ type SwapInfo struct {
 	Identifier string     `json:"identifier,omitempty"`
 }
 
+// IsSwapin is swapin type
+func (s *SwapInfo) IsSwapin() bool {
+	return s.SwapType == SwapinType
+}
+
 // BuildTxArgs struct
 type BuildTxArgs struct {
 	SwapInfo    `json:"swapInfo,omitempty"`
 	From        string     `json:"from,omitempty"`
 	To          string     `json:"to,omitempty"`
+	OriginFrom  string     `json:"originFrom,omitempty"`
+	OriginTxTo  string     `json:"originTxTo,omitempty"`
 	Value       *big.Int   `json:"value,omitempty"`
 	OriginValue *big.Int   `json:"originValue,omitempty"`
 	Memo        string     `json:"memo,omitempty"`
@@ -467,11 +487,25 @@ func (c *TokenConfig) CheckConfig(isSrc bool) error {
 	if err != nil {
 		return err
 	}
+	if len(c.BigValueWhitelist) > 0 {
+		c.bigValueWhitelist = make(map[string]struct{}, len(c.BigValueWhitelist))
+		for _, addr := range c.BigValueWhitelist {
+			if !common.IsHexAddress(addr) {
+				return fmt.Errorf("wrong address '%v' in 'BigValueWhitelist'", addr)
+			}
+			key := strings.ToLower(addr)
+			if _, exist := c.bigValueWhitelist[key]; exist {
+				return fmt.Errorf("duplicate address '%v' in 'BigValueWhitelist'", addr)
+			}
+			c.bigValueWhitelist[key] = struct{}{}
+		}
+	}
 	log.Info("check token config success",
 		"id", c.ID, "name", c.Name, "symbol", c.Symbol, "decimals", *c.Decimals,
 		"depositAddress", c.DepositAddress, "contractAddress", c.ContractAddress,
 		"maxSwap", c.maxSwap, "minSwap", c.minSwap,
-		"maxSwapFee", c.maxSwapFee, "minSwapFee", c.minSwapFee, "bigValThreshhold", c.bigValThreshhold,
+		"maxSwapFee", c.maxSwapFee, "minSwapFee", c.minSwapFee,
+		"bigValThreshhold", c.bigValThreshhold, "bigValueWhitelist", c.bigValueWhitelist,
 	)
 	return nil
 }

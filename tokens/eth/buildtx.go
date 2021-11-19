@@ -103,7 +103,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 			return nil, tokens.ErrUnknownPairID
 		}
 		if !tokenCfg.IsErc20() {
-			value = tokens.CalcSwappedValue(pairID, args.OriginValue, false)
+			value = tokens.CalcSwappedValue(pairID, args.OriginValue, false, args.OriginFrom, args.OriginTxTo)
 		}
 	}
 

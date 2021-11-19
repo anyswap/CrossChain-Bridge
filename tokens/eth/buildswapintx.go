@@ -22,7 +22,7 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 		log.Warn("swapin to wrong address", "address", args.Bind)
 		return errors.New("can not swapin to empty or invalid address")
 	}
-	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, true)
+	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, true, args.OriginFrom, args.OriginTxTo) // amount
 
 	input := PackDataWithFuncHash(funcHash, txHash, address, amount)
 	args.Input = &input // input

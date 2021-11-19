@@ -257,6 +257,8 @@ func rebuildAndVerifyMsgHash(keyID string, msgHash []string, args *tokens.BuildT
 	buildTxArgs := &tokens.BuildTxArgs{
 		SwapInfo:    args.SwapInfo,
 		From:        tokenCfg.DcrmAddress,
+		OriginFrom:  swapInfo.From,
+		OriginTxTo:  swapInfo.TxTo,
 		OriginValue: swapInfo.Value,
 		Extra:       args.Extra,
 	}
