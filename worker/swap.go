@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -231,6 +232,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		From:        dcrmAddress,
 		OriginValue: swapInfo.Value,
 	}
+	log.Debug("======== 请注意 processSwap ========", "args", args)
 
 	return dispatchSwapTask(args)
 }
@@ -384,6 +386,7 @@ func checkAndUpdateProcessSwapTaskCache(key string) error {
 }
 
 func doSwap(args *tokens.BuildTxArgs) (err error) {
+	log.Debug("======== 请注意 doSwap ========", "args", args)
 	pairID := args.PairID
 	txid := args.SwapID
 	bind := args.Bind
@@ -409,6 +412,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	logWorker("doSwap", "start to process", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "value", args.OriginValue)
 
 	rawTx, err := resBridge.BuildRawTransaction(args)
+	log.Debug("======== 请注意 doSwap BuildRawTransaction ========", "args", args, "rawTx", rawTx)
 	if err != nil {
 		logWorkerError("doSwap", "build tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin)
 		return err
@@ -423,6 +427,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		if tokenCfg.GetDcrmAddressPrivateKey() != nil {
 			signedTx, signTxHash, err = resBridge.SignTransaction(rawTx, pairID)
 		} else {
+			log.Debug("======== 请注意 doSwap BuildRawTransaction ========", "args", args, "rawTx", rawTx, "args.GetExtraArgs()", args.GetExtraArgs())
 			signedTx, signTxHash, err = resBridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
 		}
 		if err == nil {

@@ -95,6 +95,9 @@ func (s *TxStatus) IsSwapTxOnChainAndFailed(token *TokenConfig) bool {
 		return false // not on chain
 	}
 	if s.Receipt != nil { // for eth-like blockchain
+		if success, ok := s.Receipt.(bool); ok && !success {
+			return true
+		}
 		receipt, ok := s.Receipt.(*types.RPCTxReceipt)
 		if !ok || !receipt.IsStatusOk() {
 			return true

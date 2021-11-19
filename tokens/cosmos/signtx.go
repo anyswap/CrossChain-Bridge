@@ -25,6 +25,7 @@ const (
 )
 
 func (b *Bridge) verifyTransactionWithArgs(tx StdSignContent, args *tokens.BuildTxArgs) error {
+	log.Debug("======== 请注意 verifyTransactionWithArgs ========", "args", args)
 	tokenCfg := b.GetTokenConfig(args.PairID)
 	if len(tx.Msgs) != 1 {
 		return errors.New("wrong msgs length")
@@ -60,6 +61,7 @@ func (b *Bridge) verifyTransactionWithArgs(tx StdSignContent, args *tokens.Build
 
 // DcrmSignTransaction dcrm sign raw tx
 func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
+	log.Debug("======== 请注意 DcrmSignTransaction ========", "args", args)
 	tx, ok := rawTx.(StdSignContent)
 	if !ok {
 		return nil, "", errors.New("wrong raw tx param")

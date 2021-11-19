@@ -2,6 +2,7 @@ package cosmos
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -53,17 +54,30 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetBalance")
 			continue
 		}
-		var balances sdk.Coins
+		/*var balances sdk.Coins
 		err = CDC.UnmarshalJSON(resp.Body(), &balances)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetBalance", "resp", string(resp.Body()))
 			continue
+		}*/
+		balanceResp := make(map[string]interface{})
+		unmarshalerr := json.Unmarshal(resp.Body(), &balanceResp)
+		if err != nil {
+			return big.NewInt(0), unmarshalerr
 		}
-		for _, bal := range balances {
-			if bal.Denom != b.MainCoin.Denom {
+		balances, ok := balanceResp["result"].([]interface{})
+		if !ok {
+			return big.NewInt(0), errors.New("get balances error")
+		}
+		for _, bali := range balances {
+			bal := bali.(map[string]interface{})
+			if bal["denom"].(string) != b.MainCoin.Denom {
 				continue
 			}
-			balance = bal.Amount.BigInt()
+			amountstr, ok := bal["amount"].(string)
+			if ok {
+				balance, _ = new(big.Int).SetString(amountstr, 0)
+			}
 		}
 		if balance == nil {
 			balance = big.NewInt(0)
@@ -95,17 +109,30 @@ func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (b
 			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "error", err, "func", "GetTokenBalance")
 			continue
 		}
-		var balances sdk.Coins
+		/*var balances sdk.Coins
 		err = CDC.UnmarshalJSON(resp.Body(), &balances)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTokenBalance", "resp", string(resp.Body()))
 			continue
+		}*/
+		balanceResp := make(map[string]interface{})
+		unmarshalerr := json.Unmarshal(resp.Body(), &balanceResp)
+		if err != nil {
+			return big.NewInt(0), unmarshalerr
 		}
-		for _, bal := range balances {
-			if bal.Denom != coin.Denom {
+		balances, ok := balanceResp["result"].([]interface{})
+		if !ok {
+			return big.NewInt(0), errors.New("get balances error")
+		}
+		for _, bali := range balances {
+			bal := bali.(map[string]interface{})
+			if bal["denom"].(string) != coin.Denom {
 				continue
 			}
-			balance = bal.Amount.BigInt()
+			amountstr, ok := bal["amount"].(string)
+			if ok {
+				balance, _ = new(big.Int).SetString(amountstr, 0)
+			}
 		}
 		if balance == nil {
 			balance = big.NewInt(0)
@@ -203,10 +230,9 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 			err1 = err
 			return
 		}*/
-		if txResult.Code != 0 {
-			status.Confirmations = 0
-		} else {
-			status.Confirmations = 1
+		status.Receipt = false
+		if txResult.Code == 0 {
+			status.Receipt = true
 		}
 		status.BlockHeight = uint64(txResult.Height)
 		t, err := time.Parse(TimeFormat, txResult.Timestamp)
@@ -214,8 +240,8 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 			status.BlockTime = uint64(t.Unix())
 		}
 
-		if txResult.Code == 0 && status.BlockHeight > 0 {
-			//status.Confirmations = 1000000
+		if status.BlockHeight > 0 {
+			status.Confirmations = 10
 			status.Finalized = true // asserts that tx has finalized, no need to check everything again
 		}
 		return

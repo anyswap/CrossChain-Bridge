@@ -10,6 +10,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+const (
+	TerraNative = "TerraNative"
+)
+
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var (
@@ -37,6 +41,14 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 
 	if from == "" {
 		return nil, errors.New("no sender specified")
+	}
+
+	bal, getbalerr := b.GetTokenBalance(TerraNative, pairID, from)
+	if getbalerr != nil {
+		return nil, getbalerr
+	}
+	if bal.Cmp(amount) < 0 {
+		return nil, fmt.Errorf("insufficient %v balance", pairID)
 	}
 
 	fromAcc, err := sdk.AccAddressFromBech32(from)

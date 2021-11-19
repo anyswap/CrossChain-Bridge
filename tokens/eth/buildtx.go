@@ -101,8 +101,6 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		to        = common.HexToAddress(args.To)
 		value     = args.Value
 		extra     = args.Extra.EthExtra
-		nonce     = *extra.Nonce
-		gasLimit  = *extra.Gas
 		gasPrice  = extra.GasPrice
 		gasTipCap = extra.GasTipCap
 		gasFeeCap = extra.GasFeeCap
@@ -121,13 +119,14 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 	}
 	if args.SwapType != tokens.NoSwapType {
 		needValue = new(big.Int).Add(needValue, b.getMinReserveFee())
-	} else if isDynamicFeeTx {
+	}
+	/*else if isDynamicFeeTx {
 		gasFee := new(big.Int).Mul(gasFeeCap, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
 	} else {
 		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
-	}
+	}*/
 	err = b.checkBalance("", args.From, needValue)
 	if err != nil {
 		log.Warn("check balance failed", "account", args.From, "needValue", needValue, "err", err)
@@ -138,6 +137,11 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 	if err != nil {
 		return nil, err
 	}
+
+	var (
+		nonce    = *extra.Nonce
+		gasLimit = *extra.Gas
+	)
 
 	if isDynamicFeeTx {
 		rawTx = types.NewDynamicFeeTx(b.SignerChainID, nonce, &to, value, gasLimit, gasTipCap, gasFeeCap, input, nil)
