@@ -134,6 +134,11 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		return nil, err
 	}
 
+	err = b.initNonceAndGasLimit(args)
+	if err != nil {
+		return nil, err
+	}
+
 	if isDynamicFeeTx {
 		rawTx = types.NewDynamicFeeTx(b.SignerChainID, nonce, &to, value, gasLimit, gasTipCap, gasFeeCap, input, nil)
 	} else {
@@ -199,6 +204,11 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (err error) {
 		extra.GasTipCap = nil
 		extra.GasFeeCap = nil
 	}
+	return nil
+}
+
+func (b *Bridge) initNonceAndGasLimit(args *tokens.BuildTxArgs) (err error) {
+	extra := args.Extra.EthExtra
 	if extra.Nonce == nil {
 		extra.Nonce, err = b.getAccountNonce(args.PairID, args.From, args.SwapType)
 		if err != nil {
