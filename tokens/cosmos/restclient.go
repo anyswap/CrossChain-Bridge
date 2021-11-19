@@ -15,7 +15,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	amino "github.com/tendermint/go-amino"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+
+	//ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	ttypes "github.com/tendermint/tendermint/types"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -215,6 +217,11 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 	return
 }
 
+type ResultBlock struct {
+	//BlockMeta *ttypes.BlockMeta `json:"block_meta"`
+	Block *ttypes.Block `json:"block"`
+}
+
 // GetLatestBlockNumber returns current block height
 // call rest api "/blocks/latest"
 func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
@@ -234,7 +241,7 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetLatestBlockNumber")
 			continue
 		}
-		var blockRes ctypes.ResultBlock
+		var blockRes ResultBlock
 		err = CDC.UnmarshalJSON(resp.Body(), &blockRes)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetLatestBlockNumber", "resp", string(resp.Body()))
@@ -263,7 +270,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 		log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetLatestBlockNumberOf")
 		return 0, err
 	}
-	var blockRes ctypes.ResultBlock
+	var blockRes ResultBlock
 	err = CDC.UnmarshalJSON(resp.Body(), &blockRes)
 	if err != nil {
 		log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetLatestBlockNumberOf", "resp", string(resp.Body()))

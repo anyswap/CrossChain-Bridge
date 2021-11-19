@@ -39,7 +39,7 @@ func (b *Bridge) BeforeConfig() {
 	cosmos.CDC.RegisterConcrete(authtypes.StdTx{}, "core/StdTx", nil)
 	cosmos.CDC.RegisterConcrete(&authtypes.BaseAccount{}, "core/Account", nil)
 	InitSDK()
-	cosmos.ChainIDs["columbus-4"] = true
+	cosmos.ChainIDs["columbus-5"] = true
 	cosmos.ChainIDs["tequila-0004"] = true
 	cosmos.SignBytesModifier = TerraSignBytesModifier
 	tokens.IsSwapoutToStringAddress = true
