@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -145,15 +146,19 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 			return nil, err
 		}
 		if txResult.Code != 0 {
+			log.Warn("Check tx code failed", "resp", string(resp.Body()))
 			return nil, fmt.Errorf("tx status error: %+v", txResult)
 		}
 		tx = txResult.Tx
-		err = tx.(sdk.Tx).ValidateBasic()
+		/*err = tx.(sdk.Tx).ValidateBasic()
 		if err != nil {
+			log.Warn("Transaction validate basic error", "error", err, "resp", string(resp.Body()))
 			return nil, err
 		} else {
+			log.Debug("Get transaction success", "tx", tx, "resp", string(resp.Body()))
 			return tx, err
-		}
+		}*/
+		return tx, err
 	}
 	return
 }
@@ -189,15 +194,15 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 		err = CDC.UnmarshalJSON(resp.Body(), &txResult)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTransactionStatus", "resp", string(resp.Body()))
-			err1 = err
+			//err1 = err
 			return
 		}
-		tx := txResult.Tx
+		/*tx := txResult.Tx
 		err = tx.ValidateBasic()
 		if err != nil {
 			err1 = err
 			return
-		}
+		}*/
 		if txResult.Code != 0 {
 			status.Confirmations = 0
 		} else {
@@ -210,6 +215,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 		}
 
 		if txResult.Code == 0 && status.BlockHeight > 0 {
+			//status.Confirmations = 1000000
 			status.Finalized = true // asserts that tx has finalized, no need to check everything again
 		}
 		return
@@ -241,13 +247,31 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetLatestBlockNumber")
 			continue
 		}
-		var blockRes ResultBlock
-		err = CDC.UnmarshalJSON(resp.Body(), &blockRes)
+		//var blockRes ResultBlock
+		//err = CDC.UnmarshalJSON(resp.Body(), &blockRes)
+		res := make(map[string]interface{})
+		err = json.Unmarshal(resp.Body(), &res)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetLatestBlockNumber", "resp", string(resp.Body()))
 			continue
 		}
-		height = uint64(blockRes.Block.Header.Height)
+		block, ok1 := res["block"].(map[string]interface{})
+		if !ok1 {
+			return 0, fmt.Errorf("parse block error: %v", resp.Body())
+		}
+		header, ok2 := block["header"].(map[string]interface{})
+		if !ok2 {
+			return 0, fmt.Errorf("parse height error: %v", block)
+		}
+		heightstr, ok3 := header["height"].(string)
+		if !ok3 {
+			return 0, fmt.Errorf("parse height error: %v", header)
+		}
+		height, strconverr := strconv.ParseUint(heightstr, 10, 64)
+		if strconverr != nil {
+			return 0, fmt.Errorf("convert height error: %v", heightstr)
+		}
+		//height = uint64(blockRes.Block.Header.Height)
 		return height, nil
 	}
 	return
@@ -267,16 +291,34 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 
 	resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
 	if err != nil || resp.StatusCode() != 200 {
-		log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetLatestBlockNumberOf")
+		log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetLatestBlockNumber")
 		return 0, err
 	}
-	var blockRes ResultBlock
-	err = CDC.UnmarshalJSON(resp.Body(), &blockRes)
+	//var blockRes ResultBlock
+	//err = CDC.UnmarshalJSON(resp.Body(), &blockRes)
+	res := make(map[string]interface{})
+	err = json.Unmarshal(resp.Body(), &res)
 	if err != nil {
-		log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetLatestBlockNumberOf", "resp", string(resp.Body()))
+		log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetLatestBlockNumber", "resp", string(resp.Body()))
 		return 0, err
 	}
-	height := uint64(blockRes.Block.Header.Height)
+	block, ok1 := res["block"].(map[string]interface{})
+	if !ok1 {
+		return 0, fmt.Errorf("parse block error: %v", resp.Body())
+	}
+	header, ok2 := block["header"].(map[string]interface{})
+	if !ok2 {
+		return 0, fmt.Errorf("parse height error: %v", block)
+	}
+	heightstr, ok3 := header["height"].(string)
+	if !ok3 {
+		return 0, fmt.Errorf("parse height error: %v", header)
+	}
+	height, strconverr := strconv.ParseUint(heightstr, 10, 64)
+	if strconverr != nil {
+		return 0, fmt.Errorf("convert height error: %v", heightstr)
+	}
+	//height = uint64(blockRes.Block.Header.Height)
 	return height, nil
 }
 
