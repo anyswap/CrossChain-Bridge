@@ -425,7 +425,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		if tokenCfg.GetDcrmAddressPrivateKey() != nil {
 			signedTx, signTxHash, err = resBridge.SignTransaction(rawTx, pairID)
 		} else {
-			signedTx, signTxHash, err = resBridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+			signedTx, signTxHash, err = resBridge.DcrmSignTransaction(rawTx, args)
 		}
 		if err == nil {
 			break

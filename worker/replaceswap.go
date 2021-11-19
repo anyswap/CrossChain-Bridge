@@ -193,7 +193,7 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
 		signedTx, signTxHash, err = bridge.SignTransaction(rawTx, pairID)
 	} else {
-		signedTx, signTxHash, err = bridge.DcrmSignTransaction(rawTx, args.GetExtraArgs())
+		signedTx, signTxHash, err = bridge.DcrmSignTransaction(rawTx, args)
 	}
 	if err != nil {
 		logWorkerError("replaceSwap", "sign tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
