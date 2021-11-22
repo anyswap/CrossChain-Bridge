@@ -55,9 +55,9 @@ func (b *Bridge) AfterConfig() {
 	// b.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
 	// You can add these coins to config
 	/*
-		b.SupportedCoins["USD"] = cosmos.CosmosCoin{"uusd", 6}
-		b.SupportedCoins["KRW"] = cosmos.CosmosCoin{"ukrw", 6}
-		b.SupportedCoins["SDR"] = cosmos.CosmosCoin{"usdr", 6}
+		b.SupportedCoins["UST"] = cosmos.CosmosCoin{"uusd", 6}
+		b.SupportedCoins["KRT"] = cosmos.CosmosCoin{"ukrw", 6}
+		b.SupportedCoins["SDT"] = cosmos.CosmosCoin{"usdr", 6}
 		b.SupportedCoins["CNY"] = cosmos.CosmosCoin{"ucny", 6}
 		b.SupportedCoins["JPY"] = cosmos.CosmosCoin{"ujpy", 6}
 		b.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
@@ -66,7 +66,7 @@ func (b *Bridge) AfterConfig() {
 	*/
 	if luna, ok := b.SupportedCoins["LUNA"]; !ok || luna.Denom != "uluna" || luna.Decimal != 6 {
 		log.Info("Terra init coins", "luna", luna, "ok", ok, "check denom", (luna.Denom != "uluna"), "check decimal", luna.Decimal != 6)
-		log.Fatalf("Terra bridge must have Luna token config")
+		//log.Fatalf("Terra bridge must have Luna token config")
 	}
 	b.MainCoin = b.SupportedCoins["LUNA"]
 	log.Info("Terra bridge init success", "coins", b.SupportedCoins)

@@ -240,9 +240,15 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 			status.BlockTime = uint64(t.Unix())
 		}
 
+		latest, getlatesterr := b.GetLatestBlockNumber()
+		if getlatesterr != nil {
+			status.Confirmations = 0
+		}
 		if status.BlockHeight > 0 {
-			status.Confirmations = 10
-			status.Finalized = true // asserts that tx has finalized, no need to check everything again
+			status.Confirmations = latest - status.BlockHeight
+			/*if status.Confirmations > token.Confirmation {
+				status.Finalized = true // asserts that tx has finalized, no need to check everything again
+			}*/
 		}
 		return
 	}
