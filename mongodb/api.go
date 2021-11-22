@@ -183,7 +183,7 @@ func findSwapOrSwapResult(result interface{}, collection *mongo.Collection, txid
 	if bind != "" {
 		err = collection.FindOne(clientCtx, bson.M{"_id": GetSwapKey(txid, pairID, bind)}).Decode(result)
 	} else {
-		qtxid := bson.M{"txid": txid}
+		qtxid := bson.M{"txid": strings.ToLower(txid)}
 		qpair := bson.M{"pairid": strings.ToLower(pairID)}
 		queries := []bson.M{qtxid, qpair}
 		err = collection.FindOne(clientCtx, bson.M{"$and": queries}).Decode(result)
@@ -744,7 +744,7 @@ func AddSwapHistory(isSwapin bool, txid, bind, swaptx string) error {
 
 // GetSwapHistory get
 func GetSwapHistory(isSwapin bool, txid, bind string) ([]*MgoSwapHistory, error) {
-	qtxid := bson.M{"txid": txid}
+	qtxid := bson.M{"txid": strings.ToLower(txid)}
 	qbind := bson.M{"bind": bind}
 	qisswapin := bson.M{"isswapin": isSwapin}
 	queries := []bson.M{qtxid, qbind, qisswapin}
