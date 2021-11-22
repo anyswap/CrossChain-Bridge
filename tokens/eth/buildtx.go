@@ -45,7 +45,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
-	err = b.setDefaults(args)
+	// prepare gas price for adjust swap value by base gas price
+	err = b.setDefaultGasPrice(args)
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +60,11 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, tokens.ErrUnknownSwapType
 	}
 
+	if err != nil {
+		return nil, err
+	}
+
+	err = b.setDefaults(args)
 	if err != nil {
 		return nil, err
 	}
@@ -101,6 +107,7 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		to        = common.HexToAddress(args.To)
 		value     = args.Value
 		extra     = args.Extra.EthExtra
+		gasLimit  = *extra.Gas
 		gasPrice  = extra.GasPrice
 		gasTipCap = extra.GasTipCap
 		gasFeeCap = extra.GasFeeCap
@@ -133,15 +140,15 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		return nil, err
 	}
 
-	err = b.initNonceAndGasLimit(args)
-	if err != nil {
-		return nil, err
+	// assign nonce immediately before construct tx
+	// esp. for parallel signing, this can prevent nonce hole
+	if extra.Nonce == nil {
+		extra.Nonce, err = b.getAccountNonce(args)
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	var (
-		nonce    = *extra.Nonce
-		gasLimit = *extra.Gas
-	)
+	nonce := *extra.Nonce
 
 	if isDynamicFeeTx {
 		rawTx = types.NewDynamicFeeTx(b.SignerChainID, nonce, &to, value, gasLimit, gasTipCap, gasFeeCap, input, nil)
@@ -177,15 +184,15 @@ func (b *Bridge) getMinReserveFee() *big.Int {
 	return minReserveFee
 }
 
-func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (err error) {
-	if args.Value == nil {
-		args.Value = new(big.Int)
-	}
+func getOrInitExtra(args *tokens.BuildTxArgs) *tokens.EthExtraArgs {
 	if args.Extra == nil || args.Extra.EthExtra == nil {
 		args.Extra = &tokens.AllExtras{EthExtra: &tokens.EthExtraArgs{}}
 	}
-	extra := args.Extra.EthExtra
+	return args.Extra.EthExtra
+}
 
+func (b *Bridge) setDefaultGasPrice(args *tokens.BuildTxArgs) (err error) {
+	extra := getOrInitExtra(args)
 	if b.ChainConfig.EnableDynamicFeeTx {
 		if extra.GasTipCap == nil {
 			extra.GasTipCap, err = b.getGasTipCap(args)
@@ -211,14 +218,14 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (err error) {
 	return nil
 }
 
-func (b *Bridge) initNonceAndGasLimit(args *tokens.BuildTxArgs) (err error) {
-	extra := args.Extra.EthExtra
-	if extra.Nonce == nil {
-		extra.Nonce, err = b.getAccountNonce(args.PairID, args.From, args.SwapType)
-		if err != nil {
-			return err
-		}
+func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (err error) {
+	err = b.setDefaultGasPrice(args)
+	if err != nil {
+		return err
 	}
+
+	extra := getOrInitExtra(args)
+
 	if extra.Gas == nil {
 		var input []byte
 		if args.Input != nil {
@@ -258,18 +265,21 @@ func (b *Bridge) getDefaultGasLimit(pairID string) (gasLimit uint64) {
 func (b *Bridge) getGasPrice(args *tokens.BuildTxArgs) (price *big.Int, err error) {
 	fixedGasPrice := b.ChainConfig.GetFixedGasPrice()
 	if fixedGasPrice != nil {
-		return fixedGasPrice, nil
-	}
-
-	for i := 0; i < retryRPCCount; i++ {
-		price, err = b.SuggestPrice()
-		if err == nil {
-			break
+		price = fixedGasPrice
+		if args.GetReplaceNum() == 0 {
+			return price, nil
 		}
-		time.Sleep(retryRPCInterval)
-	}
-	if err != nil {
-		return nil, err
+	} else {
+		for i := 0; i < retryRPCCount; i++ {
+			price, err = b.SuggestPrice()
+			if err == nil {
+				break
+			}
+			time.Sleep(retryRPCInterval)
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if args != nil && args.SwapType != tokens.NoSwapType {
@@ -300,7 +310,10 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 	if tokenCfg == nil {
 		return nil, tokens.ErrUnknownPairID
 	}
-	addPercent := tokenCfg.PlusGasPricePercentage
+	addPercent := uint64(0)
+	if !b.ChainConfig.IsFixedGasPrice() {
+		addPercent = tokenCfg.PlusGasPricePercentage
+	}
 	replaceNum := args.GetReplaceNum()
 	if replaceNum > 0 {
 		addPercent += replaceNum * b.ChainConfig.ReplacePlusGasPricePercent
@@ -331,10 +344,10 @@ func (b *Bridge) adjustSwapGasPrice(args *tokens.BuildTxArgs, oldGasPrice *big.I
 	return newGasPrice, nil
 }
 
-func (b *Bridge) getAccountNonce(pairID, from string, swapType tokens.SwapType) (nonceptr *uint64, err error) {
+func (b *Bridge) getAccountNonce(args *tokens.BuildTxArgs) (nonceptr *uint64, err error) {
 	var nonce uint64
 	for i := 0; i < retryRPCCount; i++ {
-		nonce, err = b.GetPoolNonce(from, "pending")
+		nonce, err = b.GetPoolNonce(args.From, "pending")
 		if err == nil {
 			break
 		}
@@ -343,10 +356,10 @@ func (b *Bridge) getAccountNonce(pairID, from string, swapType tokens.SwapType) 
 	if err != nil {
 		return nil, err
 	}
-	if swapType != tokens.NoSwapType {
-		tokenCfg := b.GetTokenConfig(pairID)
-		if tokenCfg != nil && from == tokenCfg.DcrmAddress {
-			nonce = b.AdjustNonce(pairID, nonce)
+	if args.SwapType != tokens.NoSwapType {
+		tokenCfg := b.GetTokenConfig(args.PairID)
+		if tokenCfg != nil && args.From == tokenCfg.DcrmAddress {
+			nonce = b.AdjustNonce(args.PairID, nonce)
 		}
 	}
 	return &nonce, nil

@@ -69,7 +69,7 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 }
 
 func (b *Bridge) checkSwapoutInfo(swapInfo *tokens.TxSwapInfo) error {
-	if !tokens.CheckSwapValue(swapInfo.PairID, swapInfo.Value, b.IsSrc) {
+	if !tokens.CheckSwapValue(swapInfo, b.IsSrc) {
 		return tokens.ErrTxWithWrongValue
 	}
 	if !tokens.SrcBridge.IsValidAddress(swapInfo.Bind) {

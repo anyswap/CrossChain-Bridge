@@ -9,6 +9,7 @@ type MgoSwap struct {
 	Key       string     `bson:"_id"` // txid + pairid + bind
 	PairID    string     `bson:"pairid"`
 	TxID      string     `bson:"txid"`
+	From      string     `bson:"from"`
 	TxTo      string     `bson:"txto"`
 	TxType    uint32     `bson:"txtype"`
 	Bind      string     `bson:"bind"`
