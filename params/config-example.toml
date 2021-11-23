@@ -126,6 +126,8 @@ MaxReplaceCount = 20
 FixedGasPrice = "5000000001"
 # maximum gas price
 MaxGasPrice = "50000000000"
+# minimum gas price (confilct with fixed gas price)
+MinGasPrice = "5000000000"
 # call by contract whitelist
 CallByContractWhitelist = [
 	"0x1111111111111111111111111111111111111111",

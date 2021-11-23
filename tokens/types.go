@@ -53,10 +53,12 @@ type ChainConfig struct {
 	MaxReplaceCount            int
 	FixedGasPrice              string `json:",omitempty"`
 	MaxGasPrice                string `json:",omitempty"`
+	MinGasPrice                string `json:",omitempty"`
 
 	// calced value
 	fixedGasPrice *big.Int
 	maxGasPrice   *big.Int
+	minGasPrice   *big.Int
 	minReserveFee *big.Int
 
 	callByContractWhitelist map[string]struct{}
@@ -349,6 +351,13 @@ func (c *ChainConfig) CheckConfig() error {
 		}
 		c.maxGasPrice = maxGasPrice
 	}
+	if c.MinGasPrice != "" {
+		minGasPrice, err := common.GetBigIntFromStr(c.MinGasPrice)
+		if err != nil {
+			return err
+		}
+		c.minGasPrice = minGasPrice
+	}
 	if c.MinReserveFee != "" {
 		bi, ok := new(big.Int).SetString(c.MinReserveFee, 10)
 		if !ok {
@@ -369,10 +378,19 @@ func (c *ChainConfig) CheckConfig() error {
 			c.callByContractWhitelist[key] = struct{}{}
 		}
 	}
+	if c.minGasPrice != nil {
+		if c.fixedGasPrice != nil {
+			return errors.New("FixedGasPrice and MinGasPrice are conflicted")
+		}
+		if c.maxGasPrice != nil && c.minGasPrice.Cmp(c.maxGasPrice) > 0 {
+			return errors.New("MinGasPrice > MaxGasPrice")
+		}
+	}
 	log.Info("check chain config success",
 		"blockChain", c.BlockChain,
 		"fixedGasPrice", c.FixedGasPrice,
 		"maxGasPrice", c.MaxGasPrice,
+		"minGasPrice", c.MinGasPrice,
 		"baseFeePercent", c.BaseFeePercent,
 	)
 	return nil
@@ -395,6 +413,14 @@ func (c *ChainConfig) GetFixedGasPrice() *big.Int {
 func (c *ChainConfig) GetMaxGasPrice() *big.Int {
 	if c.maxGasPrice != nil {
 		return new(big.Int).Set(c.maxGasPrice) // clone
+	}
+	return nil
+}
+
+// GetMinGasPrice get min gas price
+func (c *ChainConfig) GetMinGasPrice() *big.Int {
+	if c.minGasPrice != nil {
+		return new(big.Int).Set(c.minGasPrice) // clone
 	}
 	return nil
 }
