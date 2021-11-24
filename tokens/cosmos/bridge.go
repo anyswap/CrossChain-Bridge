@@ -67,7 +67,7 @@ func (b *Bridge) AfterConfig() {
 func (b *Bridge) LoadCoins() {
 	pairs := tokens.GetTokenPairsConfig()
 	for _, tokenCfg := range pairs {
-		name := strings.ToUpper(tokenCfg.SrcToken.ID)
+		name := strings.ToUpper(tokenCfg.PairID)
 		unit := tokenCfg.SrcToken.Unit
 		decimal := *(tokenCfg.SrcToken.Decimals)
 		b.SupportedCoins[name] = CosmosCoin{unit, decimal}
