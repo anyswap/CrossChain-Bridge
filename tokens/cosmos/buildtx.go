@@ -75,7 +75,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
-	rawTx = StdSignContent{
+	tx := StdSignContent{
 		ChainID:       b.ChainConfig.NetID,
 		AccountNumber: accountNumber,
 		Sequence:      *seq,
@@ -83,6 +83,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		Msgs:          []sdk.Msg{sendmsg},
 		Memo:          memo,
 	}
+	rawTx = tx
 	return
 }
 
@@ -99,25 +100,4 @@ func (b *Bridge) getSequence(pairID, from string, swapType tokens.SwapType) (*ui
 		}
 	}
 	return &seq, nil
-}
-
-// AdjustNonce adjust account nonce (eth like chain)
-func (b *Bridge) AdjustNonce(pairID string, value uint64) (nonce uint64) {
-	tokenCfg := b.GetTokenConfig(pairID)
-	account := strings.ToLower(tokenCfg.DcrmAddress)
-	nonce = value
-	if b.IsSrcEndpoint() {
-		if b.SwapoutNonce[account] > value {
-			nonce = b.SwapoutNonce[account]
-		} else {
-			b.SwapoutNonce[account] = value
-		}
-	} else {
-		if b.SwapinNonce[account] > value {
-			nonce = b.SwapinNonce[account]
-		} else {
-			b.SwapinNonce[account] = value
-		}
-	}
-	return nonce
 }

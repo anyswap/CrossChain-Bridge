@@ -190,6 +190,15 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 	return
 }
 
+// GetTxBlockInfo impl
+func (b *Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
+	status, _ := b.GetTransactionStatus(txHash)
+	if status != nil {
+		return status.BlockHeight, status.BlockTime
+	}
+	return 0, 0
+}
+
 // GetTransactionStatus returns tx status
 // call rest api "/txs/{txhash}"
 func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, err1 error) {
@@ -720,7 +729,7 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 		}
 		height, ok1 := res["height"].(string)
 		restxhash, ok2 := res["txhash"].(string)
-		if !ok1 || !ok2 || height == "0" {
+		if !ok1 || !ok2 || height == "0" || height == "" || txhash == "" {
 			log.Warn("Broadcast tx failed", "response", bodyText)
 			continue
 		}
@@ -729,4 +738,128 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 		return txhash, nil
 	}
 	return txhash, nil
+}
+
+func (b *Bridge) EstimateFee(tx StdSignContent) (authtypes.StdFee, error) {
+	/*
+		Req
+			curl -X POST -H "Content-Type:application/json" --data
+			'{
+				"base_req":{
+					"from": "terra1gdxfmwcfyrqv8uenllqn7mh290v7dk7x5qnz03",
+					"memo": "SWAPTX:0x81218dcf3bbda0e6789d390c3cffa3cb08e568556df2f1ecd64e527a313aeeb4",
+					"chain_id":"Columbus-5",
+					"account_number": "3195250",
+					"sequence":"0",
+					"simulate": false
+				},
+				"msgs":[{"type":"bank/MsgSend","value":{"amount":[{"amount":"45000000","denom":"uusd"}],"from_address":"terra1gdxfmwcfyrqv8uenllqn7mh290v7dk7x5qnz03","to_address":"terra1u3x4pllg9fphhsyc689t773g6uryp2kkyurke8"}}]
+			}'
+			https://fcd.terra.dev/txs/estimate_fee
+
+		Resp
+			{"height":"0","result":{"fee":{"amount":[{"denom":"uusd","amount":"132381"}],"gas":"200000"}}}
+	*/
+
+	sendmsg, ok := tx.Msgs[0].(MsgSend)
+	if !ok {
+		return authtypes.StdFee{}, errors.New("estimate fee only support MsgSend")
+	}
+
+	reqdata := make(map[string]interface{})
+	base_req := make(map[string]interface{})
+	base_req["from"] = sendmsg.FromAddress.String()
+	base_req["memo"] = tx.Memo
+	base_req["chain_id"] = tx.ChainID
+	base_req["account_number"] = tx.AccountNumber
+	base_req["sequence"] = tx.Sequence
+	base_req["simulate"] = false
+	reqdata["base_req"] = base_req
+	msgs := make([]interface{}, 0)
+	msg := struct {
+		Type  string      `json:"type"`
+		Value interface{} `json:"value"`
+	}{
+		Type:  "bank/MsgSend",
+		Value: sendmsg,
+	}
+	msgs = append(msgs, msg)
+	reqdata["msgs"] = msgs
+	dataBytes, _ := json.Marshal(reqdata)
+	data := string(dataBytes)
+	log.Debug("Estimate fee", "req data", data)
+
+	endpoints := b.GatewayConfig.APIAddress
+	for _, endpoint := range endpoints {
+		endpointURL, err := url.Parse(endpoint)
+		if err != nil {
+			continue
+		}
+		endpoint = endpointURL.String()
+		endpoint = strings.TrimSuffix(endpoint, "/")
+		api := endpoint + "/txs/estimate_fee"
+
+		client := &http.Client{}
+
+		req, err := http.NewRequest("POST", api, strings.NewReader(data))
+		if err != nil {
+			continue
+		}
+		req.Header.Set("accept", "application/json")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Warn("Estimate fee error", "error", err)
+			continue
+		}
+		bodyText, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			continue
+		}
+
+		log.Info("Estimate fee", "resp", bodyText)
+		feeres := make(map[string]interface{})
+		unmarshalerr := json.Unmarshal(bodyText, &feeres)
+		if unmarshalerr != nil {
+			return authtypes.StdFee{}, errors.New("estimate fee failed")
+		}
+		result, ok := feeres["result"].(map[string]interface{})
+		if !ok {
+			return authtypes.StdFee{}, errors.New("estimate fee failed")
+		}
+		fee, ok := result["fee"].(map[string]interface{})
+		if !ok {
+			return authtypes.StdFee{}, errors.New("estimate fee failed")
+		}
+		amount, ok := fee["amount"].([]interface{})
+		if !ok || len(amount) < 1 {
+			return authtypes.StdFee{}, errors.New("estimate fee failed")
+		}
+		amount0, ok := amount[0].(map[string]interface{})
+		denom, ok := amount0["denom"].(string)
+		if !ok {
+			return authtypes.StdFee{}, errors.New("estimate fee failed")
+		}
+		amt, ok := amount0["amount"].(string)
+		if !ok {
+			return authtypes.StdFee{}, errors.New("estimate fee failed")
+		}
+		gas, ok := fee["gas"].(string)
+		if !ok {
+			return authtypes.StdFee{}, errors.New("estimate fee failed")
+		}
+		amtInt, ok := new(big.Int).SetString(amt, 0)
+		if !ok {
+			return authtypes.StdFee{}, errors.New("estimate fee failed")
+		}
+		gasInt, ok := new(big.Int).SetString(gas, 0)
+		if !ok {
+			return authtypes.StdFee{}, errors.New("estimate fee failed")
+		}
+		feeAmount := authtypes.NewStdFee(gasInt.Uint64(), sdk.NewCoins(sdk.NewCoin(denom, sdk.NewIntFromBigInt(amtInt))))
+		return feeAmount, nil
+	}
+
+	return authtypes.StdFee{}, errors.New("estimate fee failed")
 }
