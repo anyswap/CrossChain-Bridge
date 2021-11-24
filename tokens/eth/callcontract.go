@@ -7,6 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
+	"github.com/anyswap/CrossChain-Bridge/params"
 )
 
 // token types (should be all upper case)
@@ -30,7 +31,7 @@ func (b *Bridge) GetErc20Balance(contract, address string) (*big.Int, error) {
 	data := make(hexutil.Bytes, 36)
 	copy(data[:4], erc20CodeParts["balanceOf"])
 	copy(data[4:], common.HexToAddress(address).Hash().Bytes())
-	result, err := b.CallContract(contract, data, "latest")
+	result, err := b.CallContract(contract, data, params.GetBalanceBlockNumberOpt)
 	if err != nil {
 		return nil, err
 	}
