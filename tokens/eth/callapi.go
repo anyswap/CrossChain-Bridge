@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"sync"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
@@ -396,38 +397,43 @@ func (b *Bridge) SendSignedTransaction(tx *types.Transaction) (txHash string, er
 	}
 	hexData := common.ToHex(data)
 	gateway := b.GatewayConfig
-	txHash, _ = sendRawTransaction(hexData, gateway.APIAddressExt)
-	txHash2, err := sendRawTransaction(hexData, gateway.APIAddress)
-	if txHash != "" {
-		return txHash, nil
+	urlCount := len(gateway.APIAddressExt) + len(gateway.APIAddress)
+	ch := make(chan *sendTxResult, urlCount)
+	wg := new(sync.WaitGroup)
+	wg.Add(urlCount)
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+	for _, url := range gateway.APIAddress {
+		go sendRawTransaction(wg, hexData, url, ch)
 	}
-	if txHash2 != "" {
-		return txHash2, nil
+	for _, url := range gateway.APIAddressExt {
+		go sendRawTransaction(wg, hexData, url, ch)
 	}
-	return "", err
-}
-
-func sendRawTransaction(hexData string, urls []string) (txHash string, err error) {
-	if len(urls) == 0 {
-		return "", errEmptyURLs
-	}
-	logFunc := log.GetPrintFuncOr(params.IsDebugMode, log.Info, log.Trace)
-	var result string
-	for _, url := range urls {
-		err = client.RPCPost(&result, url, "eth_sendRawTransaction", hexData)
-		if err != nil {
-			logFunc("call eth_sendRawTransaction failed", "txHash", result, "url", url, "err", err)
-			continue
+	for res := range ch {
+		txHash, err = res.txHash, res.err
+		if err == nil && txHash != "" {
+			return res.txHash, nil
 		}
-		logFunc("call eth_sendRawTransaction success", "txHash", result, "url", url)
-		if txHash == "" {
-			txHash = result
-		}
-	}
-	if txHash != "" {
-		return txHash, nil
 	}
 	return "", wrapRPCQueryError(err, "eth_sendRawTransaction")
+}
+
+type sendTxResult struct {
+	txHash string
+	err    error
+}
+
+func sendRawTransaction(wg *sync.WaitGroup, hexData string, url string, ch chan<- *sendTxResult) {
+	defer wg.Done()
+	var result string
+	err := client.RPCPost(&result, url, "eth_sendRawTransaction", hexData)
+	if err != nil {
+		log.Trace("call eth_sendRawTransaction failed", "txHash", result, "url", url, "err", err)
+	}
+	log.Trace("call eth_sendRawTransaction success", "txHash", result, "url", url)
+	ch <- &sendTxResult{result, err}
 }
 
 // ChainID call eth_chainId
