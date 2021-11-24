@@ -541,7 +541,7 @@ func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress
-		err = client.RPCPost(&result, url, "eth_getBalance", account, "latest")
+		err = client.RPCPost(&result, url, "eth_getBalance", account, params.GetBalanceBlockNumberOpt)
 		if err == nil {
 			return result.ToInt(), nil
 		}

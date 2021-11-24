@@ -157,5 +157,8 @@ func (c *ExtraConfig) CheckConfig() (err error) {
 		}
 		log.Printf("MinReserveFee is %v", bi)
 	}
+	if c.UsePendingBalance {
+		GetBalanceBlockNumberOpt = "pending"
+	}
 	return nil
 }

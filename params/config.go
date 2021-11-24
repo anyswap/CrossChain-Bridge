@@ -23,6 +23,8 @@ var (
 	ServerAPIAddress string
 	// IsSwapServer swap server flag
 	IsSwapServer bool
+	// GetBalanceBlockNumberOpt pending or latest
+	GetBalanceBlockNumberOpt = "latest"
 )
 
 // ServerConfig config items (decode from toml file)
@@ -90,6 +92,7 @@ type ExtraConfig struct {
 	IsDebugMode              bool `toml:",omitempty" json:",omitempty"`
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
 	IsNullSwapoutNativeMemo  bool `toml:",omitempty" json:",omitempty"`
+	UsePendingBalance        bool `toml:",omitempty" json:",omitempty"`
 
 	MinReserveFee string
 }
