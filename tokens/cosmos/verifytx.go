@@ -243,7 +243,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 				swapInfo.PairID = pairID
 				swapInfo.To = tokenCfg.DepositAddress
 				swapInfo.Bind = bindaddress
-				swapInfo.From = bindaddress
+				swapInfo.From = msgsend.FromAddress.String()
 				swapInfo.Value = coin.Amount.BigInt()
 				if swapInfoMap[pairID] == nil {
 					swapInfoMap[pairID] = make([]*tokens.TxSwapInfo, 0)
@@ -274,7 +274,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 					swapInfo.PairID = pairID
 					swapInfo.To = tokenCfg.DepositAddress
 					swapInfo.Bind = bindaddress
-					swapInfo.From = bindaddress
+					//swapInfo.From = bindaddress
 					swapInfo.Value = coin.Amount.BigInt()
 					if swapInfoMap[pairID] == nil {
 						swapInfoMap[pairID] = make([]*tokens.TxSwapInfo, 0)
@@ -297,6 +297,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 		aggSwapInfo.Hash = txid
 		aggSwapInfo.To = v[0].To
 		aggSwapInfo.Bind = v[0].Bind
+		aggSwapInfo.From = v[0].From
 		// aggSwapInfo.TxId = v[0].TxId
 		aggSwapInfo.Value = big.NewInt(0)
 		for _, swapInfo := range v {

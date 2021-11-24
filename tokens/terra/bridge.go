@@ -122,7 +122,7 @@ func (b *Bridge) InitLatestBlockNumber() {
 }
 
 // DefaultSwapoutGas is terra default gas
-var DefaultSwapoutGas uint64 = 500000
+var DefaultSwapoutGas uint64 = 220000
 
 // FeeGetter returns terra fee getter
 func (b *Bridge) FeeGetter() func(pairID string) authtypes.StdFee {
@@ -134,21 +134,7 @@ func (b *Bridge) FeeGetter() func(pairID string) authtypes.StdFee {
 		case "uluna":
 			amount = 100000
 		case "uusd":
-			amount = 100000
-		case "ukrw":
-			amount = 100000000
-		case "usdr":
-			amount = 80000
-		case "ucny":
-			amount = 1000000
-		case "ujpy":
-			amount = 10000000
-		case "ueur":
-			amount = 80000
-		case "ugbp":
-			amount = 100000
-		case "umnt":
-			amount = 100000
+			amount = 300000
 		}
 
 		feeAmount := sdk.Coins{sdk.Coin{Denom: denom, Amount: sdk.NewInt(amount)}}
