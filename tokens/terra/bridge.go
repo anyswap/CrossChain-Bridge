@@ -2,6 +2,7 @@ package terra
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -125,16 +126,36 @@ func (b *Bridge) InitLatestBlockNumber() {
 var DefaultSwapoutGas uint64 = 220000
 
 // FeeGetter returns terra fee getter
-func (b *Bridge) FeeGetter() func(pairID string) authtypes.StdFee {
-	return func(pairID string) authtypes.StdFee {
+func (b *Bridge) FeeGetter() func(pairID string, tx *cosmos.StdSignContent) authtypes.StdFee {
+	return func(pairID string, tx *cosmos.StdSignContent) authtypes.StdFee {
 		tokenCfg := b.GetTokenConfig(pairID)
 		denom := tokenCfg.Unit
 		var amount int64
 		switch denom {
 		case "uluna":
-			amount = 100000
+			amount = 150000
 		case "uusd":
-			amount = 300000
+			if len(tx.Msgs) != 1 {
+				amount = 5000000
+				break
+			}
+			sendmsg, ok := tx.Msgs[0].(cosmos.MsgSend)
+			if !ok {
+				amount = 5000000
+				break
+			}
+			if len(sendmsg.Amount) != 1 {
+				amount = 5000000
+				break
+			}
+			sendamt := sendmsg.Amount[0].Amount.BigInt()
+			// fee = min(amount*0.01, 5000000)
+			feeamount := new(big.Int).Div(new(big.Int).Mul(sendamt, big.NewInt(1)), big.NewInt(100))
+			if feeamount.Cmp(big.NewInt(5000000)) > 0 {
+				amount = 5000000
+			} else {
+				amount = feeamount.Int64()
+			}
 		}
 
 		feeAmount := sdk.Coins{sdk.Coin{Denom: denom, Amount: sdk.NewInt(amount)}}

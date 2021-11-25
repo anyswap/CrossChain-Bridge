@@ -26,6 +26,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		amount   *big.Int
 		memo     string
 	)
+	extra := getOrInitExtra(args)
 	args.Identifier = params.GetIdentifier()
 	if tokenCfg == nil {
 		return nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
@@ -68,26 +69,28 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	sendcoin := sdk.Coin{Denom: denom, Amount: sdk.NewIntFromBigInt(amount)}
 	sendmsg := NewMsgSend(fromAcc, toAcc, sdk.Coins{sendcoin})
 
-	fee := GetFeeAmount(pairID)
-
 	accountNumber, err := b.GetAccountNumberCached(from)
 	if err != nil {
 		return nil, err
 	}
 
-	seq, err := b.getSequence(args.PairID, from, args.SwapType)
-	if err != nil {
-		return nil, err
+	if extra.Nonce == nil {
+		extra.Nonce, err = b.getSequence(args.PairID, from, args.SwapType)
+		if err != nil {
+			return nil, err
+		}
 	}
+	seq := extra.Nonce
 
 	tx := StdSignContent{
 		ChainID:       b.ChainConfig.NetID,
 		AccountNumber: accountNumber,
 		Sequence:      *seq,
-		Fee:           fee,
 		Msgs:          []sdk.Msg{sendmsg},
 		Memo:          memo,
 	}
+	fee := GetFeeAmount(pairID, &tx)
+	tx.Fee = fee
 	rawTx = tx
 	return
 }
@@ -105,4 +108,11 @@ func (b *Bridge) getSequence(pairID, from string, swapType tokens.SwapType) (*ui
 		}
 	}
 	return &seq, nil
+}
+
+func getOrInitExtra(args *tokens.BuildTxArgs) *tokens.EthExtraArgs {
+	if args.Extra == nil || args.Extra.EthExtra == nil {
+		args.Extra = &tokens.AllExtras{EthExtra: &tokens.EthExtraArgs{}}
+	}
+	return args.Extra.EthExtra
 }
