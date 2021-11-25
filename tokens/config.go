@@ -152,7 +152,7 @@ type TokenConfig struct {
 	minSwapFee       *big.Int
 	bigValThreshhold *big.Int
 
-	Unit              string // Cosmos coin unit denom
+	Unit              string `json:",omitempty"` // Cosmos coin unit denom
 	bigValueWhitelist map[string]struct{}
 }
 
