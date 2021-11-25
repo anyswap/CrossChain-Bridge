@@ -720,10 +720,11 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 			continue
 		}
 
+		log.Info("Broadcast tx", "resp", string(bodyText))
 		bodyDec, decbase64err := base64.StdEncoding.DecodeString(string(bodyText))
 		if decbase64err != nil {
 			log.Warn("Broadcast tx error", "decode base64 error", decbase64err)
-			continue
+			bodyDec = bodyText
 		}
 		log.Info("Broadcast tx", "resp", string(bodyDec))
 
@@ -735,11 +736,11 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 		}
 		height, ok1 := res["height"].(string)
 		restxhash, ok2 := res["txhash"].(string)
+		txhash = restxhash
 		if !ok1 || !ok2 || height == "0" || height == "" || txhash == "" {
-			log.Warn("Broadcast tx failed", "response", string(bodyDec))
+			log.Warn("Broadcast tx failed", "response", string(bodyDec), "res", res)
 			continue
 		}
-		txhash = restxhash
 		log.Debug("Broadcast tx success", "txhash", restxhash, "height", height)
 		return txhash, nil
 	}

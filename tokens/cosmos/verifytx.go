@@ -76,6 +76,19 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 		errs = []error{tokens.ErrTxNotStable}
 		return nil, errs
 	}
+
+	if !allowUnstable {
+		txstatus, getstatuserr := b.GetTransactionStatus(txHash)
+		if getstatuserr != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		if txstatus.Confirmations < *b.GetChainConfig().Confirmations {
+			errs = append(errs, tokens.ErrTxNotStable)
+			return nil, errs
+		}
+	}
+
 	cosmostx, ok := tx.(sdk.Tx)
 	log.Warn("!!!! 222222", "tx", tx, "cosmostx", ok)
 	if !ok {

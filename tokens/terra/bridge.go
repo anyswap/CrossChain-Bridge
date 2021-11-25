@@ -123,7 +123,7 @@ func (b *Bridge) InitLatestBlockNumber() {
 }
 
 // DefaultSwapoutGas is terra default gas
-var DefaultSwapoutGas uint64 = 220000
+var DefaultSwapoutGas uint64 = 98000
 
 // FeeGetter returns terra fee getter
 func (b *Bridge) FeeGetter() func(pairID string, tx *cosmos.StdSignContent) authtypes.StdFee {
@@ -149,8 +149,8 @@ func (b *Bridge) FeeGetter() func(pairID string, tx *cosmos.StdSignContent) auth
 				break
 			}
 			sendamt := sendmsg.Amount[0].Amount.BigInt()
-			// fee = min(amount*0.01, 5000000)
-			feeamount := new(big.Int).Div(new(big.Int).Mul(sendamt, big.NewInt(1)), big.NewInt(100))
+			// fee = min(amount*0.1, 5000000)
+			feeamount := new(big.Int).Div(sendamt, big.NewInt(10))
 			if feeamount.Cmp(big.NewInt(5000000)) > 0 {
 				amount = 5000000
 			} else {
