@@ -62,6 +62,7 @@ MustRegisterAccount = false
 IsSwapoutToStringAddress = false
 EnableCheckBlockFork = false
 IsNullSwapoutNativeMemo = false
+UsePendingBalance = false
 
 # source chain config
 [SrcChain]

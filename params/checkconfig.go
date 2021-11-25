@@ -191,5 +191,8 @@ func (c *OracleConfig) CheckConfig() (err error) {
 
 // CheckConfig extra config
 func (c *ExtraConfig) CheckConfig() (err error) {
+	if c.UsePendingBalance {
+		GetBalanceBlockNumberOpt = "pending"
+	}
 	return nil
 }

@@ -25,6 +25,9 @@ var (
 
 	// ServerAPIAddress server api address
 	ServerAPIAddress string
+
+	// GetBalanceBlockNumberOpt pending or latest
+	GetBalanceBlockNumberOpt = "latest"
 )
 
 // BridgeConfig config items (decode from toml file)
@@ -101,6 +104,7 @@ type ExtraConfig struct {
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
 	EnableCheckBlockFork     bool
 	IsNullSwapoutNativeMemo  bool `toml:",omitempty" json:",omitempty"`
+	UsePendingBalance        bool `toml:",omitempty" json:",omitempty"`
 }
 
 // GetAPIPort get api service port

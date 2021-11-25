@@ -280,6 +280,11 @@ func (b *Bridge) getGasPrice(args *tokens.BuildTxArgs) (price *big.Int, err erro
 		if err != nil {
 			return nil, err
 		}
+
+		minGasPrice := b.ChainConfig.GetMinGasPrice()
+		if minGasPrice != nil && price.Cmp(minGasPrice) < 0 {
+			price = minGasPrice
+		}
 	}
 
 	if args != nil && args.SwapType != tokens.NoSwapType {

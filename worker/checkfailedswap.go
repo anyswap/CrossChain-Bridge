@@ -76,7 +76,7 @@ func doCheckFailedSwapoutJob() {
 }
 
 func checkFailedSwap(swap *mongodb.MgoSwapResult, isSwapin bool) error {
-	if swap.SwapNonce == 0 || swap.SwapTx == "" {
+	if (swap.SwapNonce == 0 && swap.SwapHeight == 0) || swap.SwapTx == "" {
 		return nil
 	}
 

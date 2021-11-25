@@ -81,6 +81,7 @@ type ChainConfig struct {
 	MaxReplaceCount            int
 	FixedGasPrice              string `json:",omitempty"`
 	MaxGasPrice                string `json:",omitempty"`
+	MinGasPrice                string `json:",omitempty"`
 
 	PlusGasTipCapPercent uint64
 	PlusGasFeeCapPercent uint64
@@ -92,6 +93,7 @@ type ChainConfig struct {
 	chainID       *big.Int
 	fixedGasPrice *big.Int
 	maxGasPrice   *big.Int
+	minGasPrice   *big.Int
 	minReserveFee *big.Int
 	maxGasTipCap  *big.Int
 	maxGasFeeCap  *big.Int
@@ -188,22 +190,29 @@ func (c *ChainConfig) CheckConfig(isServer bool) error {
 	}
 	if c.BaseGasPrice != "" {
 		if _, err := common.GetBigIntFromStr(c.BaseGasPrice); err != nil {
-			return errors.New("wrong 'BaseGasPrice'")
+			return fmt.Errorf("wrong BaseGasPrice: %w", err)
 		}
 	}
 	if c.FixedGasPrice != "" {
 		fixedGasPrice, err := common.GetBigIntFromStr(c.FixedGasPrice)
 		if err != nil {
-			return err
+			return fmt.Errorf("wrong FixedGasPrice: %w", err)
 		}
 		c.fixedGasPrice = fixedGasPrice
 	}
 	if c.MaxGasPrice != "" {
 		maxGasPrice, err := common.GetBigIntFromStr(c.MaxGasPrice)
 		if err != nil {
-			return err
+			return fmt.Errorf("wrong MaxGasPrice: %w", err)
 		}
 		c.maxGasPrice = maxGasPrice
+	}
+	if c.MinGasPrice != "" {
+		minGasPrice, err := common.GetBigIntFromStr(c.MinGasPrice)
+		if err != nil {
+			return fmt.Errorf("wrong MinGasPrice: %w", err)
+		}
+		c.minGasPrice = minGasPrice
 	}
 	if c.MinReserveFee != "" {
 		bi, ok := new(big.Int).SetString(c.MinReserveFee, 10)
@@ -261,10 +270,19 @@ func (c *ChainConfig) CheckConfig(isServer bool) error {
 			}
 		}
 	}
+	if c.minGasPrice != nil {
+		if c.fixedGasPrice != nil {
+			return errors.New("FixedGasPrice and MinGasPrice are conflicted")
+		}
+		if c.maxGasPrice != nil && c.minGasPrice.Cmp(c.maxGasPrice) > 0 {
+			return errors.New("MinGasPrice > MaxGasPrice")
+		}
+	}
 	log.Info("check chain config success",
 		"blockChain", c.BlockChain,
 		"fixedGasPrice", c.FixedGasPrice,
 		"maxGasPrice", c.MaxGasPrice,
+		"minGasPrice", c.MinGasPrice,
 		"baseFeePercent", c.BaseFeePercent,
 	)
 	return nil
@@ -454,6 +472,14 @@ func (c *ChainConfig) GetFixedGasPrice() *big.Int {
 func (c *ChainConfig) GetMaxGasPrice() *big.Int {
 	if c.maxGasPrice != nil {
 		return new(big.Int).Set(c.maxGasPrice) // clone
+	}
+	return nil
+}
+
+// GetMinGasPrice get min gas price
+func (c *ChainConfig) GetMinGasPrice() *big.Int {
+	if c.minGasPrice != nil {
+		return new(big.Int).Set(c.minGasPrice) // clone
 	}
 	return nil
 }
