@@ -1,3 +1,4 @@
+// Command swapadmin send admin swap command to the server node.
 package main
 
 import (

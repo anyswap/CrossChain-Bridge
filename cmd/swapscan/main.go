@@ -1,3 +1,4 @@
+// Command swapscan scan blockchains and post swap registers to the server node.
 package main
 
 import (
@@ -25,7 +26,6 @@ func initApp() {
 	app.Copyright = "Copyright 2017-2020 The CrossChain-Bridge Authors"
 	app.Commands = []*cli.Command{
 		scanBtcCommand,
-		scanLtcCommand,
 		utils.LicenseCommand,
 		utils.VersionCommand,
 	}
