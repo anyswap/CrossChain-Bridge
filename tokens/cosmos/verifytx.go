@@ -69,24 +69,20 @@ func (b *Bridge) getPairID(coin sdk.Coin) (string, error) {
 func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
 	log.Warn("!!!! 000000", "pairID", pairID)
 	txid := strings.ToLower(txHash)
-	tx, err := b.GetTransaction(txHash)
+	txResult, err := b.getTxResult(txHash, allowUnstable)
+	tx := txResult.Tx
 	log.Warn("!!!! 111111", "tx", tx, "err", err)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		errs = []error{tokens.ErrTxNotStable}
 		return nil, errs
 	}
-	cosmostx, ok := tx.(sdk.Tx)
-	log.Warn("!!!! 222222", "tx", tx, "cosmostx", ok)
-	if !ok {
-		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::Transacton is of wrong type", "tx", txHash)
-		return nil, []error{errors.New("Tx is of wrong type")}
-	}
+	log.Warn("!!!! 222222")
 	swapInfos = make([]*tokens.TxSwapInfo, 0)
 	swapInfoMap := make(map[string][]*tokens.TxSwapInfo)
 
 	// get bind address from memo
-	bindaddress, ok := b.GetBindAddressFromMemo(cosmostx)
+	bindaddress, ok := b.GetBindAddressFromMemo(tx)
 	log.Warn("!!!! 333333", "bindaddress", bindaddress)
 	if !ok {
 		return swapInfos, []error{fmt.Errorf("Cannot get bind address")}
@@ -99,7 +95,7 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 	// check every msg
 	// if type is bank/send or bank/multisend, check every coin in every output
 	// add to swapinfo
-	msgs := cosmostx.GetMsgs()
+	msgs := tx.GetMsgs()
 	for _, msg := range msgs {
 		if err := msg.ValidateBasic(); err != nil {
 			continue

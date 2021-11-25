@@ -148,9 +148,40 @@ func (b *Bridge) GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error
 	return nil, fmt.Errorf("Cosmos bridges does not support this method")
 }
 
+func (b *Bridge) getTxResult(txHash string, allowUnstable bool) (*sdk.TxResponse, error) {
+	txResult, err := b.GetTransactionResult(txHash)
+	if err != nil {
+		return nil, err
+	}
+	txBlockHeight := uint64(txResult.Height)
+	if txBlockHeight < *b.ChainConfig.InitialHeight {
+		log.Warn("transaction before initial block height",
+			"initialHeight", *b.ChainConfig.InitialHeight,
+			"blockHeight", txBlockHeight)
+		return nil, tokens.ErrTxBeforeInitialHeight
+	}
+	if !allowUnstable {
+		latest, getlatesterr := b.GetLatestBlockNumber()
+		if getlatesterr == nil &&
+			txBlockHeight+*b.GetChainConfig().Confirmations > latest {
+			return nil, tokens.ErrTxNotStable
+		}
+	}
+	return txResult, nil
+}
+
 // GetTransaction gets tx by hash, returns sdk.Tx
 // call rest api "/txs/{txhash}"
 func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
+	txResult, err := b.GetTransactionResult(txHash)
+	if err != nil {
+		return nil, err
+	}
+	return txResult.Tx, nil
+}
+
+// GetTransactionResult get tx result by hash
+func (b *Bridge) GetTransactionResult(txHash string) (*sdk.TxResponse, error) {
 	endpoints := b.GatewayConfig.APIAddress
 	for _, endpoint := range endpoints {
 		endpointURL, err := url.Parse(endpoint)
@@ -175,9 +206,8 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 		}
 		if txResult.Code != 0 {
 			log.Warn("Check tx code failed", "resp", string(resp.Body()))
-			return nil, fmt.Errorf("tx status error: %+v", txResult)
+			return nil, tokens.ErrTxWithWrongReceipt
 		}
-		tx = txResult.Tx
 		/*err = tx.(sdk.Tx).ValidateBasic()
 		if err != nil {
 			log.Warn("Transaction validate basic error", "error", err, "resp", string(resp.Body()))
@@ -186,9 +216,9 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 			log.Debug("Get transaction success", "tx", tx, "resp", string(resp.Body()))
 			return tx, err
 		}*/
-		return tx, err
+		return &txResult, nil
 	}
-	return
+	return nil, tokens.ErrTxNotFound
 }
 
 // GetTxBlockInfo impl
@@ -203,6 +233,10 @@ func (b *Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
 // GetTransactionStatus returns tx status
 // call rest api "/txs/{txhash}"
 func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, err1 error) {
+	txResult, err := b.GetTransactionResult(txHash)
+	if err != nil {
+		return nil, err
+	}
 	status = &tokens.TxStatus{
 		// Receipt
 		//Confirmations
@@ -210,57 +244,25 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 		//BlockHash
 		//BlockTime
 	}
-	endpoints := b.GatewayConfig.APIAddress
-	for _, endpoint := range endpoints {
-		endpointURL, err := url.Parse(endpoint)
-		if err != nil {
-			continue
-		}
-		endpoint = endpointURL.String()
-		endpoint = strings.TrimSuffix(endpoint, "/")
-		endpoint = endpoint + "/"
-		client := resty.New()
+	status.Receipt = false
+	if txResult.Code == 0 {
+		status.Receipt = true
+	}
+	status.BlockHeight = uint64(txResult.Height)
+	t, err := time.Parse(TimeFormat, txResult.Timestamp)
+	if err == nil {
+		status.BlockTime = uint64(t.Unix())
+	}
 
-		resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, txHash))
-		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetTransactionStatus")
-			continue
-		}
-
-		var txResult sdk.TxResponse
-		err = CDC.UnmarshalJSON(resp.Body(), &txResult)
-		if err != nil {
-			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTransactionStatus", "resp", string(resp.Body()))
-			//err1 = err
-			return
-		}
-		/*tx := txResult.Tx
-		err = tx.ValidateBasic()
-		if err != nil {
-			err1 = err
-			return
+	latest, getlatesterr := b.GetLatestBlockNumber()
+	if getlatesterr != nil {
+		status.Confirmations = 0
+	}
+	if status.BlockHeight > 0 && latest > status.BlockHeight {
+		status.Confirmations = latest - status.BlockHeight
+		/*if status.Confirmations > token.Confirmation {
+			status.Finalized = true // asserts that tx has finalized, no need to check everything again
 		}*/
-		status.Receipt = false
-		if txResult.Code == 0 {
-			status.Receipt = true
-		}
-		status.BlockHeight = uint64(txResult.Height)
-		t, err := time.Parse(TimeFormat, txResult.Timestamp)
-		if err == nil {
-			status.BlockTime = uint64(t.Unix())
-		}
-
-		latest, getlatesterr := b.GetLatestBlockNumber()
-		if getlatesterr != nil {
-			status.Confirmations = 0
-		}
-		if status.BlockHeight > 0 {
-			status.Confirmations = latest - status.BlockHeight
-			/*if status.Confirmations > token.Confirmation {
-				status.Finalized = true // asserts that tx has finalized, no need to check everything again
-			}*/
-		}
-		return
 	}
 	return
 }
@@ -843,6 +845,9 @@ func (b *Bridge) EstimateFee(tx StdSignContent) (authtypes.StdFee, error) {
 			return authtypes.StdFee{}, errors.New("estimate fee failed")
 		}
 		amount0, ok := amount[0].(map[string]interface{})
+		if !ok {
+			return authtypes.StdFee{}, errors.New("estimate fee failed")
+		}
 		denom, ok := amount0["denom"].(string)
 		if !ok {
 			return authtypes.StdFee{}, errors.New("estimate fee failed")
