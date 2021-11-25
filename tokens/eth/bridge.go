@@ -116,6 +116,9 @@ func (b *Bridge) MakeSigner(chainID *big.Int) {
 
 // VerifyTokenConfig verify token config
 func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
+	if tokenCfg.Unit != "" {
+		return fmt.Errorf("chould have empty 'Unit' but have %v", tokenCfg.Unit)
+	}
 	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
 		return fmt.Errorf("invalid dcrm address: %v", tokenCfg.DcrmAddress)
 	}

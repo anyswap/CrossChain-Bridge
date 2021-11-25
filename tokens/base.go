@@ -94,10 +94,17 @@ func (s *TxStatus) IsSwapTxOnChainAndFailed(token *TokenConfig) bool {
 	if s == nil || s.BlockHeight == 0 {
 		return false // not on chain
 	}
-	if s.Receipt != nil { // for eth-like blockchain
+	if s.Receipt == nil {
+		return false // can not decide
+	}
+	switch {
+	// for cosmos, terra blockchain
+	case token.Unit != "":
 		if success, ok := s.Receipt.(bool); ok && !success {
 			return true
 		}
+	// for eth-like blockchain
+	default:
 		receipt, ok := s.Receipt.(*types.RPCTxReceipt)
 		if !ok || !receipt.IsStatusOk() {
 			return true

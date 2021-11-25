@@ -18,6 +18,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
 	"github.com/anyswap/CrossChain-Bridge/tokens/kusama"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
+	"github.com/anyswap/CrossChain-Bridge/tokens/okex"
 	"github.com/anyswap/CrossChain-Bridge/tokens/terra"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
@@ -36,6 +37,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return etc.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "ETHEREUM"):
 		return eth.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "OKEX"):
+		return okex.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "FUSION"):
 		return fsn.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "COSMOS"):
@@ -79,13 +82,6 @@ func InitCrossChainBridge(isServer bool) {
 	switch BlockChain {
 	case "COSMOS", "TERRA":
 		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).BeforeConfig()
-		if !isServer && params.ServerAPIAddress == "" && btc.BridgeInstance != nil {
-			// btc need oracle config to post rpc to swap server
-			err := params.GetConfig().Oracle.CheckConfig()
-			if err != nil {
-				log.Crit("check oracle config failed", "err", err)
-			}
-		}
 	}
 
 	tokens.SrcBridge.SetChainAndGateway(srcChain, srcGateway)
@@ -120,6 +116,8 @@ func InitCrossChainBridge(isServer bool) {
 		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).AfterConfig()
 	case "COLX":
 		colx.Init(cfg.BtcExtra)
+	default:
+		cfg.BtcExtra = nil
 	}
 
 	dcrm.Init(cfg.Dcrm, isServer)

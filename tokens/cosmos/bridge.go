@@ -130,6 +130,9 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
 	}
+	if tokenCfg.Unit == "" {
+		return fmt.Errorf("empty 'Unit' in token config")
+	}
 	return nil
 }
 
