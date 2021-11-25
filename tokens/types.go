@@ -116,15 +116,8 @@ func (args *BuildTxArgs) GetReplaceNum() uint64 {
 // GetExtraArgs get extra args
 func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 	return &BuildTxArgs{
-		SwapInfo:    args.SwapInfo,
-		From:        args.From,
-		Extra:       args.Extra,
-		To:          args.To,
-		Value:       args.Value,
-		OriginValue: args.OriginValue,
-		SwapValue:   args.SwapValue,
-		Memo:        args.Memo,
-		Input:       args.Input,
+		SwapInfo: args.SwapInfo,
+		Extra:    args.Extra,
 	}
 }
 
