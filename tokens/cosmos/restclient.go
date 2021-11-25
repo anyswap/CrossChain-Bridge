@@ -1,6 +1,7 @@
 package cosmos
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -719,10 +720,15 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 			continue
 		}
 
-		log.Info("Broadcast tx", "resp", bodyText)
+		bodyDec, decbase64err := base64.StdEncoding.DecodeString(string(bodyText))
+		if decbase64err != nil {
+			log.Warn("Broadcast tx error", "decode base64 error", decbase64err)
+			continue
+		}
+		log.Info("Broadcast tx", "resp", string(bodyDec))
 
 		var res map[string]interface{}
-		err = json.Unmarshal([]byte(bodyText), &res)
+		err = json.Unmarshal(bodyDec, &res)
 		if err != nil {
 			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "BroadcastTx")
 			continue
@@ -730,14 +736,14 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 		height, ok1 := res["height"].(string)
 		restxhash, ok2 := res["txhash"].(string)
 		if !ok1 || !ok2 || height == "0" || height == "" || txhash == "" {
-			log.Warn("Broadcast tx failed", "response", bodyText)
+			log.Warn("Broadcast tx failed", "response", string(bodyDec))
 			continue
 		}
 		txhash = restxhash
 		log.Debug("Broadcast tx success", "txhash", restxhash, "height", height)
 		return txhash, nil
 	}
-	return txhash, nil
+	return txhash, errors.New("broadcast tx failed")
 }
 
 func (b *Bridge) EstimateFee(tx StdSignContent) (authtypes.StdFee, error) {
