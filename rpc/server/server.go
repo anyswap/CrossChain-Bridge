@@ -96,6 +96,7 @@ func initRouter(r *mux.Router) {
 	r.HandleFunc("/versioninfo", restapi.VersionInfoHandler).Methods("GET")
 	r.HandleFunc("/oracleinfo", restapi.OracleInfoHandler).Methods("GET")
 	r.HandleFunc("/nonceinfo", restapi.NonceInfoHandler).Methods("GET")
+	r.HandleFunc("/statusinfo", restapi.StatusInfoHandler).Methods("GET")
 	r.HandleFunc("/pairinfo/{pairid}", restapi.TokenPairInfoHandler).Methods("GET")
 	r.HandleFunc("/pairsinfo/{pairids}", restapi.TokenPairsInfoHandler).Methods("GET")
 

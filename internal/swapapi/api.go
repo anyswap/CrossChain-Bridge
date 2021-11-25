@@ -97,6 +97,11 @@ func GetOraclesHeartbeat() map[string]string {
 	return result
 }
 
+// GetStatusInfo api
+func GetStatusInfo(status string) (map[string]map[uint16]uint64, error) {
+	return mongodb.GetStatusInfo(status)
+}
+
 // GetTokenPairInfo api
 func GetTokenPairInfo(pairID string) (*tokens.TokenPairConfig, error) {
 	pairCfg := tokens.GetTokenPairConfig(pairID)
