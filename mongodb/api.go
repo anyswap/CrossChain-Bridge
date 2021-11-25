@@ -736,3 +736,54 @@ func AddUsedRValue(pubkey, r string) error {
 		return mgoError(err)
 	}
 }
+
+var defaultGetStatusInfoFilter = []SwapStatus{
+	TxNotStable,        // 0
+	MatchTxEmpty,       // 8
+	MatchTxNotStable,   // 9
+	TxWithBigValue,     // 12
+	MatchTxFailed,      // 14
+	BindAddrIsContract, // 17
+}
+
+// GetStatusInfo get status info
+func GetStatusInfo(statuses string) (map[string]map[uint16]uint64, error) {
+	filterStatuses := getStatusesFromStr(statuses)
+	if len(filterStatuses) == 0 {
+		filterStatuses = defaultGetStatusInfoFilter
+	}
+	pipeOption := []bson.M{
+		{"$match": bson.M{"status": bson.M{"$in": filterStatuses}}},
+		{"$group": bson.M{"_id": "$status", "count": bson.M{"$sum": 1}}},
+	}
+	swapinStatusInfo, err := getStatusInfo(collSwapinResult, pipeOption)
+	if err != nil {
+		return nil, err
+	}
+	swapoutStatusInfo, err := getStatusInfo(collSwapoutResult, pipeOption)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]map[uint16]uint64, 2)
+	result["swapin"] = swapinStatusInfo
+	result["swapout"] = swapoutStatusInfo
+	return result, nil
+}
+
+func getStatusInfo(collection *mgo.Collection, pipeOption []bson.M) (map[uint16]uint64, error) {
+	result := make([]bson.M, 0, 10)
+	err := collection.Pipe(pipeOption).All(&result)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+
+	statusInfo := make(map[uint16]uint64, len(result))
+	for _, m := range result {
+		status, sok := m["_id"].(float64)
+		count, cok := m["count"].(int)
+		if sok && cok {
+			statusInfo[uint16(status)] = uint64(count)
+		}
+	}
+	return statusInfo, nil
+}

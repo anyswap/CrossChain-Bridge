@@ -61,6 +61,18 @@ func OracleInfoHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, nil)
 }
 
+// StatusInfoHandler handler
+func StatusInfoHandler(w http.ResponseWriter, r *http.Request) {
+	var status string
+	vals := r.URL.Query()
+	statusVals, exist := vals["status"]
+	if exist {
+		status = statusVals[0]
+	}
+	res, err := swapapi.GetStatusInfo(status)
+	writeResponse(w, res, err)
+}
+
 // TokenPairInfoHandler handler
 func TokenPairInfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
