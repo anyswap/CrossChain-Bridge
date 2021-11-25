@@ -126,14 +126,13 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 	}
 	if args.SwapType != tokens.NoSwapType {
 		needValue = new(big.Int).Add(needValue, b.getMinReserveFee())
-	}
-	/*else if isDynamicFeeTx {
+	} else if isDynamicFeeTx {
 		gasFee := new(big.Int).Mul(gasFeeCap, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
 	} else {
 		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 		needValue = new(big.Int).Add(needValue, gasFee)
-	}*/
+	}
 	err = b.checkBalance("", args.From, needValue)
 	if err != nil {
 		log.Warn("check balance failed", "account", args.From, "needValue", needValue, "err", err)

@@ -81,30 +81,21 @@ func (b *Bridge) checkSwapoutInfo(swapInfo *tokens.TxSwapInfo) error {
 
 func parseSwapoutTxLogs(logs []*types.RPCLog, targetContract string) (bind string, value *big.Int, err error) {
 	isSwapoutToStrAddr := isSwapoutToStringAddress()
-	log.Warn("!!!! parseSwapoutTxLogs", "isSwapoutToStrAddr", isSwapoutToStrAddr)
-	print := func(a, b interface{}) {
-		log.Warn("!!!! parseSwapoutTxLogs", a, b)
-	}
 	logSwapoutTopic, topicsLen := getLogSwapoutTopic()
 	for _, log := range logs {
 		if log.Removed != nil && *log.Removed {
-			print("log.Removed", log.Removed)
 			continue
 		}
 		if !common.IsEqualIgnoreCase(log.Address.String(), targetContract) {
-			print("IsEqualIgnoreCase", true)
 			continue
 		}
 		if len(log.Topics) != topicsLen || log.Data == nil {
-			print("len(log.Topics)", len(log.Topics))
 			continue
 		}
 		if !bytes.Equal(log.Topics[0].Bytes(), logSwapoutTopic) {
-			print("!bytes.Equal(log.Topics[0].Bytes(), logSwapoutTopic)", true)
 			continue
 		}
 		if isSwapoutToStrAddr {
-			print("isSwapoutToStrAddr", true)
 			return parseSwapoutToBtcEncodedData(*log.Data, false)
 		}
 		bind = common.BytesToAddress(log.Topics[2].Bytes()).String()
