@@ -26,6 +26,7 @@ func initApp() {
 	app.Copyright = "Copyright 2017-2020 The CrossChain-Bridge Authors"
 	app.Commands = []*cli.Command{
 		scanBtcCommand,
+		scanLtcCommand,
 		utils.LicenseCommand,
 		utils.VersionCommand,
 	}

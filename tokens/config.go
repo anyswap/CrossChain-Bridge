@@ -107,13 +107,6 @@ type TokenPriceConfig struct {
 	APIAddress []string
 }
 
-type KeyType string
-
-const (
-	ECDSAKeyType   KeyType = "ecdsa"
-	ED25519KeyType KeyType = "ed25519"
-)
-
 // TokenConfig struct
 type TokenConfig struct {
 	ID                     string `json:",omitempty"`
@@ -144,7 +137,6 @@ type TokenConfig struct {
 	AllowSwapinFromContract  bool   `json:",omitempty"`
 	AllowSwapoutFromContract bool   `json:",omitempty"`
 
-	PrivateKeyType    KeyType  `json:"ecdsa"`
 	BigValueWhitelist []string `json:",omitempty"`
 
 	// use private key address instead
@@ -152,7 +144,6 @@ type TokenConfig struct {
 	DcrmAddressPassword string `json:"-"`
 	DcrmAddressKeyFile  string `json:"-"`
 	dcrmAddressPriKey   *ecdsa.PrivateKey
-	//dcrmAddressED25519PriKey *ed25519.PrivateKey
 
 	// calced value
 	maxSwap          *big.Int
