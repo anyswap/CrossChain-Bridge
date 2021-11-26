@@ -52,7 +52,7 @@ func (b *Bridge) GetBalance(account string) (balance *big.Int, err error) {
 		client := resty.New()
 		resp, err := client.R().Get(fmt.Sprintf("%vbank/balances/%v", endpoint, account))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetBalance")
+			log.Warn("cosmos rest request error", "resp", resp, "request error", err, "func", "GetBalance")
 			continue
 		}
 		/*var balances sdk.Coins
@@ -107,7 +107,7 @@ func (b *Bridge) GetTokenBalance(tokenType, tokenName, accountAddress string) (b
 		client := resty.New()
 		resp, err := client.R().Get(fmt.Sprintf("%vbank/balances/%v", endpoint, accountAddress))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "error", err, "func", "GetTokenBalance")
+			log.Warn("cosmos rest request error", "resp", resp, "error", err, "func", "GetTokenBalance")
 			continue
 		}
 		/*var balances sdk.Coins
@@ -195,13 +195,13 @@ func (b *Bridge) GetTransactionResult(txHash string) (*sdk.TxResponse, error) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vtxs/%v", endpoint, txHash))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetTransaction")
+			log.Warn("cosmos rest request error", "resp", resp, "request error", err, "func", "GetTransaction")
 			continue
 		}
 		var txResult sdk.TxResponse
 		err = CDC.UnmarshalJSON(resp.Body(), &txResult)
 		if err != nil {
-			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTransaction", "resp", string(resp.Body()))
+			log.Warn("cosmos rest request error", "unmarshal error", err, "func", "GetTransaction", "resp", resp)
 			return nil, err
 		}
 		if txResult.Code != 0 {
@@ -288,7 +288,7 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 
 		resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
 		if err != nil || resp.StatusCode() != 200 {
-			log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetLatestBlockNumber")
+			log.Warn("cosmos rest request error", "resp", resp, "request error", err, "func", "GetLatestBlockNumber")
 			continue
 		}
 		//var blockRes ResultBlock
@@ -335,7 +335,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 
 	resp, err := client.R().Get(fmt.Sprintf("%vblocks/latest", endpoint))
 	if err != nil || resp.StatusCode() != 200 {
-		log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetLatestBlockNumber")
+		log.Warn("cosmos rest request error", "resp", resp, "request error", err, "func", "GetLatestBlockNumber")
 		return 0, err
 	}
 	//var blockRes ResultBlock
@@ -371,7 +371,7 @@ func GetAccountNumber(endpoint, address string) (uint64, error) {
 
 	resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
 	if err != nil || resp.StatusCode() != 200 {
-		log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetAccountNumber")
+		log.Warn("cosmos rest request error", "resp", resp, "request error", err, "func", "GetAccountNumber")
 		return 0, err
 	}
 	tempStruct := make(map[string]interface{})
@@ -426,7 +426,7 @@ func GetPoolNonce(endpoint, address, height string) (uint64, error) {
 
 	resp, err := client.R().Get(fmt.Sprintf("%vauth/accounts/%v", endpoint, address))
 	if err != nil || resp.StatusCode() != 200 {
-		log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "GetPoolNonce")
+		log.Warn("cosmos rest request error", "resp", resp, "request error", err, "func", "GetPoolNonce")
 		return 0, err
 	}
 	tempStruct := make(map[string]interface{})
@@ -500,7 +500,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
-				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxsHash")
+				log.Warn("cosmos rest request error", "resp", resp, "request error", err, "func", "SearchTxsHash")
 				continue
 			}
 			var res sdk.SearchTxsResult
@@ -540,7 +540,7 @@ func (b *Bridge) SearchTxsHash(start, end *big.Int) ([]string, error) {
 			params := fmt.Sprintf("?message.action=multisend&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
-				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxsHash")
+				log.Warn("cosmos rest request error", "resp", resp, "request error", err, "func", "SearchTxsHash")
 				continue
 			}
 			var res sdk.SearchTxsResult
@@ -590,7 +590,7 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			params := fmt.Sprintf("?message.action=send&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%vtxs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
-				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxs")
+				log.Warn("cosmos rest request error", "resp", resp, "request error", err, "func", "SearchTxs")
 				continue
 			}
 			var res sdk.SearchTxsResult
@@ -630,7 +630,7 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 			params := fmt.Sprintf("?message.action=multisend&page=%v&limit=%v&tx.minheight=%v&tx.maxheight=%v", page, limit, start, end)
 			resp, err := client.R().Get(fmt.Sprintf("%v/txs%v", endpoint, params))
 			if err != nil || resp.StatusCode() != 200 {
-				log.Warn("cosmos rest request error", "resp", string(resp.Body()), "request error", err, "func", "SearchTxs")
+				log.Warn("cosmos rest request error", "resp", resp, "request error", err, "func", "SearchTxs")
 				continue
 			}
 			var res sdk.SearchTxsResult
@@ -659,7 +659,7 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 // post "txs" to rest api
 // mode: block
 func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
-	txhash := ""
+	txhash, err := CaluculateTxHash(tx)
 	stdtx := tx.ToStdTx()
 
 	bz, err := CDC.MarshalJSON(stdtx)

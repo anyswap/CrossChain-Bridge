@@ -18,11 +18,14 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
+	//tmtypes "github.com/tendermint/tendermint/types"
 )
 
 const (
 	retryGetSignStatusInterval = 10 * time.Second
 )
+
+var TxEncoder = authtypes.DefaultTxEncoder(CDC)
 
 func (b *Bridge) verifyTransactionWithArgs(tx StdSignContent, args *tokens.BuildTxArgs) error {
 	tokenCfg := b.GetTokenConfig(args.PairID)
@@ -126,9 +129,18 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", errors.New("wrong signature")
 	}
 
-	txHash = msgHash
+	txHash, err = CaluculateTxHash(signedTx.(HashableStdTx))
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", signedTx.(HashableStdTx).Sequence)
 	return signedTx, txHash, err
+}
+
+func CaluculateTxHash(stdtx HashableStdTx) (string, error) {
+	/*txbytes, err := TxEncoder(stdtx.ToStdTx())
+	if err != nil {
+		return "", err
+	}
+	return strings.ToUpper(hex.EncodeToString(tmtypes.Tx(txbytes).Hash())), nil*/
+	return fmt.Sprintf("%v-%v", stdtx.AccountNumber, stdtx.Sequence), nil
 }
 
 // SignTransaction sign tx with pairID
@@ -168,7 +180,7 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 		Signatures:     []authtypes.StdSignature{stdsig},
 	}
 
-	txHash = signedTx.(HashableStdTx).Hash()
+	txHash, err = CaluculateTxHash(signedTx.(HashableStdTx))
 
 	return
 }

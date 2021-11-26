@@ -149,13 +149,9 @@ func (b *Bridge) FeeGetter() func(pairID string, tx *cosmos.StdSignContent) auth
 				break
 			}
 			sendamt := sendmsg.Amount[0].Amount.BigInt()
-			// fee = min(amount*0.1, 5000000)
-			feeamount := new(big.Int).Div(sendamt, big.NewInt(10))
-			if feeamount.Cmp(big.NewInt(5000000)) > 0 {
-				amount = 5000000
-			} else {
-				amount = feeamount.Int64()
-			}
+			// fee = amount*0.01 + 100000
+			feeamount := new(big.Int).Add(new(big.Int).Div(new(big.Int).Mul(sendamt, big.NewInt(1)), big.NewInt(100)), big.NewInt(100000))
+			amount = feeamount.Int64()
 		}
 
 		feeAmount := sdk.Coins{sdk.Coin{Denom: denom, Amount: sdk.NewInt(amount)}}
