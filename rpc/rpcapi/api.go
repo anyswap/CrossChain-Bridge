@@ -55,7 +55,7 @@ func (s *RPCAPI) GetOraclesHeartbeat(r *http.Request, args *RPCNullArgs, result 
 }
 
 // GetStatusInfo api
-func (s *RPCAPI) GetStatusInfo(r *http.Request, statuses *string, result *map[string]map[uint16]uint64) error {
+func (s *RPCAPI) GetStatusInfo(r *http.Request, statuses *string, result *map[string]map[string]interface{}) error {
 	res, err := swapapi.GetStatusInfo(*statuses)
 	if err == nil && res != nil {
 		*result = res
