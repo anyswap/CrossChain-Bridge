@@ -47,6 +47,13 @@ func StartAcceptSignJob() {
 		logWorker("accept", "no need to start accept sign job as dcrm is disabled")
 		return
 	}
+	getAcceptListInterval := params.GetOracleConfig().GetAcceptListInterval
+	if getAcceptListInterval > 0 {
+		waitInterval = time.Duration(getAcceptListInterval) * time.Second
+		if retryInterval > waitInterval {
+			retryInterval = waitInterval
+		}
+	}
 	acceptSignStarter.Do(func() {
 		logWorker("accept", "start accept sign job")
 		go startAcceptProducer()

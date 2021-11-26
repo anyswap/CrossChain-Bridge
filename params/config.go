@@ -69,7 +69,8 @@ type DcrmNodeConfig struct {
 
 // OracleConfig oracle config
 type OracleConfig struct {
-	ServerAPIAddress string
+	ServerAPIAddress      string
+	GetAcceptListInterval uint64
 }
 
 // APIServerConfig api service config
@@ -154,6 +155,11 @@ func GetConfig() *ServerConfig {
 // SetConfig set config items
 func SetConfig(config *ServerConfig) {
 	serverConfig = config
+}
+
+// GetOracleConfig get oracle config
+func GetOracleConfig() *OracleConfig {
+	return GetConfig().Oracle
 }
 
 // GetExtraConfig get extra config
