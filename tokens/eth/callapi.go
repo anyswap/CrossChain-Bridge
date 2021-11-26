@@ -391,6 +391,7 @@ func (b *Bridge) SendSignedTransaction(tx *types.Transaction) (txHash string, er
 	if err != nil {
 		return "", err
 	}
+	log.Info("call eth_sendRawTransaction start", "txHash", tx.Hash().String())
 	hexData := common.ToHex(data)
 	gateway := b.GatewayConfig
 	urlCount := len(gateway.APIAddressExt) + len(gateway.APIAddress)
@@ -400,6 +401,7 @@ func (b *Bridge) SendSignedTransaction(tx *types.Transaction) (txHash string, er
 	go func() {
 		wg.Wait()
 		close(ch)
+		log.Info("call eth_sendRawTransaction finished", "txHash", txHash)
 	}()
 	for _, url := range gateway.APIAddress {
 		go sendRawTransaction(wg, hexData, url, ch)
