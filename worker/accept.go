@@ -51,6 +51,9 @@ func StartAcceptSignJob() {
 	getAcceptListInterval := params.GetOracleConfig().GetAcceptListInterval
 	if getAcceptListInterval > 0 {
 		waitInterval = time.Duration(getAcceptListInterval) * time.Second
+		if retryInterval > waitInterval {
+			retryInterval = waitInterval
+		}
 	}
 	acceptSignStarter.Do(func() {
 		logWorker("accept", "start accept sign job")
