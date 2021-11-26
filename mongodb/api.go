@@ -800,7 +800,7 @@ var defaultGetStatusInfoFilter = []SwapStatus{
 }
 
 // GetStatusInfo get status info
-func GetStatusInfo(statuses string) (map[string]map[uint16]uint64, error) {
+func GetStatusInfo(statuses string) (map[string]map[string]interface{}, error) {
 	filterStatuses := getStatusesFromStr(statuses)
 	if len(filterStatuses) == 0 {
 		filterStatuses = defaultGetStatusInfoFilter
@@ -817,13 +817,13 @@ func GetStatusInfo(statuses string) (map[string]map[uint16]uint64, error) {
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[string]map[uint16]uint64, 2)
+	result := make(map[string]map[string]interface{}, 2)
 	result["swapin"] = swapinStatusInfo
 	result["swapout"] = swapoutStatusInfo
 	return result, nil
 }
 
-func getStatusInfo(collection *mongo.Collection, pipeOption []bson.M) (map[uint16]uint64, error) {
+func getStatusInfo(collection *mongo.Collection, pipeOption []bson.M) (map[string]interface{}, error) {
 	ctx, cancel := context.WithDeadline(clientCtx, time.Now().Add(3*time.Second))
 	defer cancel()
 
@@ -838,13 +838,9 @@ func getStatusInfo(collection *mongo.Collection, pipeOption []bson.M) (map[uint1
 		return nil, mgoError(err)
 	}
 
-	statusInfo := make(map[uint16]uint64, len(result))
+	statusInfo := make(map[string]interface{}, len(result))
 	for _, m := range result {
-		status, sok := m["_id"].(float64)
-		count, cok := m["count"].(int32)
-		if sok && cok {
-			statusInfo[uint16(status)] = uint64(count)
-		}
+		statusInfo[fmt.Sprint(m["_id"])] = m["count"]
 	}
 	return statusInfo, nil
 }

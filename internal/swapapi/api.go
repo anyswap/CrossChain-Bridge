@@ -98,7 +98,7 @@ func GetOraclesHeartbeat() map[string]string {
 }
 
 // GetStatusInfo api
-func GetStatusInfo(status string) (map[string]map[uint16]uint64, error) {
+func GetStatusInfo(status string) (map[string]map[string]interface{}, error) {
 	return mongodb.GetStatusInfo(status)
 }
 
