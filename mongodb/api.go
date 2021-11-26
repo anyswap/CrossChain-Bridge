@@ -780,7 +780,7 @@ func getStatusInfo(collection *mgo.Collection, pipeOption []bson.M) (map[uint16]
 	statusInfo := make(map[uint16]uint64, len(result))
 	for _, m := range result {
 		status, sok := m["_id"].(float64)
-		count, cok := m["count"].(int)
+		count, cok := m["count"].(int32)
 		if sok && cok {
 			statusInfo[uint16(status)] = uint64(count)
 		}
