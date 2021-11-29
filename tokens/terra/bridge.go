@@ -9,8 +9,10 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/cosmos"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/tendermint/tendermint/crypto/tmhash"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	core "github.com/terra-project/core/types"
 )
@@ -40,6 +42,8 @@ func (b *Bridge) BeforeConfig() {
 	cosmos.CDC.RegisterConcrete(authtypes.StdTx{}, "core/StdTx", nil)
 	cosmos.CDC.RegisterConcrete(&authtypes.BaseAccount{}, "core/Account", nil)
 	InitSDK()
+	initTxHashCdc()
+	cosmos.CaluculateTxHash = CaluculateTxHash
 	cosmos.ChainIDs["columbus-5"] = true
 	cosmos.ChainIDs["tequila-0004"] = true
 	cosmos.SignBytesModifier = TerraSignBytesModifier
@@ -70,6 +74,15 @@ func (b *Bridge) AfterConfig() {
 		//log.Fatalf("Terra bridge must have Luna token config")
 	}
 	b.MainCoin = b.SupportedCoins["LUNA"]
+
+	pairs := tokens.GetTokenPairsConfig()
+	for _, tokenCfg := range pairs {
+		token := tokens.GetTokenConfig(tokenCfg.PairID, false)
+		if !token.UncappedFee {
+			log.Fatalf("Terra withdraw fee must be uncapped")
+		}
+	}
+
 	log.Info("Terra bridge init success", "coins", b.SupportedCoins)
 }
 
@@ -165,4 +178,24 @@ var TerraSignBytesModifier = func(bz []byte) []byte {
 	signString = strings.Replace(signString, "cosmos-sdk/MsgSend", "bank/MsgSend", -1)
 	signString = strings.Replace(signString, "cosmos-sdk/MsgMultiSend", "bank/MsgMultiSend", -1)
 	return []byte(signString)
+}
+
+var txhashcdc *codec.Codec
+
+func initTxHashCdc() {
+	txhashcdc = codec.New()
+	codec.RegisterCrypto(txhashcdc)
+	cosmos.RegisterCodec(txhashcdc)
+	txhashcdc.RegisterConcrete(authtypes.StdTx{}, "auth/StdTx", nil)
+	txhashcdc.RegisterInterface((*sdk.Msg)(nil), nil)
+}
+
+func CaluculateTxHash(signedTx cosmos.HashableStdTx) (string, error) {
+	txBytes, err := txhashcdc.MarshalBinaryLengthPrefixed(signedTx.ToStdTx())
+	if err != nil {
+		return "", err
+	}
+	txHash := fmt.Sprintf("%X", tmhash.Sum(txBytes))
+	log.Debug("======== 请注意 ========", "txHash", txHash)
+	return txHash, nil
 }

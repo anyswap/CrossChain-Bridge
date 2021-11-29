@@ -139,6 +139,8 @@ type TokenConfig struct {
 
 	BigValueWhitelist []string `json:",omitempty"`
 
+	UncappedFee bool
+
 	// use private key address instead
 	DcrmAddressKeyStore string `json:"-"`
 	DcrmAddressPassword string `json:"-"`

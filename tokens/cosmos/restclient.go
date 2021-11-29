@@ -352,7 +352,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	}
 	header, ok2 := block["header"].(map[string]interface{})
 	if !ok2 {
-		return 0, fmt.Errorf("parse height error: %v", block)
+		return 0, fmt.Errorf("parse height error: %v", header)
 	}
 	heightstr, ok3 := header["height"].(string)
 	if !ok3 {

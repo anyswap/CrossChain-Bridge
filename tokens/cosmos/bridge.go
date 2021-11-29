@@ -8,8 +8,10 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/tendermint/tendermint/crypto/tmhash"
 	cyptes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -30,6 +32,7 @@ func (b *Bridge) BeforeConfig() {
 	sdk.RegisterCodec(CDC)
 	RegisterCodec(CDC)
 	CDC.RegisterConcrete(&authtypes.BaseAccount{}, "cosmos-sdk/Account", nil)
+	initTxHashCdc()
 	ChainIDs["cosmos-hub4"] = true
 	ChainIDs["stargate-final"] = true
 	// SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
@@ -180,4 +183,23 @@ func (b *Bridge) FeeGetter() func(pairID string, tx *StdSignContent) authtypes.S
 			return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
 		}
 	}
+}
+
+var txhashcdc *codec.Codec
+
+func initTxHashCdc() {
+	txhashcdc = codec.New()
+	codec.RegisterCrypto(txhashcdc)
+	RegisterCodec(txhashcdc)
+	txhashcdc.RegisterConcrete(authtypes.StdTx{}, "auth/StdTx", nil)
+	txhashcdc.RegisterInterface((*sdk.Msg)(nil), nil)
+}
+
+var CaluculateTxHash = func(signedTx HashableStdTx) (string, error) {
+	txBytes, err := txhashcdc.MarshalBinaryLengthPrefixed(signedTx.ToStdTx())
+	if err != nil {
+		return "", err
+	}
+	txHash := fmt.Sprintf("%X", tmhash.Sum(txBytes))
+	return txHash, nil
 }

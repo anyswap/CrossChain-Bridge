@@ -18,7 +18,6 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
-	//tmtypes "github.com/tendermint/tendermint/types"
 )
 
 const (
@@ -132,15 +131,6 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	txHash, err = CaluculateTxHash(signedTx.(HashableStdTx))
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txhash", txHash, "nonce", signedTx.(HashableStdTx).Sequence)
 	return signedTx, txHash, err
-}
-
-func CaluculateTxHash(stdtx HashableStdTx) (string, error) {
-	/*txbytes, err := TxEncoder(stdtx.ToStdTx())
-	if err != nil {
-		return "", err
-	}
-	return strings.ToUpper(hex.EncodeToString(tmtypes.Tx(txbytes).Hash())), nil*/
-	return fmt.Sprintf("%v-%v", stdtx.AccountNumber, stdtx.Sequence), nil
 }
 
 // SignTransaction sign tx with pairID
