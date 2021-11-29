@@ -82,7 +82,10 @@ func (b *Bridge) AfterConfig() {
 			log.Fatalf("Terra withdraw fee must be uncapped")
 		}
 		if token.TaxRate <= 0 || token.TaxRate >= 0.01 {
-			log.Fatalf("Invalid tax fee rate")
+			log.Fatalf("Invalid tax tax rate")
+		}
+		if token.GasRate <= 0 {
+			log.Fatalf("Invalid tax gas rate")
 		}
 	}
 
@@ -170,9 +173,10 @@ func (b *Bridge) FeeGetter() func(pairID string, tx *cosmos.StdSignContent) auth
 			token := tokens.GetTokenConfig(pairID, false)
 			taxrate := big.NewInt(int64(token.TaxRate * float64(Denominator)))
 
-			// fee = amount*0.01 + 100000
-			feeamount := new(big.Int).Add(new(big.Int).Div(new(big.Int).Mul(sendamt, taxrate), big.NewInt(Denominator)), big.NewInt(100000))
-			amount = feeamount.Int64()
+			// fee = sendamount * taxrate + swapoutgas * gasrate
+			tax := new(big.Int).Div(new(big.Int).Mul(sendamt, taxrate), big.NewInt(Denominator))
+			gasfee := int64(float64(DefaultSwapoutGas) * token.GasRate)
+			amount = tax.Int64() + gasfee
 		}
 
 		feeAmount := sdk.Coins{sdk.Coin{Denom: denom, Amount: sdk.NewInt(amount)}}
@@ -204,6 +208,5 @@ func CaluculateTxHash(signedTx cosmos.HashableStdTx) (string, error) {
 		return "", err
 	}
 	txHash := fmt.Sprintf("%X", tmhash.Sum(txBytes))
-	log.Debug("======== 请注意 ========", "txHash", txHash)
 	return txHash, nil
 }

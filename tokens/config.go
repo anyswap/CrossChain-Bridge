@@ -141,6 +141,7 @@ type TokenConfig struct {
 
 	UncappedFee bool    `json:",omitempty"`
 	TaxRate     float64 `json:",omitempty"`
+	GasRate     float64 `json:",omitempty"`
 
 	// use private key address instead
 	DcrmAddressKeyStore string `json:"-"`
