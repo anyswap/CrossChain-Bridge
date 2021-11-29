@@ -81,6 +81,9 @@ func (b *Bridge) AfterConfig() {
 		if !token.UncappedFee {
 			log.Fatalf("Terra withdraw fee must be uncapped")
 		}
+		if token.TaxRate <= 0 || token.TaxRate >= 0.01 {
+			log.Fatalf("Invalid tax fee rate")
+		}
 	}
 
 	log.Info("Terra bridge init success", "coins", b.SupportedCoins)
@@ -137,6 +140,7 @@ func (b *Bridge) InitLatestBlockNumber() {
 
 // DefaultSwapoutGas is terra default gas
 var DefaultSwapoutGas uint64 = 98000
+var Denominator int64 = 10000
 
 // FeeGetter returns terra fee getter
 func (b *Bridge) FeeGetter() func(pairID string, tx *cosmos.StdSignContent) authtypes.StdFee {
@@ -162,8 +166,12 @@ func (b *Bridge) FeeGetter() func(pairID string, tx *cosmos.StdSignContent) auth
 				break
 			}
 			sendamt := sendmsg.Amount[0].Amount.BigInt()
+
+			token := tokens.GetTokenConfig(pairID, false)
+			taxrate := big.NewInt(int64(token.TaxRate * float64(Denominator)))
+
 			// fee = amount*0.01 + 100000
-			feeamount := new(big.Int).Add(new(big.Int).Div(new(big.Int).Mul(sendamt, big.NewInt(1)), big.NewInt(100)), big.NewInt(100000))
+			feeamount := new(big.Int).Add(new(big.Int).Div(new(big.Int).Mul(sendamt, taxrate), big.NewInt(Denominator)), big.NewInt(100000))
 			amount = feeamount.Int64()
 		}
 

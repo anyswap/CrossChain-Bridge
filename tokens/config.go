@@ -139,7 +139,8 @@ type TokenConfig struct {
 
 	BigValueWhitelist []string `json:",omitempty"`
 
-	UncappedFee bool
+	UncappedFee bool    `json:",omitempty"`
+	TaxRate     float64 `json:",omitempty"`
 
 	// use private key address instead
 	DcrmAddressKeyStore string `json:"-"`
