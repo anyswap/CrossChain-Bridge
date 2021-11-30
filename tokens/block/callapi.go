@@ -250,9 +250,6 @@ func callCloudchains(url, reqdata string, result interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 	err = json.Unmarshal(bodyText, &result)
 	return err
 }

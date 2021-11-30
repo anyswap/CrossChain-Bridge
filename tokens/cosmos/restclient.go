@@ -716,8 +716,10 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 			log.Warn("Broadcast tx error", "error", err)
 			continue
 		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
 		bodyText, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
 		if err != nil {
 			continue
 		}
@@ -821,8 +823,10 @@ func (b *Bridge) EstimateFee(tx StdSignContent) (authtypes.StdFee, error) {
 			log.Warn("Estimate fee error", "error", err)
 			continue
 		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
 		bodyText, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
 		if err != nil {
 			continue
 		}
