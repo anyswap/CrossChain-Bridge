@@ -133,9 +133,9 @@ func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
 	ms.InitTime = common.NowMilli()
 	err := collection.Insert(ms)
 	if err == nil {
-		log.Info("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
-	} else {
-		log.Debug("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection), "err", err)
+		log.Info("mongodb add swap success", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
+	} else if !mgo.IsDup(err) {
+		log.Error("mongodb add swap failed", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
@@ -337,9 +337,9 @@ func addSwapResult(collection *mgo.Collection, ms *MgoSwapResult) error {
 	ms.InitTime = common.NowMilli()
 	err := collection.Insert(ms)
 	if err == nil {
-		log.Info("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection))
-	} else {
-		log.Debug("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection), "err", err)
+		log.Info("mongodb add swap result success", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection))
+	} else if !mgo.IsDup(err) {
+		log.Error("mongodb add swap result failed", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
