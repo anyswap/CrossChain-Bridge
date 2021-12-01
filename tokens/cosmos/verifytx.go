@@ -70,6 +70,14 @@ func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable boo
 	log.Warn("!!!! 000000", "pairID", pairID)
 	txid := strings.ToLower(txHash)
 	txResult, err := b.getTxResult(txHash, allowUnstable)
+	if err != nil {
+		errs = []error{err}
+		return nil, errs
+	}
+	if txResult == nil {
+		errs = []error{errors.New("get tx result failed")}
+		return nil, errs
+	}
 	tx := txResult.Tx
 	log.Warn("!!!! 111111", "tx", tx, "err", err)
 	if err != nil {
