@@ -20,6 +20,7 @@ func PackDataWithFuncHash(funcHash []byte, args ...interface{}) []byte {
 }
 
 // PackData pack data
+// nolint:makezero // keep it
 func PackData(args ...interface{}) []byte {
 	lenArgs := len(args)
 	bs := make([]byte, lenArgs*32)

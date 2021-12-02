@@ -1,3 +1,4 @@
+// Package restapi provides RESTful RPC service.
 package restapi
 
 import (
@@ -7,22 +8,39 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/internal/swapapi"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/gorilla/mux"
 )
 
 func writeResponse(w http.ResponseWriter, resp interface{}, err error) {
+	if err != nil {
+		writeErrResponse(w, err)
+		return
+	}
+	jsonData, err := json.Marshal(resp)
+	if err != nil {
+		writeErrResponse(w, err)
+		return
+	}
+	writeJSONResponse(w, jsonData)
+}
+
+func writeJSONResponse(w http.ResponseWriter, jsonData []byte) {
 	// Note: must set header before write header
-	if err == nil {
-		w.Header().Set("Content-Type", "application/json")
-	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err == nil {
-		jsonData, _ := json.Marshal(resp)
-		_, _ = w.Write(jsonData)
-	} else {
-		fmt.Fprintln(w, err.Error())
+	_, err := w.Write(jsonData)
+	if err != nil {
+		log.Warn("write response error", "data", common.ToHex(jsonData), "err", err)
 	}
+}
+
+func writeErrResponse(w http.ResponseWriter, err error) {
+	// Note: must set header before write header
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, err.Error())
 }
 
 // VersionInfoHandler handler
@@ -37,6 +55,24 @@ func ServerInfoHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
+// OracleInfoHandler handler
+func OracleInfoHandler(w http.ResponseWriter, r *http.Request) {
+	res := swapapi.GetOraclesHeartbeat()
+	writeResponse(w, res, nil)
+}
+
+// StatusInfoHandler handler
+func StatusInfoHandler(w http.ResponseWriter, r *http.Request) {
+	var status string
+	vals := r.URL.Query()
+	statusVals, exist := vals["status"]
+	if exist {
+		status = statusVals[0]
+	}
+	res, err := swapapi.GetStatusInfo(status)
+	writeResponse(w, res, err)
+}
+
 // TokenPairInfoHandler handler
 func TokenPairInfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -45,11 +81,17 @@ func TokenPairInfoHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-// StatisticsHandler handler
-func StatisticsHandler(w http.ResponseWriter, r *http.Request) {
+// TokenPairsInfoHandler handler
+func TokenPairsInfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	pairID := vars["pairid"]
-	res, err := swapapi.GetSwapStatistics(pairID)
+	pairIDs := vars["pairids"]
+	res, err := swapapi.GetTokenPairsInfo(pairIDs)
+	writeResponse(w, res, err)
+}
+
+// NonceInfoHandler handler
+func NonceInfoHandler(w http.ResponseWriter, r *http.Request) {
+	res, err := swapapi.GetNonceInfo()
 	writeResponse(w, res, err)
 }
 
@@ -122,50 +164,65 @@ func GetSwapoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, res, err)
 }
 
-func getHistoryParams(r *http.Request) (address, pairID string, offset, limit int, err error) {
+type historyParams struct {
+	address string
+	pairID  string
+	offset  int
+	limit   int
+	status  string
+}
+
+func getHistoryParams(r *http.Request) (p *historyParams, err error) {
 	vars := mux.Vars(r)
 	vals := r.URL.Query()
 
-	address = vars["address"]
-	pairID = vars["pairid"]
+	p = &historyParams{}
+
+	p.address = vars["address"]
+	p.pairID = vars["pairid"]
 
 	offsetStr, exist := vals["offset"]
 	if exist {
-		offset, err = common.GetIntFromStr(offsetStr[0])
+		p.offset, err = common.GetIntFromStr(offsetStr[0])
 		if err != nil {
-			return address, pairID, offset, limit, err
+			return p, err
 		}
 	}
 
 	limitStr, exist := vals["limit"]
 	if exist {
-		limit, err = common.GetIntFromStr(limitStr[0])
+		p.limit, err = common.GetIntFromStr(limitStr[0])
 		if err != nil {
-			return address, pairID, offset, limit, err
+			return p, err
 		}
 	}
 
-	return address, pairID, offset, limit, nil
+	statusStr, exist := vals["status"]
+	if exist {
+		p.status = statusStr[0]
+	}
+
+	return p, nil
 }
 
 // SwapinHistoryHandler handler
 func SwapinHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	address, pairID, offset, limit, err := getHistoryParams(r)
+	p, err := getHistoryParams(r)
 	if err != nil {
 		writeResponse(w, nil, err)
 	} else {
-		res, err := swapapi.GetSwapinHistory(address, pairID, offset, limit)
+		res, err := swapapi.GetSwapinHistory(p.address, p.pairID, p.offset, p.limit, p.status)
 		writeResponse(w, res, err)
 	}
 }
 
 // SwapoutHistoryHandler handler
 func SwapoutHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	address, pairID, offset, limit, err := getHistoryParams(r)
+	p, err := getHistoryParams(r)
 	if err != nil {
 		writeResponse(w, nil, err)
 	} else {
-		res, err := swapapi.GetSwapoutHistory(address, pairID, offset, limit)
+		res, err := swapapi.GetSwapoutHistory(p.address, p.pairID, p.offset, p.limit, p.status)
 		writeResponse(w, res, err)
 	}
 }

@@ -43,13 +43,17 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	if err != nil {
 		return nil, "", err
 	}
-	gasPrice, err := b.getGasPrice()
-	if err == nil && args.Extra.EthExtra.GasPrice.Cmp(gasPrice) < 0 {
-		args.Extra.EthExtra.GasPrice = gasPrice
+	if !b.ChainConfig.EnableDynamicFeeTx {
+		gasPrice, errt := b.getGasPrice(args)
+		if errt == nil && args.Extra.EthExtra.GasPrice.Cmp(gasPrice) < 0 {
+			log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction update gas price", "txid", args.SwapID, "oldGasPrice", args.Extra.EthExtra.GasPrice, "newGasPrice", gasPrice)
+			args.Extra.EthExtra.GasPrice = gasPrice
+			tx.SetGasPrice(gasPrice)
+		}
 	}
 	signer := b.Signer
 	msgHash := signer.Hash(tx)
-	jsondata, _ := json.Marshal(args)
+	jsondata, _ := json.Marshal(args.GetExtraArgs())
 	msgContext := string(jsondata)
 
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "msghash", msgHash.String(), "txid", args.SwapID)
@@ -71,25 +75,41 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", errors.New("wrong signature of keyID " + keyID)
 	}
 
-	signedTx, err := tx.WithSignature(signer, signature)
+	token := b.GetTokenConfig(args.PairID)
+	signedTx, err := b.signTxWithSignature(tx, signature, common.HexToAddress(token.DcrmAddress))
 	if err != nil {
 		return nil, "", err
 	}
-
-	sender, err := types.Sender(signer, signedTx)
+	txHash, err = b.CalcTransactionHash(signedTx)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("calc signed tx hash failed, %w", err)
 	}
-
-	pairID := args.PairID
-	token := b.GetTokenConfig(pairID)
-	if sender != common.HexToAddress(token.DcrmAddress) {
-		log.Error("DcrmSignTransaction verify sender failed", "have", sender.String(), "want", token.DcrmAddress)
-		return nil, "", errors.New("wrong sender address")
-	}
-	txHash = signedTx.Hash().String()
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction success", "keyID", keyID, "txid", args.SwapID, "txhash", txHash, "nonce", signedTx.Nonce())
-	return signedTx, txHash, err
+	return signedTx, txHash, nil
+}
+
+func (b *Bridge) signTxWithSignature(tx *types.Transaction, signature []byte, signerAddr common.Address) (*types.Transaction, error) {
+	signer := b.Signer
+	vPos := crypto.SignatureLength - 1
+	for i := 0; i < 2; i++ {
+		signedTx, err := tx.WithSignature(signer, signature)
+		if err != nil {
+			return nil, err
+		}
+
+		sender, err := types.Sender(signer, signedTx)
+		if err != nil {
+			return nil, err
+		}
+
+		if sender == signerAddr {
+			return signedTx, nil
+		}
+
+		signature[vPos] ^= 0x1 // v can only be 0 or 1
+	}
+
+	return nil, errors.New("wrong sender address")
 }
 
 // SignTransaction sign tx with pairID
@@ -107,10 +127,53 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 
 	signedTx, err := types.SignTx(tx, b.Signer, privKey)
 	if err != nil {
-		return nil, "", fmt.Errorf("sign tx failed, %v", err)
+		return nil, "", fmt.Errorf("sign tx failed, %w", err)
 	}
 
-	txHash = signedTx.Hash().String()
+	txHash, err = b.CalcTransactionHash(signedTx)
+	if err != nil {
+		return nil, "", fmt.Errorf("calc signed tx hash failed, %w", err)
+	}
 	log.Info(b.ChainConfig.BlockChain+" SignTransaction success", "txhash", txHash, "nonce", signedTx.Nonce())
 	return signedTx, txHash, err
+}
+
+// CalcTransactionHash calc tx hash
+func (b *Bridge) CalcTransactionHash(tx *types.Transaction) (txHash string, err error) {
+	hash := tx.Hash()
+	if hash == common.EmptyHash {
+		return hash.Hex(), errors.New("empty tx hash")
+	}
+	return tx.Hash().Hex(), nil
+}
+
+// GetSignedTxHashOfKeyID get signed tx hash by keyID (called by oracle)
+func (b *Bridge) GetSignedTxHashOfKeyID(keyID, pairID string, rawTx interface{}) (txHash string, err error) {
+	tx, ok := rawTx.(*types.Transaction)
+	if !ok {
+		return "", errors.New("wrong raw tx of keyID " + keyID)
+	}
+	rsvs, err := dcrm.GetSignStatusByKeyID(keyID)
+	if err != nil {
+		return "", err
+	}
+	if len(rsvs) != 1 {
+		return "", errors.New("wrong number of rsvs of keyID " + keyID)
+	}
+
+	rsv := rsvs[0]
+	signature := common.FromHex(rsv)
+	if len(signature) != crypto.SignatureLength {
+		return "", errors.New("wrong signature of keyID " + keyID)
+	}
+	token := b.GetTokenConfig(pairID)
+	signedTx, err := b.signTxWithSignature(tx, signature, common.HexToAddress(token.DcrmAddress))
+	if err != nil {
+		return "", err
+	}
+	txHash, err = b.CalcTransactionHash(signedTx)
+	if err != nil {
+		return "", fmt.Errorf("calc signed tx hash failed, %w", err)
+	}
+	return txHash, nil
 }

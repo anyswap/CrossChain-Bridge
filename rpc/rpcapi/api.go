@@ -1,3 +1,4 @@
+// Package rpcapi provides JSON RPC service.
 package rpcapi
 
 import (
@@ -31,6 +32,37 @@ func (s *RPCAPI) GetServerInfo(r *http.Request, args *RPCNullArgs, result *swapa
 	return err
 }
 
+// HeartbeatArgs heartbeat args
+type HeartbeatArgs struct {
+	Enode     string `json:"enode"`
+	Timestamp int64  `json:"timestamp"`
+}
+
+// UpdateOracleHeartbeat api
+func (s *RPCAPI) UpdateOracleHeartbeat(r *http.Request, args *HeartbeatArgs, result *string) error {
+	err := swapapi.UpdateOracleHeartbeat(args.Enode, args.Timestamp)
+	if err != nil {
+		return err
+	}
+	*result = "Success"
+	return nil
+}
+
+// GetOraclesHeartbeat api
+func (s *RPCAPI) GetOraclesHeartbeat(r *http.Request, args *RPCNullArgs, result *map[string]string) error {
+	*result = swapapi.GetOraclesHeartbeat()
+	return nil
+}
+
+// GetStatusInfo api
+func (s *RPCAPI) GetStatusInfo(r *http.Request, statuses *string, result *map[string]map[string]interface{}) error {
+	res, err := swapapi.GetStatusInfo(*statuses)
+	if err == nil && res != nil {
+		*result = res
+	}
+	return err
+}
+
 // GetTokenPairInfo api
 func (s *RPCAPI) GetTokenPairInfo(r *http.Request, pairID *string, result *tokens.TokenPairConfig) error {
 	res, err := swapapi.GetTokenPairInfo(*pairID)
@@ -40,9 +72,19 @@ func (s *RPCAPI) GetTokenPairInfo(r *http.Request, pairID *string, result *token
 	return err
 }
 
-// GetSwapStatistics api
-func (s *RPCAPI) GetSwapStatistics(r *http.Request, pairID *string, result *swapapi.SwapStatistics) error {
-	res, err := swapapi.GetSwapStatistics(*pairID)
+// GetTokenPairsInfo api
+// nolint:gocritic // rpc need result of pointer type
+func (s *RPCAPI) GetTokenPairsInfo(r *http.Request, pairIDs *string, result *map[string]*tokens.TokenPairConfig) error {
+	res, err := swapapi.GetTokenPairsInfo(*pairIDs)
+	if err == nil && res != nil {
+		*result = res
+	}
+	return nil
+}
+
+// GetNonceInfo api
+func (s *RPCAPI) GetNonceInfo(r *http.Request, args *RPCNullArgs, result *swapapi.SwapNonceInfo) error {
+	res, err := swapapi.GetNonceInfo()
 	if err == nil && res != nil {
 		*result = *res
 	}
@@ -153,11 +195,12 @@ type RPCQueryHistoryArgs struct {
 	PairID  string `json:"pairid"`
 	Offset  int    `json:"offset"`
 	Limit   int    `json:"limit"`
+	Status  string `json:"status"`
 }
 
 // GetSwapinHistory api
 func (s *RPCAPI) GetSwapinHistory(r *http.Request, args *RPCQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
-	res, err := swapapi.GetSwapinHistory(args.Address, args.PairID, args.Offset, args.Limit)
+	res, err := swapapi.GetSwapinHistory(args.Address, args.PairID, args.Offset, args.Limit, args.Status)
 	if err == nil && res != nil {
 		*result = res
 	}
@@ -166,7 +209,7 @@ func (s *RPCAPI) GetSwapinHistory(r *http.Request, args *RPCQueryHistoryArgs, re
 
 // GetSwapoutHistory api
 func (s *RPCAPI) GetSwapoutHistory(r *http.Request, args *RPCQueryHistoryArgs, result *[]*swapapi.SwapInfo) error {
-	res, err := swapapi.GetSwapoutHistory(args.Address, args.PairID, args.Offset, args.Limit)
+	res, err := swapapi.GetSwapoutHistory(args.Address, args.PairID, args.Offset, args.Limit, args.Status)
 	if err == nil && res != nil {
 		*result = res
 	}

@@ -1,9 +1,9 @@
+// Command swapserver start the server node.
 package main
 
 import (
 	"fmt"
 	"os"
-	"sort"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
@@ -20,8 +20,9 @@ var (
 	clientIdentifier = "swapserver"
 	// Git SHA1 commit hash of the release (set via linker flags)
 	gitCommit = ""
+	gitDate   = ""
 	// The app that holds all commands and flags.
-	app = utils.NewApp(clientIdentifier, gitCommit, "the swapserver command line interface")
+	app = utils.NewApp(clientIdentifier, gitCommit, gitDate, "the swapserver command line interface")
 )
 
 func initApp() {
@@ -34,6 +35,7 @@ func initApp() {
 		utils.VersionCommand,
 	}
 	app.Flags = []cli.Flag{
+		utils.DataDirFlag,
 		utils.ConfigFileFlag,
 		utils.TokenPairsDirFlag,
 		utils.LogFileFlag,
@@ -43,7 +45,6 @@ func initApp() {
 		utils.JSONFormatFlag,
 		utils.ColorFormatFlag,
 	}
-	sort.Sort(cli.CommandsByName(app.Commands))
 }
 
 func main() {
@@ -59,19 +60,28 @@ func swapserver(ctx *cli.Context) error {
 	if ctx.NArg() > 0 {
 		return fmt.Errorf("invalid command: %q", ctx.Args().Get(0))
 	}
-	exitCh := make(chan struct{})
+	params.IsSwapServer = true
+	params.SetDataDir(utils.GetDataDir(ctx))
 	configFile := utils.GetConfigFilePath(ctx)
 	config := params.LoadConfig(configFile, true)
 
 	tokens.SetTokenPairsDir(utils.GetTokenPairsDir(ctx))
 
-	dbConfig := config.MongoDB
-	mongodb.MongoServerInit([]string{dbConfig.DBURL}, dbConfig.DBName, dbConfig.UserName, dbConfig.Password)
+	appName := params.GetIdentifier()
+	dbConfig := config.Server.MongoDB
+	mongodb.MongoServerInit(
+		appName,
+		dbConfig.DBURLs,
+		dbConfig.DBName,
+		dbConfig.UserName,
+		dbConfig.Password,
+	)
 
 	worker.StartWork(true)
 	time.Sleep(100 * time.Millisecond)
 	rpcserver.StartAPIServer()
 
-	<-exitCh
+	utils.TopWaitGroup.Wait()
+	log.Info("swapserver exit normally")
 	return nil
 }

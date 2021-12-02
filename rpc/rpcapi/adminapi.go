@@ -21,7 +21,6 @@ const (
 	passSwapoutOp = "passswapout"
 	failSwapinOp  = "failswapin"
 	failSwapoutOp = "failswapout"
-	forceFlag     = "--force"
 )
 
 // AdminCall admin call
@@ -192,9 +191,9 @@ func maintain(args *admin.CallArgs, result *string) (err error) {
 	return nil
 }
 
-func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID, bind, forceOpt string, err error) {
-	if !(len(args.Params) == 4 || len(args.Params) == 5) {
-		err = fmt.Errorf("wrong number of params, have %v want 4 or 5", len(args.Params))
+func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID, bind string, err error) {
+	if len(args.Params) != 4 {
+		err = fmt.Errorf("wrong number of params, have %v want 4", len(args.Params))
 		return
 	}
 	operation = args.Params[0]
@@ -202,18 +201,17 @@ func getOpTxAndPairID(args *admin.CallArgs) (operation, txid, pairID, bind, forc
 	pairID = args.Params[2]
 	bind = args.Params[3]
 
-	if len(args.Params) > 4 {
-		forceOpt = args.Params[4]
-		if forceOpt != forceFlag {
-			err = fmt.Errorf("wrong force flag %v, must be %v", forceOpt, forceFlag)
-			return
-		}
-	}
-	return operation, txid, pairID, bind, forceOpt, nil
+	return operation, txid, pairID, bind, nil
 }
 
 func reverify(args *admin.CallArgs, result *string) (err error) {
-	operation, txid, pairID, bind, _, err := getOpTxAndPairID(args)
+	operation, txid, pairID, bind, err := getOpTxAndPairID(args)
+	if err != nil {
+		return err
+	}
+	isSwapin := operation == swapinOp
+	bridge := tokens.GetCrossChainBridge(isSwapin)
+	_, err = bridge.VerifyTransaction(pairID, txid, true)
 	if err != nil {
 		return err
 	}
@@ -233,21 +231,24 @@ func reverify(args *admin.CallArgs, result *string) (err error) {
 }
 
 func reswap(args *admin.CallArgs, result *string) (err error) {
-	operation, txid, pairID, bind, forceOpt, err := getOpTxAndPairID(args)
+	operation, txid, pairID, bind, err := getOpTxAndPairID(args)
 	if err != nil {
 		return err
 	}
+	var isSwapin bool
 	switch operation {
 	case swapinOp:
-		err = mongodb.Reswapin(txid, pairID, bind, forceOpt)
+		isSwapin = true
+		err = mongodb.Reswapin(txid, pairID, bind)
 	case swapoutOp:
-		err = mongodb.Reswapout(txid, pairID, bind, forceOpt)
+		err = mongodb.Reswapout(txid, pairID, bind)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
 	if err != nil {
 		return err
 	}
+	worker.DeleteCachedSwap(isSwapin, txid, bind)
 	*result = successReuslt
 	return nil
 }
@@ -325,7 +326,7 @@ func setnonce(args *admin.CallArgs, result *string) (err error) {
 	operation := args.Params[0]
 	nonce, err := common.GetUint64FromStr(args.Params[1])
 	if err != nil {
-		return fmt.Errorf("wrong nonce value, %v", err)
+		return fmt.Errorf("wrong nonce value, %w", err)
 	}
 	pairID := args.Params[2]
 	var bridge tokens.CrossChainBridge

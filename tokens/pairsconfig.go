@@ -28,7 +28,7 @@ type TokenPairConfig struct {
 
 // SetTokenPairsDir set token pairs directory
 func SetTokenPairsDir(dir string) {
-	log.Printf("set token pairs config directory to '%v'\n", dir)
+	log.Printf("set token pairs config directory to '%v'", dir)
 	fileStat, err := os.Stat(dir)
 	if err != nil {
 		log.Fatal("wrong token pairs dir", "dir", dir, "err", err)
@@ -114,7 +114,7 @@ func FindTokenConfig(address string, isSrc bool) (configs []*TokenConfig, pairID
 func GetTokenConfig(pairID string, isSrc bool) *TokenConfig {
 	pairCfg, exist := tokenPairsConfig[strings.ToLower(pairID)]
 	if !exist {
-		log.Warn("GetTokenConfig: pairID not exist", "pairID", pairID)
+		log.Trace("GetTokenConfig: pairID not exist", "pairID", pairID)
 		return nil
 	}
 	if isSrc {
@@ -127,7 +127,7 @@ func GetTokenConfig(pairID string, isSrc bool) *TokenConfig {
 func GetTokenConfigsByDirection(pairID string, isSwapin bool) (fromTokenConfig, toTokenConfig *TokenConfig) {
 	pairCfg, exist := tokenPairsConfig[strings.ToLower(pairID)]
 	if !exist {
-		log.Warn("GetTokenConfigs: pairID not exist", "pairID", pairID)
+		log.Trace("GetTokenConfigs: pairID not exist", "pairID", pairID)
 		return nil, nil
 	}
 	if isSwapin {
@@ -142,11 +142,7 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 	dstContractsMap := make(map[string]struct{})
 	nonContractSrcCount := 0
 	for _, tokenPair := range pairsConfig {
-		// check pairsID
 		pairID := strings.ToLower(tokenPair.PairID)
-		if _, exist := pairsMap[pairID]; exist {
-			return fmt.Errorf("duplicate pairID '%v'", tokenPair.PairID)
-		}
 		pairsMap[pairID] = struct{}{}
 		// check source contract address
 		srcContract := strings.ToLower(tokenPair.SrcToken.ContractAddress)
@@ -160,10 +156,14 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 		}
 		// check destination contract address
 		dstContract := strings.ToLower(tokenPair.DestToken.ContractAddress)
-		if _, exist := dstContractsMap[dstContract]; exist {
-			return fmt.Errorf("duplicate destination contract '%v'", tokenPair.DestToken.ContractAddress)
+		if !tokenPair.SrcToken.IsDelegateContract {
+			if _, exist := dstContractsMap[dstContract]; exist {
+				return fmt.Errorf("duplicate destination contract '%v'", tokenPair.DestToken.ContractAddress)
+			}
+			dstContractsMap[dstContract] = struct{}{}
+		} else if !tokenPair.DestToken.DisableSwap {
+			return fmt.Errorf("must close withdraw if is delegate swapin")
 		}
-		dstContractsMap[dstContract] = struct{}{}
 		// check config
 		err = tokenPair.CheckConfig()
 		if err != nil {
@@ -215,7 +215,10 @@ func LoadTokenPairsConfig(check bool) {
 	if err != nil {
 		log.Fatal("load token pair config error", "err", err)
 	}
-	SetTokenPairsConfig(pairsConfig, false)
+	SetTokenPairsConfig(pairsConfig, check)
+	if TokenPriceCfg != nil {
+		go watchAndReloadTokenPrices()
+	}
 }
 
 // LoadTokenPairsConfigInDir load token pairs config
@@ -242,7 +245,12 @@ func LoadTokenPairsConfigInDir(dir string, check bool) (map[string]*TokenPairCon
 			return nil, err
 		}
 		// use all small case to identify
-		pairsConfig[strings.ToLower(pairConfig.PairID)] = pairConfig
+		pairID := strings.ToLower(pairConfig.PairID)
+		// check duplicate pairID
+		if _, exist := pairsConfig[pairID]; exist {
+			return nil, fmt.Errorf("duplicate pairID '%v'", pairConfig.PairID)
+		}
+		pairsConfig[pairID] = pairConfig
 	}
 	if check {
 		err = checkTokenPairsConfig(pairsConfig)
@@ -260,7 +268,7 @@ func loadTokenPairConfig(configFile string) (config *TokenPairConfig, err error)
 	}
 	config = &TokenPairConfig{}
 	if _, err := toml.DecodeFile(configFile, &config); err != nil {
-		return nil, fmt.Errorf("toml decode file error: %v", err)
+		return nil, fmt.Errorf("toml decode file error: %w", err)
 	}
 	var bs []byte
 	if log.JSONFormat {
@@ -308,14 +316,18 @@ func checkAddTokenPairsConfig(pairConfig *TokenPairConfig) (err error) {
 	}
 	srcContract := strings.ToLower(pairConfig.SrcToken.ContractAddress)
 	if srcContract == "" {
-		return fmt.Errorf("source contract address is empty")
+		return fmt.Errorf("source contract address is empty, need restart program")
+	}
+	isDelegateSwapin := pairConfig.SrcToken.IsDelegateContract
+	if isDelegateSwapin && !pairConfig.DestToken.DisableSwap {
+		return fmt.Errorf("must close withdraw if is delegate swapin")
 	}
 	dstContract := strings.ToLower(pairConfig.DestToken.ContractAddress)
 	for _, tokenPair := range tokenPairsConfig {
 		if strings.EqualFold(srcContract, tokenPair.SrcToken.ContractAddress) {
 			return fmt.Errorf("source contract '%v' already exist", srcContract)
 		}
-		if strings.EqualFold(dstContract, tokenPair.DestToken.ContractAddress) {
+		if !isDelegateSwapin && strings.EqualFold(dstContract, tokenPair.DestToken.ContractAddress) {
 			return fmt.Errorf("destination contract '%v' already exist", dstContract)
 		}
 	}

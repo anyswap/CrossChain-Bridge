@@ -1,3 +1,4 @@
+// Package swaptools provides tools to build and send txs to blockchain.
 package main
 
 import (
@@ -13,8 +14,9 @@ var (
 	clientIdentifier = "swaptools"
 	// Git SHA1 commit hash of the release (set via linker flags)
 	gitCommit = ""
+	gitDate   = ""
 	// The app that holds all commands and flags.
-	app = utils.NewApp(clientIdentifier, gitCommit, "the swaptools command line interface")
+	app = utils.NewApp(clientIdentifier, gitCommit, gitDate, "the swaptools command line interface")
 )
 
 func initApp() {

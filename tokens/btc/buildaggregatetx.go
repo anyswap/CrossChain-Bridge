@@ -7,7 +7,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
-	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 )
 
@@ -49,18 +48,6 @@ func (b *Bridge) getUtxosFromElectUtxos(target btcAmountType, addrs []string, ut
 		}
 
 		address := addrs[i]
-		if b.IsP2shAddress(address) {
-			bindAddr := tools.GetP2shBindAddress(address)
-			if bindAddr == "" {
-				continue
-			}
-			p2shAddr, _, _ := b.GetP2shAddress(bindAddr)
-			if p2shAddr != address {
-				log.Warn("wrong registered p2sh address", "have", address, "bind", bindAddr, "want", p2shAddr)
-				continue
-			}
-		}
-
 		pkScript, errt := b.GetPayToAddrScript(address)
 		if errt != nil {
 			continue
@@ -78,7 +65,7 @@ func (b *Bridge) getUtxosFromElectUtxos(target btcAmountType, addrs []string, ut
 	}
 
 	if total < target {
-		log.Warn("getUtxos total %v < target %v", total, target)
+		log.Warnf("getUtxos total %v < target %v", total, target)
 	}
 
 	return total, inputs, inputValues, scripts, nil

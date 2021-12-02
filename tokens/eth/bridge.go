@@ -1,3 +1,4 @@
+// Package eth implements the bridge interfaces for eth-like blockchain.
 package eth
 
 import (
@@ -12,14 +13,23 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
-const (
-	netMainnet = "mainnet"
-	netRinkeby = "rinkeby"
-	netCustom  = "custom"
+var (
+	// ensure Bridge impl tokens.CrossChainBridge
+	_ tokens.CrossChainBridge = &Bridge{}
+	// ensure Bridge impl tokens.NonceSetter
+	_ tokens.NonceSetter = &Bridge{}
+	// ensure Bridge impl InheritInterface
+	_ InheritInterface = &Bridge{}
 )
+
+// InheritInterface inherit interface
+type InheritInterface interface {
+	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
+}
 
 // Bridge eth bridge
 type Bridge struct {
+	Inherit InheritInterface
 	*tokens.CrossChainBridgeBase
 	*NonceSetterBase
 	Signer        types.Signer
@@ -28,10 +38,12 @@ type Bridge struct {
 
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	return &Bridge{
+	bridge := &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
 		NonceSetterBase:      NewNonceSetterBase(),
 	}
+	bridge.Inherit = bridge
+	return bridge
 }
 
 // SetChainAndGateway set chain and gateway config
@@ -45,15 +57,23 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 func (b *Bridge) Init() {
 	InitExtCodeParts()
 	b.InitLatestBlockNumber()
+
+	if b.ChainConfig.BaseGasPrice != "" {
+		gasPrice, err := common.GetBigIntFromStr(b.ChainConfig.BaseGasPrice)
+		if err != nil {
+			log.Crit("wrong chain config 'BaseGasPrice'", "BaseGasPrice", b.ChainConfig.BaseGasPrice, "err", err)
+		}
+		baseGasPrice = gasPrice
+	}
+	log.Info("init base gas price", "baseGasPrice", baseGasPrice, "isSrc", b.IsSrc, "chainID", b.SignerChainID)
 }
 
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
 	networkID := strings.ToLower(b.ChainConfig.NetID)
-	switch networkID {
-	case netMainnet, netRinkeby:
-	case netCustom:
-	default:
+	targetChainID := GetChainIDOfNetwork(EthNetworkAndChainIDMap, networkID)
+	isCustom := IsCustomNetwork(networkID)
+	if !isCustom && targetChainID == nil {
 		log.Fatalf("unsupported ethereum network: %v", b.ChainConfig.NetID)
 	}
 
@@ -62,38 +82,36 @@ func (b *Bridge) VerifyChainID() {
 		err     error
 	)
 
-	for {
+	for i := 0; i < 5; i++ {
 		chainID, err = b.GetSignerChainID()
 		if err == nil {
 			break
 		}
 		log.Errorf("can not get gateway chainID. %v", err)
 		log.Println("retry query gateway", b.GatewayConfig.APIAddress)
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
+	}
+	if err != nil {
+		log.Fatal("get chain ID failed", "err", err)
 	}
 
-	panicMismatchChainID := func() {
-		log.Fatalf("gateway chainID %v is not %v", chainID, b.ChainConfig.NetID)
+	if !isCustom && chainID.Cmp(targetChainID) != 0 {
+		log.Fatalf("gateway chainID '%v' is not '%v'", chainID, b.ChainConfig.NetID)
 	}
 
-	switch networkID {
-	case netMainnet:
-		if chainID.Uint64() != 1 {
-			panicMismatchChainID()
-		}
-	case netRinkeby:
-		if chainID.Uint64() != 4 {
-			panicMismatchChainID()
-		}
-	case netCustom:
-	default:
-		log.Fatalf("unsupported ethereum network %v", networkID)
-	}
-
-	b.SignerChainID = chainID
-	b.Signer = types.MakeSigner("EIP155", chainID)
+	b.MakeSigner(chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
+}
+
+// MakeSigner make signer
+func (b *Bridge) MakeSigner(chainID *big.Int) {
+	b.SignerChainID = chainID
+	b.ChainConfig.SetChainID(chainID)
+	if b.ChainConfig.EnableDynamicFeeTx {
+		b.Signer = types.MakeSigner("London", chainID)
+	}
+	b.Signer = types.MakeSigner("EIP155", chainID)
 }
 
 // VerifyTokenConfig verify token config
@@ -103,9 +121,6 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
 	}
 	if b.IsSrc && !b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid deposit address: %v", tokenCfg.DepositAddress)
-	}
-	if tokenCfg.IsDelegateContract {
-		return b.verifyDelegateContract(tokenCfg)
 	}
 
 	err = b.verifyDecimals(tokenCfg)
@@ -121,24 +136,12 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
 	return nil
 }
 
-func (b *Bridge) verifyDelegateContract(tokenCfg *tokens.TokenConfig) error {
-	if tokenCfg.DelegateToken == "" {
-		return nil
-	}
-	// keccak256 'proxyToken()' is '0x4faaefae'
-	res, err := b.CallContract(tokenCfg.ContractAddress, common.FromHex("0x4faaefae"), "latest")
-	if err != nil {
-		return err
-	}
-	proxyToken := common.HexToAddress(res)
-	if common.HexToAddress(tokenCfg.DelegateToken) != proxyToken {
-		return fmt.Errorf("mismatch 'DelegateToken', has %v, want %v", tokenCfg.DelegateToken, proxyToken.String())
-	}
-	return nil
-}
-
 func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) error {
 	configedDecimals := *tokenCfg.Decimals
+	checkToken := tokenCfg.ContractAddress
+	if tokenCfg.IsDelegateContract {
+		checkToken = tokenCfg.DelegateToken
+	}
 	switch strings.ToUpper(tokenCfg.Symbol) {
 	case "ETH", "FSN":
 		if configedDecimals != 18 {
@@ -147,42 +150,56 @@ func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) error {
 		log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals)
 	}
 
-	if tokenCfg.IsErc20() {
-		for {
-			decimals, err := b.GetErc20Decimals(tokenCfg.ContractAddress)
-			if err == nil {
-				if decimals != configedDecimals {
-					return fmt.Errorf("invalid decimals for %v, want %v but configed %v", tokenCfg.Symbol, decimals, configedDecimals)
-				}
-				log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals)
-				break
+	if checkToken != "" {
+		decimals, err := b.GetErc20Decimals(checkToken)
+		if err != nil {
+			log.Error("get erc20 decimals failed", "address", checkToken, "err", err)
+			return err
+		}
+		if decimals != configedDecimals {
+			return fmt.Errorf("invalid decimals for %v, want %v but configed %v", tokenCfg.Symbol, decimals, configedDecimals)
+		}
+		log.Info(tokenCfg.Symbol+" verify decimals success", "address", checkToken, "decimals", configedDecimals)
+
+		if !tokenCfg.IsMappingTokenProxy {
+			if err := b.VerifyErc20ContractAddress(checkToken, tokenCfg.ContractCodeHash, tokenCfg.IsProxyErc20()); err != nil {
+				return fmt.Errorf("wrong token address: %v, %w", checkToken, err)
 			}
-			log.Error("get erc20 decimals failed", "err", err)
-			time.Sleep(3 * time.Second)
+			log.Info("verify token address pass", "address", checkToken)
 		}
 	}
 	return nil
 }
 
 func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
-	if tokenCfg.ContractAddress != "" {
-		if !b.IsValidAddress(tokenCfg.ContractAddress) {
-			return fmt.Errorf("invalid contract address: %v", tokenCfg.ContractAddress)
-		}
-		switch {
-		case !b.IsSrc:
-			if err := b.VerifyMbtcContractAddress(tokenCfg.ContractAddress); err != nil {
-				return fmt.Errorf("wrong contract address: %v, %v", tokenCfg.ContractAddress, err)
-			}
-		case tokenCfg.IsErc20():
-			if err := b.VerifyErc20ContractAddress(tokenCfg.ContractAddress, tokenCfg.ContractCodeHash, tokenCfg.IsProxyErc20()); err != nil {
-				return fmt.Errorf("wrong contract address: %v, %v", tokenCfg.ContractAddress, err)
-			}
-		default:
-			return fmt.Errorf("unsupported type of contract address '%v' in source chain, please assign SrcToken.ID (eg. ERC20) in config file", tokenCfg.ContractAddress)
-		}
-		log.Info("verify contract address pass", "address", tokenCfg.ContractAddress)
+	contractAddr := tokenCfg.ContractAddress
+	if contractAddr == "" {
+		return nil
 	}
+	if !b.IsValidAddress(contractAddr) {
+		return fmt.Errorf("invalid contract address: %v", contractAddr)
+	}
+	if b.IsSrc && !(tokenCfg.IsErc20() || tokenCfg.IsProxyErc20() || tokenCfg.IsDelegateContract || tokenCfg.IsMappingTokenProxy) {
+		return fmt.Errorf("source token %v is not ERC20, ProxyERC20 or delegated or MappingTokenProxy", contractAddr)
+	}
+	if tokenCfg.IsDelegateContract && !tokenCfg.IsAnyswapAdapter && !b.IsSrc {
+		// keccak256 'proxyToken()' is '0x4faaefae'
+		res, err := b.CallContract(contractAddr, common.FromHex("0x4faaefae"), "latest")
+		if err != nil {
+			return fmt.Errorf("get proxyToken of %v failed, %w", contractAddr, err)
+		}
+		proxyToken := common.HexToAddress(res)
+		if common.HexToAddress(tokenCfg.DelegateToken) != proxyToken {
+			return fmt.Errorf("mismatch 'DelegateToken', has %v, want %v", tokenCfg.DelegateToken, proxyToken.String())
+		}
+	}
+	if !b.IsSrc && !tokenCfg.IsMappingTokenProxy {
+		err := b.VerifyAnyswapContractAddress(contractAddr)
+		if err != nil {
+			return fmt.Errorf("wrong anyswap contract address: %v, %w", contractAddr, err)
+		}
+	}
+	log.Info("verify contract address pass", "address", contractAddr)
 	return nil
 }
 

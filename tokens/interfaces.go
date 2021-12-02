@@ -1,3 +1,4 @@
+// Package tokens defines the common interfaces and supported bridges in sub directories.
 package tokens
 
 import (
@@ -20,6 +21,7 @@ var (
 	ErrBuildSwapTxInWrongEndpoint    = errors.New("build swap in/out tx in wrong endpoint")
 	ErrTxBeforeInitialHeight         = errors.New("transaction before initial block height")
 	ErrAddressIsInBlacklist          = errors.New("address is in black list")
+	ErrSwapIsClosed                  = errors.New("swap is closed")
 
 	ErrTodo = errors.New("developing: TODO")
 
@@ -36,16 +38,19 @@ var (
 	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
 	ErrUnknownPairID        = errors.New("unknown pair ID")
 	ErrBindAddressMismatch  = errors.New("bind address mismatch")
+	ErrRPCQueryError        = errors.New("rpc query error")
+	ErrWrongSwapValue       = errors.New("wrong swap value")
+	ErrTxIncompatible       = errors.New("tx incompatible")
+	ErrTxWithWrongReceipt   = errors.New("tx with wrong receipt")
+	ErrEstimateGasFailed    = errors.New("estimate gas failed")
+	ErrMissTokenPrice       = errors.New("miss token price")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
 	ErrTxWithWrongValue      = errors.New("tx with wrong value")
-	ErrTxWithWrongReceipt    = errors.New("tx with wrong receipt")
 	ErrTxWithWrongSender     = errors.New("tx with wrong sender")
 	ErrTxSenderNotRegistered = errors.New("tx sender not registered")
-	ErrTxIncompatible        = errors.New("tx incompatible")
 	ErrBindAddrIsContract    = errors.New("bind address is contract")
-	ErrRPCQueryError         = errors.New("rpc query error")
 )
 
 // ShouldRegisterSwapForError return true if this error should record in database
@@ -54,12 +59,9 @@ func ShouldRegisterSwapForError(err error) bool {
 	case err == nil:
 	case errors.Is(err, ErrTxWithWrongMemo):
 	case errors.Is(err, ErrTxWithWrongValue):
-	case errors.Is(err, ErrTxWithWrongReceipt):
 	case errors.Is(err, ErrTxWithWrongSender):
 	case errors.Is(err, ErrTxSenderNotRegistered):
-	case errors.Is(err, ErrTxIncompatible):
 	case errors.Is(err, ErrBindAddrIsContract):
-	case errors.Is(err, ErrRPCQueryError):
 	default:
 		return false
 	}
@@ -80,7 +82,7 @@ type CrossChainBridge interface {
 	IsValidAddress(address string) bool
 
 	GetTransaction(txHash string) (interface{}, error)
-	GetTransactionStatus(txHash string) *TxStatus
+	GetTransactionStatus(txHash string) (*TxStatus, error)
 	VerifyTransaction(pairID, txHash string, allowUnstable bool) (*TxSwapInfo, error)
 	VerifyMsgHash(rawTx interface{}, msgHash []string) error
 
@@ -91,9 +93,6 @@ type CrossChainBridge interface {
 
 	GetLatestBlockNumber() (uint64, error)
 	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
-
-	StartChainTransactionScanJob()
-	StartPoolTransactionScanJob()
 
 	GetBalance(accountAddress string) (*big.Int, error)
 	GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error)
@@ -106,6 +105,10 @@ type NonceSetter interface {
 	GetPoolNonce(address, height string) (uint64, error)
 	SetNonce(pairID string, value uint64)
 	AdjustNonce(pairID string, value uint64) (nonce uint64)
-	IncreaseNonce(pairID string, value uint64)
 	InitNonces(nonces map[string]uint64)
+}
+
+// ForkChecker fork checker interface
+type ForkChecker interface {
+	GetBlockHashOf(urls []string, height uint64) (hash string, err error)
 }

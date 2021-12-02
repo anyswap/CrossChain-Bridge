@@ -222,7 +222,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	if extra == nil {
 		return nil, tokens.ErrWrongExtraArgs
 	}
-	jsondata, _ := json.Marshal(args)
+	jsondata, _ := json.Marshal(args.GetExtraArgs())
 	msgContext := []string{string(jsondata)}
 
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "msgContext", msgContext, "txid", args.SwapID)

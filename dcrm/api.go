@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
@@ -25,23 +27,23 @@ func newWrongStatusError(subject, status, errInfo string) error {
 }
 
 func wrapPostError(method string, err error) error {
-	return fmt.Errorf("[post] %v error, %v", method, err)
+	return fmt.Errorf("[post] %v error, %w", dcrmAPIPrefix+method, err)
 }
 
 func httpPost(result interface{}, method string, params ...interface{}) error {
-	return client.RPCPost(&result, defaultDcrmNode.dcrmRPCAddress, method, params...)
+	return client.RPCPostWithTimeout(dcrmRPCTimeout, &result, defaultDcrmNode.dcrmRPCAddress, dcrmAPIPrefix+method, params...)
 }
 
 func httpPostTo(result interface{}, rpcAddress, method string, params ...interface{}) error {
-	return client.RPCPost(&result, rpcAddress, method, params...)
+	return client.RPCPostWithTimeout(dcrmRPCTimeout, &result, rpcAddress, dcrmAPIPrefix+method, params...)
 }
 
-// GetEnode call dcrm_getEnode
+// GetEnode call getEnode
 func GetEnode(rpcAddr string) (string, error) {
 	var result GetEnodeResp
-	err := httpPostTo(&result, rpcAddr, "dcrm_getEnode")
+	err := httpPostTo(&result, rpcAddr, "getEnode")
 	if err != nil {
-		return "", wrapPostError("dcrm_getEnode", err)
+		return "", wrapPostError("getEnode", err)
 	}
 	if result.Status != successStatus {
 		return "", newWrongStatusError("getEnode", result.Status, result.Error)
@@ -49,29 +51,29 @@ func GetEnode(rpcAddr string) (string, error) {
 	return result.Data.Enode, nil
 }
 
-// GetSignNonce call dcrm_getSignNonce
+// GetSignNonce call getSignNonce
 func GetSignNonce(dcrmUser, rpcAddr string) (uint64, error) {
 	var result DataResultResp
-	err := httpPostTo(&result, rpcAddr, "dcrm_getSignNonce", dcrmUser)
+	err := httpPostTo(&result, rpcAddr, "getSignNonce", dcrmUser)
 	if err != nil {
-		return 0, wrapPostError("dcrm_getSignNonce", err)
+		return 0, wrapPostError("getSignNonce", err)
 	}
 	if result.Status != successStatus {
 		return 0, newWrongStatusError("getSignNonce", result.Status, result.Error)
 	}
 	bi, err := common.GetBigIntFromStr(result.Data.Result)
 	if err != nil {
-		return 0, fmt.Errorf("getSignNonce can't parse result as big int, %v", err)
+		return 0, fmt.Errorf("getSignNonce can't parse result as big int, %w", err)
 	}
 	return bi.Uint64(), nil
 }
 
-// GetSignStatus call dcrm_getSignStatus
+// GetSignStatus call getSignStatus
 func GetSignStatus(key, rpcAddr string) (*SignStatus, error) {
 	var result DataResultResp
-	err := httpPostTo(&result, rpcAddr, "dcrm_getSignStatus", key)
+	err := httpPostTo(&result, rpcAddr, "getSignStatus", key)
 	if err != nil {
-		return nil, wrapPostError("dcrm_getSignStatus", err)
+		return nil, wrapPostError("getSignStatus", err)
 	}
 	if result.Status != successStatus {
 		return nil, newWrongStatusError("getSignStatus", result.Status, "response error "+result.Error)
@@ -80,7 +82,7 @@ func GetSignStatus(key, rpcAddr string) (*SignStatus, error) {
 	var signStatus SignStatus
 	err = json.Unmarshal([]byte(data), &signStatus)
 	if err != nil {
-		return nil, wrapPostError("dcrm_getSignStatus", err)
+		return nil, wrapPostError("getSignStatus", err)
 	}
 	switch signStatus.Status {
 	case "Failure":
@@ -96,25 +98,41 @@ func GetSignStatus(key, rpcAddr string) (*SignStatus, error) {
 	}
 }
 
-// GetCurNodeSignInfo call dcrm_getCurNodeSignInfo
-func GetCurNodeSignInfo() ([]*SignInfoData, error) {
+// GetCurNodeSignInfo call getCurNodeSignInfo
+// filter out invalid sign info and
+// filter out expired sign info if `expiredInterval` is greater than 0
+func GetCurNodeSignInfo(expiredInterval int64) ([]*SignInfoData, error) {
 	var result SignInfoResp
-	err := httpPost(&result, "dcrm_getCurNodeSignInfo", defaultDcrmNode.keyWrapper.Address.String())
+	err := httpPost(&result, "getCurNodeSignInfo", defaultDcrmNode.keyWrapper.Address.String())
 	if err != nil {
-		return nil, wrapPostError("dcrm_getCurNodeSignInfo", err)
+		return nil, wrapPostError("getCurNodeSignInfo", err)
 	}
 	if result.Status != successStatus {
 		return nil, newWrongStatusError("getCurNodeSignInfo", result.Status, result.Error)
 	}
-	return result.Data, nil
+	signInfoSortedSlice := make(SignInfoSortedSlice, 0, len(result.Data))
+	for _, signInfo := range result.Data {
+		if !signInfo.IsValid() {
+			log.Trace("filter out invalid sign info", "signInfo", signInfo)
+			continue
+		}
+		signInfo.timestamp, _ = common.GetUint64FromStr(signInfo.TimeStamp)
+		if expiredInterval > 0 && int64(signInfo.timestamp/1000)+expiredInterval < time.Now().Unix() {
+			log.Trace("filter out expired sign info", "signInfo", signInfo)
+			continue
+		}
+		signInfoSortedSlice = append(signInfoSortedSlice, signInfo)
+	}
+	sort.Stable(signInfoSortedSlice)
+	return signInfoSortedSlice, nil
 }
 
-// Sign call dcrm_sign
+// Sign call sign
 func Sign(raw, rpcAddr string) (string, error) {
 	var result DataResultResp
-	err := httpPostTo(&result, rpcAddr, "dcrm_sign", raw)
+	err := httpPostTo(&result, rpcAddr, "sign", raw)
 	if err != nil {
-		return "", wrapPostError("dcrm_sign", err)
+		return "", wrapPostError("sign", err)
 	}
 	if result.Status != successStatus {
 		return "", newWrongStatusError("sign", result.Status, result.Error)
@@ -122,12 +140,12 @@ func Sign(raw, rpcAddr string) (string, error) {
 	return result.Data.Result, nil
 }
 
-// AcceptSign call dcrm_acceptSign
+// AcceptSign call acceptSign
 func AcceptSign(raw string) (string, error) {
 	var result DataResultResp
-	err := httpPost(&result, "dcrm_acceptSign", raw)
+	err := httpPost(&result, "acceptSign", raw)
 	if err != nil {
-		return "", wrapPostError("dcrm_acceptSign", err)
+		return "", wrapPostError("acceptSign", err)
 	}
 	if result.Status != successStatus {
 		return "", newWrongStatusError("acceptSign", result.Status, result.Error)
@@ -135,12 +153,12 @@ func AcceptSign(raw string) (string, error) {
 	return result.Data.Result, nil
 }
 
-// GetGroupByID call dcrm_getGroupByID
+// GetGroupByID call getGroupByID
 func GetGroupByID(groupID, rpcAddr string) (*GroupInfo, error) {
 	var result GetGroupByIDResp
-	err := httpPostTo(&result, rpcAddr, "dcrm_getGroupByID", groupID)
+	err := httpPostTo(&result, rpcAddr, "getGroupByID", groupID)
 	if err != nil {
-		return nil, wrapPostError("dcrm_getGroupByID", err)
+		return nil, wrapPostError("getGroupByID", err)
 	}
 	if result.Status != successStatus {
 		return nil, newWrongStatusError("getGroupByID", result.Status, result.Error)

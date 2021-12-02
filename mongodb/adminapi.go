@@ -8,7 +8,13 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"gopkg.in/mgo.v2"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+const (
+	minTimeIntervalToReswap = int64(300) // seconds
 )
 
 // --------------- blacklist --------------------------------
@@ -25,7 +31,7 @@ func AddToBlacklist(address, pairID string) error {
 		PairID:    strings.ToLower(pairID),
 		Timestamp: time.Now().Unix(),
 	}
-	err := collBlacklist.Insert(mb)
+	_, err := collBlacklist.InsertOne(clientCtx, mb)
 	if err == nil {
 		log.Info("mongodb add to black list success", "address", address, "pairID", pairID)
 	} else {
@@ -36,7 +42,7 @@ func AddToBlacklist(address, pairID string) error {
 
 // RemoveFromBlacklist remove from blacklist
 func RemoveFromBlacklist(address, pairID string) error {
-	err := collBlacklist.RemoveId(getBlacklistKey(address, pairID))
+	_, err := collBlacklist.DeleteOne(clientCtx, bson.M{"_id": getBlacklistKey(address, pairID)})
 	if err == nil {
 		log.Info("mongodb remove from black list success", "address", address, "pairID", pairID)
 	} else {
@@ -48,11 +54,11 @@ func RemoveFromBlacklist(address, pairID string) error {
 // QueryBlacklist query if is blacked
 func QueryBlacklist(address, pairID string) (isBlacked bool, err error) {
 	var result MgoBlackAccount
-	err = collBlacklist.FindId(getBlacklistKey(address, pairID)).One(&result)
+	err = collBlacklist.FindOne(clientCtx, bson.M{"_id": getBlacklistKey(address, pairID)}).Decode(&result)
 	if err == nil {
 		return true, nil
 	}
-	if err == mgo.ErrNotFound {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return false, nil
 	}
 	return false, err
@@ -73,8 +79,19 @@ func passBigValue(txid, pairID, bind string, isSwapin bool) error {
 	if err != nil {
 		return err
 	}
-	if swap.Status != TxWithBigValue {
-		return fmt.Errorf("swap status is %v, not big value status %v", swap.Status.String(), TxWithBigValue.String())
+	res, err := FindSwapResult(isSwapin, txid, pairID, bind)
+	if err != nil {
+		return err
+	}
+	if swap.Status != TxWithBigValue && res.Status != TxWithBigValue {
+		return fmt.Errorf("swap status is (%v, %v), not big value status %v", swap.Status.String(), res.Status.String(), TxWithBigValue.String())
+	}
+	if res.SwapTx != "" || res.SwapHeight != 0 || len(res.OldSwapTxs) > 0 {
+		return fmt.Errorf("already swapped with swaptx %v", res.SwapTx)
+	}
+	err = UpdateSwapResultStatus(isSwapin, txid, pairID, bind, MatchTxEmpty, time.Now().Unix(), "")
+	if err != nil {
+		return err
 	}
 	return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotSwapped, time.Now().Unix(), "")
 }
@@ -101,16 +118,16 @@ func reverifySwap(txid, pairID, bind string, isSwapin bool) error {
 }
 
 // Reswapin reswapin
-func Reswapin(txid, pairID, bind, forceOpt string) error {
-	return reswap(txid, pairID, bind, forceOpt, true)
+func Reswapin(txid, pairID, bind string) error {
+	return reswap(txid, pairID, bind, true)
 }
 
 // Reswapout reswapout
-func Reswapout(txid, pairID, bind, forceOpt string) error {
-	return reswap(txid, pairID, bind, forceOpt, false)
+func Reswapout(txid, pairID, bind string) error {
+	return reswap(txid, pairID, bind, false)
 }
 
-func reswap(txid, pairID, bind, forceOpt string, isSwapin bool) error {
+func reswap(txid, pairID, bind string, isSwapin bool) error {
 	swap, err := FindSwap(isSwapin, txid, pairID, bind)
 	if err != nil {
 		return err
@@ -122,13 +139,13 @@ func reswap(txid, pairID, bind, forceOpt string, isSwapin bool) error {
 	if err != nil {
 		return err
 	}
-	err = checkCanReswap(swapResult, forceOpt, isSwapin)
+	err = checkCanReswap(swapResult, isSwapin)
 	if err != nil {
 		return err
 	}
 
 	log.Info("[reswap] update status to TxNotSwapped to retry", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swapResult.SwapTx)
-	err = UpdateSwapResultStatus(isSwapin, txid, pairID, bind, MatchTxEmpty, time.Now().Unix(), "")
+	err = UpdateSwapResultStatus(isSwapin, txid, pairID, bind, Reswapping, time.Now().Unix(), "")
 	if err != nil {
 		return err
 	}
@@ -136,40 +153,31 @@ func reswap(txid, pairID, bind, forceOpt string, isSwapin bool) error {
 	return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotSwapped, time.Now().Unix(), "")
 }
 
-func checkCanReswap(res *MgoSwapResult, forceOpt string, isSwapin bool) error {
+func checkCanReswap(res *MgoSwapResult, isSwapin bool) error {
 	swapType := tokens.SwapType(res.SwapType)
-	switch swapType {
-	case tokens.SwapinType:
-	case tokens.SwapoutType:
-	default:
-		return fmt.Errorf("swap type is %v, can not reswap", swapType.String())
+	if (isSwapin && swapType != tokens.SwapinType) || (!isSwapin && swapType != tokens.SwapoutType) {
+		return fmt.Errorf("wrong swap type %v (isSwapin=%v)", swapType.String(), isSwapin)
 	}
-	switch res.Status {
-	case TxSwapFailed:
-	case MatchTxNotStable:
-	case MatchTxFailed:
-	default:
+	if res.Status != MatchTxFailed {
 		return fmt.Errorf("swap result status is %v, can not reswap", res.Status.String())
 	}
+
 	if res.SwapTx == "" {
 		return errors.New("swap without swaptx")
 	}
+
 	bridge := tokens.GetCrossChainBridge(!isSwapin)
-	_, err := bridge.GetTransaction(res.SwapTx)
-	if err == nil && res.Status != MatchTxFailed {
-		return errors.New("swaptx exist in chain or pool")
+	txStatus, txHash := getSwapResultsTxStatus(bridge, res)
+	if txStatus != nil && txStatus.BlockHeight > 0 &&
+		!txStatus.IsSwapTxOnChainAndFailed(bridge.GetTokenConfig(res.PairID)) {
+		_ = UpdateSwapResultStatus(isSwapin, res.TxID, res.PairID, res.Bind, MatchTxNotStable, time.Now().Unix(), "")
+		return fmt.Errorf("swap succeed with swaptx %v", txHash)
 	}
-	if err != nil && res.Status == MatchTxFailed {
-		return errors.New("failed swaptx not exist in chain or pool")
-	}
-	return checkReswapNonce(bridge, res, forceOpt)
+
+	return checkReswapNonce(bridge, res)
 }
 
-func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, forceOpt string) (err error) {
-	const forceFlag = "--force"
-	if forceOpt == forceFlag {
-		return nil
-	}
+func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult) (err error) {
 	nonceSetter, ok := bridge.(tokens.NonceSetter)
 	if !ok {
 		return nil
@@ -191,7 +199,10 @@ func checkReswapNonce(bridge tokens.CrossChainBridge, res *MgoSwapResult, forceO
 		time.Sleep(time.Second)
 	}
 	if nonce <= res.SwapNonce {
-		return errors.New("can not retry swap with lower nonce")
+		return errors.New("can not reswap with lower nonce")
+	}
+	if res.Timestamp+minTimeIntervalToReswap > time.Now().Unix() {
+		return errors.New("can not reswap in too short interval")
 	}
 	return nil
 }
@@ -203,14 +214,28 @@ func ManualManageSwap(txid, pairID, bind, memo string, isSwapin, isPass bool) er
 		return err
 	}
 	if isPass {
-		if swap.Status.CanManualMakePass() {
-			return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotSwapped, time.Now().Unix(), memo)
+		if swap.Status == TxWithBigValue {
+			return passBigValue(txid, pairID, bind, isSwapin)
 		}
-		if swap.Status.CanReverify() {
+		if swap.Status.CanReverify() || swap.Status == ManualMakeFail {
 			return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotStable, time.Now().Unix(), memo)
 		}
 	} else if swap.Status.CanManualMakeFail() {
+		_ = UpdateSwapResultStatus(isSwapin, txid, pairID, bind, ManualMakeFail, time.Now().Unix(), memo)
 		return UpdateSwapStatus(isSwapin, txid, pairID, bind, ManualMakeFail, time.Now().Unix(), memo)
 	}
 	return fmt.Errorf("swap status is %v, can not operate. txid=%v pairID=%v bind=%v isSwapin=%v isPass=%v", swap.Status.String(), txid, pairID, bind, isSwapin, isPass)
+}
+
+func getSwapResultsTxStatus(bridge tokens.CrossChainBridge, res *MgoSwapResult) (status *tokens.TxStatus, txHash string) {
+	var err error
+	if status, err = bridge.GetTransactionStatus(res.SwapTx); err == nil {
+		return status, res.SwapTx
+	}
+	for _, tx := range res.OldSwapTxs {
+		if status, err = bridge.GetTransactionStatus(tx); err == nil {
+			return status, tx
+		}
+	}
+	return nil, ""
 }

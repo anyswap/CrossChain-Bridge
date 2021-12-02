@@ -2,12 +2,19 @@ package params
 
 import (
 	"errors"
-	"math/big"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 )
+
+var blankOrCommaSepRegexp = regexp.MustCompile(`[\s,]+`) // blank or comma separated
+
+func splitStringByBlankOrComma(str string) []string {
+	return blankOrCommaSepRegexp.Split(strings.TrimSpace(str), -1)
+}
 
 // CheckConfig check config
 func CheckConfig(isServer bool) (err error) {
@@ -15,25 +22,23 @@ func CheckConfig(isServer bool) (err error) {
 	if config.Identifier == "" {
 		return errors.New("server must config non empty 'Identifier'")
 	}
+	err = checkChainAndGatewayConfig(isServer)
+	if err != nil {
+		return err
+	}
 	if isServer {
-		if config.MongoDB == nil {
-			return errors.New("server must config 'MongoDB'")
+		if config.Server == nil {
+			return errors.New("server must config 'Server'")
 		}
-		if config.APIServer == nil {
-			return errors.New("server must config 'APIServer'")
+		err = config.Server.CheckConfig()
+		if err != nil {
+			return err
 		}
 	} else {
-		if config.Oracle == nil {
-			return errors.New("oracle must config 'Oracle'")
-		}
 		err = config.Oracle.CheckConfig()
 		if err != nil {
 			return err
 		}
-	}
-	err = checkChainAndGatewayConfig()
-	if err != nil {
-		return err
 	}
 	if config.Dcrm == nil {
 		return errors.New("server must config 'Dcrm'")
@@ -51,7 +56,7 @@ func CheckConfig(isServer bool) (err error) {
 	return nil
 }
 
-func checkChainAndGatewayConfig() (err error) {
+func checkChainAndGatewayConfig(isServer bool) (err error) {
 	config := GetConfig()
 	if config.SrcChain == nil {
 		return errors.New("server must config 'SrcChain'")
@@ -65,13 +70,44 @@ func checkChainAndGatewayConfig() (err error) {
 	if config.DestGateway == nil {
 		return errors.New("server must config 'DestGateway'")
 	}
-	err = config.SrcChain.CheckConfig()
+	err = config.SrcChain.CheckConfig(isServer)
 	if err != nil {
 		return err
 	}
-	err = config.DestChain.CheckConfig()
+	err = config.DestChain.CheckConfig(isServer)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+// CheckConfig check swap server config
+func (c *ServerConfig) CheckConfig() error {
+	if c.MongoDB == nil {
+		return errors.New("server must config 'Server.MongoDB'")
+	}
+	if err := c.MongoDB.CheckConfig(); err != nil {
+		return err
+	}
+	if c.APIServer == nil {
+		return errors.New("server must config 'Server.APIServer'")
+	}
+	return nil
+}
+
+// CheckConfig check mongodb config
+func (c *MongoDBConfig) CheckConfig() error {
+	if c.DBName == "" {
+		return errors.New("mongodb must config 'DBName'")
+	}
+	if c.DBURL == "" && len(c.DBURLs) == 0 {
+		return errors.New("mongodb must config 'DBURL' or 'DBURLs'")
+	}
+	if c.DBURL != "" {
+		if len(c.DBURLs) != 0 {
+			return errors.New("mongodb can not config both 'DBURL' and 'DBURLs'")
+		}
+		c.DBURLs = splitStringByBlankOrComma(c.DBURL)
 	}
 	return nil
 }
@@ -131,31 +167,32 @@ func (c *DcrmNodeConfig) CheckConfig(isServer bool) (err error) {
 
 // CheckConfig check oracle config
 func (c *OracleConfig) CheckConfig() (err error) {
+	if c == nil {
+		return errors.New("oracle must config 'Oracle'")
+	}
 	ServerAPIAddress = c.ServerAPIAddress
 	if ServerAPIAddress == "" {
 		return errors.New("oracle must config 'ServerAPIAddress'")
 	}
 	var version string
-	for {
-		err = client.RPCPost(&version, ServerAPIAddress, "swap.GetVersionInfo")
+	for i := 0; i < 3; i++ {
+		err = client.RPCPostWithTimeout(60, &version, ServerAPIAddress, "swap.GetVersionInfo")
 		if err == nil {
 			log.Info("oracle get server version info succeed", "version", version)
 			break
 		}
+		time.Sleep(1 * time.Second)
+	}
+	if err != nil {
 		log.Warn("oracle connect ServerAPIAddress failed", "ServerAPIAddress", ServerAPIAddress, "err", err)
-		time.Sleep(3 * time.Second)
 	}
 	return err
 }
 
 // CheckConfig extra config
 func (c *ExtraConfig) CheckConfig() (err error) {
-	if c.MinReserveFee != "" {
-		bi, ok := new(big.Int).SetString(c.MinReserveFee, 10)
-		if !ok {
-			return errors.New("wrong 'MinReserveFee' in extra config")
-		}
-		log.Printf("MinReserveFee is %v", bi)
+	if c.UsePendingBalance {
+		GetBalanceBlockNumberOpt = "pending"
 	}
 	return nil
 }

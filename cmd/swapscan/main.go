@@ -1,3 +1,4 @@
+// Command swapscan scan blockchains and post swap registers to the server node.
 package main
 
 import (
@@ -13,8 +14,9 @@ var (
 	clientIdentifier = "swapscan"
 	// Git SHA1 commit hash of the release (set via linker flags)
 	gitCommit = ""
+	gitDate   = ""
 	// The app that holds all commands and flags.
-	app = utils.NewApp(clientIdentifier, gitCommit, "the swapscan command line interface")
+	app = utils.NewApp(clientIdentifier, gitCommit, gitDate, "the swapscan command line interface")
 )
 
 func initApp() {
@@ -23,9 +25,7 @@ func initApp() {
 	app.HideVersion = true // we have a command to print the version
 	app.Copyright = "Copyright 2017-2020 The CrossChain-Bridge Authors"
 	app.Commands = []*cli.Command{
-		scanEthCommand,
 		scanBtcCommand,
-		scanLtcCommand,
 		utils.LicenseCommand,
 		utils.VersionCommand,
 	}

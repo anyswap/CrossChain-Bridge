@@ -1,3 +1,4 @@
+// Command swapadmin send admin swap command to the server node.
 package main
 
 import (
@@ -13,8 +14,9 @@ var (
 	clientIdentifier = "swapadmin"
 	// Git SHA1 commit hash of the release (set via linker flags)
 	gitCommit = ""
+	gitDate   = ""
 	// The app that holds all commands and flags.
-	app = utils.NewApp(clientIdentifier, gitCommit, "the swapadmin command line interface")
+	app = utils.NewApp(clientIdentifier, gitCommit, gitDate, "the swapadmin command line interface")
 )
 
 func initApp() {

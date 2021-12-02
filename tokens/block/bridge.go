@@ -1,3 +1,4 @@
+// Package block implements the bridge interfaces for block blockchain.
 package block
 
 import (

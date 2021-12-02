@@ -1,35 +1,42 @@
 # a short string to identify the bridge
 Identifier = "BTC2ETH"
-# if users should register their address before swapping
-MustRegisterAccount = false
 
 # administrators who can do admin work like maintain blacklist etc.
+[Server]
 Admins = [
 	"0x3dfaef310a1044fd7d96750b42b44cf3775c00bf",
 	"0x46cbe22b687d4b72c8913e4784dfe5b20fdc2b0e"
 ]
 
 # modgodb database connection config (server only)
-[MongoDB]
-DBURL = "localhost:27017"
+[Server.MongoDB]
+# DBURLs is prefered if exists. forbids set both DBURL and DBURLs.
+#DBURL = "localhost:27017,localhost:12345"
+#DBURLs = ["localhost:27017", "localhost:12345"]
 DBName = "databasename"
 UserName = "username"
 Password = "password"
 
 # bridge API service (server only)
-[APIServer]
+[Server.APIServer]
 # listen port
 Port = 11556
 # CORS config
 AllowedOrigins = []
+# Maximum number of requests to limit per second
+MaxRequestsLimit = 10
+
+# token price configed in contract on chain
+[TokenPrice]
+Contract = "0x1111111111111111111111111111111111111111"
+APIAddress = ["http://127.0.0.1:8711", "http://127.0.0.1:8722"]
 
 # oracle config (oracle only)
 [Oracle]
 # post swap register RPC requests to this server
 ServerAPIAddress = "http://127.0.0.1:11556/rpc"
-
-[Extra]
-MinReserveFee = "10000000000000000"
+# getting accept list interval in accept job
+GetAcceptListInterval = 20
 
 # customize fees in building btc transaction (btc only)
 [BtcExtra]
@@ -50,6 +57,13 @@ UtxoAggregateMinValue = 1000000 # unit satoshi
 # aggreate to this address
 UtxoAggregateToAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 
+[Extra]
+MustRegisterAccount = false
+IsSwapoutToStringAddress = false
+EnableCheckBlockFork = false
+IsNullSwapoutNativeMemo = false
+UsePendingBalance = false
+
 # source chain config
 [SrcChain]
 BlockChain = "Bitcoin"
@@ -62,16 +76,26 @@ InitialHeight = 0
 EnableScan = false
 # whether enable scan txs in pool
 EnableScanPool = false
+# enable pass big value swap job
+EnablePassBigValue = false
+# enable check tx block hash (prevent in orphan block)
+EnableCheckTxBlockHash = false
+# enable check tx block index (prevent in orphan block)
+EnableCheckTxBlockIndex = false
+# enable replace swap job
+EnableReplaceSwap = false
+# enable building dynamic fee tx
+EnableDynamicFeeTx = false
 # whether scan transaction receipt logs
 ScanReceipt = false
 # max gas price fluct percent
 MaxGasPriceFluctPercent = 10
+# extra added gas price percent for replace swap
+ReplacePlusGasPricePercent = 1
 # wait time to replace swapout match tx
 WaitTimeToReplace = 900
 # max replace swap count
 MaxReplaceCount = 20
-# enable replace swap job
-EnableReplaceSwap = false
 
 # source blockchain gateway config
 [SrcGateway]
@@ -90,16 +114,43 @@ InitialHeight = 0
 EnableScan = false
 # whether enable scan txs in pool
 EnableScanPool = false
-# whether scan transaction receipt logs
-ScanReceipt = false
+# enable pass big value swap job
+EnablePassBigValue = false
+# enable check tx block hash (prevent in orphan block)
+EnableCheckTxBlockHash = false
+# enable check tx block index (prevent in orphan block)
+EnableCheckTxBlockIndex = false
+# enable replace swap job
+EnableReplaceSwap = false
+# enable building dynamic fee tx
+EnableDynamicFeeTx = false
+# base fee percent, must be in range [-90, 500]
+BaseFeePercent = 0
 # max gas price fluct percent
 MaxGasPriceFluctPercent = 10
+# extra added gas price percent for replace swap
+ReplacePlusGasPricePercent = 1
 # wait time to replace swapin match tx
 WaitTimeToReplace = 900
 # max replace swap count
 MaxReplaceCount = 20
-# enable replace swap job
-EnableReplaceSwap = false
+# use fixed gas price (no adjust)
+FixedGasPrice = "5000000001"
+# maximum gas price
+MaxGasPrice = "50000000000"
+# minimum reserve coin for gas provide (defaults to 1e17 wei)
+MinReserveFee = "100000000000000000"
+# dynamic fee tx related (EIP-1559)
+PlusGasTipCapPercent = 10
+PlusGasFeeCapPercent = 10
+BlockCountFeeHistory = 3
+MaxGasTipCap = "5000000000"
+MaxGasFeeCap = "10000000000"
+# call by contract whitelist
+CallByContractWhitelist = [
+	"0x1111111111111111111111111111111111111111",
+	"0x2222222222222222222222222222222222222222"
+]
 
 # dest blockchain gateway config
 [DestGateway]
@@ -110,6 +161,12 @@ APIAddressExt = ["http://5.189.139.168:8000"]
 [Dcrm]
 # disable flag
 Disable = false
+# RPC API prefix
+APIPrefix = "dcrm_"
+# RPC timeout
+RPCTimeout = 10
+# sign timeout of seconds
+SignTimeout = 120
 
 # dcrm group ID
 GroupID = "74245ef03937fa75b979bdaa6a5952a93f53e021e0832fca4c2ad8952572c9b70f49e291de7e024b0f7fc54ec5875210db2ac775dba44448b3972b75af074d17"
@@ -126,21 +183,6 @@ Initiators = [
 	"0x00c37841378920E2BA5151a5d1E074Cf367586c4",
 	"0x897a9980808a2cae0d09ff693f02a4f80abb2233"
 ]
-
-# DCRM other initiators nodes config (server only)
-[[Dcrm.OtherNodes]]
-# dcrm sub groups for signing
-SignGroups = [
-	"38a93f457c793ac3ee242b2c050a403774738e6558cfaa620fe5577bb15a28f63c39adcc0778497e5009a9ee776a0778ffcad4e95827e69efa21b893b8a78793",
-	"bb1dfe1ec046cc3a3b88408ae03976aabffe459b40e5def09e76f5d4c7a917133241da9da7fc05e3e172fab54ce3129a9a492d52a5a09494d0b9c1e608f661bf"
-]
-
-# dcrm user keystore and password file (suggest using absolute path)
-KeystoreFile = "/home/xxx/accounts/keystore2"
-PasswordFile = "/home/xxx/accounts/password2"
-
-# dcrm backend node (gdcrm node RPC address)
-RPCAddress = "http://127.0.0.1:2922"
 
 # DCRM default node config
 [Dcrm.DefaultNode]

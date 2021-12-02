@@ -1,3 +1,4 @@
+// Package tools provides tools for scanning and registering swaps.
 package tools
 
 import (
@@ -15,11 +16,12 @@ import (
 var (
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
+	swapRPCTimeout   = 60 // seconds
 )
 
 // IsSwapExist is swapin exist
 func IsSwapExist(txid, pairID, bind string, isSwapin bool) bool {
-	if mongodb.HasSession() {
+	if mongodb.HasClient() {
 		swap, _ := mongodb.FindSwap(isSwapin, txid, pairID, bind)
 		return swap != nil
 	}
@@ -36,7 +38,7 @@ func IsSwapExist(txid, pairID, bind string, isSwapin bool) bool {
 		"bind":   bind,
 	}
 	for i := 0; i < retryRPCCount; i++ {
-		err := client.RPCPost(&result, params.ServerAPIAddress, method, args)
+		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, method, args)
 		if err == nil {
 			return result != nil
 		}
@@ -67,12 +69,15 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 		}
 		pairID := swapInfo.PairID
 		bind := swapInfo.Bind
+		if bind == "" { // must have non empty bind address
+			return
+		}
 		if IsSwapExist(txid, pairID, bind, isSwapin) {
 			return
 		}
 		isServer := dcrm.IsSwapServer()
 		log.Info("[scan] register swap", "pairID", pairID, "isSwapin", isSwapin, "isServer", isServer, "tx", txid, "bind", bind)
-		if isServer {
+		if isServer && mongodb.HasClient() {
 			var memo string
 			if verifyError != nil {
 				memo = verifyError.Error()
@@ -81,6 +86,7 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 				TxID:      txid,
 				PairID:    pairID,
 				TxTo:      swapInfo.TxTo,
+				From:      swapInfo.From,
 				Bind:      bind,
 				Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
 				Timestamp: time.Now().Unix(),
@@ -106,7 +112,7 @@ func registerSwap(isSwapin bool, txid string, swapInfos []*tokens.TxSwapInfo, ve
 			}
 			var result interface{}
 			for i := 0; i < retryRPCCount; i++ {
-				err := client.RPCPost(&result, params.ServerAPIAddress, method, args)
+				err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, method, args)
 				if tokens.ShouldRegisterSwapForError(err) ||
 					IsSwapAlreadyExistRegisterError(err) {
 					break
@@ -128,9 +134,9 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 		return
 	}
 	isServer := dcrm.IsSwapServer()
-	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid)
 	bind := swapInfo.Bind
-	if isServer {
+	log.Info("[scan] register p2sh swapin", "isServer", isServer, "tx", txid, "bind", bind)
+	if isServer && mongodb.HasClient() {
 		var memo string
 		if verifyError != nil {
 			memo = verifyError.Error()
@@ -140,6 +146,7 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 			PairID:    swapInfo.PairID,
 			TxTo:      swapInfo.TxTo,
 			TxType:    uint32(tokens.P2shSwapinTx),
+			From:      swapInfo.From,
 			Bind:      bind,
 			Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
 			Timestamp: time.Now().Unix(),
@@ -153,7 +160,7 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 		}
 		var result interface{}
 		for i := 0; i < retryRPCCount; i++ {
-			err := client.RPCPost(&result, params.ServerAPIAddress, "swap.P2shSwapin", args)
+			err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, "swap.P2shSwapin", args)
 			if tokens.ShouldRegisterSwapForError(err) ||
 				IsSwapAlreadyExistRegisterError(err) {
 				break
@@ -165,13 +172,13 @@ func RegisterP2shSwapin(txid string, swapInfo *tokens.TxSwapInfo, verifyError er
 
 // GetP2shBindAddress get p2sh bind address
 func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
-	if mongodb.HasSession() {
+	if mongodb.HasClient() {
 		bindAddress, _ = mongodb.FindP2shBindAddress(p2shAddress)
 		return bindAddress
 	}
 	var result tokens.P2shAddressInfo
 	for i := 0; i < retryRPCCount; i++ {
-		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetP2shAddressInfo", p2shAddress)
+		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, "swap.GetP2shAddressInfo", p2shAddress)
 		if err == nil {
 			return result.BindAddress
 		}
@@ -182,8 +189,8 @@ func GetP2shBindAddress(p2shAddress string) (bindAddress string) {
 
 // GetLatestScanHeight get latest scanned block height
 func GetLatestScanHeight(isSrc bool) uint64 {
-	if mongodb.HasSession() {
-		for {
+	if mongodb.HasClient() {
+		for i := 0; i < 3; i++ {
 			latestInfo, err := mongodb.FindLatestScanInfo(isSrc)
 			if err == nil {
 				height := latestInfo.BlockHeight
@@ -192,10 +199,11 @@ func GetLatestScanHeight(isSrc bool) uint64 {
 			}
 			time.Sleep(1 * time.Second)
 		}
+		return 0
 	}
 	var result mongodb.MgoLatestScanInfo
-	for {
-		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetLatestScanInfo", isSrc)
+	for i := 0; i < 3; i++ {
+		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, "swap.GetLatestScanInfo", isSrc)
 		if err == nil {
 			height := result.BlockHeight
 			log.Info("GetLatestScanHeight", "isSrc", isSrc, "height", height)
@@ -203,6 +211,7 @@ func GetLatestScanHeight(isSrc bool) uint64 {
 		}
 		time.Sleep(1 * time.Second)
 	}
+	return 0
 }
 
 // LoopGetLatestBlockNumber loop and get latest block number
@@ -220,7 +229,7 @@ func LoopGetLatestBlockNumber(b tokens.CrossChainBridge) uint64 {
 
 // UpdateLatestScanInfo update latest scan info
 func UpdateLatestScanInfo(isSrc bool, height uint64) error {
-	if dcrm.IsSwapServer() {
+	if dcrm.IsSwapServer() && mongodb.HasClient() {
 		return mongodb.UpdateLatestScanInfo(isSrc, height)
 	}
 	return nil
@@ -228,17 +237,103 @@ func UpdateLatestScanInfo(isSrc bool, height uint64) error {
 
 // IsAddressRegistered is address registered
 func IsAddressRegistered(address string) bool {
-	if mongodb.HasSession() {
+	if mongodb.HasClient() {
 		result, _ := mongodb.FindRegisteredAddress(address)
 		return result != nil
 	}
 	var result interface{}
 	for i := 0; i < retryRPCCount; i++ {
-		err := client.RPCPost(&result, params.ServerAPIAddress, "swap.GetRegisteredAddress", address)
+		err := client.RPCPostWithTimeout(swapRPCTimeout, &result, params.ServerAPIAddress, "swap.GetRegisteredAddress", address)
 		if err == nil {
 			return result != nil
 		}
 		time.Sleep(retryRPCInterval)
 	}
 	return false
+}
+
+// AdjustGatewayOrder adjust gateway order by block height
+func AdjustGatewayOrder(isSrc bool) {
+	// use block number as weight
+	var weightedAPIs WeightedStringSlice
+	bridge := tokens.GetCrossChainBridge(isSrc)
+	gateway := bridge.GetGatewayConfig()
+	length := len(gateway.APIAddress)
+	maxHeight := uint64(0)
+	for i := length; i > 0; i-- { // query in reverse order
+		apiAddress := gateway.APIAddress[i-1]
+		height, _ := bridge.GetLatestBlockNumberOf(apiAddress)
+		weightedAPIs = weightedAPIs.Add(apiAddress, height)
+		if height > maxHeight {
+			maxHeight = height
+		}
+	}
+	tokens.CmpAndSetLatestBlockHeight(maxHeight, isSrc)
+	weightedAPIs.Reverse() // reverse as iter in reverse order in the above
+	weightedAPIs = weightedAPIs.Sort()
+	gateway.APIAddress = weightedAPIs.GetStrings()
+	if isSrc {
+		log.Info("adjust source gateways", "result", weightedAPIs)
+	} else {
+		log.Info("adjust dest gateways", "result", weightedAPIs)
+	}
+
+	if !params.EnableCheckBlockFork() {
+		return
+	}
+
+	if len(gateway.APIAddressExt) == 0 {
+		return
+	}
+
+	forkChecker := tokens.GetForkChecker(isSrc)
+	if forkChecker == nil {
+		return
+	}
+
+	var checkPointHeight uint64
+	stableHeight := tokens.GetStableConfirmations(isSrc)
+	if maxHeight > stableHeight {
+		checkPointHeight = maxHeight - stableHeight
+	}
+
+	retryCount := 3
+	shouldPanic := false
+	retrySleepInterval := 3 * time.Second
+	time.Sleep(retrySleepInterval)
+	for i := 1; i <= retryCount; i++ {
+		hash1, err1 := forkChecker.GetBlockHashOf(gateway.APIAddress, checkPointHeight)
+		hash2, err2 := forkChecker.GetBlockHashOf(gateway.APIAddressExt, checkPointHeight)
+		if err1 != nil || err2 != nil {
+			if i == retryCount {
+				log.Warn("[detect] get block hash failed", "height", checkPointHeight, "isSrc", isSrc, "count", i, "err1", err1, "err2", err2)
+			}
+			time.Sleep(retryRPCInterval)
+			continue
+		}
+		if hash1 == hash2 {
+			log.Info("[detect] check block hash success", "height", checkPointHeight, "hash", hash1, "isSrc", isSrc, "count", i, "stable", stableHeight)
+			return
+		}
+		failedContext := []interface{}{
+			"height", checkPointHeight,
+			"hash1", hash1, "hash2", hash2,
+			"isSrc", isSrc, "count", i, "stable", stableHeight,
+		}
+		if i == retryCount {
+			if shouldPanic {
+				log.Fatal("[detect] check block hash failed", failedContext...)
+			}
+			// recheck of previous check point, and panic if still mismatch
+			shouldPanic, i = true, -1
+			if checkPointHeight > stableHeight {
+				checkPointHeight -= stableHeight
+			} else {
+				checkPointHeight = 0
+			}
+		} else {
+			log.Warn("[detect] check block hash failed", failedContext...)
+		}
+		time.Sleep(retrySleepInterval)
+	}
 }

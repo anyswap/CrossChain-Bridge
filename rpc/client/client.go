@@ -1,7 +1,9 @@
+// Package client provides methods to do http GET / POST request.
 package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -13,6 +15,7 @@ import (
 
 var (
 	httpClient *http.Client
+	httpCtx    = context.Background()
 )
 
 // InitHTTPClient init http client
@@ -47,7 +50,12 @@ func createHTTPClient() *http.Client {
 
 // HTTPGet http get
 func HTTPGet(url string, params, headers map[string]string, timeout int) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	return HTTPGetWithContext(httpCtx, url, params, headers, timeout)
+}
+
+// HTTPGetWithContext http get with context
+func HTTPGetWithContext(ctx context.Context, url string, params, headers map[string]string, timeout int) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +68,12 @@ func HTTPGet(url string, params, headers map[string]string, timeout int) (*http.
 
 // HTTPPost http post
 func HTTPPost(url string, body interface{}, params, headers map[string]string, timeout int) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	return HTTPPostWithContext(httpCtx, url, body, params, headers, timeout)
+}
+
+// HTTPPostWithContext http post with context
+func HTTPPostWithContext(ctx context.Context, url string, body interface{}, params, headers map[string]string, timeout int) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +89,12 @@ func HTTPPost(url string, body interface{}, params, headers map[string]string, t
 
 // HTTPRawPost http raw post
 func HTTPRawPost(url, body string, params, headers map[string]string, timeout int) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	return HTTPRawPostWithContext(httpCtx, url, body, params, headers, timeout)
+}
+
+// HTTPRawPostWithContext http raw post with context
+func HTTPRawPostWithContext(ctx context.Context, url, body string, params, headers map[string]string, timeout int) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err
 	}

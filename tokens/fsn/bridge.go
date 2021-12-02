@@ -1,3 +1,4 @@
+// Package fsn implements the bridge interfaces for fsn blockchain.
 package fsn
 
 import (
@@ -8,14 +9,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
-	"github.com/anyswap/CrossChain-Bridge/types"
-)
-
-const (
-	netMainnet = "mainnet"
-	netTestnet = "testnet"
-	netDevnet  = "devnet"
-	netCustom  = "custom"
 )
 
 // Bridge fsn bridge inherit from eth bridge
@@ -25,7 +18,9 @@ type Bridge struct {
 
 // NewCrossChainBridge new fsn bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	return &Bridge{Bridge: eth.NewCrossChainBridge(isSrc)}
+	bridge := &Bridge{Bridge: eth.NewCrossChainBridge(isSrc)}
+	bridge.Inherit = bridge
+	return bridge
 }
 
 // SetChainAndGateway set token and gateway config
@@ -38,10 +33,9 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 // VerifyChainID verify chain id
 func (b *Bridge) VerifyChainID() {
 	networkID := strings.ToLower(b.ChainConfig.NetID)
-	switch networkID {
-	case netMainnet, netTestnet, netDevnet:
-	case netCustom:
-	default:
+	targetChainID := eth.GetChainIDOfNetwork(eth.FsnNetworkAndChainIDMap, networkID)
+	isCustom := eth.IsCustomNetwork(networkID)
+	if !isCustom && targetChainID == nil {
 		log.Fatalf("unsupported fusion network: %v", b.ChainConfig.NetID)
 	}
 
@@ -60,30 +54,11 @@ func (b *Bridge) VerifyChainID() {
 		time.Sleep(3 * time.Second)
 	}
 
-	panicMismatchChainID := func() {
-		log.Fatalf("gateway chainID %v is not %v", chainID, b.ChainConfig.NetID)
+	if !isCustom && chainID.Cmp(targetChainID) != 0 {
+		log.Fatalf("gateway chainID '%v' is not '%v'", chainID, b.ChainConfig.NetID)
 	}
 
-	switch networkID {
-	case netMainnet:
-		if chainID.Uint64() != 32659 {
-			panicMismatchChainID()
-		}
-	case netTestnet:
-		if chainID.Uint64() != 46688 {
-			panicMismatchChainID()
-		}
-	case netDevnet:
-		if chainID.Uint64() != 55555 {
-			panicMismatchChainID()
-		}
-	case netCustom:
-	default:
-		log.Fatalf("unsupported fusion network %v", networkID)
-	}
-
-	b.SignerChainID = chainID
-	b.Signer = types.MakeSigner("EIP155", chainID)
+	b.MakeSigner(chainID)
 
 	log.Info("VerifyChainID succeed", "networkID", networkID, "chainID", chainID)
 }

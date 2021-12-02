@@ -1,8 +1,11 @@
 package worker
 
 import (
+	"errors"
+	"fmt"
 	"sync"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -14,6 +17,7 @@ var (
 
 // StartVerifyJob verify job
 func StartVerifyJob() {
+	mongodb.MgoWaitGroup.Add(2)
 	go startSwapinVerifyJob()
 	go startSwapoutVerifyJob()
 }
@@ -21,6 +25,7 @@ func StartVerifyJob() {
 func startSwapinVerifyJob() {
 	swapinVerifyStarter.Do(func() {
 		logWorker("verify", "start swapin verify job")
+		defer mongodb.MgoWaitGroup.Done()
 		for {
 			res, err := findSwapinsToVerify()
 			if err != nil {
@@ -30,12 +35,24 @@ func startSwapinVerifyJob() {
 				logWorker("verify", "find swapins to verify", "count", len(res))
 			}
 			for _, swap := range res {
+				if utils.IsCleanuping() {
+					logWorker("verify", "stop swapin verify job")
+					return
+				}
 				err = processSwapinVerify(swap)
-				switch err {
-				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+				switch {
+				case err == nil,
+					errors.Is(err, tokens.ErrTxNotStable),
+					errors.Is(err, tokens.ErrTxNotFound),
+					errors.Is(err, tokens.ErrUnknownPairID),
+					errors.Is(err, tokens.ErrSwapIsClosed):
 				default:
 					logWorkerError("verify", "process swapin verify error", err, "txid", swap.TxID)
 				}
+			}
+			if utils.IsCleanuping() {
+				logWorker("verify", "stop swapin verify job")
+				return
 			}
 			restInJob(restIntervalInVerifyJob)
 		}
@@ -45,6 +62,7 @@ func startSwapinVerifyJob() {
 func startSwapoutVerifyJob() {
 	swapoutVerifyStarter.Do(func() {
 		logWorker("verify", "start swapout verify job")
+		defer mongodb.MgoWaitGroup.Done()
 		for {
 			res, err := findSwapoutsToVerify()
 			if err != nil {
@@ -54,12 +72,24 @@ func startSwapoutVerifyJob() {
 				logWorker("verify", "find swapouts to verify", "count", len(res))
 			}
 			for _, swap := range res {
+				if utils.IsCleanuping() {
+					logWorker("verify", "stop swapout verify job")
+					return
+				}
 				err = processSwapoutVerify(swap)
-				switch err {
-				case nil, tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+				switch {
+				case err == nil,
+					errors.Is(err, tokens.ErrTxNotStable),
+					errors.Is(err, tokens.ErrTxNotFound),
+					errors.Is(err, tokens.ErrUnknownPairID),
+					errors.Is(err, tokens.ErrSwapIsClosed):
 				default:
 					logWorkerError("verify", "process swapout verify error", err, "txid", swap.TxID)
 				}
+			}
+			if utils.IsCleanuping() {
+				logWorker("verify", "stop swapout verify job")
+				return
 			}
 			restInJob(restIntervalInVerifyJob)
 		}
@@ -106,15 +136,26 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	bind := swap.Bind
 	bridge := tokens.GetCrossChainBridge(isSwapin)
 
+	fromTokenCfg := bridge.GetTokenConfig(pairID)
+	if fromTokenCfg == nil {
+		logWorkerTrace("swap", "swap is not configed", "pairID", pairID, "txid", txid, "isSwapin", isSwapin)
+		return tokens.ErrUnknownPairID
+	}
+	if fromTokenCfg.DisableSwap {
+		logWorkerTrace("swap", "swap is disabled", "pairID", pairID, "txid", txid, "isSwapin", isSwapin)
+		return tokens.ErrSwapIsClosed
+	}
+
 	swapInfo, err := verifySwapTransaction(bridge, pairID, txid, bind, tokens.SwapTxType(swap.TxType))
 	if swapInfo == nil {
 		return err
 	}
 
-	if swapInfo.Height != 0 &&
-		swapInfo.Height < *bridge.GetChainConfig().InitialHeight {
-		err = tokens.ErrTxBeforeInitialHeight
-		return mongodb.UpdateSwapinStatus(txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
+	if errors.Is(err, tokens.ErrTxBeforeInitialHeight) ||
+		(swapInfo.Height != 0 && swapInfo.Height < *bridge.GetChainConfig().InitialHeight) {
+		memo := fmt.Sprintf("%v. blockHeight=%v initialHeight=%v",
+			tokens.ErrTxBeforeInitialHeight, swapInfo.Height, *bridge.GetChainConfig().InitialHeight)
+		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), memo)
 	}
 	isBlacked, errf := isInBlacklist(swapInfo)
 	if errf != nil {
@@ -122,7 +163,7 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	}
 	if isBlacked {
 		err = tokens.ErrAddressIsInBlacklist
-		return mongodb.UpdateSwapinStatus(txid, pairID, bind, mongodb.SwapInBlacklist, now(), err.Error())
+		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.SwapInBlacklist, now(), err.Error())
 	}
 	return updateSwapStatus(pairID, txid, bind, swapInfo, isSwapin, err)
 }
@@ -130,38 +171,42 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, isSwapin bool, err error) error {
 	resultStatus := mongodb.MatchTxEmpty
 
-	switch err {
-	case tokens.ErrTxNotStable, tokens.ErrTxNotFound:
+	switch {
+	case errors.Is(err, tokens.ErrTxNotStable),
+		errors.Is(err, tokens.ErrTxNotFound),
+		errors.Is(err, tokens.ErrSwapIsClosed),
+		errors.Is(err, tokens.ErrTxWithWrongReceipt),
+		errors.Is(err, tokens.ErrTxIncompatible),
+		errors.Is(err, tokens.ErrRPCQueryError):
 		return err
-	case nil:
+	case err == nil:
 		status := mongodb.TxNotSwapped
 		if swapInfo.Value.Cmp(tokens.GetBigValueThreshold(pairID, isSwapin)) > 0 {
-			status = mongodb.TxWithBigValue
-			resultStatus = mongodb.TxWithBigValue
+			tokenCfg := tokens.GetTokenConfig(pairID, isSwapin)
+			if !tokenCfg.IsInBigValueWhitelist(swapInfo.From) &&
+				!tokenCfg.IsInBigValueWhitelist(swapInfo.TxTo) {
+				status = mongodb.TxWithBigValue
+				resultStatus = mongodb.TxWithBigValue
+			}
 		}
 		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, status, now(), "")
-	case tokens.ErrTxWithWrongMemo:
+	case errors.Is(err, tokens.ErrTxWithWrongMemo):
 		resultStatus = mongodb.TxWithWrongMemo
 		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxWithWrongMemo, now(), err.Error())
-	case tokens.ErrBindAddrIsContract:
+	case errors.Is(err, tokens.ErrBindAddrIsContract):
 		resultStatus = mongodb.BindAddrIsContract
 		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.BindAddrIsContract, now(), err.Error())
-	case tokens.ErrTxWithWrongValue:
+	case errors.Is(err, tokens.ErrTxWithWrongValue):
 		resultStatus = mongodb.TxWithWrongValue
 		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxWithWrongValue, now(), err.Error())
-	case tokens.ErrTxSenderNotRegistered:
+	case errors.Is(err, tokens.ErrTxSenderNotRegistered):
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSenderNotRegistered, now(), err.Error())
-	case tokens.ErrTxWithWrongSender:
+	case errors.Is(err, tokens.ErrTxWithWrongSender):
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxWithWrongSender, now(), err.Error())
-	case tokens.ErrTxIncompatible:
-		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxIncompatible, now(), err.Error())
-	case tokens.ErrTxWithWrongReceipt,
-		tokens.ErrBindAddressMismatch:
+	case errors.Is(err, tokens.ErrBindAddressMismatch):
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
-	case tokens.ErrRPCQueryError:
-		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.RPCQueryError, now(), err.Error())
 	default:
-		logWorkerWarn("verify", "maybe not considered tx verify error", "err", err)
+		logWorkerWarn("verify", "maybe not considered tx verify error", "txid", txid, "bind", bind, "isSwapin", isSwapin, "err", err)
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
 	}
 

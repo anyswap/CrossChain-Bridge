@@ -3,8 +3,10 @@ package swapapi
 import (
 	"encoding/hex"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
@@ -18,6 +20,8 @@ var (
 	errNotBtcBridge      = newRPCError(-32096, "bridge is not btc")
 	errTokenPairNotExist = newRPCError(-32095, "token pair not exist")
 	errSwapCannotRetry   = newRPCError(-32094, "swap can not retry")
+
+	oraclesHeartbeats sync.Map // string -> int64 // key is enode
 )
 
 func newRPCError(ec rpcjson.ErrorCode, message string) error {
@@ -40,12 +44,62 @@ func GetServerInfo() (*ServerInfo, error) {
 	}
 	return &ServerInfo{
 		Identifier:          config.Identifier,
-		MustRegisterAccount: config.MustRegisterAccount,
+		MustRegisterAccount: params.MustRegisterAccount(),
 		SrcChain:            config.SrcChain,
 		DestChain:           config.DestChain,
 		PairIDs:             tokens.GetAllPairIDs(),
 		Version:             params.VersionWithMeta,
 	}, nil
+}
+
+// UpdateOracleHeartbeat api
+func UpdateOracleHeartbeat(oracle string, timestamp int64) error {
+	var exist bool
+	for _, enode := range dcrm.GetAllEnodes() {
+		if strings.EqualFold(oracle, enode) {
+			if !strings.EqualFold(oracle, dcrm.GetSelfEnode()) {
+				exist = true
+			}
+			break
+		}
+	}
+	if !exist {
+		return newRPCError(-32000, "wrong oracle info")
+	}
+	key := strings.ToLower(oracle)
+	value, ok := oraclesHeartbeats.Load(key)
+	if ok {
+		oldTime := value.(int64)
+		if timestamp > oldTime && timestamp < time.Now().Unix()+60 {
+			oraclesHeartbeats.Store(key, timestamp)
+		}
+	} else {
+		oraclesHeartbeats.Store(key, timestamp)
+	}
+	return nil
+}
+
+// GetOraclesHeartbeat api
+func GetOraclesHeartbeat() map[string]string {
+	result := make(map[string]string, 4)
+	oraclesHeartbeats.Range(func(k, v interface{}) bool {
+		enode := k.(string)
+		startIndex := strings.Index(enode, "enode://")
+		endIndex := strings.Index(enode, "@")
+		if startIndex != -1 && endIndex != -1 {
+			enodeID := enode[startIndex+8 : endIndex]
+			timestamp := v.(int64)
+			timeStr := time.Unix(timestamp, 0).Format(time.RFC3339)
+			result[strings.ToLower(enodeID)] = timeStr
+		}
+		return true
+	})
+	return result
+}
+
+// GetStatusInfo api
+func GetStatusInfo(status string) (map[string]map[string]interface{}, error) {
+	return mongodb.GetStatusInfo(status)
 }
 
 // GetTokenPairInfo api
@@ -57,10 +111,28 @@ func GetTokenPairInfo(pairID string) (*tokens.TokenPairConfig, error) {
 	return pairCfg, nil
 }
 
-// GetSwapStatistics api
-func GetSwapStatistics(pairID string) (*SwapStatistics, error) {
-	log.Debug("[api] receive GetSwapStatistics", "pairID", pairID)
-	return mongodb.GetSwapStatistics(pairID)
+// GetTokenPairsInfo api
+func GetTokenPairsInfo(pairIDs string) (map[string]*tokens.TokenPairConfig, error) {
+	var pairIDSlice []string
+	if strings.EqualFold(pairIDs, "all") {
+		pairIDSlice = tokens.GetAllPairIDs()
+	} else {
+		pairIDSlice = strings.Split(pairIDs, ",")
+	}
+	result := make(map[string]*tokens.TokenPairConfig, len(pairIDSlice))
+	for _, pairID := range pairIDSlice {
+		result[pairID] = tokens.GetTokenPairConfig(pairID)
+	}
+	return result, nil
+}
+
+// GetNonceInfo api
+func GetNonceInfo() (*SwapNonceInfo, error) {
+	swapinNonces, swapoutNonces := mongodb.LoadAllSwapNonces()
+	return &SwapNonceInfo{
+		SwapinNonces:  swapinNonces,
+		SwapoutNonces: swapoutNonces,
+	}, nil
 }
 
 // GetRawSwapin api
@@ -128,10 +200,10 @@ func processHistoryLimit(limit int) int {
 }
 
 // GetSwapinHistory api
-func GetSwapinHistory(address, pairID string, offset, limit int) ([]*SwapInfo, error) {
-	log.Debug("[api] receive GetSwapinHistory", "address", address, "pairID", pairID, "offset", offset, "limit", limit)
+func GetSwapinHistory(address, pairID string, offset, limit int, status string) ([]*SwapInfo, error) {
+	log.Debug("[api] receive GetSwapinHistory", "address", address, "pairID", pairID, "offset", offset, "limit", limit, "status", status)
 	limit = processHistoryLimit(limit)
-	result, err := mongodb.FindSwapinResults(address, pairID, offset, limit)
+	result, err := mongodb.FindSwapinResults(address, pairID, offset, limit, status)
 	if err != nil {
 		return nil, err
 	}
@@ -139,10 +211,10 @@ func GetSwapinHistory(address, pairID string, offset, limit int) ([]*SwapInfo, e
 }
 
 // GetSwapoutHistory api
-func GetSwapoutHistory(address, pairID string, offset, limit int) ([]*SwapInfo, error) {
+func GetSwapoutHistory(address, pairID string, offset, limit int, status string) ([]*SwapInfo, error) {
 	log.Debug("[api] receive GetSwapoutHistory", "address", address, "pairID", pairID, "offset", offset, "limit", limit)
 	limit = processHistoryLimit(limit)
-	result, err := mongodb.FindSwapoutResults(address, pairID, offset, limit)
+	result, err := mongodb.FindSwapoutResults(address, pairID, offset, limit, status)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +235,9 @@ func RetrySwapin(txid, pairID *string) (*PostResult, error) {
 	}
 	txidstr := *txid
 	pairIDStr := *pairID
+	if err := basicCheckSwapRegister(tokens.SrcBridge, pairIDStr); err != nil {
+		return nil, err
+	}
 	swapInfo, err := tokens.SrcBridge.VerifyTransaction(pairIDStr, txidstr, true)
 	if err != nil {
 		return nil, newRPCError(-32099, "retry swapin failed! "+err.Error())
@@ -188,17 +263,25 @@ func Swapout(txid, pairID *string) (*PostResult, error) {
 	return swap(txid, pairID, false)
 }
 
+func basicCheckSwapRegister(bridge tokens.CrossChainBridge, pairIDStr string) error {
+	tokenCfg := bridge.GetTokenConfig(pairIDStr)
+	if tokenCfg == nil {
+		return tokens.ErrUnknownPairID
+	}
+	if tokenCfg.DisableSwap {
+		return tokens.ErrSwapIsClosed
+	}
+	return nil
+}
+
 func swap(txid, pairID *string, isSwapin bool) (*PostResult, error) {
 	txidstr := *txid
 	pairIDStr := *pairID
 	bridge := tokens.GetCrossChainBridge(isSwapin)
-	swapInfo, err := bridge.VerifyTransaction(pairIDStr, txidstr, true)
-	if err != nil {
-		txStat := bridge.GetTransactionStatus(txidstr)
-		if txStat != nil && txStat.BlockHeight > 0 {
-			swapInfo, err = bridge.VerifyTransaction(pairIDStr, txidstr, false)
-		}
+	if err := basicCheckSwapRegister(bridge, pairIDStr); err != nil {
+		return nil, err
 	}
+	swapInfo, err := bridge.VerifyTransaction(pairIDStr, txidstr, true)
 	var txType tokens.SwapTxType
 	if isSwapin {
 		txType = tokens.SwapinTx
@@ -230,6 +313,7 @@ func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.T
 		TxID:      txid,
 		TxTo:      swapInfo.TxTo,
 		TxType:    uint32(txType),
+		From:      swapInfo.From,
 		Bind:      swapInfo.Bind,
 		Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
 		Timestamp: time.Now().Unix(),
@@ -309,6 +393,9 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 	if swap, _ := mongodb.FindSwapin(txidstr, pairID, *bindAddr); swap != nil {
 		return nil, mongodb.ErrItemIsDup
 	}
+	if err := basicCheckSwapRegister(btc.BridgeInstance, pairID); err != nil {
+		return nil, err
+	}
 	swapInfo, err := btc.BridgeInstance.VerifyP2shTransaction(pairID, txidstr, *bindAddr, true)
 	if !tokens.ShouldRegisterSwapForError(err) {
 		return nil, newRPCError(-32099, "verify p2sh swapin failed! "+err.Error())
@@ -322,6 +409,7 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 		TxID:      txidstr,
 		TxTo:      swapInfo.TxTo,
 		TxType:    uint32(tokens.P2shSwapinTx),
+		From:      swapInfo.From,
 		Bind:      *bindAddr,
 		Status:    mongodb.GetStatusByTokenVerifyError(err),
 		Timestamp: time.Now().Unix(),
@@ -340,8 +428,11 @@ func GetLatestScanInfo(isSrc bool) (*LatestScanInfo, error) {
 	return mongodb.FindLatestScanInfo(isSrc)
 }
 
-// RegisterAddress register address
+// RegisterAddress register address for ETH like chain
 func RegisterAddress(address string) (*PostResult, error) {
+	if !params.MustRegisterAccount() {
+		return &SuccessPostResult, nil
+	}
 	address = strings.ToLower(address)
 	err := mongodb.AddRegisteredAddress(address)
 	if err != nil {

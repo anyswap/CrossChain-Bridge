@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,8 +12,9 @@ import (
 )
 
 const (
-	defaultTimeout   = 60 // seconds
-	defaultRequestID = 1
+	defaultSlowTimeout = 60 // seconds
+	defaultTimeout     = 5  // seconds
+	defaultRequestID   = 1
 )
 
 // Request json rpc request
@@ -49,6 +51,18 @@ func RPCPost(result interface{}, url, method string, params ...interface{}) erro
 	return RPCPostRequest(url, req, result)
 }
 
+// RPCPostWithTimeout rpc post with timeout
+func RPCPostWithTimeout(timeout int, result interface{}, url, method string, params ...interface{}) error {
+	req := NewRequestWithTimeoutAndID(timeout, defaultRequestID, method, params...)
+	return RPCPostRequest(url, req, result)
+}
+
+// RPCPostWithContext rpc post with context
+func RPCPostWithContext(ctx context.Context, result interface{}, url, method string, params ...interface{}) error {
+	req := NewRequest(method, params...)
+	return RPCPostRequestWithContext(ctx, url, req, result)
+}
+
 // RPCPostWithTimeoutAndID rpc post with timeout and id
 func RPCPostWithTimeoutAndID(result interface{}, timeout, id int, url, method string, params ...interface{}) error {
 	req := NewRequestWithTimeoutAndID(timeout, id, method, params...)
@@ -82,26 +96,33 @@ type jsonrpcResponse struct {
 
 // RPCPostRequest rpc post request
 func RPCPostRequest(url string, req *Request, result interface{}) error {
+	return RPCPostRequestWithContext(httpCtx, url, req, result)
+}
+
+// RPCPostRequestWithContext rpc post request with context
+func RPCPostRequestWithContext(ctx context.Context, url string, req *Request, result interface{}) error {
 	reqBody := &RequestBody{
 		Version: "2.0",
 		Method:  req.Method,
 		Params:  req.Params,
 		ID:      req.ID,
 	}
-	resp, err := HTTPPost(url, reqBody, nil, nil, req.Timeout)
+	resp, err := HTTPPostWithContext(ctx, url, reqBody, nil, nil, req.Timeout)
 	if err != nil {
-		log.Trace("post rpc error", "url", url, "method", req.Method, "err", err)
+		log.Trace("post rpc error", "url", url, "request", req, "err", err)
 		return err
 	}
 	err = getResultFromJSONResponse(result, resp)
 	if err != nil {
-		log.Trace("post rpc error", "url", url, "method", req.Method, "err", err)
+		log.Trace("post rpc error", "url", url, "request", req, "err", err)
 	}
 	return err
 }
 
 func getResultFromJSONResponse(result interface{}, resp *http.Response) error {
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
 	if err != nil {
@@ -131,7 +152,7 @@ func getResultFromJSONResponse(result interface{}, resp *http.Response) error {
 
 // RPCRawPost rpc raw post
 func RPCRawPost(url, body string) (string, error) {
-	return RPCRawPostWithTimeout(url, body, defaultTimeout)
+	return RPCRawPostWithTimeout(url, body, defaultSlowTimeout)
 }
 
 // RPCRawPostWithTimeout rpc raw post with timeout
@@ -140,7 +161,9 @@ func RPCRawPostWithTimeout(url, reqBody string, timeout int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
 	if err != nil {

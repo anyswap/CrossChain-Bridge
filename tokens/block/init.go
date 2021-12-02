@@ -6,11 +6,11 @@ import (
 )
 
 var (
-	cfgMinRelayFee       int64  = 3000 // BTC才400
-	cfgMinRelayFeePerKb  int64  = 10000
-	cfgMaxRelayFeePerKb  int64  = 500000
-	cfgPlusFeePercentage uint64 = 0
-	cfgEstimateFeeBlocks        = 6
+	cfgMinRelayFee       int64 = 3000 // BTC才400
+	cfgMinRelayFeePerKb  int64 = 10000
+	cfgMaxRelayFeePerKb  int64 = 500000
+	cfgPlusFeePercentage uint64
+	cfgEstimateFeeBlocks = 6
 
 	cfgFromPublicKey string
 

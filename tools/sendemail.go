@@ -2,6 +2,7 @@ package tools
 
 import (
 	"fmt"
+	"net"
 	"net/smtp"
 
 	"github.com/jordan-wright/email"
@@ -15,7 +16,7 @@ var (
 
 // InitEmailConfig init email config
 func InitEmailConfig(server string, port int, from, name, password string) {
-	smtpServerURL = fmt.Sprintf("%s:%d", server, port)
+	smtpServerURL = net.JoinHostPort(server, fmt.Sprintf("%d", port))
 	auth = smtp.PlainAuth("", from, password, server)
 	if name != "" {
 		fromWithName = fmt.Sprintf("%s <%s>", name, from)

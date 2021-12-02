@@ -64,6 +64,8 @@ scan swap on btc
 			utils.JobsFlag,
 		},
 	}
+
+	swapRPCTimeout = 60 // seconds
 )
 
 type btcSwapScanner struct {
@@ -126,7 +128,7 @@ func (scanner *btcSwapScanner) verifyOptions() {
 		log.Fatal("must specify swap server address")
 	}
 
-	oracle := params.OracleConfig{
+	oracle := &params.OracleConfig{
 		ServerAPIAddress: scanner.swapServer,
 	}
 	err := oracle.CheckConfig()
@@ -151,7 +153,7 @@ func (scanner *btcSwapScanner) initMongodb(ctx *cli.Context) {
 	userName := ctx.String(dbUserFlag.Name)
 	passwd := ctx.String(dbPassFlag.Name)
 	if dbName != "" {
-		mongodb.MongoServerInit([]string{dbURL}, dbName, userName, passwd)
+		mongodb.MongoServerInit(clientIdentifier, []string{dbURL}, dbName, userName, passwd)
 	}
 }
 
@@ -326,7 +328,7 @@ func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 			}
 			var result interface{}
 			for i := 0; i < scanner.rpcRetryCount; i++ {
-				err = client.RPCPost(&result, scanner.swapServer, "swap.P2shSwapin", args)
+				err = client.RPCPostWithTimeout(swapRPCTimeout, &result, scanner.swapServer, "swap.P2shSwapin", args)
 				if tokens.ShouldRegisterSwapForError(err) {
 					break
 				}
@@ -352,7 +354,7 @@ func (scanner *btcSwapScanner) processTx(tx *electrs.ElectTx) {
 		}
 		var result interface{}
 		for i := 0; i < scanner.rpcRetryCount; i++ {
-			err = client.RPCPost(&result, scanner.swapServer, "swap.Swapin", args)
+			err = client.RPCPostWithTimeout(swapRPCTimeout, &result, scanner.swapServer, "swap.Swapin", args)
 			if tokens.ShouldRegisterSwapForError(err) {
 				break
 			}
@@ -368,4 +370,24 @@ var btcCachedBlocks = &cachedSacnnedBlocks{
 	capacity:  100,
 	nextIndex: 0,
 	hashes:    make([]string, 100),
+}
+
+type cachedSacnnedBlocks struct {
+	capacity  int
+	nextIndex int
+	hashes    []string
+}
+
+func (cache *cachedSacnnedBlocks) addBlock(blockHash string) {
+	cache.hashes[cache.nextIndex] = blockHash
+	cache.nextIndex = (cache.nextIndex + 1) % cache.capacity
+}
+
+func (cache *cachedSacnnedBlocks) isScanned(blockHash string) bool {
+	for _, b := range cache.hashes {
+		if b == blockHash {
+			return true
+		}
+	}
+	return false
 }

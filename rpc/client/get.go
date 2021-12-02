@@ -11,7 +11,7 @@ import (
 
 // RPCGet rpc get
 func RPCGet(result interface{}, url string) error {
-	return RPCGetRequest(result, url, nil, nil, defaultTimeout)
+	return RPCGetRequest(result, url, nil, nil, defaultSlowTimeout)
 }
 
 // RPCGetWithTimeout rpc get with timeout
@@ -25,7 +25,9 @@ func RPCGetRequest(result interface{}, url string, params, headers map[string]st
 	if err != nil {
 		return fmt.Errorf("GET request error: %w (url: %v, params: %v)", err, url, params)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != 200 {
 		log.Trace("get rpc status error", "url", url, "status", resp.StatusCode)
@@ -47,7 +49,7 @@ func RPCGetRequest(result interface{}, url string, params, headers map[string]st
 
 // RPCRawGet rpc raw get
 func RPCRawGet(url string) (string, error) {
-	return RPCRawGetRequest(url, nil, nil, defaultTimeout)
+	return RPCRawGetRequest(url, nil, nil, defaultSlowTimeout)
 }
 
 // RPCRawGetWithTimeout rpc raw get with timeout
@@ -61,8 +63,10 @@ func RPCRawGetRequest(url string, params, headers map[string]string, timeout int
 	if err != nil {
 		return "", fmt.Errorf("GET request error: %w (url: %v, params: %v)", err, url, params)
 	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
-	defer resp.Body.Close()
 	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
 	if err != nil {

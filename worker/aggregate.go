@@ -3,6 +3,7 @@ package worker
 import (
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc/electrs"
@@ -24,7 +25,16 @@ func StartAggregateJob() {
 		return
 	}
 
+	mongodb.MgoWaitGroup.Add(1)
+	go loopDoAggregateJob()
+}
+
+func loopDoAggregateJob() {
+	defer mongodb.MgoWaitGroup.Done()
 	for loop := 1; ; loop++ {
+		if utils.IsCleanuping() {
+			return
+		}
 		logWorker("aggregate", "start aggregate job", "loop", loop)
 		doAggregateJob()
 		logWorker("aggregate", "finish aggregate job", "loop", loop)
@@ -35,6 +45,9 @@ func StartAggregateJob() {
 func doAggregateJob() {
 	aggOffset = 0
 	for {
+		if utils.IsCleanuping() {
+			return
+		}
 		p2shAddrs, err := mongodb.FindP2shAddresses(aggOffset, utxoPageLimit)
 		if err != nil {
 			logWorkerError("aggregate", "FindP2shAddresses failed", err, "offset", aggOffset, "limit", utxoPageLimit)
@@ -60,6 +73,16 @@ func findUtxosAndAggregate(addr string) {
 		if isUtxoExist(utxo) {
 			continue
 		}
+		outspend, err := btc.BridgeInstance.GetOutspend(*utxo.Txid, *utxo.Vout)
+		if err != nil {
+			logWorkerError("aggregate", "get out spend failed", err, "address", addr, "utxo", utxo.String())
+			continue
+		}
+		if *outspend.Spent {
+			logWorkerTrace("aggregate", "ignore spent utxo", "address", addr, "utxo", utxo.String(), "outspend", outspend.String())
+			continue
+		}
+
 		logWorker("aggregate", "find utxo", "address", addr, "utxo", utxo.String())
 
 		aggSumVal += *utxo.Value
