@@ -129,7 +129,7 @@ func (scanner *ltcSwapScanner) initMongodb(ctx *cli.Context) {
 	userName := ctx.String(dbUserFlag.Name)
 	passwd := ctx.String(dbPassFlag.Name)
 	if dbName != "" {
-		mongodb.MongoServerInit([]string{dbURL}, dbName, userName, passwd)
+		mongodb.MongoServerInit(clientIdentifier, []string{dbURL}, dbName, userName, passwd)
 	}
 }
 
