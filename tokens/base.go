@@ -206,7 +206,7 @@ func CalcSwappedValue(pairID string, value *big.Int, isSrc bool, from, txto stri
 
 		if swapFee.Cmp(token.minSwapFee) < 0 {
 			swapFee = token.minSwapFee
-		} else if swapFee.Cmp(token.maxSwapFee) > 0 && token.UncappedFee {
+		} else if swapFee.Cmp(token.maxSwapFee) > 0 {
 			swapFee = token.maxSwapFee
 		}
 

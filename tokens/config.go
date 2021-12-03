@@ -139,9 +139,9 @@ type TokenConfig struct {
 
 	BigValueWhitelist []string `json:",omitempty"`
 
-	UncappedFee bool    `json:",omitempty"`
-	TaxRate     float64 `json:",omitempty"`
-	GasRate     float64 `json:",omitempty"`
+	TaxCap  float64 `json:",omitempty"` // Terra tax cap is 1 SDT .= 1.3 ust
+	TaxRate float64 `json:",omitempty"`
+	GasRate float64 `json:",omitempty"`
 
 	// use private key address instead
 	DcrmAddressKeyStore string `json:"-"`

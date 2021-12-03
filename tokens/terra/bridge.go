@@ -78,8 +78,8 @@ func (b *Bridge) AfterConfig() {
 	pairs := tokens.GetTokenPairsConfig()
 	for _, tokenCfg := range pairs {
 		token := tokens.GetTokenConfig(tokenCfg.PairID, false)
-		if !token.UncappedFee {
-			log.Fatalf("Terra withdraw fee must be uncapped")
+		if token.TaxCap <= 0 {
+			log.Fatalf("Invalid tax cap")
 		}
 		if token.TaxRate <= 0 || token.TaxRate >= 0.01 {
 			log.Fatalf("Invalid tax tax rate")
@@ -173,10 +173,15 @@ func (b *Bridge) FeeGetter() func(pairID string, tx *cosmos.StdSignContent) auth
 			token := tokens.GetTokenConfig(pairID, false)
 			taxrate := big.NewInt(int64(token.TaxRate * float64(Denominator)))
 
-			// fee = sendamount * taxrate + swapoutgas * gasrate
-			tax := new(big.Int).Div(new(big.Int).Mul(sendamt, taxrate), big.NewInt(Denominator))
+			// fee = swapoutgas * gasrate + tax
+			// tax = min(sendamount * taxrate, taxcap)
+			tax := new(big.Int).Div(new(big.Int).Mul(sendamt, taxrate), big.NewInt(Denominator)).Int64()
+			taxcap := int64(token.TaxCap * 1e6)
+			if tax > taxcap {
+				tax = taxcap
+			}
 			gasfee := int64(float64(DefaultSwapoutGas) * token.GasRate)
-			amount = tax.Int64() + gasfee
+			amount = tax + gasfee
 		}
 
 		feeAmount := sdk.Coins{sdk.Coin{Denom: denom, Amount: sdk.NewInt(amount)}}
