@@ -247,6 +247,10 @@ func replaceSwapResult(txid, pairID, bind, txHash, swapValue string, isSwapin bo
 			oldSwapVals = []string{res.SwapValue, swapValue}
 		}
 	}
+	bridge := tokens.GetCrossChainBridge(!isSwapin)
+	if bridge.GetChainConfig().BaseGasPrice == "" {
+		oldSwapVals = nil
+	}
 	swapType := tokens.SwapType(res.SwapType).String()
 	err = updateOldSwapTxs(txid, pairID, bind, txHash, oldSwapTxs, oldSwapVals, isSwapin)
 	if err != nil {

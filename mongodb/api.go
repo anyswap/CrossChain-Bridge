@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -127,9 +128,9 @@ func addSwap(collection *mongo.Collection, ms *MgoSwap) error {
 	ms.InitTime = common.NowMilli()
 	_, err := collection.InsertOne(clientCtx, ms)
 	if err == nil {
-		log.Info("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
-	} else {
-		log.Debug("mongodb add swap", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection), "err", err)
+		log.Info("mongodb add swap success", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
+	} else if !mongo.IsDuplicateKeyError(err) {
+		log.Error("mongodb add swap failed", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
@@ -335,9 +336,9 @@ func addSwapResult(collection *mongo.Collection, ms *MgoSwapResult) error {
 	ms.InitTime = common.NowMilli()
 	_, err := collection.InsertOne(clientCtx, ms)
 	if err == nil {
-		log.Info("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection))
-	} else {
-		log.Debug("mongodb add swap result", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection), "err", err)
+		log.Info("mongodb add swap result success", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection))
+	} else if !mongo.IsDuplicateKeyError(err) {
+		log.Error("mongodb add swap result failed", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "swaptype", ms.SwapType, "value", ms.Value, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
@@ -414,6 +415,7 @@ func updateSwapResultStatus(collection *mongo.Collection, txid, pairID, bind str
 		updates["memo"] = ""
 		updates["swaptx"] = ""
 		updates["oldswaptxs"] = nil
+		updates["oldswapvals"] = nil
 		updates["swapheight"] = 0
 		updates["swaptime"] = 0
 		updates["swapnonce"] = 0
@@ -787,4 +789,59 @@ func AddUsedRValue(pubkey, r string) error {
 		}
 		return mgoError(err)
 	}
+}
+
+var defaultGetStatusInfoFilter = []SwapStatus{
+	TxNotStable,        // 0
+	MatchTxEmpty,       // 8
+	MatchTxNotStable,   // 9
+	TxWithBigValue,     // 12
+	MatchTxFailed,      // 14
+	BindAddrIsContract, // 17
+}
+
+// GetStatusInfo get status info
+func GetStatusInfo(statuses string) (map[string]map[string]interface{}, error) {
+	filterStatuses := getStatusesFromStr(statuses)
+	if len(filterStatuses) == 0 {
+		filterStatuses = defaultGetStatusInfoFilter
+	}
+	pipeOption := []bson.M{
+		{"$match": bson.M{"status": bson.M{"$in": filterStatuses}}},
+		{"$group": bson.M{"_id": "$status", "count": bson.M{"$sum": 1}}},
+	}
+	swapinStatusInfo, err := getStatusInfo(collSwapinResult, pipeOption)
+	if err != nil {
+		return nil, err
+	}
+	swapoutStatusInfo, err := getStatusInfo(collSwapoutResult, pipeOption)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]map[string]interface{}, 2)
+	result["swapin"] = swapinStatusInfo
+	result["swapout"] = swapoutStatusInfo
+	return result, nil
+}
+
+func getStatusInfo(collection *mongo.Collection, pipeOption []bson.M) (map[string]interface{}, error) {
+	ctx, cancel := context.WithDeadline(clientCtx, time.Now().Add(3*time.Second))
+	defer cancel()
+
+	cur, err := collection.Aggregate(ctx, pipeOption)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+
+	result := make([]bson.M, 0, 10)
+	err = cur.All(ctx, &result)
+	if err != nil {
+		return nil, mgoError(err)
+	}
+
+	statusInfo := make(map[string]interface{}, len(result))
+	for _, m := range result {
+		statusInfo[fmt.Sprint(m["_id"])] = m["count"]
+	}
+	return statusInfo, nil
 }
