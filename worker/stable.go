@@ -120,7 +120,9 @@ func getSwapTxStatus(resBridge tokens.CrossChainBridge, swap *mongodb.MgoSwapRes
 		txStatus, err = resBridge.GetTransactionStatus(oldSwapTx)
 		if err == nil && txStatus != nil && txStatus.BlockHeight > 0 {
 			swap.SwapTx = oldSwapTx
-			swap.SwapValue = swap.OldSwapVals[i]
+			if i < len(swap.OldSwapVals) {
+				swap.SwapValue = swap.OldSwapVals[i]
+			}
 			return txStatus
 		}
 	}
@@ -171,7 +173,9 @@ func processUpdateSwapHeight(resBridge tokens.CrossChainBridge, swap *mongodb.Mg
 			blockHeight, blockTime = nonceSetter.GetTxBlockInfo(oldSwapTx)
 			if blockHeight > 0 {
 				swap.SwapTx = oldSwapTx
-				swap.SwapValue = swap.OldSwapVals[i]
+				if i < len(swap.OldSwapVals) {
+					swap.SwapValue = swap.OldSwapVals[i]
+				}
 				break
 			}
 		}

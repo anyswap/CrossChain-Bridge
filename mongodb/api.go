@@ -415,6 +415,7 @@ func updateSwapResultStatus(collection *mongo.Collection, txid, pairID, bind str
 		updates["memo"] = ""
 		updates["swaptx"] = ""
 		updates["oldswaptxs"] = nil
+		updates["oldswapvals"] = nil
 		updates["swapheight"] = 0
 		updates["swaptime"] = 0
 		updates["swapnonce"] = 0
