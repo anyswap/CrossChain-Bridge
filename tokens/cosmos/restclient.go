@@ -660,6 +660,9 @@ func (b *Bridge) SearchTxs(start, end *big.Int) ([]sdk.TxResponse, error) {
 // mode: block
 func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 	txhash, err := CaluculateTxHash(tx)
+	if err != nil {
+		return txhash, err
+	}
 	stdtx := tx.ToStdTx()
 
 	bz, err := CDC.MarshalJSON(stdtx)
