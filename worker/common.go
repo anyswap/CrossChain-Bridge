@@ -310,6 +310,7 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 				SwapTx:     txHash,
 				SwapHeight: blockHeight,
 				SwapTime:   blockTime,
+				SwapType:   args.SwapType,
 			}
 			_ = updateSwapResult(txid, pairID, bind, matchTx)
 		}

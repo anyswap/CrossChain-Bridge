@@ -79,6 +79,7 @@ type DcrmNodeConfig struct {
 type OracleConfig struct {
 	ServerAPIAddress      string
 	GetAcceptListInterval uint64
+	PendingInvalidAccept  bool `toml:",omitempty" json:",omitempty"`
 }
 
 // APIServerConfig api service config
