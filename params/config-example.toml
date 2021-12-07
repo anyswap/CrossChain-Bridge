@@ -31,6 +31,8 @@ MaxRequestsLimit = 10
 ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 # getting accept list interval in accept job
 GetAcceptListInterval = 20
+# when meet invalid accept, ignore it instead of disagree it immediately
+PendingInvalidAccept = false
 
 [Extra]
 IsDebugMode = false
