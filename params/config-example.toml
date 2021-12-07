@@ -37,6 +37,8 @@ APIAddress = ["http://127.0.0.1:8711", "http://127.0.0.1:8722"]
 ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 # getting accept list interval in accept job
 GetAcceptListInterval = 20
+# when meet invalid accept, ignore it instead of disagree it immediately
+PendingInvalidAccept = false
 
 # customize fees in building btc transaction (btc only)
 [BtcExtra]
