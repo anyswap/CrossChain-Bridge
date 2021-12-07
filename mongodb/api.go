@@ -10,6 +10,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -351,7 +352,7 @@ func updateSwapResult(collection *mongo.Collection, txid, pairID, bind string, i
 	if items.Status != KeepStatus {
 		updates["status"] = items.Status
 	}
-	if items.SwapTx != "" {
+	if items.SwapTx != "" && items.SwapTx != tokens.StubSignedTxHash {
 		updates["swaptx"] = items.SwapTx
 	}
 	if len(items.OldSwapTxs) != 0 {

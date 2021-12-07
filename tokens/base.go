@@ -14,6 +14,8 @@ const (
 	UnlockMemoPrefix = "SWAPTX:"
 	AggregateMemo    = "aggregate"
 
+	StubSignedTxHash = "StubSignedTxHash"
+
 	MaxPlusGasPricePercentage = uint64(100)
 )
 

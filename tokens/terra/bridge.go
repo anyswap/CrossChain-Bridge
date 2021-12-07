@@ -12,7 +12,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/tendermint/tendermint/crypto/tmhash"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	core "github.com/terra-project/core/types"
 )
@@ -43,7 +42,6 @@ func (b *Bridge) BeforeConfig() {
 	cosmos.CDC.RegisterConcrete(&authtypes.BaseAccount{}, "core/Account", nil)
 	InitSDK()
 	initTxHashCdc()
-	cosmos.CaluculateTxHash = CaluculateTxHash
 	cosmos.ChainIDs["columbus-5"] = true
 	cosmos.ChainIDs["tequila-0004"] = true
 	cosmos.SignBytesModifier = TerraSignBytesModifier
@@ -205,13 +203,4 @@ func initTxHashCdc() {
 	cosmos.RegisterCodec(txhashcdc)
 	txhashcdc.RegisterConcrete(authtypes.StdTx{}, "auth/StdTx", nil)
 	txhashcdc.RegisterInterface((*sdk.Msg)(nil), nil)
-}
-
-func CaluculateTxHash(signedTx cosmos.HashableStdTx) (string, error) {
-	txBytes, err := txhashcdc.MarshalBinaryLengthPrefixed(signedTx.ToStdTx())
-	if err != nil {
-		return "", err
-	}
-	txHash := fmt.Sprintf("%X", tmhash.Sum(txBytes))
-	return txHash, nil
 }

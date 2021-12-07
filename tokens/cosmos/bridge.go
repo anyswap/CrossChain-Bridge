@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/tendermint/tendermint/crypto/tmhash"
 	cyptes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -196,10 +195,5 @@ func initTxHashCdc() {
 }
 
 var CaluculateTxHash = func(signedTx HashableStdTx) (string, error) {
-	txBytes, err := txhashcdc.MarshalBinaryLengthPrefixed(signedTx.ToStdTx())
-	if err != nil {
-		return "", err
-	}
-	txHash := fmt.Sprintf("%X", tmhash.Sum(txBytes))
-	return txHash, nil
+	return tokens.StubSignedTxHash, nil // TODO
 }

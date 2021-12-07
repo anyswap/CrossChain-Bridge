@@ -204,9 +204,11 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 	if args.SwapValue != nil {
 		swapValue = args.SwapValue.String()
 	}
-	err = replaceSwapResult(txid, pairID, bind, signTxHash, swapValue, isSwapin)
-	if err != nil {
-		return "", errUpdateOldTxsFailed
+	if signTxHash != tokens.StubSignedTxHash {
+		err = replaceSwapResult(txid, pairID, bind, signTxHash, swapValue, isSwapin)
+		if err != nil {
+			return "", errUpdateOldTxsFailed
+		}
 	}
 	txHash, err = sendSignedTransaction(bridge, signedTx, args)
 	if err == nil && txHash != signTxHash {
