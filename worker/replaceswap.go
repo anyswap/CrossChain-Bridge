@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-	"sync"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
@@ -23,8 +22,6 @@ var (
 	errSignTxFailed       = errors.New("sign tx failed")
 	errUpdateOldTxsFailed = errors.New("update old swaptxs failed")
 	errNotNonceSupport    = errors.New("not nonce support bridge")
-
-	updateOldSwapTxsLock sync.Mutex
 
 	maxDistanceOfSwapNonce = uint64(5)
 )
@@ -204,61 +201,16 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 	if args.SwapValue != nil {
 		swapValue = args.SwapValue.String()
 	}
-	err = replaceSwapResult(txid, pairID, bind, signTxHash, swapValue, isSwapin)
+	err = mongodb.UpdateSwapResultOldTxs(txid, pairID, bind, signTxHash, swapValue, isSwapin)
 	if err != nil {
 		return "", errUpdateOldTxsFailed
 	}
 	txHash, err = sendSignedTransaction(bridge, signedTx, args)
 	if err == nil && txHash != signTxHash {
 		logWorkerError("replaceSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", nonce, "txHash", txHash, "signTxHash", signTxHash)
-		_ = replaceSwapResult(txid, pairID, bind, txHash, swapValue, isSwapin)
+		_ = mongodb.UpdateSwapResultOldTxs(txid, pairID, bind, txHash, swapValue, isSwapin)
 	}
 	return txHash, err
-}
-
-func replaceSwapResult(txid, pairID, bind, txHash, swapValue string, isSwapin bool) (err error) {
-	updateOldSwapTxsLock.Lock()
-	defer updateOldSwapTxsLock.Unlock()
-
-	res, err := mongodb.FindSwapResult(isSwapin, txid, pairID, bind)
-	if err != nil {
-		return err
-	}
-
-	oldSwapTxs := res.OldSwapTxs
-	oldSwapVals := res.OldSwapVals
-	if len(oldSwapTxs) > 0 {
-		for _, oldSwapTx := range oldSwapTxs {
-			if oldSwapTx == txHash {
-				return nil
-			}
-		}
-		oldSwapTxs = append(oldSwapTxs, txHash)
-		oldSwapVals = append(oldSwapVals, swapValue)
-	} else {
-		if txHash == res.SwapTx {
-			return nil
-		}
-		if res.SwapTx == "" {
-			oldSwapTxs = []string{txHash}
-			oldSwapVals = []string{swapValue}
-		} else {
-			oldSwapTxs = []string{res.SwapTx, txHash}
-			oldSwapVals = []string{res.SwapValue, swapValue}
-		}
-	}
-	bridge := tokens.GetCrossChainBridge(!isSwapin)
-	if bridge.GetChainConfig().BaseGasPrice == "" {
-		oldSwapVals = nil
-	}
-	swapType := tokens.SwapType(res.SwapType).String()
-	err = updateOldSwapTxs(txid, pairID, bind, txHash, oldSwapTxs, oldSwapVals, isSwapin)
-	if err != nil {
-		logWorkerError("replace", "replaceSwapResult", err, "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", res.SwapNonce, "swapValue", swapValue)
-	} else {
-		logWorker("replace", "replaceSwapResult", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", txHash, "swapType", swapType, "nonce", res.SwapNonce, "swapValue", swapValue)
-	}
-	return err
 }
 
 func preventReplaceswapByHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {

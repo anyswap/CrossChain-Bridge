@@ -47,17 +47,15 @@ type MgoSwapResult struct {
 
 // SwapResultUpdateItems swap update items
 type SwapResultUpdateItems struct {
-	SwapTx      string
-	OldSwapTxs  []string
-	OldSwapVals []string
-	SwapHeight  uint64
-	SwapTime    uint64
-	SwapValue   string
-	SwapType    uint32
-	SwapNonce   uint64
-	Status      SwapStatus
-	Timestamp   int64
-	Memo        string
+	SwapTx     string
+	SwapHeight uint64
+	SwapTime   uint64
+	SwapValue  string
+	SwapType   uint32
+	SwapNonce  uint64
+	Status     SwapStatus
+	Timestamp  int64
+	Memo       string
 }
 
 // MgoP2shAddress key is the bind address
