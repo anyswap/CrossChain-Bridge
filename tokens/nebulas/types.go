@@ -266,6 +266,17 @@ func (payload *CallPayload) ToBytes() ([]byte, error) {
 	return json.Marshal(payload)
 }
 
+func (payload *CallPayload) Arguments() ([]interface{}, error) {
+	if len(payload.Args) > 0 {
+		var argsObj []interface{}
+		if err := json.Unmarshal([]byte(payload.Args), &argsObj); err != nil {
+			return nil, err
+		}
+		return argsObj, nil
+	}
+	return []interface{}{}, nil
+}
+
 // CheckContractArgs check contract args
 func CheckContractArgs(args string) error {
 	if len(args) > 0 {
