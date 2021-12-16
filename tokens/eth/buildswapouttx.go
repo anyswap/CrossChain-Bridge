@@ -6,6 +6,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/eth/abicoder"
 )
 
 func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) {
@@ -22,7 +23,7 @@ func (b *Bridge) buildErc20SwapoutTxInput(args *tokens.BuildTxArgs) (err error) 
 	}
 	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, false)
 
-	input := PackDataWithFuncHash(funcHash, address, amount)
+	input := abicoder.PackDataWithFuncHash(funcHash, address, amount)
 	args.Input = &input // input
 
 	args.To = token.ContractAddress // to

@@ -6,6 +6,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/eth/abicoder"
 )
 
 // build input for calling `Swapin(bytes32 txhash, address account, uint256 amount)`
@@ -24,7 +25,7 @@ func (b *Bridge) buildSwapinTxInput(args *tokens.BuildTxArgs) error {
 	}
 	amount := tokens.CalcSwappedValue(pairID, args.OriginValue, true)
 
-	input := PackDataWithFuncHash(funcHash, txHash, address, amount)
+	input := abicoder.PackDataWithFuncHash(funcHash, txHash, address, amount)
 	args.Input = &input // input
 
 	args.To = token.ContractAddress // to
