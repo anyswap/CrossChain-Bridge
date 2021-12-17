@@ -136,6 +136,15 @@ func addSwap(collection *mgo.Collection, ms *MgoSwap) error {
 		log.Info("mongodb add swap success", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
 	} else if !mgo.IsDup(err) {
 		log.Error("mongodb add swap failed", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection), "err", err)
+	} else {
+		swap := &MgoSwap{}
+		errt := collection.FindId(ms.Key).One(swap)
+		if errt == nil && swap.Status == TxNotSwapped {
+			now := time.Now().Unix()
+			if swap.Timestamp+3*24*3600 < now {
+				_ = collection.UpdateId(ms.Key, bson.M{"$set": bson.M{"timestamp": now}})
+			}
+		}
 	}
 	return mgoError(err)
 }
