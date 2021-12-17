@@ -151,40 +151,44 @@ func (b *Bridge) FeeGetter() func(pairID string, tx *cosmos.StdSignContent) auth
 		var amount int64
 		switch denom {
 		case "uluna":
-			amount = 150000
+			amount = 10000
 		case "uusd":
-			if len(tx.Msgs) != 1 {
-				amount = 5000000
-				break
-			}
-			sendmsg, ok := tx.Msgs[0].(cosmos.MsgSend)
-			if !ok {
-				amount = 5000000
-				break
-			}
-			if len(sendmsg.Amount) != 1 {
-				amount = 5000000
-				break
-			}
-			sendamt := sendmsg.Amount[0].Amount.BigInt()
-
-			token := tokens.GetTokenConfig(pairID, false)
-			taxrate := big.NewInt(int64(token.TaxRate * float64(Denominator)))
-
-			// fee = swapoutgas * gasrate + tax
-			// tax = min(sendamount * taxrate, taxcap)
-			tax := new(big.Int).Div(new(big.Int).Mul(sendamt, taxrate), big.NewInt(Denominator)).Int64()
-			taxcap := int64(token.TaxCap * 1e6)
-			if tax > taxcap {
-				tax = taxcap
-			}
-			gasfee := int64(float64(DefaultSwapoutGas) * token.GasRate)
-			amount = tax + gasfee
+			amount = 100000
+		default:
+			amount = 1
 		}
+		if len(tx.Msgs) != 1 {
+			return buildFee(DefaultSwapoutGas, denom, amount)
+		}
+		sendmsg, ok := tx.Msgs[0].(cosmos.MsgSend)
+		if !ok {
+			return buildFee(DefaultSwapoutGas, denom, amount)
+		}
+		if len(sendmsg.Amount) != 1 {
+			return buildFee(DefaultSwapoutGas, denom, amount)
+		}
+		sendamt := sendmsg.Amount[0].Amount.BigInt()
 
-		feeAmount := sdk.Coins{sdk.Coin{Denom: denom, Amount: sdk.NewInt(amount)}}
-		return authtypes.NewStdFee(DefaultSwapoutGas, feeAmount)
+		token := tokens.GetTokenConfig(pairID, false)
+		taxrate := big.NewInt(int64(token.TaxRate * float64(Denominator)))
+
+		// fee = swapoutgas * gasrate + tax
+		// tax = min(sendamount * taxrate, taxcap)
+		tax := new(big.Int).Div(new(big.Int).Mul(sendamt, taxrate), big.NewInt(Denominator)).Int64()
+		taxcap := int64(token.TaxCap * 1e6)
+		if tax > taxcap {
+			tax = taxcap
+		}
+		gasfee := int64(float64(DefaultSwapoutGas) * token.GasRate)
+		amount = tax + gasfee
+
+		return buildFee(DefaultSwapoutGas, denom, amount)
 	}
+}
+
+func buildFee(gas uint64, denom string, amount int64) authtypes.StdFee {
+	feeAmount := sdk.Coins{sdk.Coin{Denom: denom, Amount: sdk.NewInt(amount)}}
+	return authtypes.NewStdFee(gas, feeAmount)
 }
 
 // TerraSignBytesModifier is used to build terra special sign bytes
