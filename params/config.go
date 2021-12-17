@@ -42,6 +42,7 @@ type ServerConfig struct {
 	BtcExtra            *tokens.BtcExtraConfig `toml:",omitempty" json:",omitempty"`
 	Extra               *ExtraConfig           `toml:",omitempty" json:",omitempty"`
 	Admins              []string               `toml:",omitempty" json:",omitempty"`
+	Assistants          []string               `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmConfig dcrm related config
@@ -214,6 +215,16 @@ func HasAdmin() bool {
 func IsAdmin(account string) bool {
 	for _, admin := range serverConfig.Admins {
 		if strings.EqualFold(account, admin) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsAssistant is assistant
+func IsAssistant(account string) bool {
+	for _, assistant := range serverConfig.Assistants {
+		if strings.EqualFold(account, assistant) {
 			return true
 		}
 	}
