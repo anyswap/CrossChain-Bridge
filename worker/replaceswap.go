@@ -30,16 +30,16 @@ var (
 )
 
 // ReplaceSwapin api
-func ReplaceSwapin(txid, pairID, bind, gasPrice string) (string, error) {
-	return replaceSwap(txid, pairID, bind, gasPrice, true)
+func ReplaceSwapin(txid, pairID, bind, gasPrice string, isManual bool) (string, error) {
+	return replaceSwap(txid, pairID, bind, gasPrice, true, isManual)
 }
 
 // ReplaceSwapout api
-func ReplaceSwapout(txid, pairID, bind, gasPrice string) (string, error) {
-	return replaceSwap(txid, pairID, bind, gasPrice, false)
+func ReplaceSwapout(txid, pairID, bind, gasPrice string, isManual bool) (string, error) {
+	return replaceSwap(txid, pairID, bind, gasPrice, false, isManual)
 }
 
-func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSwap, *mongodb.MgoSwapResult, error) {
+func verifyReplaceSwap(txid, pairID, bind string, isSwapin, isManual bool) (*mongodb.MgoSwap, *mongodb.MgoSwapResult, error) {
 	swap, err := mongodb.FindSwap(isSwapin, txid, pairID, bind)
 	if err != nil {
 		return nil, nil, err
@@ -48,7 +48,7 @@ func verifyReplaceSwap(txid, pairID, bind string, isSwapin bool) (*mongodb.MgoSw
 	if err != nil {
 		return nil, nil, err
 	}
-	if res.SwapHeight != 0 {
+	if res.SwapHeight != 0 && !isManual {
 		return nil, nil, errSwapTxWithHeight
 	}
 	if res.Status != mongodb.MatchTxNotStable {
@@ -119,7 +119,7 @@ func checkIfSwapNonceHasPassed(bridge tokens.CrossChainBridge, res *mongodb.MgoS
 	return nil
 }
 
-func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash string, err error) {
+func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin, isManual bool) (txHash string, err error) {
 	var gasPrice *big.Int
 	if gasPriceStr != "" {
 		var ok bool
@@ -129,7 +129,7 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin bool) (txHash 
 		}
 	}
 
-	swap, res, err := verifyReplaceSwap(txid, pairID, bind, isSwapin)
+	swap, res, err := verifyReplaceSwap(txid, pairID, bind, isSwapin, isManual)
 	if err != nil {
 		return "", err
 	}
