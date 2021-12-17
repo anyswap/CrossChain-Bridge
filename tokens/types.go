@@ -470,12 +470,9 @@ func (c *TokenConfig) CheckConfig(isSrc bool) (err error) {
 			return errors.New("wrong 'DelegateToken' address")
 		}
 	}
-	c.TokenPrice = 0
-	err = c.loadTokenPrice(isSrc)
-	if err != nil {
-		return err
+	if TokenPriceCfg == nil {
+		c.CalcAndStoreValue()
 	}
-	c.CalcAndStoreValue()
 	err = c.LoadDcrmAddressPrivateKey()
 	if err != nil {
 		return err
@@ -507,16 +504,33 @@ func (c *TokenConfig) CalcAndStoreValue() {
 		minFee /= c.TokenPrice
 	}
 	smallBiasValue := 0.0001
-	c.maxSwap = ToBits(maxSwap+smallBiasValue, *c.Decimals)
-	c.minSwap = ToBits(minSwap-smallBiasValue, *c.Decimals)
-	c.maxSwapFee = ToBits(maxFee, *c.Decimals)
-	c.minSwapFee = ToBits(minFee, *c.Decimals)
-	c.bigValThreshhold = ToBits(bigSwap+smallBiasValue, *c.Decimals)
+	decimals := *c.Decimals
+	c.maxSwap = ToBits(maxSwap+smallBiasValue, decimals)
+	c.minSwap = ToBits(minSwap-smallBiasValue, decimals)
+	c.maxSwapFee = ToBits(maxFee, decimals)
+	c.minSwapFee = ToBits(minFee, decimals)
+	c.bigValThreshhold = ToBits(bigSwap+smallBiasValue, decimals)
+	if decimals > 8 {
+		mod := big.NewInt(10)
+		mod.Exp(mod, big.NewInt(int64(decimals-8)), nil)
+		c.maxSwap = calcModValue(c.maxSwap, mod)
+		c.minSwap = calcModValue(c.minSwap, mod)
+		c.maxSwapFee = calcModValue(c.maxSwapFee, mod)
+		c.minSwapFee = calcModValue(c.minSwapFee, mod)
+		c.bigValThreshhold = calcModValue(c.bigValThreshhold, mod)
+	}
 	log.Info("calc and store token swap and fee success",
-		"name", c.Name, "decimals", *c.Decimals, "contractAddress", c.ContractAddress,
+		"name", c.Name, "decimals", decimals, "contractAddress", c.ContractAddress,
 		"maxSwap", c.maxSwap, "minSwap", c.minSwap, "bigValThreshhold", c.bigValThreshhold,
 		"maxSwapFee", c.maxSwapFee, "minSwapFee", c.minSwapFee, "swapFeeRate", c.SwapFeeRate,
 	)
+}
+
+// result = (value / mod) * mod
+func calcModValue(value, mod *big.Int) (result *big.Int) {
+	result = new(big.Int).Div(value, mod)
+	result.Mul(result, mod)
+	return result
 }
 
 // GetDcrmAddressPrivateKey get private key
