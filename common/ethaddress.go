@@ -84,6 +84,11 @@ func (a Address) String() string {
 	return a.Hex()
 }
 
+// LowerHex hex encoding address bytes with '0x' prefix and lower case letters
+func (a Address) LowerHex() string {
+	return "0x" + hex.EncodeToString(a[:])
+}
+
 // Format implements fmt.Formatter, forcing the byte slice to be formatted as is,
 // without going through the stringer interface used for logging.
 func (a Address) Format(s fmt.State, c rune) {
