@@ -131,6 +131,7 @@ func addPostBody(req *http.Request, body interface{}) error {
 			return err
 		}
 		req.Header.Set("Content-type", "application/json")
+		req.ContentLength = int64(len(jsonData))
 		req.GetBody = func() (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(jsonData)), nil
 		}
@@ -144,6 +145,7 @@ func addRawPostBody(req *http.Request, body string) (err error) {
 		return nil
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.ContentLength = int64(len(body))
 	req.GetBody = func() (io.ReadCloser, error) {
 		return ioutil.NopCloser(strings.NewReader(body)), nil
 	}

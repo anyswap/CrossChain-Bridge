@@ -475,10 +475,10 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	if err == nil {
 		logWorker("doSwap", "send tx success", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash)
 		if signTxHash == tokens.StubSignedTxHash {
-			err = updateSwapResultTx(txid, pairID, bind, txHash, matchTx.SwapValue, isSwapin, mongodb.MatchTxNotStable)
+			err = updateSwapResultTx(txid, pairID, bind, txHash, matchTx.SwapValue, isSwapin, mongodb.KeepStatus)
 		} else if txHash != signTxHash {
 			logWorkerError("doSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash, "signTxHash", signTxHash)
-			_ = replaceSwapResult(txid, pairID, bind, txHash, matchTx.SwapValue, isSwapin)
+			_ = mongodb.UpdateSwapResultOldTxs(txid, pairID, bind, txHash, matchTx.SwapValue, isSwapin)
 		}
 	}
 	return err

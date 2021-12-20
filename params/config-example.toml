@@ -7,6 +7,9 @@ Admins = [
 	"0x3dfaef310a1044fd7d96750b42b44cf3775c00bf",
 	"0x46cbe22b687d4b72c8913e4784dfe5b20fdc2b0e"
 ]
+Assistants = [
+        "0x6666666666666666666666666666666666666666"
+]
 
 # modgodb database connection config (server only)
 [Server.MongoDB]

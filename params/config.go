@@ -47,9 +47,10 @@ type BridgeConfig struct {
 
 // ServerConfig swap server config
 type ServerConfig struct {
-	MongoDB   *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
-	APIServer *APIServerConfig `toml:",omitempty" json:",omitempty"`
-	Admins    []string         `toml:",omitempty" json:",omitempty"`
+	MongoDB    *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
+	APIServer  *APIServerConfig `toml:",omitempty" json:",omitempty"`
+	Admins     []string         `toml:",omitempty" json:",omitempty"`
+	Assistants []string         `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmConfig dcrm related config
@@ -244,6 +245,16 @@ func HasAdmin() bool {
 func IsAdmin(account string) bool {
 	for _, admin := range GetServerConfig().Admins {
 		if strings.EqualFold(account, admin) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsAssistant is assistant
+func IsAssistant(account string) bool {
+	for _, assistant := range GetServerConfig().Assistants {
+		if strings.EqualFold(account, assistant) {
 			return true
 		}
 	}
