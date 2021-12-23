@@ -110,8 +110,9 @@ func (b *Bridge) MakeSigner(chainID *big.Int) {
 	b.ChainConfig.SetChainID(chainID)
 	if b.ChainConfig.EnableDynamicFeeTx {
 		b.Signer = types.MakeSigner("London", chainID)
+	} else {
+		b.Signer = types.MakeSigner("EIP155", chainID)
 	}
-	b.Signer = types.MakeSigner("EIP155", chainID)
 }
 
 // VerifyTokenConfig verify token config
