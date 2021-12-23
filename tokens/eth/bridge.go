@@ -145,9 +145,9 @@ func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) error {
 	switch strings.ToUpper(tokenCfg.Symbol) {
 	case "ETH", "FSN":
 		if configedDecimals != 18 {
-			return fmt.Errorf("invalid decimals: want 18 but have %v", configedDecimals)
+			return fmt.Errorf("invalid decimals: %v want 18 but have %v", tokenCfg.Symbol, configedDecimals)
 		}
-		log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals)
+		log.Info(tokenCfg.Symbol+" verify decimals success", "decimals", configedDecimals, "symbol", tokenCfg.Symbol)
 	}
 
 	if checkToken != "" {
@@ -157,7 +157,7 @@ func (b *Bridge) verifyDecimals(tokenCfg *tokens.TokenConfig) error {
 			return err
 		}
 		if decimals != configedDecimals {
-			return fmt.Errorf("invalid decimals for %v, want %v but configed %v", tokenCfg.Symbol, decimals, configedDecimals)
+			return fmt.Errorf("invalid decimals for %v token %v, want %v but configed %v", tokenCfg.Symbol, checkToken, decimals, configedDecimals)
 		}
 		log.Info(tokenCfg.Symbol+" verify decimals success", "address", checkToken, "decimals", configedDecimals)
 
