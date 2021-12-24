@@ -87,7 +87,7 @@ func ParseErc20SwapinTx(tx *TransactionResponse, contractAddress, checkToAddress
 	if !ok {
 		return "", "", nil, errors.New("failed to parse payload value")
 	}
-	return tx.From, args[1], value, nil
+	return args[2], args[1], value, nil
 }
 
 func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
