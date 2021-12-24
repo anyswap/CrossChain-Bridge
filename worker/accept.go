@@ -204,8 +204,8 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 		agreeResult = acceptDisagree
 
 		disgreeReason := err.Error()
-		if len(disgreeReason) > 100 {
-			disgreeReason = disgreeReason[:100]
+		if len(disgreeReason) > 1000 {
+			disgreeReason = disgreeReason[:1000]
 		}
 		aggreeMsgContext = append(aggreeMsgContext, disgreeReason)
 		ctx = append(ctx, "disgreeReason", disgreeReason)
