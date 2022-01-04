@@ -63,7 +63,7 @@ type SignInfoData struct {
 
 // IsValid is valid
 func (signInfo *SignInfoData) IsValid() bool {
-	return signInfo.Key != "" && signInfo.Account != "" && signInfo.GroupID != ""
+	return signInfo != nil && signInfo.Key != "" && signInfo.Account != "" && signInfo.GroupID != ""
 }
 
 // SignInfoResp sign info response

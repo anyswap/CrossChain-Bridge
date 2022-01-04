@@ -20,13 +20,14 @@ var (
 	cachedSwapTasks    = mapset.NewSet()
 	maxCachedSwapTasks = 1000
 
-	swapChanSize       = 10
+	swapChanSize       = 100
 	swapinTaskChanMap  = make(map[string]chan *tokens.BuildTxArgs)
 	swapoutTaskChanMap = make(map[string]chan *tokens.BuildTxArgs)
 
 	errAlreadySwapped     = errors.New("already swapped")
 	errDBError            = errors.New("database error")
 	errSendTxWithDiffHash = errors.New("send tx with different hash")
+	errSwapChannelIsFull  = errors.New("swap task channel is full")
 )
 
 // StartSwapJob swap job
@@ -107,6 +108,7 @@ func processSwapins(status mongodb.SwapStatus) {
 		switch {
 		case err == nil,
 			errors.Is(err, errAlreadySwapped),
+			errors.Is(err, errSwapChannelIsFull),
 			errors.Is(err, errDBError),
 			errors.Is(err, tokens.ErrUnknownPairID),
 			errors.Is(err, tokens.ErrAddressIsInBlacklist),
@@ -134,6 +136,7 @@ func processSwapouts(status mongodb.SwapStatus) {
 		switch {
 		case err == nil,
 			errors.Is(err, errAlreadySwapped),
+			errors.Is(err, errSwapChannelIsFull),
 			errors.Is(err, errDBError),
 			errors.Is(err, tokens.ErrUnknownPairID),
 			errors.Is(err, tokens.ErrAddressIsInBlacklist),
@@ -200,6 +203,10 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 
 	dcrmAddress, err := checkSwapResult(res, isSwapin)
 	if err != nil {
+		return err
+	}
+
+	if err = checkSwapTaskChannel(dcrmAddress, isSwapin); err != nil {
 		return err
 	}
 
@@ -325,25 +332,57 @@ func preventReswapByHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	return nil
 }
 
+func checkSwapTaskChannel(sender string, isSwapin bool) error {
+	var (
+		swapChan chan *tokens.BuildTxArgs
+		exist    bool
+	)
+	from := strings.ToLower(sender)
+	if isSwapin {
+		swapChan, exist = swapinTaskChanMap[from]
+		if !exist {
+			return fmt.Errorf("no swapin task channel for dcrm address '%v'", sender)
+		}
+	} else {
+		swapChan, exist = swapoutTaskChanMap[from]
+		if !exist {
+			return fmt.Errorf("no swapout task channel for dcrm address '%v'", sender)
+		}
+	}
+	if len(swapChan) == cap(swapChan) {
+		logWorkerWarn("doSwap", "swap task channel is full", "sender", sender, "isSwapin", isSwapin)
+		return errSwapChannelIsFull
+	}
+	return nil
+}
+
 func dispatchSwapTask(args *tokens.BuildTxArgs) error {
+	var (
+		swapChan chan *tokens.BuildTxArgs
+		exist    bool
+	)
 	from := strings.ToLower(args.From)
 	switch args.SwapType {
 	case tokens.SwapinType:
-		swapChan, exist := swapinTaskChanMap[from]
+		swapChan, exist = swapinTaskChanMap[from]
 		if !exist {
 			return fmt.Errorf("no swapin task channel for dcrm address '%v'", args.From)
 		}
-		swapChan <- args
 	case tokens.SwapoutType:
-		swapChan, exist := swapoutTaskChanMap[from]
+		swapChan, exist = swapoutTaskChanMap[from]
 		if !exist {
 			return fmt.Errorf("no swapout task channel for dcrm address '%v'", args.From)
 		}
-		swapChan <- args
 	default:
 		return fmt.Errorf("wrong swap type '%v'", args.SwapType.String())
 	}
-	logWorker("doSwap", "dispatch swap task", "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swapType", args.SwapType.String(), "value", args.OriginValue)
+	select {
+	case swapChan <- args:
+		logWorker("doSwap", "dispatch swap task", "pairID", args.PairID, "txid", args.SwapID, "bind", args.Bind, "swapType", args.SwapType.String(), "value", args.OriginValue)
+	default:
+		logWorkerWarn("doSwap", "swap task channel is full", "sender", from, "pairID", args.PairID, "swapType", args.SwapType.String(), "txid", args.SwapID)
+		return errSwapChannelIsFull
+	}
 	return nil
 }
 
@@ -472,12 +511,9 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	}
 
 	txHash, err := sendSignedTransaction(resBridge, signedTx, args)
-	if err == nil {
-		logWorker("doSwap", "send tx success", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash)
-		if txHash != signTxHash {
-			logWorkerError("doSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash, "signTxHash", signTxHash)
-			_ = replaceSwapResult(txid, pairID, bind, txHash, matchTx.SwapValue, isSwapin)
-		}
+	if err == nil && txHash != signTxHash {
+		logWorkerError("doSwap", "send tx success but with different hash", errSendTxWithDiffHash, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swapNonce", swapNonce, "txHash", txHash, "signTxHash", signTxHash)
+		_ = mongodb.UpdateSwapResultOldTxs(txid, pairID, bind, txHash, matchTx.SwapValue, isSwapin)
 	}
 	return err
 }

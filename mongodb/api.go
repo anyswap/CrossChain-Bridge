@@ -22,8 +22,10 @@ const (
 )
 
 var (
-	retryLock        sync.Mutex
-	updateResultLock sync.Mutex
+	retryLock               sync.Mutex
+	updateResultLock        sync.Mutex
+	updateOldSwapinTxsLock  sync.Mutex
+	updateOldSwapoutTxsLock sync.Mutex
 
 	maxCountOfResults = int64(1000)
 )
@@ -131,6 +133,15 @@ func addSwap(collection *mongo.Collection, ms *MgoSwap) error {
 		log.Info("mongodb add swap success", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
 	} else if !mongo.IsDuplicateKeyError(err) {
 		log.Error("mongodb add swap failed", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection), "err", err)
+	} else {
+		swap := &MgoSwap{}
+		errt := collection.FindOne(clientCtx, bson.M{"_id": ms.Key}).Decode(swap)
+		if errt == nil && swap.Status == TxNotSwapped {
+			now := time.Now().Unix()
+			if swap.Timestamp+3*24*3600 < now {
+				_, _ = collection.UpdateByID(clientCtx, ms.Key, bson.M{"$set": bson.M{"timestamp": now}})
+			}
+		}
 	}
 	return mgoError(err)
 }
@@ -161,7 +172,7 @@ func updateSwapStatus(collection *mongo.Collection, txid, pairID, bind string, s
 		}
 		printLog("mongodb update swap status", "txid", txid, "pairID", pairID, "bind", bind, "status", status, "isSwapin", isSwapin(collection))
 	} else {
-		log.Debug("mongodb update swap status", "txid", txid, "pairID", pairID, "bind", bind, "status", status, "isSwapin", isSwapin(collection), "err", err)
+		log.Error("mongodb update swap status", "txid", txid, "pairID", pairID, "bind", bind, "status", status, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
@@ -354,12 +365,6 @@ func updateSwapResult(collection *mongo.Collection, txid, pairID, bind string, i
 	if items.SwapTx != "" {
 		updates["swaptx"] = items.SwapTx
 	}
-	if len(items.OldSwapTxs) != 0 {
-		updates["oldswaptxs"] = items.OldSwapTxs
-	}
-	if len(items.OldSwapVals) != 0 {
-		updates["oldswapvals"] = items.OldSwapVals
-	}
 	if items.SwapHeight != 0 {
 		updates["swapheight"] = items.SwapHeight
 	}
@@ -400,7 +405,7 @@ func updateSwapResult(collection *mongo.Collection, txid, pairID, bind string, i
 	if err == nil {
 		log.Info("mongodb update swap result", "txid", txid, "pairID", pairID, "bind", bind, "updates", updates, "isSwapin", isSwapin(collection))
 	} else {
-		log.Debug("mongodb update swap result", "txid", txid, "pairID", pairID, "bind", bind, "updates", updates, "isSwapin", isSwapin(collection), "err", err)
+		log.Error("mongodb update swap result", "txid", txid, "pairID", pairID, "bind", bind, "updates", updates, "isSwapin", isSwapin(collection), "err", err)
 	}
 	return mgoError(err)
 }
@@ -415,6 +420,7 @@ func updateSwapResultStatus(collection *mongo.Collection, txid, pairID, bind str
 		updates["memo"] = ""
 		updates["swaptx"] = ""
 		updates["oldswaptxs"] = nil
+		updates["oldswapvals"] = nil
 		updates["swapheight"] = 0
 		updates["swaptime"] = 0
 		updates["swapnonce"] = 0
@@ -424,7 +430,78 @@ func updateSwapResultStatus(collection *mongo.Collection, txid, pairID, bind str
 	if err == nil {
 		log.Info("mongodb update swap result status", "txid", txid, "pairID", pairID, "bind", bind, "status", status, "isSwapin", isSwapin)
 	} else {
-		log.Debug("mongodb update swap result status", "txid", txid, "pairID", pairID, "bind", bind, "status", status, "isSwapin", isSwapin, "err", err)
+		log.Error("mongodb update swap result status", "txid", txid, "pairID", pairID, "bind", bind, "status", status, "isSwapin", isSwapin, "err", err)
+	}
+	return mgoError(err)
+}
+
+// UpdateSwapResultOldTxs update swap result oldtxs
+func UpdateSwapResultOldTxs(txid, pairID, bind, swapTx, swapValue string, isSwapin bool) error {
+	if swapTx == "" {
+		return nil
+	}
+	if isSwapin {
+		return updateSwapinResultOldTxs(txid, pairID, bind, swapTx, swapValue)
+	}
+	return updateSwapoutResultOldTxs(txid, pairID, bind, swapTx, swapValue)
+}
+
+func updateSwapinResultOldTxs(txid, pairID, bind, swapTx, swapValue string) error {
+	updateOldSwapinTxsLock.Lock()
+	defer updateOldSwapinTxsLock.Unlock()
+	return updateSwapResultOldTxs(collSwapinResult, txid, pairID, bind, swapTx, swapValue)
+}
+
+func updateSwapoutResultOldTxs(txid, pairID, bind, swapTx, swapValue string) error {
+	updateOldSwapoutTxsLock.Lock()
+	defer updateOldSwapoutTxsLock.Unlock()
+	return updateSwapResultOldTxs(collSwapoutResult, txid, pairID, bind, swapTx, swapValue)
+}
+
+func updateSwapResultOldTxs(collection *mongo.Collection, txid, pairID, bind, swapTx, swapValue string) error {
+	swapRes, err := findSwapResult(collection, txid, pairID, bind)
+	if err != nil {
+		return err
+	}
+
+	// already exist
+	if strings.EqualFold(swapTx, swapRes.SwapTx) {
+		return nil
+	}
+	for _, oldSwapTx := range swapRes.OldSwapTxs {
+		if strings.EqualFold(swapTx, oldSwapTx) {
+			return nil
+		}
+	}
+
+	var updates bson.M
+
+	if len(swapRes.OldSwapTxs) == 0 {
+		updateSet := bson.M{
+			"swaptx":     swapTx,
+			"oldswaptxs": []string{swapRes.SwapTx, swapTx},
+			"timestamp":  time.Now().Unix(),
+		}
+		if swapValue != "" {
+			updateSet["oldswapvals"] = []string{swapRes.SwapValue, swapValue}
+		}
+		updates = bson.M{"$set": updateSet}
+	} else {
+		arrayPushes := bson.M{"oldswaptxs": swapTx}
+		if swapValue != "" {
+			arrayPushes["oldswapvals"] = swapValue
+		}
+		updates = bson.M{
+			"$set":  bson.M{"swaptx": swapTx, "timestamp": time.Now().Unix()},
+			"$push": arrayPushes,
+		}
+	}
+
+	_, err = collection.UpdateByID(clientCtx, GetSwapKey(txid, pairID, bind), updates)
+	if err == nil {
+		log.Info("UpdateRouterOldSwapTxs success", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swapTx, "nonce", swapRes.SwapNonce, "swapValue", swapValue)
+	} else {
+		log.Error("UpdateRouterOldSwapTxs failed", "txid", txid, "pairID", pairID, "bind", bind, "swaptx", swapTx, "nonce", swapRes.SwapNonce, "swapValue", swapValue, "err", err)
 	}
 	return mgoError(err)
 }
@@ -519,8 +596,8 @@ func AddP2shAddress(ma *MgoP2shAddress) error {
 	_, err := collP2shAddress.InsertOne(clientCtx, ma)
 	if err == nil {
 		log.Info("mongodb add p2sh address", "key", ma.Key, "p2shaddress", ma.P2shAddress)
-	} else {
-		log.Debug("mongodb add p2sh address", "key", ma.Key, "p2shaddress", ma.P2shAddress, "err", err)
+	} else if !mongo.IsDuplicateKeyError(err) {
+		log.Error("mongodb add p2sh address", "key", ma.Key, "p2shaddress", ma.P2shAddress, "err", err)
 	}
 	return mgoError(err)
 }
@@ -585,7 +662,7 @@ func UpdateLatestScanInfo(isSrc bool, blockHeight uint64) error {
 	if err == nil {
 		log.Info("mongodb update lastest scan info", "isSrc", isSrc, "updates", updates)
 	} else {
-		log.Debug("mongodb update latest scan info", "isSrc", isSrc, "updates", updates, "err", err)
+		log.Error("mongodb update latest scan info", "isSrc", isSrc, "updates", updates, "err", err)
 	}
 	return mgoError(err)
 }
@@ -617,8 +694,8 @@ func AddRegisteredAddress(address string) error {
 	_, err := collRegisteredAddress.InsertOne(clientCtx, ma)
 	if err == nil {
 		log.Info("mongodb add register address", "key", ma.Key)
-	} else {
-		log.Debug("mongodb add register address", "key", ma.Key, "err", err)
+	} else if !mongo.IsDuplicateKeyError(err) {
+		log.Error("mongodb add register address", "key", ma.Key, "err", err)
 	}
 	return mgoError(err)
 }
@@ -737,8 +814,8 @@ func AddSwapHistory(isSwapin bool, txid, bind, swaptx string) error {
 	_, err := collSwapHistory.InsertOne(clientCtx, item)
 	if err == nil {
 		log.Info("mongodb add swap history success", "txid", txid, "bind", bind, "isSwapin", isSwapin)
-	} else {
-		log.Debug("mongodb add swap history failed", "txid", txid, "bind", bind, "isSwapin", isSwapin, "err", err)
+	} else if !mongo.IsDuplicateKeyError(err) {
+		log.Error("mongodb add swap history failed", "txid", txid, "bind", bind, "isSwapin", isSwapin, "err", err)
 	}
 	return mgoError(err)
 }

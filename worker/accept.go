@@ -27,6 +27,7 @@ var (
 	cachedAcceptInfos    = mapset.NewSet()
 	maxCachedAcceptInfos = 500
 
+	isPendingInvalidAccept    bool
 	maxAcceptSignTimeInterval = int64(600) // seconds
 
 	retryInterval = 3 * time.Second
@@ -48,6 +49,7 @@ func StartAcceptSignJob() {
 		logWorker("accept", "no need to start accept sign job as dcrm is disabled")
 		return
 	}
+	isPendingInvalidAccept = params.GetOracleConfig().PendingInvalidAccept
 	getAcceptListInterval := params.GetOracleConfig().GetAcceptListInterval
 	if getAcceptListInterval > 0 {
 		waitInterval = time.Duration(getAcceptListInterval) * time.Second
@@ -167,25 +169,32 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 	}
 
 	switch {
-	case errors.Is(err, tokens.ErrTxNotStable),
-		errors.Is(err, tokens.ErrTxNotFound),
-		errors.Is(err, tokens.ErrRPCQueryError):
-		ctx = append(ctx, "err", err)
-		logWorkerTrace("accept", "ignore sign", ctx...)
-		return
-	case errors.Is(err, errIdentifierMismatch):
+	case // these maybe accepts of other bridges or routers, always discard them
+		errors.Is(err, errWrongMsgContext),
+		errors.Is(err, errIdentifierMismatch):
 		ctx = append(ctx, "err", err)
 		logWorkerTrace("accept", "discard sign", ctx...)
 		isProcessed = true
 		return
-	case errors.Is(err, errInitiatorMismatch),
-		errors.Is(err, errWrongMsgContext),
+	case // these are situations we can not judge, ignore them or disagree immediately
+		errors.Is(err, tokens.ErrTxNotStable),
+		errors.Is(err, tokens.ErrTxNotFound),
+		errors.Is(err, tokens.ErrRPCQueryError):
+		if isPendingInvalidAccept {
+			ctx = append(ctx, "err", err)
+			logWorkerTrace("accept", "ignore sign", ctx...)
+			return
+		}
+	case // these we are sure are config problem, discard them or disagree immediately
+		errors.Is(err, errInitiatorMismatch),
 		errors.Is(err, tokens.ErrUnknownPairID),
 		errors.Is(err, tokens.ErrNoBtcBridge):
-		ctx = append(ctx, "err", err)
-		logWorker("accept", "discard sign", ctx...)
-		isProcessed = true
-		return
+		if isPendingInvalidAccept {
+			ctx = append(ctx, "err", err)
+			logWorker("accept", "discard sign", ctx...)
+			isProcessed = true
+			return
+		}
 	}
 
 	var aggreeMsgContext []string
@@ -194,11 +203,12 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 		logWorkerError("accept", "DISAGREE sign", err, ctx...)
 		agreeResult = acceptDisagree
 
-		disagreeReson := err.Error()
-		if len(disagreeReson) > 100 {
-			disagreeReson = disagreeReson[:100]
+		disgreeReason := err.Error()
+		if len(disgreeReason) > 1000 {
+			disgreeReason = disgreeReason[:1000]
 		}
-		aggreeMsgContext = append(aggreeMsgContext, disagreeReson)
+		aggreeMsgContext = append(aggreeMsgContext, disgreeReason)
+		ctx = append(ctx, "disgreeReason", disgreeReason)
 	}
 	ctx = append(ctx, "result", agreeResult)
 
@@ -226,9 +236,6 @@ func getBuildTxArgsFromMsgContext(signInfo *dcrm.SignInfoData) (*tokens.BuildTxA
 }
 
 func verifySignInfo(signInfo *dcrm.SignInfoData) (args *tokens.BuildTxArgs, err error) {
-	if !params.IsDcrmInitiator(signInfo.Account) {
-		return nil, errInitiatorMismatch
-	}
 	args, err = getBuildTxArgsFromMsgContext(signInfo)
 	if err != nil {
 		return args, err
@@ -239,6 +246,14 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) (args *tokens.BuildTxArgs, err 
 	case params.GetIdentifier():
 	case params.GetReplaceIdentifier():
 	case tokens.AggregateIdentifier:
+	default:
+		return args, errIdentifierMismatch
+	}
+	if !params.IsDcrmInitiator(signInfo.Account) {
+		return nil, errInitiatorMismatch
+	}
+
+	if args.Identifier == tokens.AggregateIdentifier {
 		if btc.BridgeInstance == nil {
 			return args, tokens.ErrNoBtcBridge
 		}
@@ -248,9 +263,8 @@ func verifySignInfo(signInfo *dcrm.SignInfoData) (args *tokens.BuildTxArgs, err 
 			return args, err
 		}
 		return args, nil
-	default:
-		return args, errIdentifierMismatch
 	}
+
 	logWorker("accept", "verifySignInfo", "keyID", signInfo.Key, "msgHash", msgHash, "msgContext", msgContext)
 	if lvldbHandle != nil && args.GetTxNonce() > 0 { // only for eth like chain
 		err = CheckAcceptRecord(args)
