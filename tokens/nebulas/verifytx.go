@@ -1,6 +1,7 @@
 package nebulas
 
 import (
+	"errors"
 	"math/big"
 	"strings"
 	"time"
@@ -124,7 +125,22 @@ func (b *Bridge) verifyNativeSwapinTx(swapInfo *tokens.TxSwapInfo, allowUnstable
 	swapInfo.TxTo = txRecipient              // TxTo
 	swapInfo.To = txRecipient                // To
 	swapInfo.From = strings.ToLower(tx.From) // From
-	swapInfo.Bind = swapInfo.From            // Bind
+	if tx.Type == TxPayloadBinaryType {
+		swapInfo.Bind = string(tx.Data)
+	} else {
+		payload, err := LoadCallPayload(tx.Data)
+		if err != nil {
+			return nil, err
+		}
+		args, err := payload.Arguments()
+		if err != nil {
+			return nil, err
+		}
+		if len(args) < 3 {
+			return nil, errors.New("faile to parse paylad bind address")
+		}
+		swapInfo.Bind = args[2].(string)
+	}
 	value, _ := new(big.Int).SetString(tx.Value, 10)
 	swapInfo.Value = value
 
