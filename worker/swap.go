@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
+	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -473,6 +474,9 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		restInJob(retrySignInterval)
 	}
 	if err != nil {
+		if errors.Is(err, dcrm.ErrGetSignStatusHasDisagree) {
+			reverifySwap(args)
+		}
 		return err
 	}
 
@@ -516,6 +520,27 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 		_ = mongodb.UpdateSwapResultOldTxs(txid, pairID, bind, txHash, matchTx.SwapValue, isSwapin)
 	}
 	return err
+}
+
+func reverifySwap(args *tokens.BuildTxArgs) {
+	pairID := args.PairID
+	txid := args.SwapID
+	bind := args.Bind
+	isSwapin := args.IsSwapin()
+	bridge := tokens.GetCrossChainBridge(isSwapin)
+	if bridge == nil {
+		return
+	}
+	_, err := verifySwapTransaction(bridge, pairID, txid, bind, args.TxType)
+	switch {
+	case err == nil:
+	case errors.Is(err, tokens.ErrTxNotStable):
+	case errors.Is(err, tokens.ErrRPCQueryError):
+	default:
+		logWorkerWarn("reverify swap after get sign status has disagree", "isSwapin", isSwapin, "pairID", pairID, "txid", txid, "bind", bind, "err", err)
+		_ = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxNotStable, now(), "")
+		_ = mongodb.UpdateSwapResultStatus(isSwapin, txid, pairID, bind, mongodb.TxNotStable, now(), err.Error())
+	}
 }
 
 // DeleteCachedSwap delete cached swap
