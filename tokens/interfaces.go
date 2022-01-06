@@ -24,6 +24,7 @@ var (
 
 	ErrTodo = errors.New("developing: TODO")
 
+	ErrNotFound             = errors.New("not found")
 	ErrTxNotFound           = errors.New("tx not found")
 	ErrTxNotStable          = errors.New("tx not stable")
 	ErrTxWithWrongReceiver  = errors.New("tx with wrong receiver")
@@ -63,6 +64,11 @@ func ShouldRegisterSwapForError(err error) bool {
 		return false
 	}
 	return true
+}
+
+// IsRPCQueryOrNotFoundError is rpc or not found error
+func IsRPCQueryOrNotFoundError(err error) bool {
+	return errors.Is(err, ErrRPCQueryError) || errors.Is(err, ErrNotFound)
 }
 
 // CrossChainBridge interface

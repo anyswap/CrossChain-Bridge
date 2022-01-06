@@ -17,28 +17,14 @@ import (
 )
 
 var (
-	errNotFound               = errors.New("not found")
 	errEmptyURLs              = errors.New("empty URLs")
 	errTxInOrphanBlock        = errors.New("tx is in orphan block")
 	errTxHashMismatch         = errors.New("tx hash mismatch with rpc result")
 	errTxBlockHashMismatch    = errors.New("tx block hash mismatch with rpc result")
 	errTxReceiptMissBlockInfo = errors.New("tx receipt missing block info")
+
+	wrapRPCQueryError = tokens.WrapRPCQueryError
 )
-
-func wrapRPCQueryError(err error, method string, params ...interface{}) error {
-	if err == nil {
-		err = errNotFound
-	}
-	return fmt.Errorf("%w: call '%s %v' failed, err='%v'", tokens.ErrRPCQueryError, method, params, err)
-}
-
-// RPCCall common RPC calling
-func RPCCall(result interface{}, url, method string, params ...interface{}) error {
-	if err := client.RPCPost(&result, url, method, params...); err != nil {
-		return wrapRPCQueryError(err, method, params)
-	}
-	return nil
-}
 
 // GetLatestBlockNumberOf call eth_blockNumber
 func (b *Bridge) GetLatestBlockNumberOf(url string) (latest uint64, err error) {
@@ -146,7 +132,7 @@ func (b *Bridge) GetBlockHashOf(urls []string, height uint64) (hash string, err 
 func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 	gateway := b.GatewayConfig
 	tx, err = b.getTransactionByHash(txHash, gateway.APIAddress)
-	if err != nil && errors.Is(err, tokens.ErrRPCQueryError) && len(gateway.APIAddressExt) > 0 {
+	if err != nil && tokens.IsRPCQueryOrNotFoundError(err) && len(gateway.APIAddressExt) > 0 {
 		tx, err = b.getTransactionByHash(txHash, gateway.APIAddressExt)
 	}
 	return tx, err
@@ -233,7 +219,7 @@ func (b *Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
 func (b *Bridge) GetTransactionReceipt(txHash string) (receipt *types.RPCTxReceipt, url string, err error) {
 	gateway := b.GatewayConfig
 	receipt, url, err = b.getTransactionReceipt(txHash, gateway.APIAddress)
-	if err != nil && errors.Is(err, tokens.ErrRPCQueryError) && len(gateway.APIAddressExt) > 0 {
+	if err != nil && tokens.IsRPCQueryOrNotFoundError(err) && len(gateway.APIAddressExt) > 0 {
 		return b.getTransactionReceipt(txHash, gateway.APIAddressExt)
 	}
 	return receipt, url, err

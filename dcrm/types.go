@@ -1,5 +1,9 @@
 package dcrm
 
+import (
+	"strings"
+)
+
 // DataEnode enode
 type DataEnode struct {
 	Enode string
@@ -42,6 +46,16 @@ type SignStatus struct {
 	Error     string
 	AllReply  []*SignReply
 	TimeStamp string
+}
+
+// HasDisagree has disagree reply
+func (s *SignStatus) HasDisagree() bool {
+	for _, reply := range s.AllReply {
+		if strings.EqualFold(reply.Status, "DisAgree") {
+			return true
+		}
+	}
+	return false
 }
 
 // SignInfoData sign info

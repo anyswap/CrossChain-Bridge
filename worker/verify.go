@@ -157,6 +157,7 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 		errors.Is(err, tokens.ErrSwapIsClosed),
 		errors.Is(err, tokens.ErrTxWithWrongReceipt),
 		errors.Is(err, tokens.ErrTxIncompatible),
+		errors.Is(err, tokens.ErrNotFound),
 		errors.Is(err, tokens.ErrRPCQueryError):
 		return err
 	case err == nil:

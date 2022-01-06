@@ -156,7 +156,7 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 	case // these are situations we can not judge, ignore them or disagree immediately
 		errors.Is(err, tokens.ErrTxNotStable),
 		errors.Is(err, tokens.ErrTxNotFound),
-		errors.Is(err, tokens.ErrRPCQueryError):
+		tokens.IsRPCQueryOrNotFoundError(err):
 		if isPendingInvalidAccept {
 			ctx = append(ctx, "err", err)
 			logWorkerTrace("accept", "ignore sign", ctx...)
