@@ -111,16 +111,19 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		args.Identifier = params.GetIdentifier()
 	}
 
+	// swap need value = tx value + min reserve + 5 * gas fee
 	needValue := big.NewInt(0)
 	if value != nil && value.Sign() > 0 {
-		needValue = value
+		needValue.Add(needValue, value)
 	}
+	gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 	if args.SwapType != tokens.NoSwapType {
-		needValue = new(big.Int).Add(needValue, b.getMinReserveFee())
+		needValue.Add(needValue, b.getMinReserveFee())
+		needValue.Add(needValue, new(big.Int).Mul(big.NewInt(5), gasFee))
 	} else {
-		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
-		needValue = new(big.Int).Add(needValue, gasFee)
+		needValue.Add(needValue, gasFee)
 	}
+
 	err = b.checkBalance("", args.From, needValue)
 	if err != nil {
 		return nil, err
