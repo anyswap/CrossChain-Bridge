@@ -130,6 +130,10 @@ var (
 	ErrBlockStateCheckFailed = errors.New("Failed to check block state")
 )
 
+type NebResponse struct {
+	Result GetNebStateResponse `json:"result"`
+}
+
 type GetNebStateResponse struct {
 	// Block chain id
 	ChainId uint32 `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
@@ -138,7 +142,7 @@ type GetNebStateResponse struct {
 	// Current neb lib hash
 	Lib string `protobuf:"bytes,3,opt,name=lib,proto3" json:"lib,omitempty"`
 	// Current neb tail block height
-	Height uint64 `protobuf:"varint,4,opt,name=height,proto3" json:"height,omitempty"`
+	Height uint64 `protobuf:"varint,4,opt,name=height,proto3" json:"height,omitempty,string"`
 	// The current neb protocol version.
 	ProtocolVersion string `protobuf:"bytes,6,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocol_version,omitempty"`
 	// The peer sync status.
@@ -148,7 +152,7 @@ type GetNebStateResponse struct {
 }
 
 type ConsensusRoot struct {
-	Timestamp   int64  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp   int64  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty,string"`
 	Proposer    []byte `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
 	DynastyRoot []byte `protobuf:"bytes,3,opt,name=dynasty_root,json=dynastyRoot,proto3" json:"dynasty_root,omitempty"`
 }
@@ -159,13 +163,13 @@ type BlockResponse struct {
 	// Hex string of block parent hash.
 	ParentHash string `protobuf:"bytes,2,opt,name=parent_hash,json=parentHash,proto3" json:"parent_hash,omitempty"`
 	// block height
-	Height uint64 `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
+	Height uint64 `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty,string"`
 	// block nonce
-	Nonce uint64 `protobuf:"varint,4,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	Nonce uint64 `protobuf:"varint,4,opt,name=nonce,proto3" json:"nonce,omitempty,string"`
 	// Hex string of coinbase address.
 	Coinbase string `protobuf:"bytes,5,opt,name=coinbase,proto3" json:"coinbase,omitempty"`
 	// block timestamp.
-	Timestamp int64 `protobuf:"varint,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp int64 `protobuf:"varint,6,opt,name=timestamp,proto3" json:"timestamp,omitempty,string"`
 	// block chain id
 	ChainId uint32 `protobuf:"varint,7,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// Hex string of state root.
@@ -198,8 +202,8 @@ type TransactionResponse struct {
 	To    string `protobuf:"bytes,4,opt,name=to,proto3" json:"to,omitempty"`
 	Value string `protobuf:"bytes,5,opt,name=value,proto3" json:"value,omitempty"`
 	// Transaction nonce.
-	Nonce           uint64 `protobuf:"varint,6,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	Timestamp       int64  `protobuf:"varint,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Nonce           uint64 `protobuf:"varint,6,opt,name=nonce,proto3" json:"nonce,omitempty,string"`
+	Timestamp       int64  `protobuf:"varint,7,opt,name=timestamp,proto3" json:"timestamp,omitempty,string"`
 	Type            string `protobuf:"bytes,8,opt,name=type,proto3" json:"type,omitempty"`
 	Data            []byte `protobuf:"bytes,9,opt,name=data,proto3" json:"data,omitempty"`
 	GasPrice        string `protobuf:"bytes,10,opt,name=gas_price,json=gasPrice,proto3" json:"gas_price,omitempty"`
@@ -214,7 +218,7 @@ type TransactionResponse struct {
 	// contract execute result
 	ExecuteResult string `protobuf:"bytes,16,opt,name=execute_result,json=executeResult,proto3" json:"execute_result,omitempty"`
 	// transaction's block height
-	BlockHeight uint64 `protobuf:"varint,17,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
+	BlockHeight uint64 `protobuf:"varint,17,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty,string"`
 }
 
 type GetAccountStateResponse struct {
