@@ -41,15 +41,23 @@ func RPCCall(result interface{}, url, method string, params ...interface{}) erro
 	return nil
 }
 
+func getNebState(url string) (*GetNebStateResponse, error) {
+	var result NebResponse
+	url = fmt.Sprintf("%s/v1/user/nebstate", url)
+	err := client.RPCGet(&result, url)
+	if err == nil {
+		return &result.Result, nil
+	}
+	return nil, wrapRPCQueryError(err, "v1/user/nebstate")
+}
+
 // GetLatestBlockNumberOf call eth_blockNumber
 func (b *Bridge) GetLatestBlockNumberOf(url string) (latest uint64, err error) {
-	var result GetNebStateResponse
-	url = fmt.Sprintf("%s/v1/user/nebstate", url)
-	err = client.RPCGet(&result, url)
-	if err == nil {
-		return result.Height, nil
+	resp, err := getNebState(url)
+	if err != nil {
+		return 0, err
 	}
-	return 0, wrapRPCQueryError(err, "v1/user/nebstate")
+	return resp.Height, nil
 }
 
 // GetLatestBlockNumber call eth_blockNumber
@@ -67,10 +75,9 @@ func getMaxLatestBlockNumber(urls []string) (maxHeight uint64, err error) {
 	if len(urls) == 0 {
 		return 0, errEmptyURLs
 	}
-	var result GetNebStateResponse
+	var result *GetNebStateResponse
 	for _, url := range urls {
-		url = fmt.Sprintf("%s/v1/user/nebstate", url)
-		err = client.RPCGet(&result, url)
+		result, err = getNebState(url)
 		if err == nil {
 			height := result.Height
 			if height > maxHeight {
@@ -103,7 +110,7 @@ func getBlockByHash(blockHash string, urls []string) (result *BlockResponse, err
 		resp, err = client.HTTPPost(url, params, nil, nil, 60)
 		if err == nil && resp != nil {
 			block := new(BlockResponse)
-			err = parseReponse(resp, block)
+			err = ParseReponse(resp, block)
 			if err != nil {
 				return nil, err
 			}
@@ -126,7 +133,7 @@ func (b *Bridge) GetBlockByNumber(number *big.Int) (*BlockResponse, error) {
 		resp, err = client.HTTPPost(url, params, nil, nil, 60)
 		if err == nil && resp != nil {
 			block := new(BlockResponse)
-			err = parseReponse(resp, block)
+			err = ParseReponse(resp, block)
 			if err != nil {
 				return nil, err
 			}
@@ -156,7 +163,7 @@ func (b *Bridge) GetBlockHashOf(urls []string, height uint64) (hash string, err 
 		resp, err = client.HTTPPost(url, params, nil, nil, 60)
 		if err == nil && resp != nil {
 			block := new(BlockResponse)
-			err = parseReponse(resp, block)
+			err = ParseReponse(resp, block)
 			if err != nil {
 				return "", err
 			}
@@ -194,7 +201,7 @@ func (b *Bridge) getTransactionByHash(txHash string, urls []string) (result *Tra
 		resp, err = client.HTTPPost(url, params, nil, nil, 60)
 		if err == nil && result != nil {
 			result = new(TransactionResponse)
-			err = parseReponse(resp, result)
+			err = ParseReponse(resp, result)
 			return
 		}
 	}
@@ -238,7 +245,7 @@ func (b *Bridge) getTransactionReceipt(txHash string, urls []string) (result *Tr
 		resp, err = client.HTTPPost(pathUrl, params, nil, nil, 60)
 		if err == nil && result != nil {
 			tx := new(TransactionResponse)
-			err = parseReponse(resp, tx)
+			err = ParseReponse(resp, tx)
 			if err != nil {
 				return nil, url, err
 			}
@@ -275,7 +282,7 @@ func getMaxPoolNonce(account *Address, height string, urls []string) (maxNonce u
 		if err == nil {
 			success = true
 			astate := new(GetAccountStateResponse)
-			err = parseReponse(resp, astate)
+			err = ParseReponse(resp, astate)
 			if err != nil {
 				return 0, err
 			}
@@ -375,7 +382,7 @@ func sendRawTransaction(data []byte, urls []string) (txHash string, err error) {
 		resp, err = client.HTTPPost(pathUrl, params, nil, nil, 60)
 		if err == nil {
 			sResp := new(SendTransactionResponse)
-			err = parseReponse(resp, sResp)
+			err = ParseReponse(resp, sResp)
 			if err != nil {
 				logFunc("call rawtransaction failed", "txHash", sResp, "url", url, "err", err)
 				continue
@@ -398,9 +405,8 @@ func (b *Bridge) ChainID() (*big.Int, error) {
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
 		url := apiAddress
-		var result GetNebStateResponse
-		url = fmt.Sprintf("%s/v1/user/nebstate", url)
-		err = client.RPCGet(&result, url)
+		var result *GetNebStateResponse
+		result, err = getNebState(url)
 		if err == nil {
 			return big.NewInt(int64(result.ChainId)), nil
 		}
@@ -428,7 +434,7 @@ func (b *Bridge) GetSignerChainID() (*big.Int, error) {
 	return b.NetworkID()
 }
 
-func parseReponse(resp *http.Response, v interface{}) error {
+func ParseReponse(resp *http.Response, v interface{}) error {
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -444,11 +450,18 @@ func parseReponse(resp *http.Response, v interface{}) error {
 		return fmt.Errorf("empty response body")
 	}
 
-	err = json.Unmarshal(body, v)
+	var mapResult map[string]interface{}
+	err = json.Unmarshal(body, &mapResult)
 	if err != nil {
 		return fmt.Errorf("unmarshal body error, body is \"%v\" err=\"%w\"", string(body), err)
 	}
-	return nil
+
+	rbytes, err := json.Marshal(mapResult["result"])
+	if err != nil {
+		return nil
+	}
+	return json.Unmarshal(rbytes, v)
+
 }
 
 // CallContract call eth_call
@@ -464,7 +477,7 @@ func (b *Bridge) CallContract(contract string, value string, fun string, args st
 		resp, err = client.HTTPPost(pathUrl, reqArgs, nil, nil, 60)
 		if err == nil {
 			respObj := new(CallResponse)
-			err = parseReponse(resp, respObj)
+			err = ParseReponse(resp, respObj)
 			if err == nil {
 				return respObj.Result, nil
 			}
@@ -511,7 +524,7 @@ func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 		resp, err = client.HTTPPost(pathUrl, params, nil, nil, 60)
 		if err == nil {
 			respObj := new(GetAccountStateResponse)
-			err = parseReponse(resp, respObj)
+			err = ParseReponse(resp, respObj)
 			if err != nil {
 				return nil, err
 			}
@@ -538,7 +551,7 @@ func (b *Bridge) EstimateGas(from, to string, value *big.Int, input []byte) (uin
 		resp, err = client.HTTPPost(pathUrl, reqArgs, nil, nil, 60)
 		if err == nil {
 			respObj := new(GasResponse)
-			err = parseReponse(resp, respObj)
+			err = ParseReponse(resp, respObj)
 			if err == nil {
 				return strconv.ParseUint(respObj.Gas, 10, 64)
 			}
