@@ -199,7 +199,7 @@ func (b *Bridge) getTransactionByHash(txHash string, urls []string) (result *Tra
 		params := make(map[string]interface{})
 		params["hash"] = txHash
 		resp, err = client.HTTPPost(url, params, nil, nil, 60)
-		if err == nil && result != nil {
+		if err == nil && resp != nil {
 			result = new(TransactionResponse)
 			err = ParseReponse(resp, result)
 			return
@@ -243,7 +243,7 @@ func (b *Bridge) getTransactionReceipt(txHash string, urls []string) (result *Tr
 		params["hash"] = txHash
 		var resp *http.Response
 		resp, err = client.HTTPPost(pathUrl, params, nil, nil, 60)
-		if err == nil && result != nil {
+		if err == nil && resp != nil {
 			tx := new(TransactionResponse)
 			err = ParseReponse(resp, tx)
 			if err != nil {
