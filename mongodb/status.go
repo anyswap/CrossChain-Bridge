@@ -39,11 +39,11 @@ type SwapStatus uint16
 const (
 	TxNotStable           SwapStatus = iota // 0
 	TxVerifyFailed                          // 1
-	TxWithWrongSender                       // 2
+	TxWithWrongSender                       // 2 // deprecated
 	TxWithWrongValue                        // 3
-	TxIncompatible                          // 4
+	TxIncompatible                          // 4 // deprecated
 	TxNotSwapped                            // 5
-	TxSwapFailed                            // 6
+	TxSwapFailed                            // 6 // deprecated
 	TxProcessed                             // 7
 	MatchTxEmpty                            // 8
 	MatchTxNotStable                        // 9

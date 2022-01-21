@@ -42,11 +42,11 @@ var (
 	ErrTxIncompatible       = errors.New("tx incompatible")
 	ErrRPCQueryError        = errors.New("rpc query error")
 	ErrEstimateGasFailed    = errors.New("estimate gas failed")
+	ErrTxWithWrongSender    = errors.New("tx with wrong sender")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
 	ErrTxWithWrongValue      = errors.New("tx with wrong value")
-	ErrTxWithWrongSender     = errors.New("tx with wrong sender")
 	ErrTxSenderNotRegistered = errors.New("tx sender not registered")
 	ErrBindAddrIsContract    = errors.New("bind address is contract")
 )
@@ -57,7 +57,6 @@ func ShouldRegisterSwapForError(err error) bool {
 	case err == nil:
 	case errors.Is(err, ErrTxWithWrongMemo):
 	case errors.Is(err, ErrTxWithWrongValue):
-	case errors.Is(err, ErrTxWithWrongSender):
 	case errors.Is(err, ErrTxSenderNotRegistered):
 	case errors.Is(err, ErrBindAddrIsContract):
 	default:
