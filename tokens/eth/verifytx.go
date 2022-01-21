@@ -107,6 +107,9 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	if !common.IsEqualIgnoreCase(txRecipient, token.DepositAddress) {
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
+	if *tx.From == (common.Address{}) {
+		return nil, tokens.ErrTxWithWrongSender
+	}
 
 	swapInfo.TxTo = txRecipient                       // TxTo
 	swapInfo.To = txRecipient                         // To
@@ -205,6 +208,9 @@ func (b *Bridge) getReceipt(swapInfo *tokens.TxSwapInfo, allowUnstable bool) (*t
 	swapInfo.Height = receipt.BlockNumber.ToInt().Uint64() // Height
 	if !receipt.IsStatusOk() {
 		return nil, tokens.ErrTxWithWrongReceipt
+	}
+	if *receipt.From == (common.Address{}) {
+		return nil, tokens.ErrTxWithWrongSender
 	}
 	return receipt, nil
 }
