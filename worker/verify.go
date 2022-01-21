@@ -177,6 +177,7 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 		errors.Is(err, tokens.ErrSwapIsClosed),
 		errors.Is(err, tokens.ErrTxWithWrongReceipt),
 		errors.Is(err, tokens.ErrTxIncompatible),
+		errors.Is(err, tokens.ErrTxWithWrongSender),
 		errors.Is(err, tokens.ErrNotFound),
 		errors.Is(err, tokens.ErrRPCQueryError):
 		return err
@@ -202,8 +203,6 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxWithWrongValue, now(), err.Error())
 	case errors.Is(err, tokens.ErrTxSenderNotRegistered):
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSenderNotRegistered, now(), err.Error())
-	case errors.Is(err, tokens.ErrTxWithWrongSender):
-		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxWithWrongSender, now(), err.Error())
 	case errors.Is(err, tokens.ErrBindAddressMismatch):
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
 	default:
