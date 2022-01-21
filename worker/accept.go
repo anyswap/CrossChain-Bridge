@@ -179,7 +179,7 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 	case // these are situations we can not judge, ignore them or disagree immediately
 		errors.Is(err, tokens.ErrTxNotStable),
 		errors.Is(err, tokens.ErrTxNotFound),
-		errors.Is(err, tokens.ErrRPCQueryError):
+		tokens.IsRPCQueryOrNotFoundError(err):
 		if isPendingInvalidAccept {
 			ctx = append(ctx, "err", err)
 			logWorkerTrace("accept", "ignore sign", ctx...)
@@ -204,8 +204,8 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 		agreeResult = acceptDisagree
 
 		disgreeReason := err.Error()
-		if len(disgreeReason) > 100 {
-			disgreeReason = disgreeReason[:100]
+		if len(disgreeReason) > 1000 {
+			disgreeReason = disgreeReason[:1000]
 		}
 		aggreeMsgContext = append(aggreeMsgContext, disgreeReason)
 		ctx = append(ctx, "disgreeReason", disgreeReason)

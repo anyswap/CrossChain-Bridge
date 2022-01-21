@@ -1,5 +1,5 @@
 # crossChain-Bridge
-cross chain bridge using DCRM technology
+Cross-Chain bridge based on Anyswap MPC network.
 
 # Install the Docker version
 ## 1. Install Docker. This depends on your platform, on Ubuntu this works:
@@ -32,7 +32,7 @@ after building, the following files will be generated in `./build/bin` directory
 
 ```text
 swapserver	# server provide api service, and trigger swap processing
-swaporacle      # oracle take part in dcrm signing (can disagree illegal transaction)
+swaporacle      # oracle take part in mpc signing (can disagree illegal transaction)
 config-example.toml
 config-tokenpair-example.toml
 ```
@@ -157,22 +157,22 @@ For the config file, please refer [config file example](https://github.com/anysw
     2. enable `auth`
     3. create user with passord to access the database
 
-2. create DCRM group
+2. create MPC group
 
-    For example, we take creating `2/3 theshold` jonitly managed DCRM group as an example.
+    For example, we take creating `2/3 theshold` jonitly managed MPC group as an example.
 
-    we have 3 users in the DCRM group, each user is running a `gdcrm` node to perform DCRM functions.
+    we have 3 users in the MPC group, each user is running a `gdcrm` node to perform MPC functions.
 
-    1. `user1` -  build raw tx and trigger DCRM signing
-    2. `user2`, `user3` - verify tx and accept the DCRM signing with `AGREE/DISAGREE` result
+    1. `user1` -  build raw tx and trigger MPC signing
+    2. `user2`, `user3` - verify tx and accept the MPC signing with `AGREE/DISAGREE` result
 
-    After created DCRM group,
+    After created MPC group,
 
-    We can get the corresponding `DCRM addresses` on supported blockchains. Then we should config `DcrmAddress` in `[SrcToken]` and `[DestToken]` section according to the blockchain of them.
+    We can get the corresponding `MPC addresses` on supported blockchains. Then we should config `DcrmAddress` in `[SrcToken]` and `[DestToken]` section according to the blockchain of them.
 
     We should config the `[Dcrm]` section accordingly（ eg. `GroupID`, `TotalOracles`，`Mode`, `DefaultNode`, etc.）
 
-    And we should config the following `[Dcrm]` section items sparately for each user in the DCRM group:
+    And we should config the following `[Dcrm]` section items sparately for each user in the MPC group:
 
     1. `KeystoreFile`
     2. `PasswordFile`
@@ -180,22 +180,22 @@ For the config file, please refer [config file example](https://github.com/anysw
 
     For example,
 
-    we are configing `user1` now, we should config `KeystoreFile` and `PasswordFile` use `user1`'s keystore and password file (we will get `user1`'s private key to sign a DCRM requesting).
+    we are configing `user1` now, we should config `KeystoreFile` and `PasswordFile` use `user1`'s keystore and password file (we will get `user1`'s private key to sign a MPC requesting).
 
-    And we should config `RPCAddress` to the RPC address of the running `gdcrm` node of `user1` (we will do RPC calls to this address to complete DCRM signing or accepting, etc.)
+    And we should config `RPCAddress` to the RPC address of the running `gdcrm` node of `user1` (we will do RPC calls to this address to complete MPC signing or accepting, etc.)
 
-3. create DCRM sub-groups for signing
+3. create MPC sub-groups for signing
 
-    In the above step we have created a `2/3 threshold` DCRM group.
+    In the above step we have created a `2/3 threshold` MPC group.
 
     In signing we only need 2 members to agree.
 
     So we prepared the sub-groups (`2/2`) for signing. (eg. user1 + user2, user1 + user3)
-    please see more detail about DCRM [here](https://github.com/fsn-dev/dcrm-walletService)
+    please see more detail about MPC [here](https://docs.multichain.org/how-it-works/)
 
     After created, we should config `SignGroups` in `[Dcrm]` accordingly.
 
-4. create mapping asset (eg. mBTC) contract **`with DCRM account`**
+4. create mapping asset (eg. mBTC) contract **`with MPC account`**
 
     mBTC is an smart contract inherit from `ERC20` and add two methods: `Swapin` and `Swapout`.
 
@@ -237,9 +237,9 @@ For the config file, please refer [config file example](https://github.com/anysw
 
     This should be a short string to identify the bridge (eg. `BTC2ETH`, `BTC2FSN`)
 
-    Different DCRM group can have same Identifier.
+    Different MPC group can have same Identifier.
 
-    It only matter if you want use a DCRM group to provide multiple crosschain bridge service, and config each bridge with a different identifier (`Notice: This way is not suggested`)
+    It only matter if you want use a MPC group to provide multiple crosschain bridge service, and config each bridge with a different identifier (`Notice: This way is not suggested`)
 
 9. config `[BtcExtra]`
 

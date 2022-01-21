@@ -10,7 +10,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
-	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 var (
@@ -62,7 +61,6 @@ var erc20CodeParts = map[string][]byte{
 }
 
 func (b *Bridge) getContractCode(contract string, onlyContractAddress bool) (code []byte, err error) {
-	isSpecialCase := types.IsOkexChain(b.SignerChainID)
 	retryCount := 3
 	for i := 0; ; i++ {
 		code, err = b.GetCode(contract)
@@ -72,7 +70,7 @@ func (b *Bridge) getContractCode(contract string, onlyContractAddress bool) (cod
 			break
 		} else if onlyContractAddress {
 			log.Warn("get contract code failed", "contract", contract, "err", "empty byte code")
-		} else if i >= retryCount || !isSpecialCase {
+		} else if i >= retryCount {
 			break
 		}
 		time.Sleep(3 * time.Second)
