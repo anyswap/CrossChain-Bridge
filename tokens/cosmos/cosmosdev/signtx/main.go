@@ -4,11 +4,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"strings"
 
+	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -215,36 +214,20 @@ func sendTx() {
 	// broadcast
 	// https://github.com/cosmos/cosmos-sdk/blob/v0.39.2/x/auth/client/rest/broadcast.go
 	fmt.Printf("\n====================\n")
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", "https://tequila-lcd.terra.dev/txs", strings.NewReader(data)) // tequila-0004
-	//req, err := http.NewRequest("POST", "http://34.71.170.158:1317/txs", strings.NewReader(data)) // stargate-final
+	bodyText, err := client.RPCRawPost("https://tequila-lcd.terra.dev/txs", data)
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	bodyText, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("\nres:\n%v\n", string(bodyText))
+	fmt.Printf("\nres:\n%v\n", bodyText)
 
 	// simulate handle broadcast
 	fmt.Printf("\n====================\n")
-	r, err := http.NewRequest("POST", "", strings.NewReader(data))
+	body, err := client.RPCRawPost("", data)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var req1 rest.BroadcastReq
-	body, readerr := ioutil.ReadAll(r.Body)
-	if readerr != nil {
-		log.Fatal(readerr)
-	}
-	unmarshalerr := CDC.UnmarshalJSON(body, &req1)
+	unmarshalerr := CDC.UnmarshalJSON([]byte(body), &req1)
 	if err != nil {
 		log.Fatal(unmarshalerr)
 	}
@@ -327,23 +310,11 @@ func broadcastTx() {
 	data := `{"tx":{"fee":{"amount":[{"amount":"100000","denom":"uusd"}],"gas":"500000"},"memo":"SWAPTX:0xa3bf351895d9e1dc24c08c0a20791dd90edae99e22247b951cc801001a77f145","msg":[{"type":"bank/MsgSend","value":{"amount":[{"amount":"4990000","denom":"uusd"}],"from_address":"terra1tgfzuquds5y3au839k3j7uxtxmf238mrspja4w","to_address":"terra1qkgfhdpty79qaszfzudty5554szxtn7nwxg8m0"}}],"signatures":[{"account_number":"57627","pub_key":{"type":"tendermint/PubKeySecp256k1","value":"AljodpCA86kcxlMSpnw+3PEzRngQ7jXnFaNHvAkGUGyu"},"sequence":"0","signature":"3saudFec3r1PNwbFtkuqgh5LPwVZnxtWQvF9sFxlDCZ7aGT/QRNJPwjhDBLawi/b3SMeWyXRrqWnI2CgXYppKw=="}]},"mode":"block"}`
 	//data := `{"tx":{"fee":{"amount":[{"amount":"70000","denom":"uusd"}],"gas":"500000"},"memo":"SWAPTX:0xa3bf351895d9e1dc24c08c0a20791dd90edae99e22247b951cc801001a77f145","msg":[{"type":"bank/MsgSend","value":{"amount":[{"amount":"4990000","denom":"uusd"}],"from_address":"terra1tgfzuquds5y3au839k3j7uxtxmf238mrspja4w","to_address":"terra1qkgfhdpty79qaszfzudty5554szxtn7nwxg8m0"}}],"signatures":[{"account_number":"57627","pub_key":{"type":"tendermint/PubKeySecp256k1","value":"AljodpCA86kcxlMSpnw+3PEzRngQ7jXnFaNHvAkGUGyu"},"sequence":"0","signature":"+82JHMNh2SwhlzYehvWLH5nIFTy17IMPGSeXsgyWI2gXir+RAKyisqDyM6PO/HqLKITfKuBq8gHlj37jEOiUAA=="}]},"mode":"block"}`
 	//data := `{"tx":{"fee":{"amount":[{"amount":"50000","denom":"uluna"}],"gas":"300000"},"memo":"SWAPTX:0xcd86d1ed7c8665ff7a5d84c002c60a48d20c7404f546aa0942c70f74c21f67e3","msg":[{"type":"bank/MsgSend","value":{"amount":[{"amount":"190000","denom":"uluna"}],"from_address":"terra10rf55rx37vrtc4ws7l8v950whvwq9znmk7d9ka","to_address":"terra1sn0erxvhpvnk0m2u0aluht95eqq5zj3ykmxk73"}}],"signatures":[{"account_number":"28986","pub_key":{"type":"tendermint/PubKeySecp256k1","value":"AtODCd/f2a3xKSh7aM8uHxEk4MvEDMmPlOXy0jwmcS+j"},"sequence":"0","signature":"Cbfb7onnqX+tLFcCPuKqBGpyHTfgebCAHl48guvOj2Ui3J31BF59XGZXKqUTejAYJLMWFFIyYFZ9kfCF1qXamQ=="}]},"mode":"block"}`
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", "https://tequila-lcd.terra.dev/txs", strings.NewReader(data)) // tequila-0004
-	//req, err := http.NewRequest("POST", "http://34.71.170.158:1317/txs", strings.NewReader(data)) // stargate-final
+	bodyText, err := client.RPCRawPost("https://tequila-lcd.terra.dev/txs", data)
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.Header.Set("accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	bodyText, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("\nres:\n%v\n", string(bodyText))
+	fmt.Printf("\nres:\n%v\n", bodyText)
 	//bodyText = []byte(`{"height":"2934360","txhash":"57E767BF5BEDF7A5AB9CF6894813F4D0445CD737950C7B626CD85434EBDF28E5","raw_log":"[{"msg_index":0,"log":"","events":[{"type":"message","attributes":[{"key":"action","value":"send"},{"key":"sender","value":"terra10rf55rx37vrtc4ws7l8v950whvwq9znmk7d9ka"},{"key":"module","value":"bank"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"terra1sn0erxvhpvnk0m2u0aluht95eqq5zj3ykmxk73"},{"key":"sender","value":"terra10rf55rx37vrtc4ws7l8v950whvwq9znmk7d9ka"},{"key":"amount","value":"190000uluna"}]}]}]","logs":[{"msg_index":0,"log":"","events":[{"type":"message","attributes":[{"key":"action","value":"send"},{"key":"sender","value":"terra10rf55rx37vrtc4ws7l8v950whvwq9znmk7d9ka"},{"key":"module","value":"bank"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"terra1sn0erxvhpvnk0m2u0aluht95eqq5zj3ykmxk73"},{"key":"sender","value":"terra10rf55rx37vrtc4ws7l8v950whvwq9znmk7d9ka"},{"key":"amount","value":"190000uluna"}]}]}],"gas_wanted":"300000","gas_used":"70494"}`)
 	var res map[string]interface{}
 	err = json.Unmarshal([]byte(bodyText), &res)

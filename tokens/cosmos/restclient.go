@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/big"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -23,6 +21,7 @@ import (
 	ttypes "github.com/tendermint/tendermint/types"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
@@ -710,32 +709,17 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 		api := endpoint + "/txs"
 		log.Info("!!! broadcast", "api", api)
 
-		client := &http.Client{}
-
-		req, err := http.NewRequest("POST", api, strings.NewReader(data))
+		bodyText, err := client.RPCRawPost(api, data)
 		if err != nil {
-			continue
-		}
-		req.Header.Set("accept", "application/json")
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Warn("Broadcast tx error", "error", err)
-			continue
-		}
-		defer func() {
-			_ = resp.Body.Close()
-		}()
-		bodyText, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
+			log.Warn("broadcast tx error", "err", err)
 			continue
 		}
 
-		log.Info("Broadcast tx", "resp", string(bodyText))
-		bodyDec, decbase64err := base64.StdEncoding.DecodeString(string(bodyText))
+		log.Info("Broadcast tx", "resp", bodyText)
+		bodyDec, decbase64err := base64.StdEncoding.DecodeString(bodyText)
 		if decbase64err != nil {
 			log.Warn("Broadcast tx error", "decode base64 error", decbase64err)
-			bodyDec = bodyText
+			bodyDec = []byte(bodyText)
 		}
 		log.Info("Broadcast tx", "resp", string(bodyDec))
 
@@ -818,30 +802,15 @@ func (b *Bridge) EstimateFee(tx StdSignContent) (authtypes.StdFee, error) {
 		endpoint = strings.TrimSuffix(endpoint, "/")
 		api := endpoint + "/txs/estimate_fee"
 
-		client := &http.Client{}
-
-		req, err := http.NewRequest("POST", api, strings.NewReader(data))
+		bodyText, err := client.RPCRawPost(api, data)
 		if err != nil {
-			continue
-		}
-		req.Header.Set("accept", "application/json")
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Warn("Estimate fee error", "error", err)
-			continue
-		}
-		defer func() {
-			_ = resp.Body.Close()
-		}()
-		bodyText, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
+			log.Warn("estimate fee error", "err", err)
 			continue
 		}
 
 		log.Info("Estimate fee", "resp", bodyText)
 		feeres := make(map[string]interface{})
-		unmarshalerr := json.Unmarshal(bodyText, &feeres)
+		unmarshalerr := json.Unmarshal([]byte(bodyText), &feeres)
 		if unmarshalerr != nil {
 			return authtypes.StdFee{}, errors.New("estimate fee failed")
 		}
