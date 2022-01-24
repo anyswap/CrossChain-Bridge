@@ -17,6 +17,7 @@ func (b *Bridge) IsValidAddress(address string) bool {
 	return true
 }
 
+// EqualAddress equal address
 func (b *Bridge) EqualAddress(address1, address2 string) bool {
 	acc1, err1 := sdk.AccAddressFromBech32(address1)
 	acc2, err2 := sdk.AccAddressFromBech32(address2)

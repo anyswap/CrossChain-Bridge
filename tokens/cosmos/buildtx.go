@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// constants
 const (
 	TerraNative = "TerraNative"
 )

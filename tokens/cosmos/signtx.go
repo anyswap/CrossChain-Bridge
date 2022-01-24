@@ -24,6 +24,7 @@ const (
 	retryGetSignStatusInterval = 10 * time.Second
 )
 
+// TxEncoder tx encoder
 var TxEncoder = authtypes.DefaultTxEncoder(CDC)
 
 func (b *Bridge) verifyTransactionWithArgs(tx StdSignContent, args *tokens.BuildTxArgs) error {

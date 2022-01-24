@@ -17,8 +17,8 @@ func newTestBridge() *Bridge {
 		Identifier: "TEQUILA2RINKEBY",
 	})
 	cosmos.GetFeeAmount = b.FeeGetter()
-	b.SupportedCoins["LUNA"] = cosmos.CosmosCoin{Denom: "uluna", Decimal: 6}
-	b.SupportedCoins["UST"] = cosmos.CosmosCoin{Denom: "uusd", Decimal: 6}
+	b.SupportedCoins["LUNA"] = cosmos.Coin{Denom: "uluna", Decimal: 6}
+	b.SupportedCoins["UST"] = cosmos.Coin{Denom: "uusd", Decimal: 6}
 	b.MainCoin = b.SupportedCoins["LUNA"]
 	return b
 }

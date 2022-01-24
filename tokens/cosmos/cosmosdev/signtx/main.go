@@ -26,6 +26,7 @@ import (
 	terrabank "github.com/terra-project/core/x/bank"
 )
 
+// CDC cdc
 var CDC = amino.NewCodec()
 
 func init() {
@@ -49,6 +50,7 @@ func init() {
 	terraauth.RegisterCodec(CDC)
 }
 
+// ChainID chainID
 var ChainID = "tequila-0004"
 
 //var ChainID = "stargate-final"
@@ -277,6 +279,7 @@ func sendTx() {
 	fmt.Printf("\nvalid2:\n%v\n", valid2)
 }
 
+// PublicKeyToAddress public key to address
 func PublicKeyToAddress(pubKeyHex string) (address string, err error) {
 	pubKeyHex = strings.TrimPrefix(pubKeyHex, "0x")
 	bb, err := hex.DecodeString(pubKeyHex)
@@ -300,6 +303,7 @@ func PublicKeyToAddress(pubKeyHex string) (address string, err error) {
 	return
 }
 
+// StdSignBytes std sign bytes
 func StdSignBytes(chainID string, accnum uint64, sequence uint64, fee authtypes.StdFee, msgs []sdk.Msg, memo string) []byte {
 	msgsBytes := make([]json.RawMessage, 0, len(msgs))
 	for _, msg := range msgs {

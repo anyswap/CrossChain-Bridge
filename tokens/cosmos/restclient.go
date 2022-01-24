@@ -32,6 +32,7 @@ https://cosmos.network/rpc/v0.39.2
 https://lcd.terra.dev/swagger-ui/#/
 */
 
+// CDC cdc
 var CDC = amino.NewCodec()
 
 // TimeFormat is cosmos time format
@@ -267,6 +268,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 	return
 }
 
+// ResultBlock result block
 type ResultBlock struct {
 	//BlockMeta *ttypes.BlockMeta `json:"block_meta"`
 	Block *ttypes.Block `json:"block"`
@@ -366,6 +368,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	return height, nil
 }
 
+// GetAccountNumber get account number
 func GetAccountNumber(endpoint, address string) (uint64, error) {
 	client := resty.New()
 
@@ -421,6 +424,7 @@ func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 	return 0, nil
 }
 
+// GetPoolNonce get pool nonce
 func GetPoolNonce(endpoint, address, height string) (uint64, error) {
 	client := resty.New()
 
@@ -754,6 +758,7 @@ func (b *Bridge) BroadcastTx(tx HashableStdTx) (string, error) {
 	return txhash, errors.New("broadcast tx failed")
 }
 
+// EstimateFee estimate fee
 func (b *Bridge) EstimateFee(tx StdSignContent) (authtypes.StdFee, error) {
 	/*
 		Req
@@ -781,14 +786,14 @@ func (b *Bridge) EstimateFee(tx StdSignContent) (authtypes.StdFee, error) {
 	}
 
 	reqdata := make(map[string]interface{})
-	base_req := make(map[string]interface{})
-	base_req["from"] = sendmsg.FromAddress.String()
-	base_req["memo"] = tx.Memo
-	base_req["chain_id"] = tx.ChainID
-	base_req["account_number"] = tx.AccountNumber
-	base_req["sequence"] = tx.Sequence
-	base_req["simulate"] = false
-	reqdata["base_req"] = base_req
+	baseReq := make(map[string]interface{})
+	baseReq["from"] = sendmsg.FromAddress.String()
+	baseReq["memo"] = tx.Memo
+	baseReq["chain_id"] = tx.ChainID
+	baseReq["account_number"] = tx.AccountNumber
+	baseReq["sequence"] = tx.Sequence
+	baseReq["simulate"] = false
+	reqdata["base_req"] = baseReq
 	msgs := make([]interface{}, 0)
 	msg := struct {
 		Type  string      `json:"type"`

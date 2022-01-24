@@ -19,11 +19,12 @@ const (
 	AttributeValueCategory = ModuleName
 )
 
+// module name
 const (
-	// module name
 	ModuleName   = "bank"
 	QuerierRoute = ModuleName
 )
+
 const (
 	// DefaultParamspace for params keeper
 	DefaultParamspace = ModuleName
@@ -31,6 +32,7 @@ const (
 	DefaultSendEnabled = true
 )
 
+// message types
 const (
 	TypeMsgSend      = "send"
 	TypeMsgMultiSend = "multisend"
@@ -55,12 +57,13 @@ func validateSendEnabled(i interface{}) error {
 	return nil
 }
 
-// Register concrete types on codec codec
+// RegisterCodec concrete types on codec codec
 func RegisterCodec(cdc *codec.Codec) {
 	cdc.RegisterConcrete(MsgSend{}, "cosmos-sdk/MsgSend", nil)
 	cdc.RegisterConcrete(MsgMultiSend{}, "cosmos-sdk/MsgMultiSend", nil)
 }
 
+// ModuleCdc module cdc
 var ModuleCdc *codec.Codec
 
 func init() {

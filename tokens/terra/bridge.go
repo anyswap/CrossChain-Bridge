@@ -55,17 +55,17 @@ func (b *Bridge) AfterConfig() {
 	// Load coins from token configs
 	b.LoadCoins()
 	// You must add this coin
-	// b.SupportedCoins["LUNA"] = cosmos.CosmosCoin{"uluna", 6}
+	// b.SupportedCoins["LUNA"] = cosmos.Coin{"uluna", 6}
 	// You can add these coins to config
 	/*
-		b.SupportedCoins["UST"] = cosmos.CosmosCoin{"uusd", 6}
-		b.SupportedCoins["KRT"] = cosmos.CosmosCoin{"ukrw", 6}
-		b.SupportedCoins["SDT"] = cosmos.CosmosCoin{"usdr", 6}
-		b.SupportedCoins["CNY"] = cosmos.CosmosCoin{"ucny", 6}
-		b.SupportedCoins["JPY"] = cosmos.CosmosCoin{"ujpy", 6}
-		b.SupportedCoins["EUR"] = cosmos.CosmosCoin{"ueur", 6}
-		b.SupportedCoins["GBP"] = cosmos.CosmosCoin{"ugbp", 6}
-		b.SupportedCoins["MNT"] = cosmos.CosmosCoin{"umnt", 6}
+		b.SupportedCoins["UST"] = cosmos.Coin{"uusd", 6}
+		b.SupportedCoins["KRT"] = cosmos.Coin{"ukrw", 6}
+		b.SupportedCoins["SDT"] = cosmos.Coin{"usdr", 6}
+		b.SupportedCoins["CNY"] = cosmos.Coin{"ucny", 6}
+		b.SupportedCoins["JPY"] = cosmos.Coin{"ujpy", 6}
+		b.SupportedCoins["EUR"] = cosmos.Coin{"ueur", 6}
+		b.SupportedCoins["GBP"] = cosmos.Coin{"ugbp", 6}
+		b.SupportedCoins["MNT"] = cosmos.Coin{"umnt", 6}
 	*/
 	if luna, ok := b.SupportedCoins["LUNA"]; !ok || luna.Denom != "uluna" || luna.Decimal != 6 {
 		log.Info("Terra init coins", "luna", luna, "ok", ok, "check denom", (luna.Denom != "uluna"), "check decimal", luna.Decimal != 6)
@@ -141,6 +141,8 @@ func (b *Bridge) InitLatestBlockNumber() {
 
 // DefaultSwapoutGas is terra default gas
 var DefaultSwapoutGas uint64 = 98000
+
+// Denominator denominator
 var Denominator int64 = 10000
 
 // FeeGetter returns terra fee getter

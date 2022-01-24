@@ -19,8 +19,8 @@ var (
 	ChainIDs = make(map[string]bool)
 )
 
-// CosmosBridgeInterface interface
-type CosmosBridgeInterface interface {
+// BridgeInterface interface
+type BridgeInterface interface {
 	BeforeConfig()
 	AfterConfig()
 }
@@ -34,7 +34,7 @@ func (b *Bridge) BeforeConfig() {
 	initTxHashCdc()
 	ChainIDs["cosmos-hub4"] = true
 	ChainIDs["stargate-final"] = true
-	// SupportedCoins["ATOM"] = CosmosCoin{"uatom", 9}
+	// SupportedCoins["ATOM"] = Coin{"uatom", 9}
 }
 
 // AfterConfig run after loading bridge and token config
@@ -72,12 +72,12 @@ func (b *Bridge) LoadCoins() {
 		name := strings.ToUpper(tokenCfg.PairID)
 		unit := tokenCfg.SrcToken.Unit
 		decimal := *(tokenCfg.SrcToken.Decimals)
-		b.SupportedCoins[name] = CosmosCoin{unit, decimal}
+		b.SupportedCoins[name] = Coin{unit, decimal}
 	}
 }
 
 // GetCoin returns supported coin by name
-func (b *Bridge) GetCoin(name string) (CosmosCoin, bool) {
+func (b *Bridge) GetCoin(name string) (Coin, bool) {
 	name = strings.ToUpper(name)
 	coin, ok := b.SupportedCoins[name]
 	if !ok {
@@ -87,8 +87,8 @@ func (b *Bridge) GetCoin(name string) (CosmosCoin, bool) {
 	return coin, ok
 }
 
-// CosmosCoin struct
-type CosmosCoin struct {
+// Coin struct
+type Coin struct {
 	Denom   string
 	Decimal uint8
 }
@@ -98,9 +98,9 @@ type Bridge struct {
 	*tokens.CrossChainBridgeBase
 	*eth.NonceSetterBase
 	// MainCoin is the gas coin
-	MainCoin CosmosCoin
+	MainCoin Coin
 	// SupportedCoins save cosmos coins
-	SupportedCoins map[string]CosmosCoin
+	SupportedCoins map[string]Coin
 }
 
 // NewCrossChainBridge new bridge
@@ -108,7 +108,7 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	return &Bridge{
 		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
 		NonceSetterBase:      eth.NewNonceSetterBase(),
-		SupportedCoins:       make(map[string]CosmosCoin),
+		SupportedCoins:       make(map[string]Coin),
 	}
 }
 
@@ -194,6 +194,7 @@ func initTxHashCdc() {
 	txhashcdc.RegisterInterface((*sdk.Msg)(nil), nil)
 }
 
+// CaluculateTxHash calculate tx hash
 var CaluculateTxHash = func(signedTx HashableStdTx) (string, error) {
 	return tokens.StubSignedTxHash, nil // TODO
 }

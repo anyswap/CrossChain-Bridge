@@ -81,7 +81,7 @@ func InitCrossChainBridge(isServer bool) {
 
 	switch BlockChain {
 	case "COSMOS", "TERRA":
-		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).BeforeConfig()
+		tokens.SrcBridge.(cosmos.BridgeInterface).BeforeConfig()
 	}
 
 	tokens.SrcBridge.SetChainAndGateway(srcChain, srcGateway)
@@ -113,7 +113,7 @@ func InitCrossChainBridge(isServer bool) {
 	case "BLOCK":
 		block.Init(cfg.BtcExtra)
 	case "COSMOS", "TERRA":
-		tokens.SrcBridge.(cosmos.CosmosBridgeInterface).AfterConfig()
+		tokens.SrcBridge.(cosmos.BridgeInterface).AfterConfig()
 	case "COLX":
 		colx.Init(cfg.BtcExtra)
 	default:

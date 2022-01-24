@@ -45,8 +45,8 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	return nil, fmt.Errorf("No swap info, errors: %v", errs)
 }
 
-// NotSupportedCoinErr is an error
-var NotSupportedCoinErr = errors.New("coin not supported")
+// ErrNotSupportedCoin is an error
+var ErrNotSupportedCoin = errors.New("coin not supported")
 
 // getPairID returns pairID corresponding to given coin
 // returns error when coin type not supported
@@ -63,7 +63,7 @@ func (b *Bridge) getPairID(coin sdk.Coin) (string, error) {
 			return strings.ToLower(k), nil
 		}
 	}
-	return "", NotSupportedCoinErr
+	return "", ErrNotSupportedCoin
 }
 
 func (b *Bridge) verifySwapinTxWithHash(pairID, txHash string, allowUnstable bool) (swapInfos []*tokens.TxSwapInfo, errs []error) {
@@ -213,10 +213,9 @@ func (b *Bridge) GetBindAddressFromMemo(tx sdk.Tx) (address string, ok bool) {
 	if ok = dstBridge.IsValidAddress(memo); ok {
 		memo = strings.ToLower(memo)
 		return memo, ok
-	} else {
-		log.Warn("GetBindAddressFromMemo: memo is not a valid address", "memo", memo)
-		return "", false
 	}
+	log.Warn("GetBindAddressFromMemo: memo is not a valid address", "memo", memo)
+	return "", false
 }
 
 func (b *Bridge) checkSwapinBindAddress(bindAddr string) error {
