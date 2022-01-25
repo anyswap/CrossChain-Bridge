@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCallBridge(t *testing.T) {
+func TestCallBridgeReceipt(t *testing.T) {
 	bridge := NewCrossChainBridge(true)
 
 	baseurl := "https://testnet.nebulas.io"
@@ -15,4 +15,16 @@ func TestCallBridge(t *testing.T) {
 	resp, err := bridge.getTransactionByHash(hash, []string{baseurl})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
+
+	price, err := getMedianGasPrice([]string{baseurl})
+	assert.Nil(t, err)
+	assert.NotNil(t, price)
+}
+
+func TestCallBridgePrice(t *testing.T) {
+	baseurl := "https://testnet.nebulas.io"
+
+	price, err := getMedianGasPrice([]string{baseurl})
+	assert.Nil(t, err)
+	assert.NotNil(t, price)
 }

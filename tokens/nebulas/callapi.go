@@ -314,7 +314,7 @@ func getMedianGasPrice(urlsSlice ...[]string) (*big.Int, error) {
 	for _, urls := range urlsSlice {
 		urlCount += len(urls)
 		for _, url := range urls {
-			var result GasPriceResponse
+			var result PriceResponse
 			url = fmt.Sprintf("%s/v1/user/getGasPrice", url)
 			err = client.RPCGet(&result, url)
 			if err != nil {
@@ -322,7 +322,7 @@ func getMedianGasPrice(urlsSlice ...[]string) (*big.Int, error) {
 				continue
 			}
 			n := new(big.Int)
-			gasPrice, ok := n.SetString(result.GasPrice, 10)
+			gasPrice, ok := n.SetString(result.Result.GasPrice, 10)
 			if !ok {
 				logFunc("call getGasPrice parse failed")
 				continue

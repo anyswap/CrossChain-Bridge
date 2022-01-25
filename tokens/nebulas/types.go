@@ -238,6 +238,10 @@ type GasPriceResponse struct {
 	GasPrice string `protobuf:"bytes,1,opt,name=gas_price,json=gasPrice,proto3" json:"gas_price,omitempty"`
 }
 
+type PriceResponse struct {
+	Result GasPriceResponse `json:"result"`
+}
+
 type SendTransactionResponse struct {
 	// Hex string of transaction hash.
 	Txhash string `protobuf:"bytes,1,opt,name=txhash,proto3" json:"txhash,omitempty"`
