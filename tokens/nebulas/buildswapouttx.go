@@ -27,10 +27,6 @@ func (b *Bridge) buildSwapoutTxInput(args *tokens.BuildTxArgs) (err error) {
 	}
 
 	swapValue := tokens.CalcSwappedValue(args.PairID, args.OriginValue, false, args.OriginFrom, args.OriginTxTo)
-	swapValue, err = b.adjustSwapValue(args, swapValue)
-	if err != nil {
-		return err
-	}
 	args.SwapValue = swapValue // swap value
 
 	if token.ContractAddress == "" {
@@ -78,6 +74,7 @@ func (b *Bridge) adjustSwapValue(args *tokens.BuildTxArgs, swapValue *big.Int) (
 	}
 
 	gasPrice := args.GetTxGasPrice()
+	log.Debug("adjustSwapValue", "gasPrice", gasPrice, "args", args, "baseGasPrice", baseGasPrice)
 	if gasPrice.Cmp(baseGasPrice) <= 0 {
 		return swapValue, nil
 	}

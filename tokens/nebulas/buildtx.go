@@ -36,16 +36,12 @@ func (b *Bridge) buildNonswapTx(args *tokens.BuildTxArgs) (rawTx interface{}, er
 
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
+	log.Debug("BuildRawTransaction", "args", args)
 	if args.SwapType == tokens.NoSwapType {
 		return b.buildNonswapTx(args)
 	}
 
 	err = b.checkBuildTxArgs(args)
-	if err != nil {
-		return nil, err
-	}
-
-	err = b.setDefaults(args)
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +56,11 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, tokens.ErrUnknownSwapType
 	}
 
+	if err != nil {
+		return nil, err
+	}
+
+	err = b.setDefaults(args)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +210,7 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (err error) {
 			input = *args.Input
 		}
 
-		esGasLimit, errf := b.EstimateGas(args.From, args.To, args.Value, input)
+		esGasLimit, errf := b.EstimateGas(args.From, args.Bind, args.Value, input)
 		if errf != nil {
 			log.Error(fmt.Sprintf("build %s tx estimate gas failed", args.SwapType.String()),
 				"swapID", args.SwapID, "from", args.From, "to", args.To,

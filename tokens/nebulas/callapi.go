@@ -1,6 +1,7 @@
 package nebulas
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -286,8 +287,12 @@ func getMaxPoolNonce(account *Address, height string, urls []string) (maxNonce u
 			if err != nil {
 				return 0, err
 			}
-			if astate.Nonce > maxNonce {
-				maxNonce = astate.Nonce
+			nonce, err := strconv.ParseUint(astate.Nonce, 10, 64)
+			if err != nil {
+				return 0, err
+			}
+			if nonce > maxNonce {
+				maxNonce = nonce
 			}
 		}
 	}
@@ -537,7 +542,9 @@ func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 
 // EstimateGas call eth_estimateGas
 func (b *Bridge) EstimateGas(from, to string, value *big.Int, input []byte) (uint64, error) {
+	log.Info("请注意 EstimateGas", "from", from, "to", to, "value", value, "input", hex.EncodeToString(input))
 	payload, er := LoadCallPayload(input)
+	log.Info("请注意 EstimateGas", "payload", payload, "er", er)
 	if er != nil {
 		return 0, er
 	}
