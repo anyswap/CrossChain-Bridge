@@ -108,11 +108,12 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		return nil, err
 	}
 	var (
-		value    = args.Value
-		extra    = args.Extra.EthExtra
-		nonce    = *extra.Nonce
-		gasLimit = *extra.Gas
-		gasPrice = extra.GasPrice
+		value     = args.Value
+		extra     = args.Extra.EthExtra
+		nonce     = *extra.Nonce
+		gasLimit  = *extra.Gas
+		gasPrice  = extra.GasPrice
+		timestamp = *extra.Timestamp
 	)
 
 	var input []byte
@@ -151,9 +152,10 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		nonce:     nonce,
 		gasPrice:  gasPrice,
 		gasLimit:  gasLimit,
-		timestamp: time.Now().Unix(),
+		timestamp: timestamp,
 		data:      data,
 	}
+	log.Debug("buildTx", "rawTx", fmt.Sprintf("%+v", rawTx))
 
 	ctx := []interface{}{"identifier", args.Identifier,
 		"chainID", b.ChainConfig.GetChainID(), "pairID", args.PairID, "swapID", args.SwapID,
@@ -225,6 +227,10 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (err error) {
 		}
 		extra.Gas = new(uint64)
 		*extra.Gas = esGasLimit
+	}
+	if extra.Timestamp == nil {
+		extra.Timestamp = new(int64)
+		*extra.Timestamp = time.Now().Unix()
 	}
 	return nil
 }
