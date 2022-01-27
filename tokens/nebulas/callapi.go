@@ -1,7 +1,6 @@
 package nebulas
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -472,6 +471,7 @@ func ParseReponse(resp *http.Response, v interface{}) error {
 // CallContract call eth_call
 func (b *Bridge) CallContract(contract string, value string, fun string, args string) (string, error) {
 	reqArgs := buildTxArgs("", contract, value, fun, args)
+	log.Debug("CallContract", "reqArgs", reqArgs)
 	gateway := b.GatewayConfig
 	var err error
 	for _, apiAddress := range gateway.APIAddress {
@@ -542,9 +542,7 @@ func (b *Bridge) GetBalance(account string) (*big.Int, error) {
 
 // EstimateGas call eth_estimateGas
 func (b *Bridge) EstimateGas(from, to string, value *big.Int, input []byte) (uint64, error) {
-	log.Info("请注意 EstimateGas", "from", from, "to", to, "value", value, "input", hex.EncodeToString(input))
 	payload, er := LoadCallPayload(input)
-	log.Info("请注意 EstimateGas", "payload", payload, "er", er)
 	if er != nil {
 		return 0, er
 	}

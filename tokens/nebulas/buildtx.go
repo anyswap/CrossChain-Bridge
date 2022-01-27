@@ -210,7 +210,7 @@ func (b *Bridge) setDefaults(args *tokens.BuildTxArgs) (err error) {
 			input = *args.Input
 		}
 
-		esGasLimit, errf := b.EstimateGas(args.From, args.Bind, args.Value, input)
+		esGasLimit, errf := b.EstimateGas(args.From, args.To, args.Value, input)
 		if errf != nil {
 			log.Error(fmt.Sprintf("build %s tx estimate gas failed", args.SwapType.String()),
 				"swapID", args.SwapID, "from", args.From, "to", args.To,
