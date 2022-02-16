@@ -250,6 +250,17 @@ func (tx *Transaction) String() string {
 	)
 }
 
+func (tx *Transaction) FromBytes(bytes []byte) error {
+	pbTx := new(corepb.Transaction)
+	if err := proto.Unmarshal(bytes, pbTx); err != nil {
+		return err
+	}
+	if err := tx.FromProto(pbTx); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (tx *Transaction) Bytes() ([]byte, error) {
 	pb, _ := tx.ToProto()
 	data, err := proto.Marshal(pb)

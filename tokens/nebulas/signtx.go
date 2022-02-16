@@ -168,6 +168,7 @@ func (b *Bridge) CalcTransactionHash(tx *Transaction) (txHash string, err error)
 		if err != nil {
 			return "", err
 		}
+		tx.hash = hash
 	}
 	return hash.String(), nil
 }
