@@ -23,7 +23,7 @@ import (
 	"encoding/base64"
 
 	keccak "github.com/nebulasio/go-nebulas/crypto/sha3"
-	"golang.org/x/crypto/ripemd160"
+	"golang.org/x/crypto/ripemd160" // nolint:staticcheck
 	"golang.org/x/crypto/sha3"
 )
 
