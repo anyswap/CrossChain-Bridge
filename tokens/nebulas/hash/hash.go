@@ -33,6 +33,7 @@ const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 var bcEncoding = base64.NewEncoding(alphabet)
 
 // Sha256 returns the SHA-256 digest of the data.
+// nolint:errcheck
 func Sha256(args ...[]byte) []byte {
 	hasher := sha256.New()
 	for _, bytes := range args {
@@ -42,6 +43,7 @@ func Sha256(args ...[]byte) []byte {
 }
 
 // Sha3256 returns the SHA3-256 digest of the data.
+// nolint:errcheck
 func Sha3256(args ...[]byte) []byte {
 	hasher := sha3.New256()
 	for _, bytes := range args {
@@ -51,6 +53,7 @@ func Sha3256(args ...[]byte) []byte {
 }
 
 // Keccak256 returns the Keccak-256 digest of the data.
+// nolint:errcheck
 func Keccak256(data ...[]byte) []byte {
 	d := keccak.NewKeccak256()
 	for _, b := range data {
@@ -60,6 +63,7 @@ func Keccak256(data ...[]byte) []byte {
 }
 
 // Ripemd160 return the RIPEMD160 digest of the data.
+// nolint:errcheck
 func Ripemd160(args ...[]byte) []byte {
 	hasher := ripemd160.New()
 	for _, bytes := range args {

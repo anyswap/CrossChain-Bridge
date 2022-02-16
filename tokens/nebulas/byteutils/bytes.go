@@ -167,6 +167,7 @@ func Equal(a []byte, b []byte) bool {
 }
 
 // HashBytes return bytes hash
+// nolint:errcheck
 func HashBytes(a []byte) uint32 {
 	hasherA := fnv.New32a()
 	hasherA.Write(a)
