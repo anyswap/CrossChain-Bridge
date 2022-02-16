@@ -158,13 +158,12 @@ func GetBigValueThreshold(pairID string, isSrc bool) *big.Int {
 }
 
 // CheckSwapValue check swap value is in right range
-func CheckSwapValue(pairID string, value *big.Int, isSrc bool) bool {
-	swappedValue := CalcSwappedValue(pairID, value, isSrc)
-	return swappedValue.Sign() > 0
+func CheckSwapValue(inf *TxSwapInfo, isSrc bool) bool {
+	return CalcSwappedValue(inf.PairID, inf.Value, isSrc, inf.From, inf.TxTo).Sign() > 0
 }
 
 // CalcSwappedValue calc swapped value (get rid of fee)
-func CalcSwappedValue(pairID string, value *big.Int, isSrc bool) *big.Int {
+func CalcSwappedValue(pairID string, value *big.Int, isSrc bool, from, txto string) *big.Int {
 	if value == nil || value.Sign() <= 0 {
 		return big.NewInt(0)
 	}
@@ -174,7 +173,10 @@ func CalcSwappedValue(pairID string, value *big.Int, isSrc bool) *big.Int {
 	if value.Cmp(token.minSwap) < 0 {
 		return big.NewInt(0)
 	}
-	if value.Cmp(token.maxSwap) > 0 {
+
+	isInBigValueWhitelist := token.IsInBigValueWhitelist(from) || token.IsInBigValueWhitelist(txto)
+
+	if !isInBigValueWhitelist && value.Cmp(token.maxSwap) > 0 {
 		return big.NewInt(0)
 	}
 
@@ -182,26 +184,31 @@ func CalcSwappedValue(pairID string, value *big.Int, isSrc bool) *big.Int {
 		return value
 	}
 
-	feeRateMul1e18 := new(big.Int).SetUint64(uint64(*token.SwapFeeRate * 1e18))
-	swapFee := new(big.Int).Mul(value, feeRateMul1e18)
-	swapFee.Div(swapFee, big.NewInt(1e18))
+	var swapFee, adjustBaseFee *big.Int
 
-	if swapFee.Cmp(token.minSwapFee) < 0 {
+	if isInBigValueWhitelist {
 		swapFee = token.minSwapFee
-	} else if swapFee.Cmp(token.maxSwapFee) > 0 {
-		swapFee = token.maxSwapFee
-	}
+	} else {
+		feeRateMul1e18 := new(big.Int).SetUint64(uint64(*token.SwapFeeRate * 1e18))
+		swapFee = new(big.Int).Mul(value, feeRateMul1e18)
+		swapFee.Div(swapFee, big.NewInt(1e18))
 
-	var adjustBaseFee *big.Int
-	if GetNonceSetter(!isSrc) != nil { // eth-like
-		chainCfg := GetCrossChainBridge(!isSrc).GetChainConfig()
-		if chainCfg.BaseFeePercent != 0 && token.minSwapFee.Sign() > 0 {
-			adjustBaseFee = new(big.Int).Set(token.minSwapFee)
-			adjustBaseFee.Mul(adjustBaseFee, big.NewInt(chainCfg.BaseFeePercent))
-			adjustBaseFee.Div(adjustBaseFee, big.NewInt(100))
-			swapFee = new(big.Int).Add(swapFee, adjustBaseFee)
-			if swapFee.Sign() < 0 {
-				swapFee = big.NewInt(0)
+		if swapFee.Cmp(token.minSwapFee) < 0 {
+			swapFee = token.minSwapFee
+		} else if swapFee.Cmp(token.maxSwapFee) > 0 {
+			swapFee = token.maxSwapFee
+		}
+
+		if GetNonceSetter(!isSrc) != nil { // eth-like
+			chainCfg := GetCrossChainBridge(!isSrc).GetChainConfig()
+			if chainCfg.BaseFeePercent != 0 && token.minSwapFee.Sign() > 0 {
+				adjustBaseFee = new(big.Int).Set(token.minSwapFee)
+				adjustBaseFee.Mul(adjustBaseFee, big.NewInt(chainCfg.BaseFeePercent))
+				adjustBaseFee.Div(adjustBaseFee, big.NewInt(100))
+				swapFee = new(big.Int).Add(swapFee, adjustBaseFee)
+				if swapFee.Sign() < 0 {
+					swapFee = big.NewInt(0)
+				}
 			}
 		}
 	}

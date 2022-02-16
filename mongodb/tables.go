@@ -9,6 +9,7 @@ type MgoSwap struct {
 	Key       string     `bson:"_id"` // txid + pairid + bind
 	PairID    string     `bson:"pairid"`
 	TxID      string     `bson:"txid"`
+	From      string     `bson:"from"`
 	TxTo      string     `bson:"txto"`
 	TxType    uint32     `bson:"txtype"`
 	Bind      string     `bson:"bind"`
@@ -46,17 +47,15 @@ type MgoSwapResult struct {
 
 // SwapResultUpdateItems swap update items
 type SwapResultUpdateItems struct {
-	SwapTx      string
-	OldSwapTxs  []string
-	OldSwapVals []string
-	SwapHeight  uint64
-	SwapTime    uint64
-	SwapValue   string
-	SwapType    uint32
-	SwapNonce   uint64
-	Status      SwapStatus
-	Timestamp   int64
-	Memo        string
+	SwapTx     string
+	SwapHeight uint64
+	SwapTime   uint64
+	SwapValue  string
+	SwapType   uint32
+	SwapNonce  uint64
+	Status     SwapStatus
+	Timestamp  int64
+	Memo       string
 }
 
 // MgoP2shAddress key is the bind address

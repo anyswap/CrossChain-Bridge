@@ -97,6 +97,11 @@ func GetOraclesHeartbeat() map[string]string {
 	return result
 }
 
+// GetStatusInfo api
+func GetStatusInfo(status string) (map[string]map[string]interface{}, error) {
+	return mongodb.GetStatusInfo(status)
+}
+
 // GetTokenPairInfo api
 func GetTokenPairInfo(pairID string) (*tokens.TokenPairConfig, error) {
 	pairCfg := tokens.GetTokenPairConfig(pairID)
@@ -308,6 +313,7 @@ func addSwapToDatabase(txid string, txType tokens.SwapTxType, swapInfo *tokens.T
 		TxID:      txid,
 		TxTo:      swapInfo.TxTo,
 		TxType:    uint32(txType),
+		From:      swapInfo.From,
 		Bind:      swapInfo.Bind,
 		Status:    mongodb.GetStatusByTokenVerifyError(verifyError),
 		Timestamp: time.Now().Unix(),
@@ -403,6 +409,7 @@ func P2shSwapin(txid, bindAddr *string) (*PostResult, error) {
 		TxID:      txidstr,
 		TxTo:      swapInfo.TxTo,
 		TxType:    uint32(tokens.P2shSwapinTx),
+		From:      swapInfo.From,
 		Bind:      *bindAddr,
 		Status:    mongodb.GetStatusByTokenVerifyError(err),
 		Timestamp: time.Now().Unix(),

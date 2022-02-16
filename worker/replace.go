@@ -187,9 +187,9 @@ func doReplaceSwap(swap *mongodb.MgoSwapResult) {
 	var txHash string
 	var err error
 	if isSwapin {
-		txHash, err = ReplaceSwapin(swap.TxID, swap.PairID, swap.Bind, "")
+		txHash, err = ReplaceSwapin(swap.TxID, swap.PairID, swap.Bind, "", false)
 	} else {
-		txHash, err = ReplaceSwapout(swap.TxID, swap.PairID, swap.Bind, "")
+		txHash, err = ReplaceSwapout(swap.TxID, swap.PairID, swap.Bind, "", false)
 	}
 	if err != nil {
 		logWorker("replace", "replace swap error", "pairID", swap.PairID, "txid", swap.TxID, "bind", swap.Bind, "isSwapin", isSwapin, "swapNonce", swap.SwapNonce, "err", err)

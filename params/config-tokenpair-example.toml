@@ -37,6 +37,11 @@ DisableSwap = false
 DefaultGasLimit = 90000
 # allow swapin from contract address
 AllowSwapinFromContract = false
+# big value whitelist
+BigValueWhitelist = [
+	"0x1111111111111111111111111111111111111111",
+	"0x2222222222222222222222222222222222222222"
+]
 
 # dest token config
 [DestToken]
@@ -72,3 +77,8 @@ DisableSwap = false
 DefaultGasLimit = 90000
 # allow swapout from contract address
 AllowSwapoutFromContract = false
+# big value whitelist
+BigValueWhitelist = [
+	"0x1111111111111111111111111111111111111111",
+	"0x2222222222222222222222222222222222222222"
+]

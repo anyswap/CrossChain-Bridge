@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,22 +27,23 @@ type Request struct {
 
 // NewRequest new request
 func NewRequest(method string, params ...interface{}) *Request {
-	return &Request{
-		Method:  method,
-		Params:  params,
-		Timeout: defaultTimeout,
-		ID:      defaultRequestID,
-	}
+	return NewRequestWithTimeoutAndID(defaultTimeout, defaultRequestID, method, params...)
 }
 
 // NewRequestWithTimeoutAndID new request with timeout and id
 func NewRequestWithTimeoutAndID(timeout, id int, method string, params ...interface{}) *Request {
-	return &Request{
+	req := &Request{
 		Method:  method,
 		Params:  params,
 		Timeout: timeout,
 		ID:      id,
 	}
+	if params == nil {
+		// aurora chain can not accept null params,
+		// replace with empty array here
+		req.Params = []struct{}{}
+	}
+	return req
 }
 
 // RPCPost rpc post
@@ -54,6 +56,12 @@ func RPCPost(result interface{}, url, method string, params ...interface{}) erro
 func RPCPostWithTimeout(timeout int, result interface{}, url, method string, params ...interface{}) error {
 	req := NewRequestWithTimeoutAndID(timeout, defaultRequestID, method, params...)
 	return RPCPostRequest(url, req, result)
+}
+
+// RPCPostWithContext rpc post with context
+func RPCPostWithContext(ctx context.Context, result interface{}, url, method string, params ...interface{}) error {
+	req := NewRequest(method, params...)
+	return RPCPostRequestWithContext(ctx, url, req, result)
 }
 
 // RPCPostWithTimeoutAndID rpc post with timeout and id
@@ -89,13 +97,18 @@ type jsonrpcResponse struct {
 
 // RPCPostRequest rpc post request
 func RPCPostRequest(url string, req *Request, result interface{}) error {
+	return RPCPostRequestWithContext(httpCtx, url, req, result)
+}
+
+// RPCPostRequestWithContext rpc post request with context
+func RPCPostRequestWithContext(ctx context.Context, url string, req *Request, result interface{}) error {
 	reqBody := &RequestBody{
 		Version: "2.0",
 		Method:  req.Method,
 		Params:  req.Params,
 		ID:      req.ID,
 	}
-	resp, err := HTTPPost(url, reqBody, nil, nil, req.Timeout)
+	resp, err := HTTPPostWithContext(ctx, url, reqBody, nil, nil, req.Timeout)
 	if err != nil {
 		log.Trace("post rpc error", "url", url, "request", req, "err", err)
 		return err

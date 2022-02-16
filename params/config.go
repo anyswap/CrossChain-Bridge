@@ -25,6 +25,9 @@ var (
 
 	// ServerAPIAddress server api address
 	ServerAPIAddress string
+
+	// GetBalanceBlockNumberOpt pending or latest
+	GetBalanceBlockNumberOpt = "latest"
 )
 
 // BridgeConfig config items (decode from toml file)
@@ -44,9 +47,10 @@ type BridgeConfig struct {
 
 // ServerConfig swap server config
 type ServerConfig struct {
-	MongoDB   *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
-	APIServer *APIServerConfig `toml:",omitempty" json:",omitempty"`
-	Admins    []string         `toml:",omitempty" json:",omitempty"`
+	MongoDB    *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
+	APIServer  *APIServerConfig `toml:",omitempty" json:",omitempty"`
+	Admins     []string         `toml:",omitempty" json:",omitempty"`
+	Assistants []string         `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmConfig dcrm related config
@@ -76,6 +80,7 @@ type DcrmNodeConfig struct {
 type OracleConfig struct {
 	ServerAPIAddress      string
 	GetAcceptListInterval uint64
+	PendingInvalidAccept  bool `toml:",omitempty" json:",omitempty"`
 }
 
 // APIServerConfig api service config
@@ -101,6 +106,7 @@ type ExtraConfig struct {
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
 	EnableCheckBlockFork     bool
 	IsNullSwapoutNativeMemo  bool `toml:",omitempty" json:",omitempty"`
+	UsePendingBalance        bool `toml:",omitempty" json:",omitempty"`
 }
 
 // GetAPIPort get api service port
@@ -239,6 +245,16 @@ func HasAdmin() bool {
 func IsAdmin(account string) bool {
 	for _, admin := range GetServerConfig().Admins {
 		if strings.EqualFold(account, admin) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsAssistant is assistant
+func IsAssistant(account string) bool {
+	for _, assistant := range GetServerConfig().Assistants {
+		if strings.EqualFold(account, assistant) {
 			return true
 		}
 	}

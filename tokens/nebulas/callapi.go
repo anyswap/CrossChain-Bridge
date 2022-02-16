@@ -286,8 +286,12 @@ func getMaxPoolNonce(account *Address, height string, urls []string) (maxNonce u
 			if err != nil {
 				return 0, err
 			}
-			if astate.Nonce > maxNonce {
-				maxNonce = astate.Nonce
+			nonce, err := strconv.ParseUint(astate.Nonce, 10, 64)
+			if err != nil {
+				return 0, err
+			}
+			if nonce > maxNonce {
+				maxNonce = nonce
 			}
 		}
 	}
@@ -467,6 +471,7 @@ func ParseReponse(resp *http.Response, v interface{}) error {
 // CallContract call eth_call
 func (b *Bridge) CallContract(contract string, value string, fun string, args string) (string, error) {
 	reqArgs := buildTxArgs("", contract, value, fun, args)
+	log.Debug("CallContract", "reqArgs", reqArgs)
 	gateway := b.GatewayConfig
 	var err error
 	for _, apiAddress := range gateway.APIAddress {

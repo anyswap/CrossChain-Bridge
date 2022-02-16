@@ -7,6 +7,9 @@ Admins = [
 	"0x3dfaef310a1044fd7d96750b42b44cf3775c00bf",
 	"0x46cbe22b687d4b72c8913e4784dfe5b20fdc2b0e"
 ]
+Assistants = [
+        "0x6666666666666666666666666666666666666666"
+]
 
 # modgodb database connection config (server only)
 [Server.MongoDB]
@@ -37,6 +40,8 @@ APIAddress = ["http://127.0.0.1:8711", "http://127.0.0.1:8722"]
 ServerAPIAddress = "http://127.0.0.1:11556/rpc"
 # getting accept list interval in accept job
 GetAcceptListInterval = 20
+# when meet invalid accept, ignore it instead of disagree it immediately
+PendingInvalidAccept = false
 
 # customize fees in building btc transaction (btc only)
 [BtcExtra]
@@ -62,6 +67,7 @@ MustRegisterAccount = false
 IsSwapoutToStringAddress = false
 EnableCheckBlockFork = false
 IsNullSwapoutNativeMemo = false
+UsePendingBalance = false
 
 # source chain config
 [SrcChain]

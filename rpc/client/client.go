@@ -50,7 +50,12 @@ func createHTTPClient() *http.Client {
 
 // HTTPGet http get
 func HTTPGet(url string, params, headers map[string]string, timeout int) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(httpCtx, http.MethodGet, url, nil)
+	return HTTPGetWithContext(httpCtx, url, params, headers, timeout)
+}
+
+// HTTPGetWithContext http get with context
+func HTTPGetWithContext(ctx context.Context, url string, params, headers map[string]string, timeout int) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +68,12 @@ func HTTPGet(url string, params, headers map[string]string, timeout int) (*http.
 
 // HTTPPost http post
 func HTTPPost(url string, body interface{}, params, headers map[string]string, timeout int) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(httpCtx, http.MethodPost, url, nil)
+	return HTTPPostWithContext(httpCtx, url, body, params, headers, timeout)
+}
+
+// HTTPPostWithContext http post with context
+func HTTPPostWithContext(ctx context.Context, url string, body interface{}, params, headers map[string]string, timeout int) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +89,12 @@ func HTTPPost(url string, body interface{}, params, headers map[string]string, t
 
 // HTTPRawPost http raw post
 func HTTPRawPost(url, body string, params, headers map[string]string, timeout int) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(httpCtx, http.MethodPost, url, nil)
+	return HTTPRawPostWithContext(httpCtx, url, body, params, headers, timeout)
+}
+
+// HTTPRawPostWithContext http raw post with context
+func HTTPRawPostWithContext(ctx context.Context, url, body string, params, headers map[string]string, timeout int) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +131,7 @@ func addPostBody(req *http.Request, body interface{}) error {
 			return err
 		}
 		req.Header.Set("Content-type", "application/json")
+		req.ContentLength = int64(len(jsonData))
 		req.GetBody = func() (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(jsonData)), nil
 		}
@@ -129,6 +145,7 @@ func addRawPostBody(req *http.Request, body string) (err error) {
 		return nil
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.ContentLength = int64(len(body))
 	req.GetBody = func() (io.ReadCloser, error) {
 		return ioutil.NopCloser(strings.NewReader(body)), nil
 	}

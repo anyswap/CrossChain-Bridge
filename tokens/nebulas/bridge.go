@@ -171,9 +171,9 @@ func (b *Bridge) verifyContractAddress(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsValidAddress(contractAddr) {
 		return fmt.Errorf("invalid contract address: %v", contractAddr)
 	}
-	if b.IsSrc && !(tokenCfg.IsErc20() || tokenCfg.IsProxyErc20() || tokenCfg.IsDelegateContract || tokenCfg.IsMappingTokenProxy) {
+	/*if b.IsSrc && !(tokenCfg.IsErc20() || tokenCfg.IsProxyErc20() || tokenCfg.IsDelegateContract || tokenCfg.IsMappingTokenProxy) {
 		return fmt.Errorf("source token %v is not ERC20, ProxyERC20 or delegated or MappingTokenProxy", contractAddr)
-	}
+	}*/
 	if !b.IsSrc && !tokenCfg.IsMappingTokenProxy {
 		err := b.VerifyAnyswapContractAddress(contractAddr)
 		if err != nil {

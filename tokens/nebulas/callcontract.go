@@ -30,7 +30,8 @@ func (b *Bridge) GetErc20TotalSupply(contract string) (*big.Int, error) {
 
 // GetErc20Balance get erc20 balacne of address
 func (b *Bridge) GetErc20Balance(contract, address string) (*big.Int, error) {
-	result, err := b.CallContract(contract, "0", "balanceOf", "")
+	args := `["` + address + `"]`
+	result, err := b.CallContract(contract, "0", "balanceOf", args)
 	if err != nil {
 		return nil, err
 	}
