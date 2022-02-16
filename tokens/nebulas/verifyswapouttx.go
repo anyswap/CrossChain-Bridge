@@ -97,37 +97,3 @@ func parseSwapoutTxData(data []byte, targetContract string) (bind string, value 
 	}
 	return args[0], value, nil
 }
-
-func parseSwapoutToBtcEncodedData(encData []byte, isInTxInput bool) (bind string, value *big.Int, err error) {
-	if isInTxInput {
-		err = tokens.ErrTxWithWrongInput
-	} else {
-		err = tokens.ErrTxWithWrongLogData
-	}
-
-	encDataLength := uint64(len(encData))
-	if encDataLength < 96 || encDataLength%32 != 0 {
-		return "", nil, err
-	}
-
-	// get value
-	value = common.GetBigInt(encData, 0, 32)
-
-	// get bind address
-	offset, overflow := common.GetUint64(encData, 32, 32)
-	if overflow {
-		return "", nil, err
-	}
-	if encDataLength < offset+32 {
-		return "", nil, err
-	}
-	length, overflow := common.GetUint64(encData, offset, 32)
-	if overflow {
-		return "", nil, err
-	}
-	if encDataLength < offset+32+length || encDataLength >= offset+32+length+32 {
-		return "", nil, err
-	}
-	bind = string(common.GetData(encData, offset+32, length))
-	return bind, value, nil
-}

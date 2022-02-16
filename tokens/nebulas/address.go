@@ -6,7 +6,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/nebulas/byteutils"
 	"github.com/anyswap/CrossChain-Bridge/tokens/nebulas/hash"
 	"github.com/btcsuite/btcutil/base58"
-	mapset "github.com/deckarep/golang-set"
 )
 
 // AddressType address type
@@ -128,7 +127,7 @@ func (a *Address) Equals(b *Address) bool {
 	if b == nil {
 		return false
 	}
-	return bytes.Compare(a.address, b.address) == 0
+	return bytes.Equal(a.address, b.address)
 }
 
 // Type return the type of address.
@@ -170,14 +169,6 @@ func AddressParseFromBytes(b []byte) (*Address, error) {
 func checkSum(data []byte) []byte {
 	return hash.Sha3256(data)[:AddressChecksumLength]
 }
-
-var (
-	cachedContractAddrs    = mapset.NewSet()
-	maxCachedContractAddrs = 50
-
-	cachedNoncontractAddrs    = mapset.NewSet()
-	maxNoncachedContractAddrs = 500
-)
 
 // NewAddress create new #Address according to data bytes.
 func newAddress(t AddressType, args ...[]byte) (*Address, error) {
@@ -234,6 +225,7 @@ func (b *Bridge) IsContractAddress(address string) (bool, error) {
 	return AddressType(addr.address[AddressTypeIndex]) == ContractAddress, nil
 }
 
+/*
 func addNoncachedContractAddr(address string) {
 	if cachedNoncontractAddrs.Cardinality() >= maxNoncachedContractAddrs {
 		cachedNoncontractAddrs.Pop()
@@ -247,3 +239,4 @@ func addCachedContractAddr(address string) {
 	}
 	cachedContractAddrs.Add(address)
 }
+*/

@@ -1,5 +1,6 @@
 package nebulas
 
+/*
 import (
 	"testing"
 
@@ -42,3 +43,4 @@ func TestCallBridgePrice(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, price)
 }
+*/

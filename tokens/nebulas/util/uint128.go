@@ -141,7 +141,10 @@ func (u *Uint128) String() string {
 
 // FromFixedSizeBytes converts Big-Endian fixed size bytes to Uint128.
 func (u *Uint128) FromFixedSizeBytes(bytes [16]byte) *Uint128 {
-	u.FromFixedSizeByteSlice(bytes[:])
+	_, err := u.FromFixedSizeByteSlice(bytes[:])
+	if err != nil {
+		u = Uint128Zero()
+	}
 	return u
 }
 

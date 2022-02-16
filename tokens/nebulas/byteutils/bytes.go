@@ -45,7 +45,7 @@ func (h Hash) Base58() string {
 
 // Equals compare two Hash. True is equal, otherwise false.
 func (h Hash) Equals(b Hash) bool {
-	return bytes.Compare(h, b) == 0
+	return bytes.Equal(h, b)
 }
 
 func (h Hash) String() string {

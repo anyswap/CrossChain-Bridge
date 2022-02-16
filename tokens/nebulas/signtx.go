@@ -142,7 +142,10 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 	if err != nil {
 		return nil, "", err
 	}
-	signature.InitSign(nprivKey)
+	err = signature.InitSign(nprivKey)
+	if err != nil {
+		return nil, "", err
+	}
 	err = tx.Sign(signature)
 	if err != nil {
 		return nil, "", err

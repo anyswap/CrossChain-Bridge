@@ -21,7 +21,6 @@ var (
 	baseGasPrice   *big.Int
 
 	errEmptyIdentifier       = errors.New("build swaptx without identifier")
-	errNonEmptyInputData     = errors.New("build swap tx with non-empty input data")
 	errNoSenderSpecified     = errors.New("build swaptx without specify sender")
 	errNonzeroValueSpecified = errors.New("build swap tx with non-zero value")
 )

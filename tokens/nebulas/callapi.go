@@ -20,9 +20,6 @@ import (
 var (
 	errNotFound               = errors.New("not found")
 	errEmptyURLs              = errors.New("empty URLs")
-	errTxInOrphanBlock        = errors.New("tx is in orphan block")
-	errTxHashMismatch         = errors.New("tx hash mismatch with rpc result")
-	errTxBlockHashMismatch    = errors.New("tx block hash mismatch with rpc result")
 	errTxReceiptMissBlockInfo = errors.New("tx receipt missing block info")
 )
 

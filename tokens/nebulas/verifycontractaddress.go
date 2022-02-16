@@ -43,6 +43,7 @@ var mETHExtCodeParts = map[string][]byte{
 	"LogSwapoutTopic": mETHLogSwapoutTopic,
 }
 
+/*
 var erc20CodeParts = map[string][]byte{
 	// Erc20 interfaces
 	"name":         common.FromHex("0x06fdde03"),
@@ -57,6 +58,7 @@ var erc20CodeParts = map[string][]byte{
 	"LogTransfer":  common.FromHex("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"),
 	"LogApproval":  common.FromHex("0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"),
 }
+*/
 
 // VerifyContractCodeParts verify contract code parts
 func VerifyContractCodeParts(code []byte, codePartsSlice ...map[string][]byte) (err error) {
@@ -101,18 +103,4 @@ func InitExtCodePartsWithFlag(isMbtc bool) {
 
 func isSwapoutToStringAddress() bool {
 	return params.IsSwapoutToStringAddress() || btc.BridgeInstance != nil
-}
-
-func getSwapinFuncHash() []byte {
-	return ExtCodeParts["SwapinFuncHash"]
-}
-
-func getLogSwapoutTopic() (topTopic []byte, topicsLen int) {
-	topTopic = ExtCodeParts["LogSwapoutTopic"]
-	if isSwapoutToStringAddress() {
-		topicsLen = 2
-	} else {
-		topicsLen = 3
-	}
-	return topTopic, topicsLen
 }

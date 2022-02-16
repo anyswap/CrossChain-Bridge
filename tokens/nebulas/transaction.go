@@ -396,7 +396,7 @@ func (tx *Transaction) VerifyIntegrity(chainID uint32) error {
 	if err != nil {
 		return err
 	}
-	if wantedHash.Equals(tx.hash) == false {
+	if !wantedHash.Equals(tx.hash) {
 		return ErrInvalidTransactionHash
 	}
 
