@@ -456,5 +456,6 @@ func (tx *Transaction) HashTransaction() (byteutils.Hash, error) {
 	hasher.Write(gasPrice)
 	hasher.Write(gasLimit)
 
-	return hasher.Sum(nil), nil
+	tx.hash = hasher.Sum(nil)
+	return tx.hash, nil
 }
