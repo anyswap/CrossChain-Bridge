@@ -120,19 +120,24 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		input = *args.Input
 	}
 
+	// swap need value = tx value + min reserve + 5 * gas fee
 	needValue := big.NewInt(0)
 	if value != nil && value.Sign() > 0 {
-		needValue = value
+		needValue.Add(needValue, value)
+	}
+	var gasFee *big.Int
+	if isDynamicFeeTx {
+		gasFee = new(big.Int).Mul(gasFeeCap, new(big.Int).SetUint64(gasLimit))
+	} else {
+		gasFee = new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
 	}
 	if args.SwapType != tokens.NoSwapType {
-		needValue = new(big.Int).Add(needValue, b.getMinReserveFee())
-	} else if isDynamicFeeTx {
-		gasFee := new(big.Int).Mul(gasFeeCap, new(big.Int).SetUint64(gasLimit))
-		needValue = new(big.Int).Add(needValue, gasFee)
+		needValue.Add(needValue, b.getMinReserveFee())
+		needValue.Add(needValue, new(big.Int).Mul(big.NewInt(5), gasFee))
 	} else {
-		gasFee := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gasLimit))
-		needValue = new(big.Int).Add(needValue, gasFee)
+		needValue.Add(needValue, gasFee)
 	}
+
 	err = b.checkBalance("", args.From, needValue)
 	if err != nil {
 		log.Warn("check balance failed", "account", args.From, "needValue", needValue, "err", err)

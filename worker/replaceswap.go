@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -194,6 +195,9 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin, isManual bool
 	}
 	if err != nil {
 		logWorkerError("replaceSwap", "sign tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)
+		if errors.Is(err, dcrm.ErrGetSignStatusHasDisagree) {
+			reverifySwap(args)
+		}
 		return "", errSignTxFailed
 	}
 

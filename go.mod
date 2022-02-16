@@ -21,7 +21,6 @@ require (
 	github.com/giangnamnabka/btcwallet/wallet/txsizes v1.0.1-0.20210422185028-3bf95367dc20
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.2 // indirect
-	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/rpc v1.2.0
@@ -47,7 +46,6 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/tebeka/strftime v0.1.5 // indirect
-	github.com/tendermint/go-amino v0.16.0
 	github.com/urfave/cli/v2 v2.3.0
 	go.mongodb.org/mongo-driver v1.7.2
 	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c
