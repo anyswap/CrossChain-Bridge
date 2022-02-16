@@ -417,6 +417,7 @@ func (tx *Transaction) verifySign() error {
 }
 
 // HashTransaction hash the transaction.
+// nolint:errcheck
 func (tx *Transaction) HashTransaction() (byteutils.Hash, error) {
 	hasher := sha3.New256()
 
