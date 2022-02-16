@@ -3,6 +3,7 @@ package nebulas
 import (
 	"testing"
 
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,6 +20,19 @@ func TestCallBridgeReceipt(t *testing.T) {
 	price, err := getMedianGasPrice([]string{baseurl})
 	assert.Nil(t, err)
 	assert.NotNil(t, price)
+}
+
+func TestCallBridgeBalance(t *testing.T) {
+	baseurl := "https://testnet.nebulas.io"
+	bridge := NewCrossChainBridge(true)
+	bridge.GatewayConfig = &tokens.GatewayConfig{
+		APIAddress: []string{baseurl},
+	}
+
+	account := "n1SQm23yLbKn1uEDspWJEdhY2whsh1sz5jJ"
+	resp, err := bridge.GetBalance(account)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
 }
 
 func TestCallBridgePrice(t *testing.T) {

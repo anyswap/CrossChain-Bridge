@@ -225,13 +225,13 @@ type GetAccountStateResponse struct {
 	// Current balance in unit of 1/(10^18) nas.
 	Balance string `protobuf:"bytes,1,opt,name=balance,proto3" json:"balance,omitempty"`
 	// Current transaction count.
-	Nonce uint64 `protobuf:"varint,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	Nonce uint64 `protobuf:"varint,2,opt,name=nonce,proto3" json:"nonce,omitempty,string"`
 	// Account type
 	Type uint32 `protobuf:"varint,3,opt,name=type,proto3" json:"type,omitempty"`
 	// Block height
-	Height uint64 `protobuf:"varint,4,opt,name=height,proto3" json:"height,omitempty"`
+	Height uint64 `protobuf:"varint,4,opt,name=height,proto3" json:"height,omitempty,string"`
 	// Current sender pending tx count
-	Pending uint64 `protobuf:"varint,5,opt,name=pending,proto3" json:"pending,omitempty"`
+	Pending uint64 `protobuf:"varint,5,opt,name=pending,proto3" json:"pending,omitempty,string"`
 }
 
 type GasPriceResponse struct {
