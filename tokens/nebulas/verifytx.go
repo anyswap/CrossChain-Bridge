@@ -46,7 +46,6 @@ func (b *Bridge) GetTransactionStatus(txHash string) (*tokens.TxStatus, error) {
 
 // VerifyMsgHash verify msg hash
 func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) error {
-	log.Debug("111111 VerifyMsgHash", "rawTx", rawTx, "msgHashes", msgHashes)
 	tx, ok := rawTx.(*Transaction)
 	if !ok {
 		return tokens.ErrWrongRawTx
@@ -59,7 +58,6 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) error {
 	if err != nil {
 		return err
 	}
-	log.Debug("222222 VerifyMsgHash", "msgHash", msgHash, "sigHash", sigHash)
 	if sigHash.String() != msgHash {
 		logFunc := log.GetPrintFuncOr(params.IsDebugMode, log.Info, log.Trace)
 		logFunc("message hash mismatch", "want", msgHash, "have", sigHash.String(), "tx", tx.String())

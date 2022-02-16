@@ -286,7 +286,7 @@ func getMaxPoolNonce(account *Address, height string, urls []string) (maxNonce u
 			if err != nil {
 				return 0, err
 			}
-			nonce, err := strconv.ParseUint(astate.Nonce, 10, 64)
+			nonce := astate.Nonce + 1
 			if err != nil {
 				return 0, err
 			}
