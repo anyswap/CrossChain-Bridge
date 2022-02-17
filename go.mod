@@ -19,6 +19,7 @@ require (
 	github.com/giangnamnabka/btcwallet/wallet/txauthor v1.0.1-0.20210422185028-3bf95367dc20
 	github.com/giangnamnabka/btcwallet/wallet/txrules v1.0.1-0.20210422185028-3bf95367dc20
 	github.com/giangnamnabka/btcwallet/wallet/txsizes v1.0.1-0.20210422185028-3bf95367dc20
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
@@ -28,12 +29,18 @@ require (
 	github.com/jordan-wright/email v0.0.0-20200917010138-e1c00e156980
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.3 // indirect
+	github.com/lestrrat/go-envload v0.0.0-20180220120943-6ed08b54a570 // indirect
+	github.com/lestrrat/go-file-rotatelogs v0.0.0-20180223000712-d3151e2a480f // indirect
+	github.com/lestrrat/go-strftime v0.0.0-20180220042222-ba3bf9c1d042 // indirect
 	github.com/ltcsuite/ltcd v0.20.1-beta
 	github.com/ltcsuite/ltcutil v1.0.2-beta
 	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txrules v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.0.0
+	github.com/nebulasio/go-nebulas v2.1.0+incompatible
 	github.com/pborman/uuid v1.2.1
+	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5 // indirect
+	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.7.0
@@ -42,8 +49,7 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	go.mongodb.org/mongo-driver v1.7.2
 	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c
-	golang.org/x/net v0.0.0-20201010224723-4f7140c49acb // indirect
-	golang.org/x/sys v0.0.0-20201013132646-2da7054afaeb // indirect
+	golang.org/x/net v0.0.0-20211029224645-99673261e6eb // indirect
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect

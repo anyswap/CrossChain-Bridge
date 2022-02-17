@@ -491,7 +491,7 @@ func (c *ChainConfig) GetMaxGasFeeCap() *big.Int {
 
 // IsErc20 return if token is erc20
 func (c *TokenConfig) IsErc20() bool {
-	return strings.EqualFold(c.ID, "ERC20") || c.IsProxyErc20()
+	return strings.EqualFold(c.ID, "ERC20") || strings.EqualFold(c.ID, "NRC20") || c.IsProxyErc20()
 }
 
 // IsProxyErc20 return if token is proxy contract of erc20

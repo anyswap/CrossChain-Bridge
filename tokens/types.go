@@ -162,6 +162,7 @@ type EthExtraArgs struct {
 	GasTipCap *big.Int `json:"gasTipCap,omitempty"`
 	GasFeeCap *big.Int `json:"gasFeeCap,omitempty"`
 	Nonce     *uint64  `json:"nonce,omitempty"`
+	Timestamp *int64
 }
 
 // BtcOutPoint struct
