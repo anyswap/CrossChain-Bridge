@@ -9,7 +9,6 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/tools"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
 
@@ -140,10 +139,7 @@ type TokenConfig struct {
 	BigValueWhitelist []string `json:",omitempty"`
 
 	// use private key address instead
-	DcrmAddressKeyStore string `json:"-"`
-	DcrmAddressPassword string `json:"-"`
-	DcrmAddressKeyFile  string `json:"-"`
-	dcrmAddressPriKey   *ecdsa.PrivateKey
+	DcrmAddressPriKey string `json:"-"`
 
 	// calced value
 	maxSwap          *big.Int
@@ -363,20 +359,16 @@ func (c *TokenConfig) CheckConfig(isSrc bool) (err error) {
 	} else if c.DelegateToken != "" {
 		return errors.New("token forbid config 'DelegateToken' if 'IsDelegateContract' is false")
 	}
+	err = c.VerifyDcrmPublicKey()
+	if err != nil {
+		return err
+	}
 	c.TokenPrice = 0
 	err = c.loadTokenPrice(isSrc)
 	if err != nil {
 		return err
 	}
 	c.CalcAndStoreValue()
-	err = c.LoadDcrmAddressPrivateKey()
-	if err != nil {
-		return err
-	}
-	err = c.VerifyDcrmPublicKey()
-	if err != nil {
-		return err
-	}
 	if len(c.BigValueWhitelist) > 0 {
 		c.bigValueWhitelist = make(map[string]struct{}, len(c.BigValueWhitelist))
 		for _, addr := range c.BigValueWhitelist {
@@ -509,53 +501,34 @@ func (c *TokenConfig) IsInBigValueWhitelist(caller string) bool {
 }
 
 // GetDcrmAddressPrivateKey get private key
-func (c *TokenConfig) GetDcrmAddressPrivateKey() *ecdsa.PrivateKey {
-	return c.dcrmAddressPriKey
-}
-
-// LoadDcrmAddressPrivateKey load private key
-func (c *TokenConfig) LoadDcrmAddressPrivateKey() error {
-	if c.DcrmAddressKeyFile != "" {
-		priKey, err := crypto.LoadECDSA(c.DcrmAddressKeyFile)
-		if err != nil {
-			return fmt.Errorf("wrong private key, %w", err)
-		}
-		c.dcrmAddressPriKey = priKey
-	} else if c.DcrmAddressKeyStore != "" {
-		key, err := tools.LoadKeyStore(c.DcrmAddressKeyStore, c.DcrmAddressPassword)
-		if err != nil {
-			return err
-		}
-		c.dcrmAddressPriKey = key.PrivateKey
+func (c *TokenConfig) GetDcrmAddressPrivateKey() *string {
+	if c.DcrmAddressPriKey == "" {
+		return nil
 	}
-	if c.dcrmAddressPriKey != nil {
-		keyAddr := crypto.PubkeyToAddress(c.dcrmAddressPriKey.PublicKey)
-		if !strings.EqualFold(keyAddr.String(), c.DcrmAddress) {
-			return fmt.Errorf("dcrm address %v and its keystore address %v is not match", c.DcrmAddress, keyAddr.String())
-		}
-	} else {
-		if c.DcrmPubkey == "" {
-			return fmt.Errorf("token must config 'DcrmPubkey'")
-		}
-		if IsDcrmDisabled {
-			return fmt.Errorf("dcrm is disabled but no private key is provided")
-		}
-	}
-	return nil
+	return &c.DcrmAddressPriKey
 }
 
 // VerifyDcrmPublicKey verify public key
 func (c *TokenConfig) VerifyDcrmPublicKey() error {
+	if c.DcrmPubkey == "" {
+		return fmt.Errorf("token must config 'DcrmPubkey'")
+	}
+
+	if c.DcrmAddressPriKey != "" {
+		return nil
+	}
+	if IsDcrmDisabled {
+		return fmt.Errorf("dcrm is disabled but no private key is provided")
+	}
+
 	if !common.IsHexAddress(c.DcrmAddress) {
 		return nil
 	}
-	if c.dcrmAddressPriKey != nil && c.DcrmPubkey == "" {
-		return nil
-	}
+
 	// ETH like address
 	pkBytes := common.FromHex(c.DcrmPubkey)
 	if len(pkBytes) != 65 || pkBytes[0] != 4 {
-		return fmt.Errorf("wrong dcrm public key, shoule be uncompressed")
+		return fmt.Errorf("wrong uncompressed dcrm public key")
 	}
 	pubKey := ecdsa.PublicKey{
 		Curve: crypto.S256(),
