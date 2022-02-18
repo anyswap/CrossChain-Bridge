@@ -154,16 +154,16 @@ type TokenConfig struct {
 // CheckConfig check chain config
 func (c *ChainConfig) CheckConfig(isServer bool) error {
 	if c.BlockChain == "" {
-		return errors.New("token must config 'BlockChain'")
+		return errors.New("chain must config 'BlockChain'")
 	}
 	if c.NetID == "" {
-		return errors.New("token must config 'NetID'")
+		return errors.New("chain must config 'NetID'")
 	}
 	if c.Confirmations == nil {
-		return errors.New("token must config 'Confirmations'")
+		return errors.New("chain must config 'Confirmations'")
 	}
 	if c.InitialHeight == nil {
-		return errors.New("token must config 'InitialHeight'")
+		return errors.New("chain must config 'InitialHeight'")
 	}
 	if c.BaseFeePercent < -90 || c.BaseFeePercent > 500 {
 		return errors.New("'BaseFeePercent' must be in range [-90, 500]")
@@ -510,10 +510,6 @@ func (c *TokenConfig) GetDcrmAddressPrivateKey() *string {
 
 // VerifyDcrmPublicKey verify public key
 func (c *TokenConfig) VerifyDcrmPublicKey() error {
-	if c.DcrmPubkey == "" {
-		return fmt.Errorf("token must config 'DcrmPubkey'")
-	}
-
 	if c.DcrmAddressPriKey != "" {
 		return nil
 	}

@@ -30,6 +30,14 @@ var (
 	GetBalanceBlockNumberOpt = "latest"
 )
 
+// variables used for testing
+var (
+	// ChanIn channel to receive input arguments
+	ChanIn = make(chan map[string]string)
+	// ChanOut channel to send output result
+	ChanOut = make(chan string)
+)
+
 // BridgeConfig config items (decode from toml file)
 type BridgeConfig struct {
 	Identifier  string
@@ -101,6 +109,7 @@ type MongoDBConfig struct {
 
 // ExtraConfig extra config
 type ExtraConfig struct {
+	IsTestMode               bool `toml:",omitempty" json:",omitempty"`
 	IsDebugMode              bool `toml:",omitempty" json:",omitempty"`
 	MustRegisterAccount      bool
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
@@ -146,6 +155,11 @@ func EnableCheckBlockFork() bool {
 // IsNullSwapoutNativeMemo set no unlock memo in building swapout tx
 func IsNullSwapoutNativeMemo() bool {
 	return GetExtraConfig() != nil && GetExtraConfig().IsNullSwapoutNativeMemo
+}
+
+// IsTestMode is test mode (get rid of business related components: MPC, DB, etc.)
+func IsTestMode() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().IsTestMode
 }
 
 // IsDebugMode is debug mode, add more debugging log infos

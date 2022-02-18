@@ -1,0 +1,72 @@
+PairID = "USDT"
+
+# source token config
+[SrcToken]
+# ID must be ERC20 if source token is erc20 token
+ID = "ERC20"
+Name = "USDTERC20"
+Symbol = "USDT"
+Decimals = 6
+Description = "ERC20 USDT"
+# if ID is ERC20, this is the erc20 token's contract address
+ContractAddress = "0xdac17f958d2ee523a2206206994597c13d831ec7"
+# deposit to this address to make swap
+DepositAddress = "0x533e3c0e6b48010873B947bddC4721b1bDFF9648"
+# withdraw from this address
+DcrmAddress = "0x6012A471f91a0668209a2D14ACBbe1A4a16b7B4C"
+# sign with private key (used for testing)
+DcrmAddressPriKey = "0x1111111111111111111111111111111111111111111111111111111111111111"
+# dcrm account public key
+DcrmPubkey = "04d5dd368ff04831bd9675ff7361edae98693337a832317e566513ea36f1fe790014768996e3163a6b452003d1a5e5a49563a71613d36f978ed6973afd3f6c7c94"
+# maximum deposit value
+MaximumSwap = 5000000.0
+# minimum deposit value
+MinimumSwap = 20.0
+# calced deposit fee = deposit value * this rate (when in [min, max] deposit fee range)
+SwapFeeRate = 0.0
+# maximum deposit fee, if calced deposit fee is larger than this fee, then use this value as deposit fee
+MaximumSwapFee = 0.0
+# minimum deposit fee, if calced deposit fee is smaller than this fee, then use this value as deposit fee
+MinimumSwapFee = 0.0
+# plus this percentage of gas price to make tx more easier to be mined in source chain
+# corresponding to send asset on source chain (eg. BTC) for withdrawing
+PlusGasPricePercentage = 10 # plus 15% gas price
+# if deposit value is larger than this value then need more verify strategy
+BigValueThreshold = 1000000.0
+# disable deposit function if this flag is true
+DisableSwap = false
+# allow swapin from contract address
+AllowSwapinFromContract = false
+
+# dest token config
+[DestToken]
+ID = "USDT"
+Name = "Frapped USDT"
+Symbol = "fUSDT"
+Decimals = 6
+Description = "cross chain bridge USDT with fUSDT"
+# mapping erc20 token address
+ContractAddress = "0x049d68029688eabf473097a2fc38ef61633a3c7a"
+# mapping erc20 token creator
+DcrmAddress = "0x6012A471f91a0668209a2D14ACBbe1A4a16b7B4C"
+# sign with private key (used for testing)
+DcrmAddressPriKey = "0x1111111111111111111111111111111111111111111111111111111111111111"
+# dcrm account public key
+DcrmPubkey = "04d5dd368ff04831bd9675ff7361edae98693337a832317e566513ea36f1fe790014768996e3163a6b452003d1a5e5a49563a71613d36f978ed6973afd3f6c7c94"
+# maximum withdraw value
+MaximumSwap = 5000000.0
+# minimum withdraw value
+MinimumSwap = 200.0
+# calced withdraw fee = withdraw value * this rate (when in [min, max] withdraw fee range)
+SwapFeeRate = 0.001
+# maximum withdraw fee, if calced withdraw fee is larger than this fee, then use this value as withdraw fee
+MaximumSwapFee = 1000.0
+# minimum withdraw fee, if calced withdraw fee is smaller than this fee, then use this value as withdraw fee
+MinimumSwapFee = 40.0
+# plus this percentage of gas price to make tx more easier to be mined in dest chain
+# corresponding to send mapping token on dest chain (eg. mBTC) for depositing
+PlusGasPricePercentage = 1 # plus 1% gas price
+# if withdraw value is larger than this value then need more verify strategy
+BigValueThreshold = 1000000.0
+# disable withdraw function if this flag is true
+DisableSwap = false

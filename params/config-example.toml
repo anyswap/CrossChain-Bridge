@@ -62,7 +62,10 @@ UtxoAggregateMinValue = 1000000 # unit satoshi
 # aggreate to this address
 UtxoAggregateToAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 
+# extra config
 [Extra]
+IsTestMode = false
+IsDebugMode = false
 MustRegisterAccount = false
 IsSwapoutToStringAddress = false
 EnableCheckBlockFork = false

@@ -294,3 +294,24 @@ func GetRegisteredAddress(w http.ResponseWriter, r *http.Request) {
 	res, err := swapapi.GetRegisteredAddress(address)
 	writeResponse(w, res, err)
 }
+
+// TestBridgeSwapHandler handler
+func TestBridgeSwapHandler(w http.ResponseWriter, r *http.Request) {
+	args := make(map[string]string)
+
+	vars := mux.Vars(r)
+	args["swaptype"] = vars["swaptype"]
+	args["pairid"] = vars["pairid"]
+	args["txid"] = vars["txid"]
+
+	vals := r.URL.Query()
+	for k, v := range vals {
+		if len(v) > 0 {
+			args[k] = v[0]
+		}
+	}
+
+	params.ChanIn <- args
+	res := <-params.ChanOut
+	writeResponse(w, res, nil)
+}
