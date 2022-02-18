@@ -1,0 +1,15 @@
+{
+    "status": "success", 
+    "type": "response", 
+    "id": 3, 
+    "result": {
+        "ledger_hash": "E23869F043A46C2735BCA40781A674C5F24460BAC26C6B7475550493A9180200", 
+        "ledger_time": 454971400, 
+        "reserve_base": 20000000, 
+        "ledger_index": 6959228, 
+        "validated_ledgers": "32570-6959228", 
+        "reserve_inc": 5000000, 
+        "fee_base": 10, 
+        "fee_ref": 10
+    }
+}
