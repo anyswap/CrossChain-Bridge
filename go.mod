@@ -39,12 +39,10 @@ require (
 	github.com/ltcsuite/ltcwallet/wallet/txrules v1.0.0
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.0.0
 	github.com/pborman/uuid v1.2.1
-	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tebeka/strftime v0.1.5 // indirect
-	github.com/tendermint/go-amino v0.16.0
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/willf/bitset v1.1.10
 	go.mongodb.org/mongo-driver v1.7.2

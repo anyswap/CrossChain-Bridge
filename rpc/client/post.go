@@ -27,22 +27,23 @@ type Request struct {
 
 // NewRequest new request
 func NewRequest(method string, params ...interface{}) *Request {
-	return &Request{
-		Method:  method,
-		Params:  params,
-		Timeout: defaultTimeout,
-		ID:      defaultRequestID,
-	}
+	return NewRequestWithTimeoutAndID(defaultTimeout, defaultRequestID, method, params...)
 }
 
 // NewRequestWithTimeoutAndID new request with timeout and id
 func NewRequestWithTimeoutAndID(timeout, id int, method string, params ...interface{}) *Request {
-	return &Request{
+	req := &Request{
 		Method:  method,
 		Params:  params,
 		Timeout: timeout,
 		ID:      id,
 	}
+	if params == nil {
+		// aurora chain can not accept null params,
+		// replace with empty array here
+		req.Params = []struct{}{}
+	}
+	return req
 }
 
 // RPCPost rpc post

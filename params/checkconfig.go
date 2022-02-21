@@ -83,14 +83,17 @@ func checkChainAndGatewayConfig(isServer bool) (err error) {
 
 // CheckConfig check swap server config
 func (c *ServerConfig) CheckConfig() error {
+	if c.APIServer == nil {
+		return errors.New("server must config 'Server.APIServer'")
+	}
+	if IsTestMode() {
+		return nil
+	}
 	if c.MongoDB == nil {
 		return errors.New("server must config 'Server.MongoDB'")
 	}
 	if err := c.MongoDB.CheckConfig(); err != nil {
 		return err
-	}
-	if c.APIServer == nil {
-		return errors.New("server must config 'Server.APIServer'")
 	}
 	return nil
 }

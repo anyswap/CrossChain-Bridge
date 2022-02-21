@@ -1,9 +1,6 @@
 package kusama
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
@@ -11,15 +8,8 @@ import (
 )
 
 var (
-	errNotFound = errors.New("not found")
+	wrapRPCQueryError = tokens.WrapRPCQueryError
 )
-
-func wrapRPCQueryError(err error, method string, params ...interface{}) error {
-	if err == nil {
-		err = errNotFound
-	}
-	return fmt.Errorf("%w: call '%s %v' failed, err='%v'", tokens.ErrRPCQueryError, method, params, err)
-}
 
 // ------------------------ kusama override apis -----------------------------
 

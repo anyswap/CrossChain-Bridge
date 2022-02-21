@@ -160,7 +160,8 @@ LOOP_GET_SIGN_STATUS:
 				break LOOP_GET_SIGN_STATUS
 			}
 			switch {
-			case errors.Is(err, ErrGetSignStatusFailed),
+			case errors.Is(err, ErrGetSignStatusHasDisagree),
+				errors.Is(err, ErrGetSignStatusFailed),
 				errors.Is(err, ErrGetSignStatusTimeout):
 				break LOOP_GET_SIGN_STATUS
 			}

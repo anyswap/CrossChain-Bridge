@@ -7,6 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/admin"
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -36,9 +37,20 @@ func (s *RPCAPI) AdminCall(r *http.Request, rawTx, result *string) (err error) {
 	if err != nil {
 		return err
 	}
-	if !params.IsAdmin(sender.String()) {
-		return fmt.Errorf("sender %v is not admin", sender.String())
+	senderAddress := sender.String()
+	if !params.IsAdmin(senderAddress) {
+		switch args.Method {
+		case "blacklist", "maintain", "reswap", "manual", "setnonce", "addpair":
+			return fmt.Errorf("sender %v is not admin", senderAddress)
+		case "bigvalue", "reverify", "replaceswap":
+			if !params.IsAssistant(senderAddress) {
+				return fmt.Errorf("sender %v is not assistant", senderAddress)
+			}
+		default:
+			return fmt.Errorf("unknown admin method '%v'", args.Method)
+		}
 	}
+	log.Info("admin call", "caller", senderAddress, "args", args, "result", result)
 	return doCall(args, result)
 }
 
@@ -267,9 +279,9 @@ func replaceswap(args *admin.CallArgs, result *string) (err error) {
 	var txHash string
 	switch operation {
 	case swapinOp:
-		txHash, err = worker.ReplaceSwapin(txid, pairID, bind, gasPrice)
+		txHash, err = worker.ReplaceSwapin(txid, pairID, bind, gasPrice, true)
 	case swapoutOp:
-		txHash, err = worker.ReplaceSwapout(txid, pairID, bind, gasPrice)
+		txHash, err = worker.ReplaceSwapout(txid, pairID, bind, gasPrice, true)
 	default:
 		return fmt.Errorf("unknown operation '%v'", operation)
 	}
