@@ -16,7 +16,7 @@ docker run -itd --name swap --network host --restart always -v /var/lib/docker/s
 ```
 docker exec -d swap swaporacle ...
 ```
-tools: `swapserver swaporacle swapscan riskctrl swapadmin swaptools` (/usr/local/bin)  
+tools: `swapserver swaporacle swapscan swapadmin swaptools` (/usr/local/bin)  
 conf: `config-example.toml config-tokenpair-example.toml` (/usr/local/bin)  
 
 # Install the Source version

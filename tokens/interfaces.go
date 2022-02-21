@@ -98,10 +98,6 @@ type CrossChainBridge interface {
 
 	GetLatestBlockNumber() (uint64, error)
 	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
-
-	GetBalance(accountAddress string) (*big.Int, error)
-	GetTokenBalance(tokenType, tokenAddress, accountAddress string) (*big.Int, error)
-	GetTokenSupply(tokenType, tokenAddress string) (*big.Int, error)
 }
 
 // NonceSetter interface (for eth-like)
