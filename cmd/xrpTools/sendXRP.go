@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anyswap/CrossChain-Bridge/tokens/xrp"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
 	"github.com/urfave/cli/v2"
 )
 
@@ -43,16 +43,16 @@ func sendXrpAction(ctx *cli.Context) error {
 }
 
 func sendXRP() string {
-	key := xrp.ImportKeyFromSeed(seed, "ecdsa")
+	key := ripple.ImportKeyFromSeed(seed, "ecdsa")
 	keyseq := uint32(keyseq)
 
-	from := xrp.GetAddress(key, &keyseq)
+	from := ripple.GetAddress(key, &keyseq)
 	txseq, err := b.GetSeq(from)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tx, _, _ := xrp.NewUnsignedPaymentTransaction(key, &keyseq, txseq, to, amount, 10, memo, "", false, false, false)
+	tx, _, _ := ripple.NewUnsignedPaymentTransaction(key, &keyseq, txseq, to, amount, 10, memo, "", false, false, false)
 
 	/*privData := key.Private(&keyseq)
 	priv, _ := btcec.PrivKeyFromBytes(btcec.S256(), privData)

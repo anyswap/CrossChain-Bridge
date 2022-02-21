@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/anyswap/CrossChain-Bridge/tokens/xrp"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
 )
 
 var pubkey string
@@ -16,7 +16,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	addr, err := xrp.PublicKeyHexToAddress(pubkey)
+	addr, err := ripple.PublicKeyHexToAddress(pubkey)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -8,8 +8,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
-	"github.com/anyswap/CrossChain-Bridge/tokens/xrp"
-	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/websockets"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/websockets"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,7 +26,7 @@ var (
 	amount     string
 	apiAddress string
 	net        string
-	b          *xrp.Bridge
+	b          *ripple.Bridge
 	startScan  uint64
 
 	seedFlag = &cli.StringFlag{
@@ -114,7 +114,7 @@ func initApp() {
 
 func initBridge() {
 	tokens.DstBridge = eth.NewCrossChainBridge(false)
-	b = xrp.NewCrossChainBridge(true)
+	b = ripple.NewCrossChainBridge(true)
 	b.Remotes = make(map[string]*websockets.Remote)
 	remote, err := websockets.NewRemote(apiAddress)
 	if err != nil || remote == nil {

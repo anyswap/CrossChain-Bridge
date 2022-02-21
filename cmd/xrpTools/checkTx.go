@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/anyswap/CrossChain-Bridge/tokens/xrp"
-	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/data"
-	"github.com/anyswap/CrossChain-Bridge/tokens/xrp/rubblelabs/ripple/websockets"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/data"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/websockets"
 )
 
 func checkTx(txHash string) bool {
@@ -34,7 +34,7 @@ func checkTx(txHash string) bool {
 		return false
 	}
 
-	bind, ok := xrp.GetBindAddressFromMemos(payment)
+	bind, ok := ripple.GetBindAddressFromMemos(payment)
 	if !ok {
 		log.Printf("Get bind address failed")
 		return false
