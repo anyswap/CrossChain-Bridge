@@ -83,6 +83,11 @@ func doCleanup(svr *http.Server) {
 
 // nolint:funlen // put together handle func
 func initRouter(r *mux.Router) {
+	if params.IsTestMode() {
+		r.HandleFunc("/swap/test/{swaptype}/{pairid}/{txid}", restapi.TestBridgeSwapHandler).Methods("GET", "POST")
+		return
+	}
+
 	rpcserver := rpc.NewServer()
 	rpcserver.RegisterCodec(rpcjson.NewCodec(), "application/json")
 	err := rpcserver.RegisterService(new(rpcapi.RPCAPI), "swap")

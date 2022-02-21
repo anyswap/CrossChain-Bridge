@@ -14,8 +14,9 @@ import (
 
 // get dcrm sign status error
 var (
-	ErrGetSignStatusTimeout = errors.New("getSignStatus timeout")
-	ErrGetSignStatusFailed  = errors.New("getSignStatus failure")
+	ErrGetSignStatusTimeout     = errors.New("getSignStatus timeout")
+	ErrGetSignStatusFailed      = errors.New("getSignStatus failure")
+	ErrGetSignStatusHasDisagree = errors.New("getSignStatus has disagree")
 )
 
 const (
@@ -87,6 +88,9 @@ func GetSignStatus(key, rpcAddr string) (*SignStatus, error) {
 	switch signStatus.Status {
 	case "Failure":
 		log.Info("getSignStatus Failure", "keyID", key, "status", data)
+		if signStatus.HasDisagree() {
+			return nil, ErrGetSignStatusHasDisagree
+		}
 		return nil, ErrGetSignStatusFailed
 	case "Timeout":
 		log.Info("getSignStatus Timeout", "keyID", key, "status", data)

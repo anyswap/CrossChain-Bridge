@@ -1,0 +1,39 @@
+# a short string to identify the bridge
+Identifier = "ETH2BSC"
+
+# bridge API service (server only)
+[Server.APIServer]
+# listen port
+Port = 11556
+# CORS config
+AllowedOrigins = []
+
+# extra config
+[Extra]
+IsTestMode = true
+
+# source chain config
+[SrcChain]
+BlockChain = "Ethereum"
+NetID = "custom"
+Confirmations = 6
+InitialHeight = 0
+
+# source blockchain gateway config
+[SrcGateway]
+APIAddress = ["http://127.0.0.1:8711"]
+
+# dest chain config
+[DestChain]
+BlockChain = "Ethereum-BSC"
+NetID = "custom"
+Confirmations = 15
+InitialHeight = 0
+
+# dest blockchain gateway config
+[DestGateway]
+APIAddress = ["http://127.0.0.1:8712"]
+
+# DCRM config
+[Dcrm]
+Disable = true

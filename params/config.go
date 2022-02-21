@@ -30,6 +30,14 @@ var (
 	GetBalanceBlockNumberOpt = "latest"
 )
 
+// variables used for testing
+var (
+	// ChanIn channel to receive input arguments
+	ChanIn = make(chan map[string]string)
+	// ChanOut channel to send output result
+	ChanOut = make(chan string)
+)
+
 // BridgeConfig config items (decode from toml file)
 type BridgeConfig struct {
 	Identifier  string
@@ -47,9 +55,10 @@ type BridgeConfig struct {
 
 // ServerConfig swap server config
 type ServerConfig struct {
-	MongoDB   *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
-	APIServer *APIServerConfig `toml:",omitempty" json:",omitempty"`
-	Admins    []string         `toml:",omitempty" json:",omitempty"`
+	MongoDB    *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
+	APIServer  *APIServerConfig `toml:",omitempty" json:",omitempty"`
+	Admins     []string         `toml:",omitempty" json:",omitempty"`
+	Assistants []string         `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmConfig dcrm related config
@@ -79,6 +88,7 @@ type DcrmNodeConfig struct {
 type OracleConfig struct {
 	ServerAPIAddress      string
 	GetAcceptListInterval uint64
+	PendingInvalidAccept  bool `toml:",omitempty" json:",omitempty"`
 }
 
 // APIServerConfig api service config
@@ -99,6 +109,7 @@ type MongoDBConfig struct {
 
 // ExtraConfig extra config
 type ExtraConfig struct {
+	IsTestMode               bool `toml:",omitempty" json:",omitempty"`
 	IsDebugMode              bool `toml:",omitempty" json:",omitempty"`
 	MustRegisterAccount      bool
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
@@ -144,6 +155,11 @@ func EnableCheckBlockFork() bool {
 // IsNullSwapoutNativeMemo set no unlock memo in building swapout tx
 func IsNullSwapoutNativeMemo() bool {
 	return GetExtraConfig() != nil && GetExtraConfig().IsNullSwapoutNativeMemo
+}
+
+// IsTestMode is test mode (get rid of business related components: MPC, DB, etc.)
+func IsTestMode() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().IsTestMode
 }
 
 // IsDebugMode is debug mode, add more debugging log infos
@@ -243,6 +259,16 @@ func HasAdmin() bool {
 func IsAdmin(account string) bool {
 	for _, admin := range GetServerConfig().Admins {
 		if strings.EqualFold(account, admin) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsAssistant is assistant
+func IsAssistant(account string) bool {
+	for _, assistant := range GetServerConfig().Assistants {
+		if strings.EqualFold(account, assistant) {
 			return true
 		}
 	}
