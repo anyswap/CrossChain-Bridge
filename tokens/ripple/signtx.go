@@ -109,15 +109,9 @@ func (b *Bridge) SignTransaction(rawTx interface{}, pairID string) (signedTx int
 
 // SignTransactionWithPrivateKey sign tx with ECDSA private key
 func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa.PrivateKey) (signTx interface{}, txHash string, err error) {
-	// TODO
-	return nil, "", nil
-}
-
-// SignTransactionWithRippleKey sign tx with ripple key
-func (b *Bridge) SignTransactionWithRippleKey(rawTx interface{}, key rcrypto.Key, keyseq *uint32) (signTx interface{}, txHash string, err error) {
 	tx, ok := rawTx.(*data.Payment)
 	if !ok {
-		return nil, "", fmt.Errorf("Sign transaction type assertion error")
+		return nil, "", fmt.Errorf("sign transaction type assertion error")
 	}
 
 	hash1, msg, err := data.SigningHash(tx)
@@ -131,7 +125,47 @@ func (b *Bridge) SignTransactionWithRippleKey(rawTx interface{}, key rcrypto.Key
 	hashBytes, err := hex.DecodeString(hash)
 	if err != nil {
 		// Unexpected
-		return nil, "", fmt.Errorf("Malformed tx hash, %v", err)
+		return nil, "", fmt.Errorf("tx hash error, %v", err)
+	}
+
+	signature, err := (*btcec.PrivateKey)(privKey).Sign(hashBytes)
+	if err != nil {
+		// Unexpected
+		return nil, "", fmt.Errorf("sign with private key error, %v", err)
+	}
+
+	rx := fmt.Sprintf("%X", signature.R)
+	rx = make64(rx)
+	sx := fmt.Sprintf("%X", signature.S)
+	sx = make64(sx)
+	rsv := rx + sx + "00"
+
+	stx, err := b.MakeSignedTransaction([]string{rsv}, tx)
+	if err != nil {
+		return nil, "", err
+	}
+	return stx, "", nil
+}
+
+// SignTransactionWithRippleKey sign tx with ripple key
+func (b *Bridge) SignTransactionWithRippleKey(rawTx interface{}, key rcrypto.Key, keyseq *uint32) (signTx interface{}, txHash string, err error) {
+	tx, ok := rawTx.(*data.Payment)
+	if !ok {
+		return nil, "", fmt.Errorf("sign transaction type assertion error")
+	}
+
+	hash1, msg, err := data.SigningHash(tx)
+	if err != nil {
+		return nil, "", err
+	}
+	log.Info("Prepare to sign", "signing hash", hash1.String(), "blob", fmt.Sprintf("%X", msg))
+
+	hash := fmt.Sprintf("%v", hash1)
+
+	hashBytes, err := hex.DecodeString(hash)
+	if err != nil {
+		// Unexpected
+		return nil, "", fmt.Errorf("tx hash error, %v", err)
 	}
 
 	sig, err := rcrypto.Sign(key.Private(keyseq), hashBytes, nil)
