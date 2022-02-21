@@ -50,10 +50,6 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, tokens.ErrUnknownPairID
 	}
 
-	if !allowUnstable && !b.checkStable(txHash) {
-		return swapInfo, tokens.ErrTxNotStable
-	}
-
 	tx, err := b.GetTransaction(txHash)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
@@ -63,13 +59,25 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	txres, ok := tx.(*websockets.TxResult)
 	if !ok {
 		// unexpected
-		return swapInfo, fmt.Errorf("Unexpected: tx type is not data.TxResult")
+		return swapInfo, fmt.Errorf("unexpected: tx type is not data.TxResult")
+	}
+
+	if !txres.Validated {
+		return swapInfo, fmt.Errorf("ripple tx is not validated")
+	}
+
+	h, err := b.GetLatestBlockNumber()
+	if err != nil {
+		return swapInfo, err
+	}
+
+	if h-uint64(txres.TransactionWithMetaData.LedgerSequence) < *b.GetChainConfig().Confirmations {
+		return swapInfo, fmt.Errorf("ripple ledger height not stable")
 	}
 
 	// Check tx status
 	if txres.TransactionWithMetaData.MetaData.TransactionResult != 0 {
-		log.Printf("Tx result: %v", txres.TransactionWithMetaData.MetaData.TransactionResult)
-		return swapInfo, fmt.Errorf("Ripple tx status is not success")
+		return swapInfo, fmt.Errorf("ripple tx status is not success")
 	}
 
 	payment, ok := txres.TransactionWithMetaData.Transaction.(*data.Payment)
@@ -83,18 +91,16 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
+	err = checkToken(pairID, payment)
+	if err != nil {
+		return swapInfo, err
+	}
+
 	bind, ok := GetBindAddressFromMemos(payment)
 	if !ok {
 		log.Debug("wrong memos", "memos", payment.Memos)
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
-
-	if payment.Amount.Currency.Machine() != "XRP" {
-		log.Warn("Ripple payment currency is not XRP", "currency", payment.Amount.Currency.Machine())
-		return nil, fmt.Errorf("Ripple payment currency is not XRP, currency: %v", payment.Amount.Currency)
-	}
-
-	// TODO check issuer
 
 	amt := big.NewInt(int64(payment.Amount.Float() * 1000000))
 
@@ -103,15 +109,22 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	swapInfo.Bind = bind                                      // Bind
 	swapInfo.Value = amt
 
-	if !allowUnstable {
-		log.Debug("verify swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
-	}
+	log.Debug("verify swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	return swapInfo, nil
 }
 
-func (b *Bridge) checkStable(txHash string) bool {
-	// always true
-	return true
+func checkToken(pairID string, payment *data.Payment) error {
+	if strings.EqualFold(pairID, "xrp") {
+		if payment.Amount.Currency.Machine() != "XRP" {
+			log.Warn("Ripple payment currency is not XRP", "currency", payment.Amount.Currency.Machine())
+			return fmt.Errorf("ripple payment currency is not XRP, currency: %v", payment.Amount.Currency)
+		}
+	} else {
+		// TODO add support to other token
+		return fmt.Errorf("ripple bridge only support XRP")
+	}
+	// TODO check issuer
+	return nil
 }
 
 // GetBindAddressFromMemos get bind address

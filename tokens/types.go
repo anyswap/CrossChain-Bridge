@@ -150,10 +150,10 @@ func (args *BuildTxArgs) GetTxGasPrice() *big.Int {
 
 // AllExtras struct
 type AllExtras struct {
-	BtcExtra   *BtcExtraArgs `json:"btcExtra,omitempty"`
-	EthExtra   *EthExtraArgs `json:"ethExtra,omitempty"`
-	ReplaceNum uint64        `json:"replaceNum,omitempty"`
-	XrpExtra   *XrpExtraArgs `json:"xrpExtra,omitempty"`
+	BtcExtra    *BtcExtraArgs `json:"btcExtra,omitempty"`
+	EthExtra    *EthExtraArgs `json:"ethExtra,omitempty"`
+	ReplaceNum  uint64        `json:"replaceNum,omitempty"`
+	RippleExtra *RippleExtra  `json:"rippleExtra,omitempty"`
 }
 
 // EthExtraArgs struct
@@ -165,8 +165,8 @@ type EthExtraArgs struct {
 	Nonce     *uint64  `json:"nonce,omitempty"`
 }
 
-// XrpExtraArgs struct
-type XrpExtraArgs struct {
+// RippleExtraArgs struct
+type RippleExtra struct {
 	FromPublic string  `json:fromPublic,omitempty`
 	Sequence   *uint32 `json:sequence,omitempty`
 	Fee        *int64  `json:fee,omitempty`

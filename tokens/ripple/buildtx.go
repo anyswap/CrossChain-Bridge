@@ -47,33 +47,35 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, errors.New("no sender specified")
 	}
 
-	var extra *tokens.XrpExtraArgs
-	if args.Extra == nil || args.Extra.XrpExtra == nil {
+	var extra *tokens.RippleExtra
+	if args.Extra == nil || args.Extra.RippleExtra == nil {
 		extra = b.swapoutDefaultArgs()
-		args.Extra = &tokens.AllExtras{XrpExtra: extra}
+		args.Extra = &tokens.AllExtras{RippleExtra: extra}
 		sequence = *extra.Sequence
 		fee = *extra.Fee
-		pubkey = args.Extra.XrpExtra.FromPublic
+		pubkey = args.Extra.RippleExtra.FromPublic
 	} else {
-		extra = args.Extra.XrpExtra
+		extra = args.Extra.RippleExtra
 		if extra.Sequence != nil {
 			sequence = *extra.Sequence
 		}
 		if extra.Fee != nil {
 			fee = *extra.Fee
 		}
-		pubkey = args.Extra.XrpExtra.FromPublic
+		pubkey = args.Extra.RippleExtra.FromPublic
 	}
 
 	if args.SwapType != tokens.NoSwapType {
 		args.Identifier = params.GetIdentifier()
 	}
 
-	bal, err := b.GetBalance(from)
+	remain, err := b.GetBalance(from)
 	if err != nil {
 		log.Warn("Get from address balance error", "error", err)
 	}
-	remain := new(big.Int).Sub(bal, amount)
+	if pairID == "XRP" {
+		remain = new(big.Int).Sub(remain, amount)
+	}
 	if remain.Cmp(big.NewInt(20000000)) < 1 {
 		return nil, fmt.Errorf("Insufficient xrp balance")
 	}
@@ -82,8 +84,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	return rawtx, err
 }
 
-func (b *Bridge) swapoutDefaultArgs() *tokens.XrpExtraArgs {
-	args := &tokens.XrpExtraArgs{
+func (b *Bridge) swapoutDefaultArgs() *tokens.RippleExtra {
+	args := &tokens.RippleExtra{
 		FromPublic: b.GetDcrmPublicKey(pairID),
 		Sequence:   new(uint32),
 		Fee:        new(int64),
@@ -99,7 +101,7 @@ func (b *Bridge) swapoutDefaultArgs() *tokens.XrpExtraArgs {
 
 	seq, err := b.GetSeq(dcrmAddr)
 	if err != nil {
-		log.Warn("Get sequence error when setting default xrp args", "error", err)
+		log.Warn("Get sequence error when setting default ripple args", "error", err)
 	}
 	*args.Sequence = seq
 	addPercent := token.PlusGasPricePercentage
@@ -115,14 +117,14 @@ func (b *Bridge) swapoutDefaultArgs() *tokens.XrpExtraArgs {
 // BuildUnsignedTransaction build ripple unsigned transaction
 func (b *Bridge) BuildUnsignedTransaction(fromAddress, fromPublicKey, toAddress string, amount *big.Int, sequence uint32, fee int64) (transaction interface{}, digests []string, err error) {
 	pub, err := hex.DecodeString(fromPublicKey)
-	xrpPubKey := ImportPublicKey(pub)
+	ripplePubKey := ImportPublicKey(pub)
 	amt := amount.String()
 	txseq, err := b.GetSeq(fromAddress)
 	if err != nil {
 		return nil, nil, err
 	}
 	memo := ""
-	transaction, hash, _ := NewUnsignedPaymentTransaction(xrpPubKey, nil, txseq, toAddress, amt, fee, memo, "", false, false, false)
+	transaction, hash, _ := NewUnsignedPaymentTransaction(ripplePubKey, nil, txseq, toAddress, amt, fee, memo, "", false, false, false)
 	digests = append(digests, hash.String())
 	return
 }
@@ -139,7 +141,7 @@ func (b *Bridge) GetSeq(address string) (uint32, error) {
 	return 0, nil // unexpected
 }
 
-// NewUnsignedPaymentTransaction build xrp payment tx
+// NewUnsignedPaymentTransaction build ripple payment tx
 // Partial and limit must be false
 func NewUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32, dest string, amt string, fee int64, memo string, path string, nodirect bool, partial bool, limit bool) (data.Transaction, data.Hash256, []byte) {
 	if partial == true {

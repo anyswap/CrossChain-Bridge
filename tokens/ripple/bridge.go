@@ -71,6 +71,8 @@ func (b *Bridge) VerifyChainConfig() {
 		return
 	case "testnet":
 		return
+	case "devnet":
+		return
 	default:
 		log.Fatal("unsupported bitcoin network", "netID", chainCfg.NetID)
 	}

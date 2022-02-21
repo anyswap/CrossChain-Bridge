@@ -47,7 +47,7 @@ func (b *Bridge) verifyTransactionWithArgs(tx data.Transaction, args *tokens.Bui
 
 // DcrmSignTransaction dcrm sign raw tx
 func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
-	log.Debug("XRP DcrmSignTransaction")
+	log.Debug("Ripple DcrmSignTransaction")
 
 	payment, ok := rawTx.(*data.Payment)
 	if !ok {
@@ -170,7 +170,7 @@ func (b *Bridge) SignTransactionWithRippleKey(rawTx interface{}, key rcrypto.Key
 
 	sig, err := rcrypto.Sign(key.Private(keyseq), hashBytes, nil)
 	if err != nil {
-		return nil, "", fmt.Errorf("Sign hash error: %v", err)
+		return nil, "", fmt.Errorf("sign hash error: %v", err)
 	}
 
 	signature, err := btcec.ParseSignature(sig, btcec.S256())
@@ -193,7 +193,7 @@ func (b *Bridge) MakeSignedTransaction(rsv []string, transaction interface{}) (s
 	sig := rsvToSig(rsv[0])
 	tx, ok := transaction.(*data.Payment)
 	if !ok {
-		return nil, fmt.Errorf("Type assertion error, transaction is not a payment")
+		return nil, fmt.Errorf("type assertion error, transaction is not a payment")
 	}
 	signedTransaction = makeSignedTx(tx, sig)
 	return
@@ -203,7 +203,7 @@ func makeSignedTx(tx *data.Payment, sig []byte) data.Transaction {
 	*tx.GetSignature() = data.VariableLength(sig)
 	hash, _, err := data.Raw(tx)
 	if err != nil {
-		log.Warn("Encode XRP tx error", "error", err)
+		log.Warn("encode ripple tx error", "error", err)
 		return tx
 	}
 	copy(tx.GetHash().Bytes(), hash.Bytes())

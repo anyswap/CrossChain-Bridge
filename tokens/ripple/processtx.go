@@ -7,7 +7,7 @@ import (
 
 func (b *Bridge) processTransaction(txid string) {
 	if b.IsSrc {
-		swapInfo, err := b.VerifyTransaction("XRP", txid, false)
+		swapInfo, err := b.VerifyTransaction(pairID, txid, false)
 		swapInfos := []*tokens.TxSwapInfo{swapInfo}
 		errs := []error{err}
 		tools.RegisterSwapin(txid, swapInfos, errs)

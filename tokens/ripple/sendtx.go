@@ -54,8 +54,18 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 // DoPostRequest only for test
 func DoPostRequest(url, api, reqData string) string {
 	req := bytes.NewBuffer([]byte(reqData))
-	resp, _ := http.Post(url+"/"+api, "application/json;charset=utf-8", req)
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	resp, err := http.Post(url+"/"+api, "application/json;charset=utf-8", req)
+	if err != nil {
+		return ""
+	}
+	defer func() {
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
 	return string(body)
 }
