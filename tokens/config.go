@@ -502,6 +502,10 @@ func (c *TokenConfig) IsInBigValueWhitelist(caller string) bool {
 
 // GetDcrmAddressPrivateKey get private key
 func (c *TokenConfig) GetDcrmAddressPrivateKey() *string {
+	// get rid of '0x' prefix
+	if common.HasHexPrefix(c.DcrmAddressPriKey) {
+		c.DcrmAddressPriKey = c.DcrmAddressPriKey[2:]
+	}
 	if c.DcrmAddressPriKey == "" {
 		return nil
 	}
