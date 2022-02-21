@@ -11,6 +11,10 @@ Assistants = [
         "0x6666666666666666666666666666666666666666"
 ]
 
+# send tx loop count until success (use negative to disable loop)
+SendTxLoopCount = 30
+SendTxLoopInterval = 10
+
 # modgodb database connection config (server only)
 [Server.MongoDB]
 # DBURLs is prefered if exists. forbids set both DBURL and DBURLs.

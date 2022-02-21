@@ -59,6 +59,9 @@ type ServerConfig struct {
 	APIServer  *APIServerConfig `toml:",omitempty" json:",omitempty"`
 	Admins     []string         `toml:",omitempty" json:",omitempty"`
 	Assistants []string         `toml:",omitempty" json:",omitempty"`
+
+	SendTxLoopCount    int `toml:",omitempty" json:",omitempty"`
+	SendTxLoopInterval int `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmConfig dcrm related config
