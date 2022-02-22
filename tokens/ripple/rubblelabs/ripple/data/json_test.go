@@ -37,17 +37,3 @@ func (s *JSONSuite) TestTransactionsJSON(c *C) {
 		compare(c, f, b, out)
 	}
 }
-
-func (s *JSONSuite) TestLedgersJSON(c *C) {
-	files, err := filepath.Glob("testdata/ledger_*.json")
-	c.Assert(err, IsNil)
-	for _, f := range files {
-		b, err := ioutil.ReadFile(f)
-		c.Assert(err, IsNil)
-		var ledger Ledger
-		c.Assert(json.Unmarshal(b, &ledger), IsNil)
-		out, err := json.MarshalIndent(ledger, "", "  ")
-		c.Assert(err, IsNil)
-		compare(c, f, b, out)
-	}
-}

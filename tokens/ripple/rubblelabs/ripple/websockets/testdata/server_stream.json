@@ -1,6 +1,0 @@
-{
-    "server_status": "syncing", 
-    "type": "serverStatus", 
-    "load_base": 256, 
-    "load_factor": 256
-}
