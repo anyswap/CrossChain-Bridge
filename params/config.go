@@ -67,6 +67,7 @@ type ServerConfig struct {
 // DcrmConfig dcrm related config
 type DcrmConfig struct {
 	Disable       bool
+	SignType      string // ECDSA, ED25519 etc.
 	APIPrefix     string
 	RPCTimeout    uint64
 	SignTimeout   uint64

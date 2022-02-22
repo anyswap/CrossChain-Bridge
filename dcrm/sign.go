@@ -96,7 +96,7 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 		PubKey:     signPubkey,
 		MsgHash:    msgHash,
 		MsgContext: msgContext,
-		Keytype:    "ECDSA",
+		Keytype:    dcrmSignType,
 		GroupID:    dcrmNode.signGroups[signGroupIndex],
 		ThresHold:  dcrmThreshold,
 		Mode:       dcrmMode,
@@ -118,15 +118,18 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 	if err != nil {
 		return "", nil, err
 	}
-	for _, rsv := range rsvs {
-		signature := common.FromHex(rsv)
-		if len(signature) != crypto.SignatureLength {
-			return "", nil, errWrongSignatureLength
-		}
-		r := common.ToHex(signature[:32])
-		err = mongodb.AddUsedRValue(signPubkey, r)
-		if err != nil {
-			return "", nil, errRValueIsUsed
+
+	if isECDSA() { // prevent multiple use of same r value
+		for _, rsv := range rsvs {
+			signature := common.FromHex(rsv)
+			if len(signature) != crypto.SignatureLength {
+				return "", nil, errWrongSignatureLength
+			}
+			r := common.ToHex(signature[:32])
+			err = mongodb.AddUsedRValue(signPubkey, r)
+			if err != nil {
+				return "", nil, errRValueIsUsed
+			}
 		}
 	}
 

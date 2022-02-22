@@ -24,6 +24,7 @@ var (
 	dcrmSigner = types.MakeSigner("EIP155", big.NewInt(dcrmWalletServiceID))
 	dcrmToAddr = common.HexToAddress(dcrmToAddress)
 
+	dcrmSignType      = "ECDSA" // default sign type
 	dcrmAPIPrefix     = "dcrm_" // default prefix
 	dcrmGroupID       string
 	dcrmThreshold     string
@@ -41,6 +42,10 @@ var (
 	allEnodes []string
 )
 
+func isECDSA() bool {
+	return dcrmSignType == "ECDSA"
+}
+
 // NodeInfo dcrm node info
 type NodeInfo struct {
 	keyWrapper     *keystore.Key
@@ -53,6 +58,10 @@ type NodeInfo struct {
 func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 	if dcrmConfig.Disable {
 		return
+	}
+
+	if dcrmConfig.SignType != "" {
+		dcrmSignType = dcrmConfig.SignType
 	}
 
 	if dcrmConfig.APIPrefix != "" {
@@ -79,7 +88,7 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 	initAllEnodes()
 
 	verifyInitiators(dcrmConfig.Initiators)
-	log.Info("init dcrm success", "signTimeout", dcrmSignTimeout.String(), "isServer", isServer)
+	log.Info("init dcrm success", "signTimeout", dcrmSignTimeout.String(), "isServer", isServer, "signType", dcrmSignType, "apiPrefix", dcrmAPIPrefix)
 }
 
 // setDefaultDcrmNodeInfo set default dcrm node info

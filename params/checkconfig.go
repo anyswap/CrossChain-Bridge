@@ -2,6 +2,7 @@ package params
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -119,6 +120,11 @@ func (c *MongoDBConfig) CheckConfig() error {
 func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	if c.Disable {
 		return nil
+	}
+	switch c.SignType {
+	case "", "ECDSA", "ED25519":
+	default:
+		return fmt.Errorf("unknown dcrm sign type '%v'", c.SignType)
 	}
 	if c.GroupID == nil {
 		return errors.New("dcrm must config 'GroupID'")
