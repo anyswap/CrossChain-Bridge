@@ -152,6 +152,7 @@ type TokenConfig struct {
 	RippleExtra       *RippleTokenExtra
 }
 
+// RippleTokenExtra ripple extra
 type RippleTokenExtra struct {
 	Currency string
 	Issuer   string

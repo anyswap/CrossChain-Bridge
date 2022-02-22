@@ -21,16 +21,16 @@ var (
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var (
+		pairID   = args.PairID
 		sequence uint32
 		fee      int64
 		pubkey   string
-		pairID   = args.PairID
-		token    = b.GetTokenConfig(pairID)
-		from     = args.From
-		to       = args.To
-		amount   = args.Value
+		from     string
+		to       string
+		amount   *big.Int
 	)
 
+	token := b.GetTokenConfig(pairID)
 	if token == nil {
 		return nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
 	}
@@ -42,6 +42,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		from = token.DcrmAddress                                                    // from
 		to = args.Bind                                                              // to
 		amount = tokens.CalcSwappedValue(pairID, args.OriginValue, false, from, to) // amount
+	default:
+		return nil, tokens.ErrUnknownSwapType
 	}
 
 	if from == "" {
@@ -151,10 +153,10 @@ func (b *Bridge) GetSeq(args *tokens.BuildTxArgs, address string) (nonceptr *uin
 // NewUnsignedPaymentTransaction build ripple payment tx
 // Partial and limit must be false
 func NewUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32, dest string, amt string, fee int64, memo string, path string, nodirect bool, partial bool, limit bool) (data.Transaction, data.Hash256, []byte) {
-	if partial == true {
+	if partial {
 		log.Warn("Building tx with partial")
 	}
-	if limit == true {
+	if limit {
 		log.Warn("Building tx with limit")
 	}
 

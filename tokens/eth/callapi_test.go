@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"context"
 	"io/ioutil"
 	"math/big"
 	"net/http"
@@ -18,7 +19,7 @@ import (
 
 func TestSendTx(t *testing.T) {
 	url := "https://rpc-testnet.rei.network"
-	chainId := big.NewInt(12357)
+	chainID := big.NewInt(12357)
 	b, _ := hexutil.Decode("0x9e557ceb31535e269d53fcf9604efd799f383505edf08b64defcbf45a6c4a0db")
 	mykey, _ := ecrypto.ToECDSA(b)
 	mykey.Curve = btcec.S256()
@@ -26,7 +27,7 @@ func TestSendTx(t *testing.T) {
 	var nonce uint64 = 5
 	amount, _ := new(big.Int).SetString("3450000000000000000000000000", 0)
 	tx := types.NewTransaction(nonce, to, amount, 1000000, big.NewInt(1e9), nil)
-	signer := types.NewEIP2930Signer(chainId)
+	signer := types.NewEIP2930Signer(chainID)
 	signedTx, signerr := types.SignTx(tx, signer, mykey)
 	if signerr != nil {
 		t.Error(signerr)
@@ -59,7 +60,7 @@ func TestGetLatestBlockNumber(t *testing.T) {
 func TestGetLatestBlockNumber2(t *testing.T) {
 	client := &http.Client{}
 	var data = strings.NewReader(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`)
-	req, err := http.NewRequest("POST", "https://mainnet.aurora.dev/5vwoRnBWvhXD2qjBsKX5UNGdLuaZonTiqJLs9BnrzXLs", data)
+	req, err := http.NewRequestWithContext(context.Background(), "POST", "https://mainnet.aurora.dev/5vwoRnBWvhXD2qjBsKX5UNGdLuaZonTiqJLs9BnrzXLs", data)
 	//req, err := http.NewRequest("POST", "http://1.15.228.87:30003", data)
 	if err != nil {
 		t.Error(err)

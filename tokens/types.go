@@ -165,7 +165,7 @@ type EthExtraArgs struct {
 	Nonce     *uint64  `json:"nonce,omitempty"`
 }
 
-// RippleExtraArgs struct
+// RippleExtra struct
 type RippleExtra struct {
 	FromPublic string  `json:"fromPublic,omitempty"`
 	Sequence   *uint32 `json:"sequence,omitempty"`

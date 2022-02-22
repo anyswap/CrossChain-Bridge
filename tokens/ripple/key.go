@@ -15,8 +15,7 @@ const (
 )
 
 const (
-	pubkeyCompressed   byte = 0x2
-	pubkeyUncompressed byte = 0x4
+	pubkeyCompressed byte = 0x2
 )
 
 // ImportKeyFromSeed converts seed to ripple key

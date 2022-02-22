@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
@@ -18,11 +17,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/data"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/btcsuite/btcd/btcec"
-)
-
-const (
-	retryGetSignStatusCount    = 70
-	retryGetSignStatusInterval = 10 * time.Second
 )
 
 func (b *Bridge) verifyTransactionWithArgs(tx data.Transaction, args *tokens.BuildTxArgs) error {
@@ -174,6 +168,9 @@ func (b *Bridge) SignTransactionWithRippleKey(rawTx interface{}, key rcrypto.Key
 	}
 
 	signature, err := btcec.ParseSignature(sig, btcec.S256())
+	if err != nil {
+		return nil, "", fmt.Errorf("parse signature error: %v", err)
+	}
 
 	rx := fmt.Sprintf("%X", signature.R)
 	rx = make64(rx)

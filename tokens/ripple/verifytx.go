@@ -40,7 +40,7 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	return b.verifySwapinTxWithPairID(pairID, txHash, allowUnstable)
 }
 
-func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, _ bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash
@@ -147,12 +147,4 @@ func GetBindAddressFromMemos(tx data.Transaction) (bind string, ok bool) {
 		log.Warn("Bind address is not a valid destination address", "bind ascii", bindStr, "bind hex", bindBytes)
 	}
 	return "", false
-}
-
-func addSwapInfoConsiderError(swapInfo *tokens.TxSwapInfo, err error, swapInfos *[]*tokens.TxSwapInfo, errs *[]error) {
-	if !tokens.ShouldRegisterSwapForError(err) {
-		return
-	}
-	*swapInfos = append(*swapInfos, swapInfo)
-	*errs = append(*errs, err)
 }

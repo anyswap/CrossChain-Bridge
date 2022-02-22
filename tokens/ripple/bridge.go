@@ -181,6 +181,7 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 	return
 }
 
+// errors
 var (
 	ErrTxResultType = errors.New("tx type is not data.TxResult")
 	ErrTxNotSuccess = func(txres interface{}) error { return fmt.Errorf("ripple tx status is not success: %v", txres) }

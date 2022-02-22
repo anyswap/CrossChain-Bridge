@@ -1,13 +1,11 @@
 package ripple
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/data"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/websockets"
 )
@@ -53,19 +51,10 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 
 // DoPostRequest only for test
 func DoPostRequest(url, api, reqData string) string {
-	req := bytes.NewBuffer([]byte(reqData))
-	resp, err := http.Post(url+"/"+api, "application/json;charset=utf-8", req)
+	apiAddress := url + "/" + api
+	res, err := client.RPCRawPost(apiAddress, reqData)
 	if err != nil {
-		return ""
+		log.Warn("do post request failed", "url", apiAddress, "data", reqData, "err", err)
 	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return ""
-	}
-	return string(body)
+	return res
 }
