@@ -14,7 +14,8 @@ import (
 )
 
 var (
-	defaultFee int64 = 10
+	defaultFee     int64 = 10
+	accountReserve       = big.NewInt(10000000)
 )
 
 // BuildRawTransaction build raw tx
@@ -49,7 +50,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 
 	var extra *tokens.RippleExtra
 	if args.Extra == nil || args.Extra.RippleExtra == nil {
-		extra = b.swapoutDefaultArgs()
+		extra = b.swapoutDefaultArgs(args)
 		args.Extra = &tokens.AllExtras{RippleExtra: extra}
 		sequence = *extra.Sequence
 		fee = *extra.Fee
@@ -76,34 +77,34 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	if pairID == "XRP" {
 		remain = new(big.Int).Sub(remain, amount)
 	}
-	if remain.Cmp(big.NewInt(20000000)) < 1 {
-		return nil, fmt.Errorf("Insufficient xrp balance")
+	if remain.Cmp(accountReserve) < 0 {
+		return nil, fmt.Errorf("insufficient xrp balance")
 	}
 
-	rawtx, _, err := b.BuildUnsignedTransaction(from, pubkey, to, amount, sequence, fee)
+	rawtx, _, err := b.BuildUnsignedTransaction(from, pubkey, sequence, to, amount, sequence, fee)
 	return rawtx, err
 }
 
-func (b *Bridge) swapoutDefaultArgs() *tokens.RippleExtra {
+func (b *Bridge) swapoutDefaultArgs(txargs *tokens.BuildTxArgs) *tokens.RippleExtra {
 	args := &tokens.RippleExtra{
-		FromPublic: b.GetDcrmPublicKey(pairID),
+		FromPublic: b.GetDcrmPublicKey(txargs.PairID),
 		Sequence:   new(uint32),
 		Fee:        new(int64),
 	}
 
-	token := b.GetTokenConfig(pairID)
+	token := b.GetTokenConfig(txargs.PairID)
 	if token == nil {
-		log.Warn("Swap pair id not configed", "pairID", pairID)
+		log.Warn("Swap pair id not configed", "pairID", txargs.PairID)
 		return args
 	}
 
 	dcrmAddr := token.DcrmAddress
 
-	seq, err := b.GetSeq(dcrmAddr)
+	seq, err := b.GetSeq(txargs, dcrmAddr)
 	if err != nil {
 		log.Warn("Get sequence error when setting default ripple args", "error", err)
 	}
-	*args.Sequence = seq
+	*args.Sequence = *seq
 	addPercent := token.PlusGasPricePercentage
 	if addPercent > 0 {
 		*args.Fee = *args.Fee * (int64(100 + addPercent)) / 100
@@ -115,14 +116,10 @@ func (b *Bridge) swapoutDefaultArgs() *tokens.RippleExtra {
 }
 
 // BuildUnsignedTransaction build ripple unsigned transaction
-func (b *Bridge) BuildUnsignedTransaction(fromAddress, fromPublicKey, toAddress string, amount *big.Int, sequence uint32, fee int64) (transaction interface{}, digests []string, err error) {
+func (b *Bridge) BuildUnsignedTransaction(fromAddress, fromPublicKey string, txseq uint32, toAddress string, amount *big.Int, sequence uint32, fee int64) (transaction interface{}, digests []string, err error) {
 	pub, err := hex.DecodeString(fromPublicKey)
 	ripplePubKey := ImportPublicKey(pub)
 	amt := amount.String()
-	txseq, err := b.GetSeq(fromAddress)
-	if err != nil {
-		return nil, nil, err
-	}
 	memo := ""
 	transaction, hash, _ := NewUnsignedPaymentTransaction(ripplePubKey, nil, txseq, toAddress, amt, fee, memo, "", false, false, false)
 	digests = append(digests, hash.String())
@@ -130,15 +127,25 @@ func (b *Bridge) BuildUnsignedTransaction(fromAddress, fromPublicKey, toAddress 
 }
 
 // GetSeq returns account tx sequence
-func (b *Bridge) GetSeq(address string) (uint32, error) {
+func (b *Bridge) GetSeq(args *tokens.BuildTxArgs, address string) (nonceptr *uint32, err error) {
+	var nonce uint32
 	account, err := b.GetAccount(address)
 	if err != nil {
-		return 0, fmt.Errorf("cannot get account, %v", err)
+		return nil, fmt.Errorf("cannot get account, %v", err)
 	}
 	if seq := account.AccountData.Sequence; seq != nil {
-		return *seq, nil
+		nonce = *seq
 	}
-	return 0, nil // unexpected
+	if args == nil {
+		return &nonce, nil
+	}
+	if args.SwapType != tokens.NoSwapType {
+		tokenCfg := b.GetTokenConfig(args.PairID)
+		if tokenCfg != nil && args.From == tokenCfg.DcrmAddress {
+			nonce = uint32(b.AdjustNonce(args.PairID, uint64(nonce)))
+		}
+	}
+	return &nonce, nil // unexpected
 }
 
 // NewUnsignedPaymentTransaction build ripple payment tx

@@ -83,7 +83,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	payment, ok := txres.TransactionWithMetaData.Transaction.(*data.Payment)
 	if !ok || payment.GetTransactionType() != data.PAYMENT {
 		log.Printf("Not a payment transaction")
-		return swapInfo, fmt.Errorf("Not a payment transaction")
+		return swapInfo, fmt.Errorf("not a payment transaction")
 	}
 
 	txRecipient := payment.Destination.String()
@@ -91,7 +91,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
-	err = checkToken(pairID, payment)
+	err = b.checkToken(pairID, &txres.TransactionWithMetaData)
 	if err != nil {
 		return swapInfo, err
 	}
@@ -102,7 +102,10 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
-	amt := big.NewInt(int64(payment.Amount.Float() * 1000000))
+	if !txres.TransactionWithMetaData.MetaData.DeliveredAmount.IsPositive() {
+		return swapInfo, fmt.Errorf("payment amount error")
+	}
+	amt := big.NewInt(int64(txres.TransactionWithMetaData.MetaData.DeliveredAmount.Float() * 1000000))
 
 	swapInfo.To = token.DepositAddress                        // To
 	swapInfo.From = strings.ToLower(payment.Account.String()) // From
@@ -113,17 +116,16 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	return swapInfo, nil
 }
 
-func checkToken(pairID string, payment *data.Payment) error {
-	if strings.EqualFold(pairID, "xrp") {
-		if payment.Amount.Currency.Machine() != "XRP" {
-			log.Warn("Ripple payment currency is not XRP", "currency", payment.Amount.Currency.Machine())
-			return fmt.Errorf("ripple payment currency is not XRP, currency: %v", payment.Amount.Currency)
-		}
-	} else {
-		// TODO add support to other token
-		return fmt.Errorf("ripple bridge only support XRP")
+func (b *Bridge) checkToken(pairID string, txmeta *data.TransactionWithMetaData) error {
+	token := b.GetTokenConfig(pairID)
+	if !strings.EqualFold(token.RippleExtra.Currency, txmeta.MetaData.DeliveredAmount.Currency.Machine()) {
+		return fmt.Errorf("ripple currency not match")
 	}
-	// TODO check issuer
+	if !txmeta.MetaData.DeliveredAmount.Currency.IsNative() {
+		if !strings.EqualFold(token.RippleExtra.Issuer, txmeta.MetaData.DeliveredAmount.Issuer.String()) {
+			return fmt.Errorf("ripple currency issuer not match")
+		}
+	}
 	return nil
 }
 

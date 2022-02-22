@@ -5,7 +5,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
-func (b *Bridge) processTransaction(txid string) {
+func (b *Bridge) processTransaction(pairID, txid string) {
 	if b.IsSrc {
 		swapInfo, err := b.VerifyTransaction(pairID, txid, false)
 		swapInfos := []*tokens.TxSwapInfo{swapInfo}

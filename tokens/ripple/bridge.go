@@ -16,10 +16,9 @@ import (
 // Bridge block bridge inherit from btc bridge
 type Bridge struct {
 	*tokens.CrossChainBridgeBase
+	*NonceSetterBase
 	Remotes map[string]*websockets.Remote
 }
-
-var pairID = "xrp"
 
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
