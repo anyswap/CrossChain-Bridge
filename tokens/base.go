@@ -38,6 +38,8 @@ var (
 
 	IsDcrmDisabled bool
 
+	IsSwapoutToStringAddress bool
+
 	TokenPriceCfg *TokenPriceConfig
 )
 

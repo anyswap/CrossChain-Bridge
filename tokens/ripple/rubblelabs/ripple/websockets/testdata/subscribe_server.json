@@ -1,0 +1,11 @@
+{
+    "status": "success", 
+    "type": "response", 
+    "id": 3, 
+    "result": {
+        "server_status": "full", 
+        "random": "FE219B7FF98B3A1275C46611E14C5B55D28A40DA6A3D1598987CD41EAF74FD94", 
+        "load_base": 256, 
+        "load_factor": 256
+    }
+}

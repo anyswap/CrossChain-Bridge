@@ -1,0 +1,33 @@
+[
+  {
+    "seed": "snoPBrXtMeMyMHUVTgbuqAfg1SUTb",
+    "fee": "10000",
+    "payments": [
+      {
+        "sequence":1,
+        "destination": "rb1fWuuAEtPUaeEWxocV3h4x5JwDTFZzH",
+        "amount": "2000000000"
+      },
+      {
+        "sequence":2,
+        "destination": "rb2L6Ujzku4hQWiCYyJQZJD9A1qEsUz5g",
+        "amount": "2000000000"
+      },
+      {
+        "sequence":3,
+        "destination": "rb3Kd8w5Ego7VeGnduFXm8Tw9dpi37v3A",
+        "amount": "2000000000"
+      },
+      {
+        "sequence":4,
+        "destination": "rb4S2wP8MP6c82XpkVQ2MHUt3Wop7fRvT",
+        "amount": "2000000000"
+      },
+      {
+        "sequence":5,
+        "destination": "rb3Kd8w5Ego7VeGnduFXm8Tw9dpi37v3A",
+        "amount": "2000000000"
+      }
+    ]
+  }
+]

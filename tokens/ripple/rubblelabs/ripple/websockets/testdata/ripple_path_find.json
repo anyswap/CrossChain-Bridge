@@ -1,0 +1,94 @@
+{
+   "status" : "success",
+   "type" : "response",
+   "result" : {
+      "alternatives" : [
+         {
+            "paths_computed" : [
+               [
+                  {
+                     "currency" : "XRP",
+                     "type_hex" : "0000000000000010",
+                     "type" : 16
+                  },
+                  {
+                     "currency" : "SGD",
+                     "type_hex" : "0000000000000030",
+                     "type" : 48,
+                     "issuer" : "r9Dr5xwkeLegBeXq6ujinjSBLQzQ1zQGjH"
+                  }
+               ],
+               [
+                  {
+                     "account" : "rMZKeAt1vMjhuNCWDiB4SdzJRiymdpERw4",
+                     "type_hex" : "0000000000000001",
+                     "type" : 1
+                  },
+                  {
+                     "account" : "r9Dr5xwkeLegBeXq6ujinjSBLQzQ1zQGjH",
+                     "type_hex" : "0000000000000001",
+                     "type" : 1
+                  },
+                  {
+                     "currency" : "SGD",
+                     "type_hex" : "0000000000000030",
+                     "type" : 48,
+                     "issuer" : "r9Dr5xwkeLegBeXq6ujinjSBLQzQ1zQGjH"
+                  }
+               ],
+               [
+                  {
+                     "account" : "rrpNnNLKrartuEqfJGpqyDwPj1AFPg9vn1",
+                     "type_hex" : "0000000000000001",
+                     "type" : 1
+                  },
+                  {
+                     "currency" : "XRP",
+                     "type_hex" : "0000000000000010",
+                     "type" : 16
+                  },
+                  {
+                     "currency" : "SGD",
+                     "type_hex" : "0000000000000030",
+                     "type" : 48,
+                     "issuer" : "r9Dr5xwkeLegBeXq6ujinjSBLQzQ1zQGjH"
+                  }
+               ],
+               [
+                  {
+                     "account" : "rP5ShE8dGBH6hHtNvRESdMceen36XFBQmh",
+                     "type_hex" : "0000000000000001",
+                     "type" : 1
+                  },
+                  {
+                     "currency" : "XRP",
+                     "type_hex" : "0000000000000010",
+                     "type" : 16
+                  },
+                  {
+                     "currency" : "SGD",
+                     "type_hex" : "0000000000000030",
+                     "type" : 48,
+                     "issuer" : "r9Dr5xwkeLegBeXq6ujinjSBLQzQ1zQGjH"
+                  }
+               ]
+            ],
+            "paths_canonical" : [],
+            "source_amount" : {
+               "currency" : "USD",
+               "value" : "0.9940475268",
+               "issuer" : "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+            }
+         }
+      ],
+      "destination_currencies" : [
+         "XAG",
+         "SGD",
+         "USD",
+         "XPT",
+         "XAU",
+         "XRP"
+      ],
+      "destination_account" : "r9Dr5xwkeLegBeXq6ujinjSBLQzQ1zQGjH"
+   }
+}

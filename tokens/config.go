@@ -149,6 +149,12 @@ type TokenConfig struct {
 	bigValThreshhold *big.Int
 
 	bigValueWhitelist map[string]struct{}
+	RippleExtra       *RippleTokenExtra
+}
+
+type RippleTokenExtra struct {
+	Currency string
+	Issuer   string
 }
 
 // CheckConfig check chain config
