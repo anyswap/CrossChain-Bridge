@@ -32,6 +32,8 @@ var (
 	dcrmNeededOracles uint32
 	dcrmTotalOracles  uint32
 
+	verifySignatureInAccept bool
+
 	dcrmRPCTimeout  = 10                // default to 10 seconds
 	dcrmSignTimeout = 120 * time.Second // default to 120 seconds
 
@@ -74,6 +76,8 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 	if dcrmConfig.SignTimeout > 0 {
 		dcrmSignTimeout = time.Duration(dcrmConfig.SignTimeout * uint64(time.Second))
 	}
+
+	verifySignatureInAccept = dcrmConfig.VerifySignatureInAccept
 
 	setDcrmGroup(*dcrmConfig.GroupID, dcrmConfig.Mode, *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
 	setDefaultDcrmNodeInfo(initDcrmNodeInfo(dcrmConfig.DefaultNode, isServer))
