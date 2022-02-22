@@ -21,7 +21,7 @@ require (
 	github.com/giangnamnabka/btcwallet/wallet/txauthor v1.0.1-0.20210422185028-3bf95367dc20
 	github.com/giangnamnabka/btcwallet/wallet/txrules v1.0.1-0.20210422185028-3bf95367dc20
 	github.com/giangnamnabka/btcwallet/wallet/txsizes v1.0.1-0.20210422185028-3bf95367dc20
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/snappy v0.0.2 // indirect
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/rpc v1.2.0

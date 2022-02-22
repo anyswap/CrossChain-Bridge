@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
@@ -265,33 +266,47 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		return txHash, err
 	}
 
-	nonceSetter, _ := bridge.(tokens.NonceSetter)
-	if nonceSetter == nil {
-		return txHash, err
+	nonceSetter, ok := bridge.(tokens.NonceSetter)
+	if ok && nonceSetter != nil {
+		nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
 	}
 
-	nonceSetter.SetNonce(pairID, swapNonce+1) // increase for next usage
+	go sendTxLoopUntilSuccess(bridge, txHash, signedTx, args)
 
-	// update swap result tx height in goroutine
-	go func() {
-		var blockHeight, blockTime uint64
-		for i := int64(0); i < 10; i++ {
-			blockHeight, blockTime = nonceSetter.GetTxBlockInfo(txHash)
-			if blockHeight > 0 {
-				break
-			}
-			time.Sleep(5 * time.Second)
-		}
-		if blockHeight > 0 {
+	return txHash, nil
+}
+
+func sendTxLoopUntilSuccess(bridge tokens.CrossChainBridge, txHash string, signedTx interface{}, args *tokens.BuildTxArgs) {
+	severCfg := params.GetServerConfig()
+	sendTxLoopCount := severCfg.SendTxLoopCount
+	if sendTxLoopCount == 0 {
+		sendTxLoopCount = 30
+	}
+	sendTxLoopInterval := severCfg.SendTxLoopInterval
+	if sendTxLoopInterval == 0 {
+		sendTxLoopInterval = 10
+	}
+	txid, pairID, bind := args.SwapID, args.PairID, args.Bind
+	for loop := 1; loop <= sendTxLoopCount; loop++ {
+		txStatus, err := bridge.GetTransactionStatus(txHash)
+		if err == nil && txStatus.BlockHeight > 0 {
 			matchTx := &MatchTx{
 				SwapTx:     txHash,
-				SwapHeight: blockHeight,
-				SwapTime:   blockTime,
+				SwapHeight: txStatus.BlockHeight,
+				SwapTime:   txStatus.BlockTime,
 				SwapType:   args.SwapType,
 			}
 			_ = updateSwapResult(txid, pairID, bind, matchTx)
+			break
 		}
-	}()
 
-	return txHash, err
+		txHash, err = bridge.SendTransaction(signedTx)
+		if err != nil {
+			logWorkerError("sendtx", "send tx in loop failed", err, "swapID", txid, "txHash", txHash, "loop", loop)
+		} else {
+			logWorker("sendtx", "send tx in loop done", "swapID", txid, "txHash", txHash, "loop", loop)
+		}
+
+		time.Sleep(time.Duration(sendTxLoopInterval) * time.Second)
+	}
 }
