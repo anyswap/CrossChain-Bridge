@@ -2,7 +2,6 @@ package ripple
 
 import (
 	"fmt"
-	"math/big"
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -40,7 +39,7 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	return b.verifySwapinTxWithPairID(pairID, txHash, allowUnstable)
 }
 
-func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, _ bool) (*tokens.TxSwapInfo, error) {
+func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash
@@ -66,13 +65,18 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, _ bool) (*token
 		return swapInfo, fmt.Errorf("ripple tx is not validated")
 	}
 
-	h, err := b.GetLatestBlockNumber()
-	if err != nil {
-		return swapInfo, err
-	}
+	if !allowUnstable {
+		h, errf := b.GetLatestBlockNumber()
+		if errf != nil {
+			return swapInfo, errf
+		}
 
-	if h-uint64(txres.TransactionWithMetaData.LedgerSequence) < *b.GetChainConfig().Confirmations {
-		return swapInfo, fmt.Errorf("ripple ledger height not stable")
+		if h < uint64(txres.TransactionWithMetaData.LedgerSequence)+*b.GetChainConfig().Confirmations {
+			return swapInfo, fmt.Errorf("ripple ledger height not stable")
+		}
+		if h < *b.ChainConfig.InitialHeight {
+			return swapInfo, fmt.Errorf("ripple ledger height before initial height")
+		}
 	}
 
 	// Check tx status
@@ -99,13 +103,13 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, _ bool) (*token
 	bind, ok := GetBindAddressFromMemos(payment)
 	if !ok {
 		log.Debug("wrong memos", "memos", payment.Memos)
-		return swapInfo, tokens.ErrTxWithWrongReceiver
+		return swapInfo, tokens.ErrTxWithWrongMemo
 	}
 
 	if !txres.TransactionWithMetaData.MetaData.DeliveredAmount.IsPositive() {
 		return swapInfo, fmt.Errorf("payment amount error")
 	}
-	amt := big.NewInt(int64(txres.TransactionWithMetaData.MetaData.DeliveredAmount.Float() * 1000000))
+	amt := tokens.ToBits(txres.TransactionWithMetaData.MetaData.DeliveredAmount.Float(), *token.Decimals)
 
 	swapInfo.To = token.DepositAddress                        // To
 	swapInfo.From = strings.ToLower(payment.Account.String()) // From

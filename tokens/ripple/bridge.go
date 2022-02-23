@@ -79,6 +79,24 @@ func (b *Bridge) VerifyChainConfig() {
 
 // VerifyTokenConfig verify token config
 func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
+	if tokenCfg.RippleExtra == nil {
+		return fmt.Errorf("must config 'RippleExtra'")
+	}
+	currency, err := data.NewCurrency(tokenCfg.RippleExtra.Currency)
+	if err != nil {
+		return err
+	}
+	configedDecimals := *tokenCfg.Decimals
+	if currency.IsNative() {
+		if configedDecimals != 6 {
+			return fmt.Errorf("invalid native decimals: want 6 but have %v", configedDecimals)
+		}
+		if tokenCfg.RippleExtra.Issuer != "" {
+			return fmt.Errorf("must config empty 'RippleExtra.Issuer' for native")
+		}
+	} else if tokenCfg.RippleExtra.Issuer == "" {
+		return fmt.Errorf("must config 'RippleExtra.Issuer' for non native")
+	}
 	return nil
 }
 
