@@ -42,6 +42,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		from = token.DcrmAddress                                                    // from
 		to = args.Bind                                                              // to
 		amount = tokens.CalcSwappedValue(pairID, args.OriginValue, false, from, to) // amount
+		pubkey = b.GetDcrmPublicKey(pairID)
 	default:
 		return nil, tokens.ErrUnknownSwapType
 	}
@@ -56,7 +57,6 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		args.Extra = &tokens.AllExtras{RippleExtra: extra}
 		sequence = *extra.Sequence
 		fee = *extra.Fee
-		pubkey = args.Extra.RippleExtra.FromPublic
 	} else {
 		extra = args.Extra.RippleExtra
 		if extra.Sequence != nil {
@@ -65,7 +65,6 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		if extra.Fee != nil {
 			fee = *extra.Fee
 		}
-		pubkey = args.Extra.RippleExtra.FromPublic
 	}
 
 	if args.SwapType != tokens.NoSwapType {
@@ -89,9 +88,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 
 func (b *Bridge) swapoutDefaultArgs(txargs *tokens.BuildTxArgs) *tokens.RippleExtra {
 	args := &tokens.RippleExtra{
-		FromPublic: b.GetDcrmPublicKey(txargs.PairID),
-		Sequence:   new(uint32),
-		Fee:        new(int64),
+		Sequence: new(uint32),
+		Fee:      new(int64),
 	}
 
 	token := b.GetTokenConfig(txargs.PairID)

@@ -167,9 +167,8 @@ type EthExtraArgs struct {
 
 // RippleExtra struct
 type RippleExtra struct {
-	FromPublic string  `json:"fromPublic,omitempty"`
-	Sequence   *uint32 `json:"sequence,omitempty"`
-	Fee        *int64  `json:"fee,omitempty"`
+	Sequence *uint32 `json:"sequence,omitempty"`
+	Fee      *int64  `json:"fee,omitempty"`
 }
 
 // BtcOutPoint struct
