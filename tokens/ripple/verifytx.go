@@ -1,6 +1,7 @@
 package ripple
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/data"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/websockets"
 )
+
+var errTxResultType = errors.New("tx type is not data.TxResult")
 
 // VerifyMsgHash verify msg hash
 func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) {
@@ -57,8 +60,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 
 	txres, ok := tx.(*websockets.TxResult)
 	if !ok {
-		// unexpected
-		return swapInfo, fmt.Errorf("unexpected: tx type is not data.TxResult")
+		return swapInfo, errTxResultType
 	}
 
 	if !txres.Validated {

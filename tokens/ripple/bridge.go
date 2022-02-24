@@ -1,7 +1,6 @@
 package ripple
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -32,9 +31,9 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 // SetChainAndGateway set chain and gateway config
 func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
+	b.InitRemotes()
 	b.VerifyChainConfig()
 	b.InitLatestBlockNumber()
-	b.InitRemotes()
 }
 
 // InitRemotes set ripple remotes
@@ -54,7 +53,6 @@ func (b *Bridge) InitRemotes() {
 		}
 		log.Info("Connected to remote api", "", apiAddress)
 		b.Remotes[apiAddress] = remote
-		remote.Close()
 	}
 	if len(b.Remotes) < 1 {
 		log.Error("No available remote api")
@@ -128,21 +126,14 @@ var (
 // For ripple, GetLatestBlockNumber returns current ledger version
 func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {
 	for i := 0; i < rpcRetryTimes; i++ {
-		for url := range b.Remotes {
-			r, err0 := websockets.NewRemote(url)
-			if err0 != nil {
-				log.Warn("Cannot connect to remote", "error", err)
-				continue
-			}
+		for _, r := range b.Remotes {
 			resp, err1 := r.Ledger(nil, false)
 			if err1 != nil || resp == nil {
 				err = err1
 				log.Warn("Try get latest block number failed", "error", err1)
-				r.Close()
 				continue
 			}
 			num = uint64(resp.Ledger.LedgerSequence)
-			r.Close()
 			return
 		}
 		time.Sleep(rpcRetryInterval)
@@ -153,12 +144,16 @@ func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {
 //GetLatestBlockNumberOf gets latest block number from single api
 // For ripple, GetLatestBlockNumberOf returns current ledger version
 func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
-	r, err := websockets.NewRemote(apiAddress)
-	if err != nil {
-		log.Warn("Cannot connect to remote", "error", err)
-		return 0, err
+	var err error
+	r, exist := b.Remotes[apiAddress]
+	if !exist {
+		r, err = websockets.NewRemote(apiAddress)
+		if err != nil {
+			log.Warn("Cannot connect to remote", "error", err)
+			return 0, err
+		}
+		defer r.Close()
 	}
-	defer r.Close()
 	resp, err := r.Ledger(nil, false)
 	if err != nil || resp == nil {
 		return 0, err
@@ -173,37 +168,20 @@ func (b *Bridge) GetTransaction(txHash string) (tx interface{}, err error) {
 		return
 	}
 	for i := 0; i < rpcRetryTimes; i++ {
-		for url := range b.Remotes {
-			r, err0 := websockets.NewRemote(url)
-			if err0 != nil {
-				log.Warn("Cannot connect to remote", "error", err)
-				continue
-			}
+		for _, r := range b.Remotes {
 			resp, err1 := r.Tx(*txhash256)
-			/*randNum := rand.New(rand.NewSource(time.Now().Unix())).Int()
-			if randNum%3 == 0 {
-				err1 = fmt.Errorf("Simulate error: Connection closed")
-			}*/
 			if err1 != nil || resp == nil {
 				log.Warn("Try get transaction failed", "error", err1)
 				err = err1
-				r.Close()
 				continue
 			}
 			tx = resp
-			r.Close()
 			return
 		}
 		time.Sleep(rpcRetryInterval)
 	}
 	return
 }
-
-// errors
-var (
-	ErrTxResultType = errors.New("tx type is not data.TxResult")
-	ErrTxNotSuccess = func(txres interface{}) error { return fmt.Errorf("ripple tx status is not success: %v", txres) }
-)
 
 // GetTransactionStatus impl
 func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, err error) {
@@ -216,21 +194,21 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 	txres, ok := tx.(*websockets.TxResult)
 	if !ok {
 		// unexpected
-		log.Warn("Ripple GetTransactionStatus", "error", ErrTxResultType)
-		return nil, ErrTxResultType
+		log.Warn("Ripple GetTransactionStatus", "error", errTxResultType)
+		return nil, errTxResultType
 	}
 
 	// Check tx status
-	if txres.TransactionWithMetaData.MetaData.TransactionResult != 0 {
+	if !txres.TransactionWithMetaData.MetaData.TransactionResult.Success() {
 		log.Warn("Ripple tx status is not success", "result", txres.TransactionWithMetaData.MetaData.TransactionResult)
-		return nil, ErrTxNotSuccess(txres.TransactionWithMetaData.MetaData.TransactionResult)
+		return nil, tokens.ErrTxWithWrongStatus
 	}
 
 	status.Receipt = nil
 	inledger := txres.LedgerSequence
 	status.BlockHeight = uint64(inledger)
 
-	if latest, err := b.GetLatestBlockNumber(); err == nil {
+	if latest, err := b.GetLatestBlockNumber(); err == nil && latest > uint64(inledger) {
 		status.Confirmations = latest - uint64(inledger)
 	}
 	return
@@ -239,21 +217,14 @@ func (b *Bridge) GetTransactionStatus(txHash string) (status *tokens.TxStatus, e
 // GetBlockHash gets block hash
 func (b *Bridge) GetBlockHash(num uint64) (hash string, err error) {
 	for i := 0; i < rpcRetryTimes; i++ {
-		for url := range b.Remotes {
-			r, err0 := websockets.NewRemote(url)
-			if err0 != nil {
-				log.Warn("Cannot connect to remote", "error", err)
-				continue
-			}
+		for _, r := range b.Remotes {
 			resp, err1 := r.Ledger(num, false)
 			if err1 != nil || resp == nil {
 				err = err1
 				log.Warn("Try get block hash failed", "error", err1)
-				r.Close()
 				continue
 			}
 			hash = resp.Ledger.Hash.String()
-			r.Close()
 			return
 		}
 		time.Sleep(rpcRetryInterval)
@@ -265,20 +236,13 @@ func (b *Bridge) GetBlockHash(num uint64) (hash string, err error) {
 func (b *Bridge) GetBlockTxids(num uint64) (txs []string, err error) {
 	txs = make([]string, 0)
 	for i := 0; i < rpcRetryTimes; i++ {
-		for url := range b.Remotes {
-			r, err0 := websockets.NewRemote(url)
-			if err0 != nil {
-				log.Warn("Cannot connect to remote", "error", err)
-				continue
-			}
+		for _, r := range b.Remotes {
 			resp, err1 := r.Ledger(num, true)
 			if err1 != nil || resp == nil {
 				err = err1
 				log.Warn("Try get block tx ids failed", "error", err1)
-				r.Close()
 				continue
 			}
-			r.Close()
 			for _, tx := range resp.Ledger.Transactions {
 				txs = append(txs, tx.GetBase().Hash.String())
 			}
@@ -322,18 +286,11 @@ func (b *Bridge) GetAccount(address string) (acct *websockets.AccountInfoResult,
 		return
 	}
 	for i := 0; i < rpcRetryTimes; i++ {
-		for url := range b.Remotes {
-			r, err0 := websockets.NewRemote(url)
-			if err0 != nil {
-				log.Warn("Cannot connect to remote", "error", err)
-				continue
-			}
+		for _, r := range b.Remotes {
 			acct, err = r.AccountInfo(*account)
 			if err != nil || acct == nil {
-				r.Close()
 				continue
 			}
-			r.Close()
 			return
 		}
 		time.Sleep(rpcRetryInterval)

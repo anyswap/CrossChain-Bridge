@@ -64,6 +64,10 @@ func (b *CrossChainBridgeBase) IsSrcEndpoint() bool {
 func (b *CrossChainBridgeBase) SetChainAndGateway(chainCfg *ChainConfig, gatewayCfg *GatewayConfig) {
 	b.ChainConfig = chainCfg
 	b.GatewayConfig = gatewayCfg
+
+	if len(gatewayCfg.APIAddress) == 0 {
+		log.Fatal("empty gateway 'APIAddress'")
+	}
 }
 
 // GetChainConfig get chain config
