@@ -62,7 +62,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	}
 
 	if !txres.Validated {
-		return swapInfo, fmt.Errorf("ripple tx is not validated")
+		return swapInfo, tokens.ErrTxIsNotValidated
 	}
 
 	if !allowUnstable {
@@ -72,16 +72,16 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		}
 
 		if h < uint64(txres.TransactionWithMetaData.LedgerSequence)+*b.GetChainConfig().Confirmations {
-			return swapInfo, fmt.Errorf("ripple ledger height not stable")
+			return swapInfo, tokens.ErrTxNotStable
 		}
 		if h < *b.ChainConfig.InitialHeight {
-			return swapInfo, fmt.Errorf("ripple ledger height before initial height")
+			return swapInfo, tokens.ErrTxBeforeInitialHeight
 		}
 	}
 
 	// Check tx status
-	if txres.TransactionWithMetaData.MetaData.TransactionResult != 0 {
-		return swapInfo, fmt.Errorf("ripple tx status is not success")
+	if !txres.TransactionWithMetaData.MetaData.TransactionResult.Success() {
+		return swapInfo, tokens.ErrTxWithWrongStatus
 	}
 
 	payment, ok := txres.TransactionWithMetaData.Transaction.(*data.Payment)
@@ -103,11 +103,11 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	bind, ok := GetBindAddressFromMemos(payment)
 	if !ok {
 		log.Debug("wrong memos", "memos", payment.Memos)
-		return swapInfo, tokens.ErrTxWithWrongMemo
+		return swapInfo, tokens.ErrWrongMemoBindAddress
 	}
 
 	if !txres.TransactionWithMetaData.MetaData.DeliveredAmount.IsPositive() {
-		return swapInfo, fmt.Errorf("payment amount error")
+		return swapInfo, tokens.ErrTxWithNoPayment
 	}
 	amt := tokens.ToBits(txres.TransactionWithMetaData.MetaData.DeliveredAmount.Float(), *token.Decimals)
 
@@ -116,7 +116,14 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	swapInfo.Bind = bind                                      // Bind
 	swapInfo.Value = amt
 
-	log.Debug("verify swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+	err = b.checkSwapinInfo(swapInfo)
+	if err != nil {
+		return swapInfo, err
+	}
+
+	if !allowUnstable {
+		log.Info("verify swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+	}
 	return swapInfo, nil
 }
 
@@ -151,4 +158,24 @@ func GetBindAddressFromMemos(tx data.Transaction) (bind string, ok bool) {
 		log.Warn("Bind address is not a valid destination address", "bind ascii", bindStr, "bind hex", bindBytes)
 	}
 	return "", false
+}
+
+func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
+	token := b.GetTokenConfig(swapInfo.PairID)
+	if token == nil {
+		return tokens.ErrUnknownPairID
+	}
+	if strings.EqualFold(swapInfo.From, token.DepositAddress) ||
+		strings.EqualFold(swapInfo.From, token.DcrmAddress) {
+		return tokens.ErrTxWithWrongSender
+	}
+	if !tokens.CheckSwapValue(swapInfo, b.IsSrc) {
+		return tokens.ErrTxWithWrongValue
+	}
+	bindAddr := swapInfo.Bind
+	if !tokens.DstBridge.IsValidAddress(bindAddr) {
+		log.Warn("wrong bind address in swapin", "bind", bindAddr)
+		return tokens.ErrWrongMemoBindAddress
+	}
+	return nil
 }

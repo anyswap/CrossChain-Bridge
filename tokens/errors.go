@@ -32,6 +32,7 @@ var (
 	ErrTxWithWrongLogData   = errors.New("tx with wrong log data")
 	ErrTxIsAggregateTx      = errors.New("tx is aggregate tx")
 	ErrWrongP2shBindAddress = errors.New("wrong p2sh bind address")
+	ErrWrongMemoBindAddress = errors.New("wrong memo bind address")
 	ErrTxFuncHashMismatch   = errors.New("tx func hash mismatch")
 	ErrDepositLogNotFound   = errors.New("deposit log not found or removed")
 	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
@@ -44,6 +45,9 @@ var (
 	ErrEstimateGasFailed    = errors.New("estimate gas failed")
 	ErrMissTokenPrice       = errors.New("miss token price")
 	ErrTxWithWrongSender    = errors.New("tx with wrong sender")
+	ErrTxWithWrongStatus    = errors.New("tx with wrong status")
+	ErrTxWithNoPayment      = errors.New("tx with no payment")
+	ErrTxIsNotValidated     = errors.New("tx is not validated")
 
 	// errors should register
 	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
