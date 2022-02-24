@@ -277,7 +277,7 @@ func loadTokenPairConfig(configFile string) (config *TokenPairConfig, err error)
 		bs, _ = json.MarshalIndent(config, "", "  ")
 	}
 	log.Tracef("load token pair finished. %v", string(bs))
-	log.Println("finish load token pair config file", configFile)
+	log.Info("finish load token pair config file", "file", configFile, "pairID", config.PairID)
 	return config, nil
 }
 
