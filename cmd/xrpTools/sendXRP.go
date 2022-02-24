@@ -2,15 +2,18 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/crypto"
 	"github.com/urfave/cli/v2"
 )
 
 func initArgsSendXrp(ctx *cli.Context) {
+	prikey = ctx.String(keyFlag.Name)
 	seed = ctx.String(seedFlag.Name)
 	keyseq = ctx.Uint(keyseqFlag.Name)
 	to = ctx.String(toFlag.Name)
@@ -27,7 +30,7 @@ func initArgsSendXrp(ctx *cli.Context) {
 		case "devnet", "dev":
 			apiAddress = "wss://s.devnet.rippletest.net:443/"
 		default:
-			log.Fatal(fmt.Errorf("unrecognized network: %v", net))
+			log.Fatalf("unrecognized network: %v", net)
 		}
 	}
 }
@@ -43,33 +46,37 @@ func sendXrpAction(ctx *cli.Context) error {
 }
 
 func sendXRP() string {
-	key := ripple.ImportKeyFromSeed(seed, "ecdsa")
-	keyseq := uint32(keyseq)
+	var key crypto.Key
+	var sequence *uint32
 
-	from := ripple.GetAddress(key, &keyseq)
-	txseq, err := b.GetSeq(nil, from)
-	if err != nil {
-		log.Fatal(err)
+	if seed != "" {
+		key = ripple.ImportKeyFromSeed(seed, "ecdsa")
+		seq := uint32(keyseq)
+		sequence = &seq
+	} else {
+		key = crypto.NewECDSAKeyFromPrivKeyBytes(common.FromHex(prikey))
 	}
 
-	tx, _, _ := ripple.NewUnsignedPaymentTransaction(key, &keyseq, *txseq, to, amount, 10, memo, "", false, false, false)
+	from := ripple.GetAddress(key, sequence)
+	log.Printf("sender address is %v", from)
 
-	/*privData := key.Private(&keyseq)
-	priv, _ := btcec.PrivKeyFromBytes(btcec.S256(), privData)
+	txseq, err := b.GetSeq(nil, from)
+	if err != nil {
+		log.Fatal("get account sequence failed", "account", from, "err", err)
+	}
+	log.Info("start build tx", "from", from, "sequence", sequence, "txseq", txseq, "to", to, "amount", amount, "memo", memo)
 
-	stx, _, err := b.SignTransactionWithPrivateKey(tx, priv.ToECDSA())
+	tx, _, _ := ripple.NewUnsignedPaymentTransaction(key, sequence, *txseq, to, amount, 10, memo, "", false, false, false)
+
+	stx, _, err := b.SignTransactionWithRippleKey(tx, key, sequence)
 	if err != nil {
-		log.Fatal(err)
-	}*/
-	stx, _, err := b.SignTransactionWithRippleKey(tx, key, &keyseq)
-	if err != nil {
-		log.Fatal(fmt.Errorf("Sign transaction failed, %v", err))
+		log.Fatal("sign transaction failed", "err", err)
 	}
 	fmt.Printf("%+v\n", stx)
 
 	txhash, err := b.SendTransaction(stx)
 	if err != nil {
-		log.Fatal(fmt.Errorf("Send transaction failed, %v", err))
+		log.Fatal("send transaction failed", "err", err)
 	}
 	fmt.Printf("Submited tx: %v\n", txhash)
 	return txhash
