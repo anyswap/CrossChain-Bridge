@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
@@ -15,16 +14,7 @@ func initArgsScan(ctx *cli.Context) {
 	apiAddress = ctx.String(apiAddressFlag.Name)
 	startScan = ctx.Uint64(startScanFlag.Name)
 	if apiAddress == "" {
-		switch strings.ToLower(net) {
-		case "mainnet", "main":
-			apiAddress = "wss://s2.ripple.com:443/"
-		case "testnet", "test":
-			apiAddress = "wss://s.altnet.rippletest.net:443/"
-		case "devnet", "dev":
-			apiAddress = "wss://s.devnet.rippletest.net:443/"
-		default:
-			log.Fatalf("unknown network: %v", net)
-		}
+		apiAddress = initDefaultAPIAddress(net)
 	}
 }
 

@@ -24,17 +24,22 @@ func initArgsSendXrp(ctx *cli.Context) {
 	net = ctx.String(netFlag.Name)
 	apiAddress = ctx.String(apiAddressFlag.Name)
 	if apiAddress == "" {
-		switch strings.ToLower(net) {
-		case "mainnet", "main":
-			apiAddress = "wss://s2.ripple.com:443/"
-		case "testnet", "test":
-			apiAddress = "wss://s.altnet.rippletest.net:443/"
-		case "devnet", "dev":
-			apiAddress = "wss://s.devnet.rippletest.net:443/"
-		default:
-			log.Fatalf("unrecognized network: %v", net)
-		}
+		apiAddress = initDefaultAPIAddress(net)
 	}
+}
+
+func initDefaultAPIAddress(net string) string {
+	switch strings.ToLower(net) {
+	case "mainnet", "main":
+		return "wss://s2.ripple.com:443/"
+	case "testnet", "test":
+		return "wss://s.altnet.rippletest.net:443/"
+	case "devnet", "dev":
+		return "wss://s.devnet.rippletest.net:443/"
+	default:
+		log.Fatalf("unknown network: %v", net)
+	}
+	return ""
 }
 
 func sendXrpAction(ctx *cli.Context) error {

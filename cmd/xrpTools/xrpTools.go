@@ -119,6 +119,7 @@ func initApp() {
 		pubkeyToAddressCommand,
 		sendXRPCommand,
 		scanCommand,
+		checkTxCommand,
 	}
 	app.Flags = []cli.Flag{
 		utils.VerbosityFlag,
