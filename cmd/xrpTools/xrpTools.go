@@ -25,6 +25,7 @@ var (
 	to         string
 	memo       string
 	amount     string
+	txfee      int64
 	apiAddress string
 	net        string
 	b          *ripple.Bridge
@@ -50,6 +51,11 @@ var (
 	amountFlag = &cli.StringFlag{
 		Name:  "amount",
 		Usage: "send xrp amount (in drop)",
+	}
+	feeFlag = &cli.Int64Flag{
+		Name:  "fee",
+		Usage: "tx fee",
+		Value: 10,
 	}
 	memoFlag = &cli.StringFlag{
 		Name:  "memo",
@@ -80,6 +86,7 @@ var (
 			keyseqFlag,
 			toFlag,
 			amountFlag,
+			feeFlag,
 			memoFlag,
 			netFlag,
 			apiAddressFlag,

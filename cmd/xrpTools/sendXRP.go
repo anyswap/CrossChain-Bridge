@@ -19,6 +19,7 @@ func initArgsSendXrp(ctx *cli.Context) {
 	keyseq = ctx.Uint(keyseqFlag.Name)
 	to = ctx.String(toFlag.Name)
 	amount = ctx.String(amountFlag.Name)
+	txfee = ctx.Int64(feeFlag.Name)
 	memo = ctx.String(memoFlag.Name)
 	net = ctx.String(netFlag.Name)
 	apiAddress = ctx.String(apiAddressFlag.Name)
@@ -51,12 +52,15 @@ func sendXRP() string {
 	var key crypto.Key
 	var sequence *uint32
 
-	if seed != "" {
+	switch {
+	case seed != "":
 		key = ripple.ImportKeyFromSeed(seed, "ecdsa")
 		seq := uint32(keyseq)
 		sequence = &seq
-	} else {
+	case prikey != "":
 		key = crypto.NewECDSAKeyFromPrivKeyBytes(common.FromHex(prikey))
+	default:
+		log.Fatal("must specify seed or key")
 	}
 
 	from := ripple.GetAddress(key, sequence)
@@ -68,7 +72,7 @@ func sendXRP() string {
 	}
 	log.Info("start build tx", "from", from, "sequence", sequence, "txseq", txseq, "to", to, "amount", amount, "memo", memo)
 
-	tx, _, _ := ripple.NewUnsignedPaymentTransaction(key, sequence, *txseq, to, amount, 10, memo, "", false, false, false)
+	tx, _, _ := ripple.NewUnsignedPaymentTransaction(key, sequence, *txseq, to, amount, txfee, memo, "", false, false, false)
 
 	stx, _, err := b.SignTransactionWithRippleKey(tx, key, sequence)
 	if err != nil {
