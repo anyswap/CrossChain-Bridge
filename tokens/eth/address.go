@@ -1,6 +1,8 @@
 package eth
 
 import (
+	"strings"
+
 	"github.com/anyswap/CrossChain-Bridge/common"
 	mapset "github.com/deckarep/golang-set"
 )
@@ -29,6 +31,9 @@ func (b *Bridge) IsValidAddress(address string) bool {
 	}
 	unprefixedHex, ok, hasUpperChar := common.GetUnprefixedHex(address)
 	if hasUpperChar {
+		if strings.ToUpper(address) == address {
+			return true
+		}
 		// valid checksum
 		if unprefixedHex != common.HexToAddress(address).String()[2:] {
 			return false
