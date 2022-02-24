@@ -145,19 +145,19 @@ func (b *Bridge) checkToken(pairID string, txmeta *data.TransactionWithMetaData)
 // GetBindAddressFromMemos get bind address
 func GetBindAddressFromMemos(tx data.Transaction) (bind string, ok bool) {
 	for _, memo := range tx.GetBase().Memos {
-		bindStr := string(memo.Memo.MemoData) // hex string
+		bindStr := memo.Memo.MemoData.String() // hex string
 		if tokens.DstBridge.IsValidAddress(bindStr) {
 			bind = bindStr
 			ok = true
 			return
 		}
-		bindBytes := fmt.Sprintf("%X", memo.Memo.MemoType) // bytes
+		bindBytes := string(memo.Memo.MemoData.Bytes()) // bytes
 		if tokens.DstBridge.IsValidAddress(bindBytes) {
 			bind = bindBytes
 			ok = true
 			return
 		}
-		log.Warn("Bind address is not a valid destination address", "bind ascii", bindStr, "bind hex", bindBytes)
+		log.Warn("Bind address is not a valid destination address", "bindStr", bindStr, "bindBytes", bindBytes)
 	}
 	return "", false
 }

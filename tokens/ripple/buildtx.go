@@ -168,13 +168,7 @@ func NewUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32,
 	if memo != "" {
 		memoStr := new(data.Memo)
 		memoStr.Memo.MemoType = []byte("BIND")
-		var memodata []byte
-		if b, err := hex.DecodeString(memo); err != nil {
-			memodata = []byte(memo)
-		} else {
-			memodata = b
-		}
-		memoStr.Memo.MemoData = memodata
+		memoStr.Memo.MemoData = []byte(memo)
 		payment.Memos = append(payment.Memos, *memoStr)
 	}
 
