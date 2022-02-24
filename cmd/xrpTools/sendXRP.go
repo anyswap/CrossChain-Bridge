@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
@@ -36,6 +37,7 @@ func initArgsSendXrp(ctx *cli.Context) {
 }
 
 func sendXrpAction(ctx *cli.Context) error {
+	utils.SetLogger(ctx)
 	initArgsSendXrp(ctx)
 	initBridge()
 	txhash := sendXRP()

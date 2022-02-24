@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
 	"github.com/urfave/cli/v2"
@@ -19,6 +20,7 @@ var (
 )
 
 func pubkeyToAddress(ctx *cli.Context) error {
+	utils.SetLogger(ctx)
 	pubkey := ctx.Args().Get(0)
 	if pubkey == "" {
 		return fmt.Errorf("empty public key argument")

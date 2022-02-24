@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
@@ -100,22 +100,23 @@ var (
 func main() {
 	initApp()
 	if err := app.Run(os.Args); err != nil {
-		log.Println(err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
 func initApp() {
 	app.Action = xrptools
+	app.HideVersion = true
 	app.Commands = []*cli.Command{
 		pubkeyToAddressCommand,
 		sendXRPCommand,
 		scanCommand,
 	}
 	app.Flags = []cli.Flag{
-		//utils.VerbosityFlag,
-		//utils.JSONFormatFlag,
-		//utils.ColorFormatFlag,
+		utils.VerbosityFlag,
+		utils.JSONFormatFlag,
+		utils.ColorFormatFlag,
 	}
 }
 
@@ -127,7 +128,7 @@ func initBridge() {
 	if err != nil || remote == nil {
 		log.Fatal("Cannot connect to ripple")
 	}
-	log.Printf("Connected to remote api %v\n", apiAddress)
+	log.Printf("Connected to remote api %v", apiAddress)
 	b.Remotes[apiAddress] = remote
 }
 
@@ -139,6 +140,5 @@ func xrptools(ctx *cli.Context) error {
 
 	_ = cli.ShowAppHelp(ctx)
 	fmt.Println()
-	log.Fatalf("please specify a sub command to run")
-	return nil
+	return fmt.Errorf("please specify a sub command to run")
 }

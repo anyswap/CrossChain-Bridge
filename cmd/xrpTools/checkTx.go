@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/data"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/websockets"
@@ -39,7 +39,7 @@ func checkTx(txHash string) bool {
 		log.Printf("Get bind address failed")
 		return false
 	}
-	log.Printf("Bind address: %v\n", bind)
+	log.Printf("Bind address: %v", bind)
 
 	log.Println("Tx success!")
 	return true
