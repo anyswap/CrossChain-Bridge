@@ -22,7 +22,7 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) 
 	}
 	rebuildMsgHash, _, err := data.SigningHash(tx)
 	if err != nil {
-		return fmt.Errorf("Rebuild ripple tx msg error, %v", err)
+		return fmt.Errorf("Rebuild ripple tx msg error, %w", err)
 	}
 
 	if len(msgHash) < 1 {

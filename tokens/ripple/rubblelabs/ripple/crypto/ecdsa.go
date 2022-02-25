@@ -3,6 +3,7 @@ package crypto
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -43,6 +44,9 @@ func NewECDSAKey(seed []byte) (*ecdsaKey, error) {
 
 // NewECDSAKeyFromPrivKeyBytes new ECDSA key from private key bytes
 func NewECDSAKeyFromPrivKeyBytes(privKeyBytes []byte) *ecdsaKey {
+	if len(privKeyBytes) != btcec.PrivKeyBytesLen {
+		panic(fmt.Sprintf("wrong ecdsa private key bytes length, want %v, have %v", btcec.PrivKeyBytesLen, len(privKeyBytes)))
+	}
 	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), privKeyBytes)
 	return &ecdsaKey{privKey}
 }

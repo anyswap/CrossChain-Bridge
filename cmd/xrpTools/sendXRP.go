@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -14,6 +15,10 @@ import (
 )
 
 func initArgsSendXrp(ctx *cli.Context) {
+	keyType = ctx.String(keyTypeFlag.Name)
+	if !isValidKeyType(keyType) {
+		log.Fatalf("invalid key type %v", keyType)
+	}
 	prikey = ctx.String(keyFlag.Name)
 	seed = ctx.String(seedFlag.Name)
 	keyseq = ctx.Uint(keyseqFlag.Name)
@@ -53,23 +58,47 @@ func sendXrpAction(ctx *cli.Context) error {
 	return nil
 }
 
+func isValidKeyType(ktype string) bool {
+	switch ktype {
+	case "ecdsa", "ed25519":
+		return true
+	default:
+		return false
+	}
+}
+
+func isECDSA(ktype string) bool {
+	return ktype == "ecdsa"
+}
+
 func sendXRP() string {
 	var key crypto.Key
 	var sequence *uint32
+	var err error
 
 	switch {
 	case seed != "":
-		key = ripple.ImportKeyFromSeed(seed, "ecdsa")
-		seq := uint32(keyseq)
-		sequence = &seq
+		key, err = ripple.ImportKeyFromSeed(seed, keyType)
+		if err != nil {
+			log.Fatal("import key from seed failed", "err", err)
+		}
+		if isECDSA(keyType) {
+			seq := uint32(keyseq)
+			sequence = &seq
+		}
 	case prikey != "":
-		key = crypto.NewECDSAKeyFromPrivKeyBytes(common.FromHex(prikey))
+		if isECDSA(keyType) {
+			key = crypto.NewECDSAKeyFromPrivKeyBytes(common.FromHex(prikey))
+		} else {
+			key = crypto.NewEd25519KeyFromPrivKeyBytes(common.FromHex(prikey))
+		}
 	default:
 		log.Fatal("must specify seed or key")
 	}
 
 	from := ripple.GetAddress(key, sequence)
 	log.Printf("sender address is %v", from)
+	log.Printf("sender pubkey is %v", common.ToHex(key.Public(sequence)))
 
 	txseq, err := b.GetSeq(nil, from)
 	if err != nil {
@@ -83,12 +112,13 @@ func sendXRP() string {
 	if err != nil {
 		log.Fatal("sign transaction failed", "err", err)
 	}
-	fmt.Printf("%+v\n", stx)
+	jsdata, _ := json.MarshalIndent(stx, "", " ")
+	fmt.Printf("sign transaction success: %v\n", string(jsdata))
 
 	txhash, err := b.SendTransaction(stx)
 	if err != nil {
 		log.Fatal("send transaction failed", "err", err)
 	}
-	fmt.Printf("Submited tx: %v\n", txhash)
+	fmt.Printf("Submited tx success: %v\n", txhash)
 	return txhash
 }

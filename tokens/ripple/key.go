@@ -2,6 +2,7 @@ package ripple
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
 
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/crypto"
@@ -19,20 +20,20 @@ const (
 )
 
 // ImportKeyFromSeed converts seed to ripple key
-func ImportKeyFromSeed(seed string, cryptoType string) crypto.Key {
+func ImportKeyFromSeed(seed string, cryptoType string) (crypto.Key, error) {
 	shash, err := crypto.NewRippleHashCheck(seed, crypto.RIPPLE_FAMILY_SEED)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("invalid seed, %w", err)
 	}
 	switch cryptoType {
 	case "ed25519":
 		key, _ := crypto.NewEd25519Key(shash.Payload())
-		return key
+		return key, nil
 	case "ecdsa":
 		key, _ := crypto.NewECDSAKey(shash.Payload())
-		return key
+		return key, nil
 	default:
-		return nil
+		return nil, fmt.Errorf("invalid crypto type %v", cryptoType)
 	}
 }
 

@@ -2,9 +2,9 @@ package ripple
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -43,12 +43,12 @@ func (b *Bridge) verifyTransactionWithArgs(tx data.Transaction, args *tokens.Bui
 func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
 	log.Debug("Ripple DcrmSignTransaction")
 
-	payment, ok := rawTx.(*data.Payment)
+	tx, ok := rawTx.(*data.Payment)
 	if !ok {
 		return nil, "", fmt.Errorf("Type assertion error, transaction is not a payment")
 	}
 
-	err = b.verifyTransactionWithArgs(payment, args)
+	err = b.verifyTransactionWithArgs(tx, args)
 	if err != nil {
 		log.Warn("Verify transaction failed", "error", err)
 		return nil, "", err
@@ -56,16 +56,30 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 
 	jsondata, _ := json.Marshal(args)
 	msgContext := string(jsondata)
-	msgHash, _, err := data.SigningHash(payment)
+	msgHash, msg, err := data.SigningHash(tx)
 	if err != nil {
-		return nil, "", fmt.Errorf("Get transaction signing hash failed: %v", err)
+		return nil, "", fmt.Errorf("Get transaction signing hash failed: %w", err)
+	}
+	msg = append(tx.SigningPrefix().Bytes(), msg...)
+
+	pubkeyStr := b.GetDcrmPublicKey(args.PairID)
+	pubkey := common.FromHex(pubkeyStr)
+	isEd := isEd25519Pubkey(pubkey)
+
+	var signContent string
+	if isEd {
+		// the real sign content is (signing prefix + msg)
+		// when we hex encoding here, the dcrm should do hex decoding there.
+		signContent = common.ToHex(msg)
+	} else {
+		signContent = msgHash.String()
 	}
 
-	keyID, rsvs, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), msgHash.String(), msgContext)
+	keyID, rsvs, err := dcrm.DoSignOne(pubkeyStr, signContent, msgContext)
 	if err != nil {
 		return nil, "", err
 	}
-	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction finished", "keyID", keyID, "msghash", msgHash.String(), "txid", args.SwapID)
+	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction finished", "keyID", keyID, "signContent", signContent, "txid", args.SwapID)
 
 	if len(rsvs) != 1 {
 		return nil, "", fmt.Errorf("get sign status require one rsv but have %v (keyID = %v)", len(rsvs), keyID)
@@ -74,14 +88,13 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	rsv := rsvs[0]
 	log.Trace(b.ChainConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "rsv", rsv)
 
-	signature := common.FromHex(rsv)
-
-	if len(signature) != crypto.SignatureLength {
-		log.Error("DcrmSignTransaction wrong length of signature")
-		return nil, "", errors.New("wrong signature of keyID " + keyID)
+	sig := rsvToSig(rsv, isEd)
+	valid, err := rcrypto.Verify(pubkey, msgHash.Bytes(), msg, sig)
+	if !valid || err != nil {
+		return nil, "", fmt.Errorf("verify signature error (valid: %v): %v", valid, err)
 	}
 
-	signedTx, err = b.MakeSignedTransaction([]string{rsv}, rawTx)
+	signedTx, err = b.MakeSignedTransaction(pubkey, rsv, rawTx)
 	if err != nil {
 		return signedTx, "", err
 	}
@@ -113,37 +126,37 @@ func (b *Bridge) SignTransactionWithRippleKey(rawTx interface{}, key rcrypto.Key
 		return nil, "", fmt.Errorf("sign transaction type assertion error")
 	}
 
-	hash1, msg, err := data.SigningHash(tx)
+	msgHash, msg, err := data.SigningHash(tx)
 	if err != nil {
 		return nil, "", err
 	}
-	log.Info("Prepare to sign", "signing hash", hash1.String(), "blob", fmt.Sprintf("%X", msg))
+	msg = append(tx.SigningPrefix().Bytes(), msg...)
+	log.Info("Prepare to sign", "signing hash", msgHash.String(), "blob", fmt.Sprintf("%X", msg))
 
-	hash := fmt.Sprintf("%v", hash1)
-
-	hashBytes, err := hex.DecodeString(hash)
+	sig, err := rcrypto.Sign(key.Private(keyseq), msgHash.Bytes(), msg)
 	if err != nil {
-		// Unexpected
-		return nil, "", fmt.Errorf("tx hash error, %v", err)
+		return nil, "", fmt.Errorf("sign hash error: %w", err)
 	}
 
-	sig, err := rcrypto.Sign(key.Private(keyseq), hashBytes, nil)
-	if err != nil {
-		return nil, "", fmt.Errorf("sign hash error: %v", err)
+	pubkey := key.Public(keyseq)
+	valid, err := rcrypto.Verify(pubkey, msgHash.Bytes(), msg, sig)
+	if !valid || err != nil {
+		return nil, "", fmt.Errorf("verify signature error (valid: %v): %v", valid, err)
 	}
 
-	signature, err := btcec.ParseSignature(sig, btcec.S256())
-	if err != nil {
-		return nil, "", fmt.Errorf("parse signature error: %v", err)
+	var rsv string
+
+	if isEd25519Pubkey(pubkey) {
+		rsv = fmt.Sprintf("%X", sig)
+	} else {
+		signature, errf := btcec.ParseSignature(sig, btcec.S256())
+		if errf != nil {
+			return nil, "", fmt.Errorf("parse signature error: %w", errf)
+		}
+		rsv = fmt.Sprintf("%064X%064X00", signature.R, signature.S)
 	}
 
-	rx := fmt.Sprintf("%X", signature.R)
-	rx = make64(rx)
-	sx := fmt.Sprintf("%X", signature.S)
-	sx = make64(sx)
-	rsv := rx + sx + "00"
-
-	stx, err := b.MakeSignedTransaction([]string{rsv}, tx)
+	stx, err := b.MakeSignedTransaction(pubkey, rsv, tx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -151,28 +164,30 @@ func (b *Bridge) SignTransactionWithRippleKey(rawTx interface{}, key rcrypto.Key
 }
 
 // MakeSignedTransaction make signed transaction
-func (b *Bridge) MakeSignedTransaction(rsv []string, transaction interface{}) (signedTransaction interface{}, err error) {
-	sig := rsvToSig(rsv[0])
+func (b *Bridge) MakeSignedTransaction(pubkey []byte, rsv string, transaction interface{}) (signedTransaction interface{}, err error) {
+	sig := rsvToSig(rsv, isEd25519Pubkey(pubkey))
 	tx, ok := transaction.(*data.Payment)
 	if !ok {
 		return nil, fmt.Errorf("type assertion error, transaction is not a payment")
 	}
-	signedTransaction = makeSignedTx(tx, sig)
-	return
-}
-
-func makeSignedTx(tx *data.Payment, sig []byte) data.Transaction {
 	*tx.GetSignature() = data.VariableLength(sig)
 	hash, _, err := data.Raw(tx)
 	if err != nil {
 		log.Warn("encode ripple tx error", "error", err)
-		return tx
+		return nil, err
 	}
 	copy(tx.GetHash().Bytes(), hash.Bytes())
-	return tx
+	return tx, nil
 }
 
-func rsvToSig(rsv string) []byte {
+func isEd25519Pubkey(pubkey []byte) bool {
+	return len(pubkey) == ed25519.PublicKeySize+1 && pubkey[0] == 0xED
+}
+
+func rsvToSig(rsv string, isEd bool) []byte {
+	if isEd {
+		return common.FromHex(rsv)
+	}
 	b, _ := hex.DecodeString(rsv)
 	rx := hex.EncodeToString(b[:32])
 	sx := hex.EncodeToString(b[32:64])
@@ -183,11 +198,4 @@ func rsvToSig(rsv string) []byte {
 		S: s,
 	}
 	return signature.Serialize()
-}
-
-func make64(str string) string {
-	for l := len(str); l < 64; l++ {
-		str = "0" + str
-	}
-	return str
 }

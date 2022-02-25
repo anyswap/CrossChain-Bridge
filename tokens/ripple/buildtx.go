@@ -131,7 +131,7 @@ func (b *Bridge) GetSeq(args *tokens.BuildTxArgs, address string) (nonceptr *uin
 	var nonce uint32
 	account, err := b.GetAccount(address)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get account, %v", err)
+		return nil, fmt.Errorf("cannot get account, %w", err)
 	}
 	if seq := account.AccountData.Sequence; seq != nil {
 		nonce = *seq

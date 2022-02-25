@@ -19,7 +19,7 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 		for _, r := range b.Remotes {
 			resp, err1 := r.Submit(tx)
 			if err1 != nil || resp == nil {
-				log.Warn("Try sending transaction failed", "error", err)
+				log.Warn("Try sending transaction failed", "error", err1)
 				err = err1
 				continue
 			}

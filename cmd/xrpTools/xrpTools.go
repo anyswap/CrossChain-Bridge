@@ -19,6 +19,7 @@ var (
 	gitDate          = ""
 	app              = utils.NewApp(clientIdentifier, gitCommit, gitDate, "the xrptools command line interface")
 
+	keyType    string
 	prikey     string
 	seed       string
 	keyseq     uint
@@ -31,6 +32,11 @@ var (
 	b          *ripple.Bridge
 	startScan  uint64
 
+	keyTypeFlag = &cli.StringFlag{
+		Name:  "keytype",
+		Usage: "key type (eg. ecdsa, ed25519)",
+		Value: "ecdsa",
+	}
 	keyFlag = &cli.StringFlag{
 		Name:  "key",
 		Usage: "private key",
@@ -81,6 +87,7 @@ var (
 		Name:   "sendxrp",
 		Usage:  "sendxrp",
 		Flags: []cli.Flag{
+			keyTypeFlag,
 			keyFlag,
 			seedFlag,
 			keyseqFlag,

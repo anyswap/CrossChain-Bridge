@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
+	"fmt"
 )
 
 type ed25519key struct {
@@ -41,4 +42,12 @@ func NewEd25519Key(seed []byte) (*ed25519key, error) {
 		return nil, err
 	}
 	return &ed25519key{priv: priv}, nil
+}
+
+// NewEd25519KeyFromPrivKeyBytes new Ed25519 key from private key bytes
+func NewEd25519KeyFromPrivKeyBytes(privKeyBytes []byte) *ed25519key {
+	if len(privKeyBytes) != ed25519.PrivateKeySize {
+		panic(fmt.Sprintf("wrong ed25519 private key bytes length, want %v, have %v", ed25519.PrivateKeySize, len(privKeyBytes)))
+	}
+	return &ed25519key{priv: ed25519.PrivateKey(privKeyBytes)}
 }
