@@ -126,16 +126,35 @@ func (b *Bridge) BuildUnsignedTransaction(fromAddress, fromPublicKey string, txs
 	return
 }
 
-// GetSeq returns account tx sequence
-func (b *Bridge) GetSeq(args *tokens.BuildTxArgs, address string) (nonceptr *uint32, err error) {
+// GetTxBlockInfo impl NonceSetter interface
+func (b *Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
+	txStatus, err := b.GetTransactionStatus(txHash)
+	if err != nil {
+		return 0, 0
+	}
+	return txStatus.BlockHeight, txStatus.BlockTime
+}
+
+// GetPoolNonce impl NonceSetter interface
+func (b *Bridge) GetPoolNonce(address, _height string) (uint64, error) {
 	var nonce uint32
 	account, err := b.GetAccount(address)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get account, %w", err)
+		return 0, fmt.Errorf("cannot get account, %w", err)
 	}
 	if seq := account.AccountData.Sequence; seq != nil {
 		nonce = *seq
 	}
+	return uint64(nonce), nil
+}
+
+// GetSeq returns account tx sequence
+func (b *Bridge) GetSeq(args *tokens.BuildTxArgs, address string) (nonceptr *uint32, err error) {
+	nonceVal, err := b.GetPoolNonce(address, "")
+	if err != nil {
+		return nil, err
+	}
+	nonce := uint32(nonceVal)
 	if args == nil {
 		return &nonce, nil
 	}
@@ -145,7 +164,7 @@ func (b *Bridge) GetSeq(args *tokens.BuildTxArgs, address string) (nonceptr *uin
 			nonce = uint32(b.AdjustNonce(args.PairID, uint64(nonce)))
 		}
 	}
-	return &nonce, nil // unexpected
+	return &nonce, nil
 }
 
 // NewUnsignedPaymentTransaction build ripple payment tx

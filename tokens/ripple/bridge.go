@@ -13,6 +13,13 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/websockets"
 )
 
+var (
+	// ensure Bridge impl tokens.CrossChainBridge
+	_ tokens.CrossChainBridge = &Bridge{}
+	// ensure Bridge impl tokens.NonceSetter
+	_ tokens.NonceSetter = &Bridge{}
+)
+
 // Bridge block bridge inherit from btc bridge
 type Bridge struct {
 	*base.NonceSetterBase
