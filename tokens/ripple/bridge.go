@@ -122,6 +122,11 @@ var (
 	rpcRetryInterval = 1 * time.Second
 )
 
+// SetRPCRetryTimes set rpc retry times (used in cmd tools)
+func SetRPCRetryTimes(times int) {
+	rpcRetryTimes = times
+}
+
 // GetLatestBlockNumber gets latest block number
 // For ripple, GetLatestBlockNumber returns current ledger version
 func (b *Bridge) GetLatestBlockNumber() (num uint64, err error) {

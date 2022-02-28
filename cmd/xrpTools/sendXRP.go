@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -51,10 +50,7 @@ func sendXrpAction(ctx *cli.Context) error {
 	utils.SetLogger(ctx)
 	initArgsSendXrp(ctx)
 	initBridge()
-	txhash := sendXRP()
-	time.Sleep(time.Second * 5)
-	checkTx(txhash)
-	checkStatus(txhash)
+	sendXRP()
 	return nil
 }
 
