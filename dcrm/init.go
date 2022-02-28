@@ -45,7 +45,7 @@ var (
 )
 
 func isECDSA() bool {
-	return dcrmSignType == "ECDSA"
+	return strings.HasPrefix(dcrmSignType, "EC")
 }
 
 // NodeInfo dcrm node info

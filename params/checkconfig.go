@@ -121,8 +121,10 @@ func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	if c.Disable {
 		return nil
 	}
-	switch c.SignType {
-	case "", "ECDSA", "ED25519":
+	switch {
+	case c.SignType == "":
+	case strings.HasPrefix(c.SignType, "EC"):
+	case strings.HasPrefix(c.SignType, "ED"):
 	default:
 		return fmt.Errorf("unknown dcrm sign type '%v'", c.SignType)
 	}
