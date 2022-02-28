@@ -95,6 +95,20 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	} else if tokenCfg.RippleExtra.Issuer == "" {
 		return fmt.Errorf("must config 'RippleExtra.Issuer' for non native")
 	}
+	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
+		return fmt.Errorf("invalid 'DcrmAddress' in token '%v' config", currency)
+	}
+	if tokenCfg.DepositAddress != tokenCfg.DcrmAddress &&
+		!b.IsValidAddress(tokenCfg.DepositAddress) {
+		return fmt.Errorf("invalid 'DepositAddress' in token '%v' config", currency)
+	}
+	pubAddr, err := PublicKeyHexToAddress(tokenCfg.DcrmPubkey)
+	if err != nil {
+		return err
+	}
+	if pubAddr != tokenCfg.DcrmAddress {
+		return fmt.Errorf("mismatch dcrm public key and address in token '%v' config, pubkey address is '%v', dcrm addrss is '%v'", currency, pubAddr, tokenCfg.DcrmAddress)
+	}
 	return nil
 }
 
