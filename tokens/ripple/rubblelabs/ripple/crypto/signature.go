@@ -22,7 +22,7 @@ func Verify(publicKey, hash, msg, signature []byte) (bool, error) {
 	switch publicKey[0] {
 	case 0xED:
 		return verifyEd25519(publicKey, signature, msg)
-	case 0x02, 0x03:
+	case 0x02, 0x03, 0x04:
 		return verifyECDSA(publicKey, signature, hash)
 	default:
 		return false, fmt.Errorf("Unknown public key format")
