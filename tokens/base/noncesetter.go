@@ -1,28 +1,31 @@
-package ripple
+package base
 
 import (
 	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
+	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
 // NonceSetterBase base nonce setter
 type NonceSetterBase struct {
+	*tokens.CrossChainBridgeBase
 	SwapinNonce  map[string]uint64
 	SwapoutNonce map[string]uint64
 }
 
 // NewNonceSetterBase new base nonce setter
-func NewNonceSetterBase() *NonceSetterBase {
+func NewNonceSetterBase(isSrc bool) *NonceSetterBase {
 	return &NonceSetterBase{
-		SwapinNonce:  make(map[string]uint64),
-		SwapoutNonce: make(map[string]uint64),
+		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
+		SwapinNonce:          make(map[string]uint64),
+		SwapoutNonce:         make(map[string]uint64),
 	}
 }
 
 // SetNonce set nonce directly always increase
-func (b *Bridge) SetNonce(pairID string, value uint64) {
+func (b *NonceSetterBase) SetNonce(pairID string, value uint64) {
 	tokenCfg := b.GetTokenConfig(pairID)
 	account := strings.ToLower(tokenCfg.DcrmAddress)
 	if b.IsSrcEndpoint() {
@@ -39,7 +42,7 @@ func (b *Bridge) SetNonce(pairID string, value uint64) {
 }
 
 // AdjustNonce adjust account nonce (eth like chain)
-func (b *Bridge) AdjustNonce(pairID string, value uint64) (nonce uint64) {
+func (b *NonceSetterBase) AdjustNonce(pairID string, value uint64) (nonce uint64) {
 	tokenCfg := b.GetTokenConfig(pairID)
 	account := strings.ToLower(tokenCfg.DcrmAddress)
 	nonce = value
@@ -56,7 +59,7 @@ func (b *Bridge) AdjustNonce(pairID string, value uint64) (nonce uint64) {
 }
 
 // InitNonces init nonces
-func (b *Bridge) InitNonces(nonces map[string]uint64) {
+func (b *NonceSetterBase) InitNonces(nonces map[string]uint64) {
 	if b.IsSrcEndpoint() {
 		b.SwapoutNonce = nonces
 	} else {

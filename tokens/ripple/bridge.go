@@ -8,14 +8,14 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/base"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/data"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/websockets"
 )
 
 // Bridge block bridge inherit from btc bridge
 type Bridge struct {
-	*tokens.CrossChainBridgeBase
-	*NonceSetterBase
+	*base.NonceSetterBase
 	Remotes map[string]*websockets.Remote
 }
 
@@ -23,9 +23,8 @@ type Bridge struct {
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	tokens.IsSwapoutToStringAddress = true
 	return &Bridge{
-		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
-		NonceSetterBase:      NewNonceSetterBase(),
-		Remotes:              make(map[string]*websockets.Remote),
+		NonceSetterBase: base.NewNonceSetterBase(isSrc),
+		Remotes:         make(map[string]*websockets.Remote),
 	}
 }
 

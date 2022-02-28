@@ -10,6 +10,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/base"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
@@ -30,8 +31,8 @@ type InheritInterface interface {
 // Bridge eth bridge
 type Bridge struct {
 	Inherit InheritInterface
-	*tokens.CrossChainBridgeBase
-	*NonceSetterBase
+	*base.NonceSetterBase
+
 	Signer        types.Signer
 	SignerChainID *big.Int
 }
@@ -39,8 +40,7 @@ type Bridge struct {
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	bridge := &Bridge{
-		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
-		NonceSetterBase:      NewNonceSetterBase(),
+		NonceSetterBase: base.NewNonceSetterBase(isSrc),
 	}
 	bridge.Inherit = bridge
 	return bridge
