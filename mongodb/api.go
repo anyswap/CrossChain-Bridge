@@ -728,6 +728,9 @@ func UpdateLatestSwapoutNonce(address string, nonce uint64) error {
 
 // UpdateLatestSwapNonce update
 func UpdateLatestSwapNonce(address string, isSwapin bool, nonce uint64) (err error) {
+	if !HasClient() {
+		return nil
+	}
 	key := getSwapNonceKey(address, isSwapin)
 	oldItem, _ := FindLatestSwapNonce(key)
 	if oldItem != nil && oldItem.SwapNonce >= nonce {

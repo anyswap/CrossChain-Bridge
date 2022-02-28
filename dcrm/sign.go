@@ -183,6 +183,7 @@ LOOP_GET_SIGN_STATUS:
 				break LOOP_GET_SIGN_STATUS
 			}
 		}
+		log.Trace("get sign status failed", "keyID", keyID, "count", i, "err", err)
 		time.Sleep(3 * time.Second)
 	}
 	if len(rsvs) == 0 || err != nil {

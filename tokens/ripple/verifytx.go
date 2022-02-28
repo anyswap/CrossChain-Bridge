@@ -15,23 +15,34 @@ import (
 var errTxResultType = errors.New("tx type is not data.TxResult")
 
 // VerifyMsgHash verify msg hash
-func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) {
+func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) (err error) {
+	if len(msgHashes) < 1 {
+		return fmt.Errorf("Must provide msg hash")
+	}
 	tx, ok := rawTx.(data.Transaction)
 	if !ok {
 		return fmt.Errorf("Ripple tx type error")
 	}
-	rebuildMsgHash, _, err := data.SigningHash(tx)
+	msgHash, msg, err := data.SigningHash(tx)
 	if err != nil {
 		return fmt.Errorf("Rebuild ripple tx msg error, %w", err)
 	}
+	msg = append(tx.SigningPrefix().Bytes(), msg...)
 
-	if len(msgHash) < 1 {
-		return fmt.Errorf("Must provide msg hash")
+	pubkey := tx.GetPublicKey().Bytes()
+	isEd := isEd25519Pubkey(pubkey)
+	var signContent string
+	if isEd {
+		signContent = common.ToHex(msg)
+	} else {
+		signContent = msgHash.String()
 	}
-	if strings.EqualFold(rebuildMsgHash.String(), msgHash[0]) {
-		return nil
+
+	if !strings.EqualFold(signContent, msgHashes[0]) {
+		return fmt.Errorf("msg hash not match, recover: %v, claiming: %v", signContent, msgHashes[0])
 	}
-	return fmt.Errorf("Msg hash not match, recover: %v, claiming: %v", rebuildMsgHash.String(), msgHash[0])
+
+	return nil
 }
 
 // VerifyTransaction impl

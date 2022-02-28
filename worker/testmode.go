@@ -91,14 +91,21 @@ func process(opts map[string]string) error {
 	log.Info("build tx success")
 
 	// sign tx
-	signedTx, txHash, err := dstBridge.SignTransaction(rawTx, pairID)
+	var signedTx interface{}
+	var signTxHash string
+	tokenCfg := dstBridge.GetTokenConfig(pairID)
+	if tokenCfg.GetDcrmAddressPrivateKey() != nil {
+		signedTx, signTxHash, err = dstBridge.SignTransaction(rawTx, pairID)
+	} else {
+		signedTx, signTxHash, err = dstBridge.DcrmSignTransaction(rawTx, args)
+	}
 	if err != nil {
 		return fmt.Errorf("sign tx failed: %w", err)
 	}
-	log.Info("sign tx success", "hash", txHash)
+	log.Info("sign tx success", "hash", signTxHash)
 
 	// send tx
-	txHash, err = dstBridge.SendTransaction(signedTx)
+	txHash, err := dstBridge.SendTransaction(signedTx)
 	if err != nil {
 		return fmt.Errorf("send tx failed: %w", err)
 	}

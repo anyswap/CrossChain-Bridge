@@ -136,7 +136,6 @@ func initApp() {
 }
 
 func initBridge() {
-	ripple.SetRPCRetryTimes(1) // only retry rpc one time
 	tokens.DstBridge = eth.NewCrossChainBridge(false)
 	b = ripple.NewCrossChainBridge(true)
 	b.Remotes = make(map[string]*websockets.Remote)

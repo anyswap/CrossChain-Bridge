@@ -54,7 +54,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 
-	jsondata, _ := json.Marshal(args)
+	jsondata, _ := json.Marshal(args.GetExtraArgs())
 	msgContext := string(jsondata)
 	msgHash, msg, err := data.SigningHash(tx)
 	if err != nil {
@@ -68,6 +68,8 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 
 	var signContent string
 	if isEd {
+		// dcrm ed public key has no 0xed prefix
+		pubkeyStr = pubkeyStr[2:]
 		// the real sign content is (signing prefix + msg)
 		// when we hex encoding here, the dcrm should do hex decoding there.
 		signContent = common.ToHex(msg)

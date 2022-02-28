@@ -22,7 +22,11 @@ func StartWork(isServer bool) {
 	bridge.InitCrossChainBridge(isServer)
 
 	if params.IsTestMode() {
-		StartTestWork()
+		if isServer {
+			StartTestWork()
+		} else {
+			StartAcceptSignJob()
+		}
 		return
 	}
 
