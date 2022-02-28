@@ -106,6 +106,9 @@ func InitCrossChainBridge(isServer bool) {
 		cfg.BtcExtra = nil
 	}
 
+	tokens.SrcBridge.InitAfterConfig()
+	tokens.DstBridge.InitAfterConfig()
+
 	dcrm.Init(cfg.Dcrm, isServer)
 
 	log.Info("Init bridge success", "isServer", isServer, "dcrmEnabled", !cfg.Dcrm.Disable)

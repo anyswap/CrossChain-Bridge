@@ -14,6 +14,8 @@ type CrossChainBridge interface {
 	VerifyTokenConfig(*TokenConfig) error
 	IsValidAddress(address string) bool
 
+	InitAfterConfig()
+
 	GetTransaction(txHash string) (interface{}, error)
 	GetTransactionStatus(txHash string) (*TxStatus, error)
 	VerifyTransaction(pairID, txHash string, allowUnstable bool) (*TxSwapInfo, error)

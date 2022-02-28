@@ -94,6 +94,10 @@ func (b *CrossChainBridgeBase) GetDcrmPublicKey(pairID string) string {
 	return ""
 }
 
+// InitAfterConfig init and verify after loading config
+func (b *CrossChainBridgeBase) InitAfterConfig() {
+}
+
 // IsSwapTxOnChainAndFailed to make failed of swaptx
 func (s *TxStatus) IsSwapTxOnChainAndFailed(token *TokenConfig) bool {
 	if s == nil || s.BlockHeight == 0 {

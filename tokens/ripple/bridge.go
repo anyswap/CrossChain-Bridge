@@ -98,7 +98,8 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
 		return fmt.Errorf("invalid 'DcrmAddress' in token '%v' config", currency)
 	}
-	if tokenCfg.DepositAddress != tokenCfg.DcrmAddress &&
+	if b.IsSrc &&
+		tokenCfg.DepositAddress != tokenCfg.DcrmAddress &&
 		!b.IsValidAddress(tokenCfg.DepositAddress) {
 		return fmt.Errorf("invalid 'DepositAddress' in token '%v' config", currency)
 	}
