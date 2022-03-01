@@ -11,10 +11,10 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/data"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/terminal"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple/rubblelabs/ripple/websockets"
-	"github.com/golang/glog"
 )
 
 const usage = `Usage: explain [tx hash|ledger sequence|ripple address|-] [options]
@@ -97,7 +97,7 @@ func main() {
 	matches := argumentRegex.FindStringSubmatch(os.Args[1])
 	r, err := websockets.NewRemote(*host)
 	checkErr(err)
-	glog.Infoln("Connected to: ", *host)
+	log.Infoln("Connected to: ", *host)
 	switch {
 	case len(matches) == 0:
 		showUsage()
