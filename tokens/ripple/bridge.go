@@ -18,6 +18,9 @@ var (
 	_ tokens.CrossChainBridge = &Bridge{}
 	// ensure Bridge impl tokens.NonceSetter
 	_ tokens.NonceSetter = &Bridge{}
+
+	currencyMap = make(map[string]data.Currency)
+	issuerMap   = make(map[string]*data.Account)
 )
 
 // Bridge block bridge inherit from btc bridge
@@ -89,8 +92,9 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 	}
 	currency, err := data.NewCurrency(tokenCfg.RippleExtra.Currency)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid currency '%v', %w", tokenCfg.RippleExtra.Currency, err)
 	}
+	currencyMap[tokenCfg.RippleExtra.Currency] = currency
 	configedDecimals := *tokenCfg.Decimals
 	if currency.IsNative() {
 		if configedDecimals != 6 {
@@ -99,8 +103,15 @@ func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
 		if tokenCfg.RippleExtra.Issuer != "" {
 			return fmt.Errorf("must config empty 'RippleExtra.Issuer' for native")
 		}
-	} else if tokenCfg.RippleExtra.Issuer == "" {
-		return fmt.Errorf("must config 'RippleExtra.Issuer' for non native")
+	} else {
+		if tokenCfg.RippleExtra.Issuer == "" {
+			return fmt.Errorf("must config 'RippleExtra.Issuer' for non native")
+		}
+		issuer, errf := data.NewAccountFromAddress(tokenCfg.RippleExtra.Issuer)
+		if errf != nil {
+			return fmt.Errorf("invalid Issuer '%v', %w", tokenCfg.RippleExtra.Issuer, errf)
+		}
+		issuerMap[tokenCfg.RippleExtra.Issuer] = issuer
 	}
 	if !b.IsValidAddress(tokenCfg.DcrmAddress) {
 		return fmt.Errorf("invalid 'DcrmAddress' in token '%v' config", currency)

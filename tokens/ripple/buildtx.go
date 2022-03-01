@@ -1,11 +1,11 @@
 package ripple
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -82,8 +82,49 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, fmt.Errorf("insufficient xrp balance")
 	}
 
-	rawtx, _, err := b.BuildUnsignedTransaction(from, pubkey, sequence, to, amount, sequence, fee)
+	amt, err := getTokenAmount(amount, token)
+	if err != nil {
+		return nil, err
+	}
+
+	ripplePubKey := ImportPublicKey(common.FromHex(pubkey))
+	rawtx, _, _ := NewUnsignedPaymentTransaction(ripplePubKey, nil, sequence, to, amt, fee, "", "", false, false, false)
+
 	return rawtx, err
+}
+
+func getTokenAmount(amount *big.Int, token *tokens.TokenConfig) (string, error) {
+	currency, exist := currencyMap[token.RippleExtra.Currency]
+	if !exist {
+		return "", fmt.Errorf("non exist currency %v", token.RippleExtra.Currency)
+	}
+
+	if !amount.IsInt64() {
+		return "", fmt.Errorf("amount value %v is overflow of type int64", amount)
+	}
+
+	if currency.IsNative() { // native XRP
+		return amount.String(), nil
+	}
+
+	issuer, exist := issuerMap[token.RippleExtra.Issuer]
+	if !exist {
+		return "", fmt.Errorf("non exist issuer %v", token.RippleExtra.Issuer)
+	}
+
+	// get a Value of amount*10^(-decimals)
+	value, err := data.NewNonNativeValue(amount.Int64(), int64(-*token.Decimals))
+	if err != nil {
+		return "", err
+	}
+
+	txAmout := &data.Amount{
+		Value:    value,
+		Currency: currency,
+		Issuer:   *issuer,
+	}
+
+	return txAmout.String(), nil
 }
 
 func (b *Bridge) swapoutDefaultArgs(txargs *tokens.BuildTxArgs) *tokens.RippleExtra {
@@ -113,17 +154,6 @@ func (b *Bridge) swapoutDefaultArgs(txargs *tokens.BuildTxArgs) *tokens.RippleEx
 		*args.Fee = defaultFee
 	}
 	return args
-}
-
-// BuildUnsignedTransaction build ripple unsigned transaction
-func (b *Bridge) BuildUnsignedTransaction(fromAddress, fromPublicKey string, txseq uint32, toAddress string, amount *big.Int, sequence uint32, fee int64) (transaction interface{}, digests []string, err error) {
-	pub, err := hex.DecodeString(fromPublicKey)
-	ripplePubKey := ImportPublicKey(pub)
-	amt := amount.String()
-	memo := ""
-	transaction, hash, _ := NewUnsignedPaymentTransaction(ripplePubKey, nil, txseq, toAddress, amt, fee, memo, "", false, false, false)
-	digests = append(digests, hash.String())
-	return
 }
 
 // GetTxBlockInfo impl NonceSetter interface

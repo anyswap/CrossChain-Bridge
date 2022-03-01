@@ -19,10 +19,12 @@ func (b *Bridge) IsValidAddress(addr string) bool {
 }
 
 // PublicKeyHexToAddress convert public key hex to ripple address
-func PublicKeyHexToAddress(pubKeyHex string) (address string, err error) {
+func PublicKeyHexToAddress(pubKeyHex string) (string, error) {
 	pub, err := hex.DecodeString(pubKeyHex)
-	address = PublicKeyToAddress(pub)
-	return
+	if err != nil {
+		return "", err
+	}
+	return PublicKeyToAddress(pub), nil
 }
 
 // PublicKeyToAddress converts pubkey to ripple address
