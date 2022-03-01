@@ -70,6 +70,15 @@ func GetUint64FromStr(str string) (uint64, error) {
 	return res, nil
 }
 
+// GetUint32FromStr get uint64 from string.
+func GetUint32FromStr(str string) (uint32, error) {
+	u64, err := GetUint64FromStr(str)
+	if err != nil || u64 > cmath.MaxUint32 {
+		return 0, errors.New("invalid unsigned 32 bit integer: " + str)
+	}
+	return uint32(u64), nil
+}
+
 // Now returns timestamp of the point of calling.
 func Now() int64 {
 	return time.Now().Unix()

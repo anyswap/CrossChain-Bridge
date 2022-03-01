@@ -22,6 +22,10 @@ func initArgsSendXrp(ctx *cli.Context) {
 	seed = ctx.String(seedFlag.Name)
 	keyseq = ctx.Uint(keyseqFlag.Name)
 	to = ctx.String(toFlag.Name)
+	if ctx.IsSet(toTagFlag.Name) {
+		tag := uint32(ctx.Uint(toTagFlag.Name))
+		toTag = &tag
+	}
 	amount = ctx.String(amountFlag.Name)
 	txfee = ctx.Int64(feeFlag.Name)
 	memo = ctx.String(memoFlag.Name)
@@ -102,7 +106,7 @@ func sendXRP() string {
 	}
 	log.Info("start build tx", "from", from, "sequence", sequence, "txseq", txseq, "to", to, "amount", amount, "memo", memo)
 
-	tx, _, _ := ripple.NewUnsignedPaymentTransaction(key, sequence, *txseq, to, amount, txfee, memo, "", false, false, false)
+	tx, _, _ := ripple.NewUnsignedPaymentTransaction(key, sequence, *txseq, to, toTag, amount, txfee, memo, "", false, false, false)
 
 	stx, _, err := b.SignTransactionWithRippleKey(tx, key, sequence)
 	if err != nil {

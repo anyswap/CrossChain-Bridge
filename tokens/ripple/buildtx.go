@@ -27,6 +27,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		pubkey   string
 		from     string
 		to       string
+		toTag    *uint32
 		amount   *big.Int
 	)
 
@@ -88,7 +89,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	}
 
 	ripplePubKey := ImportPublicKey(common.FromHex(pubkey))
-	rawtx, _, _ := NewUnsignedPaymentTransaction(ripplePubKey, nil, sequence, to, amt, fee, "", "", false, false, false)
+	rawtx, _, _ := NewUnsignedPaymentTransaction(ripplePubKey, nil, sequence, to, toTag, amt, fee, "", "", false, false, false)
 
 	return rawtx, err
 }
@@ -199,7 +200,7 @@ func (b *Bridge) GetSeq(args *tokens.BuildTxArgs, address string) (nonceptr *uin
 
 // NewUnsignedPaymentTransaction build ripple payment tx
 // Partial and limit must be false
-func NewUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32, dest string, amt string, fee int64, memo string, path string, nodirect bool, partial bool, limit bool) (data.Transaction, data.Hash256, []byte) {
+func NewUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32, dest string, destinationTag *uint32, amt string, fee int64, memo, path string, nodirect, partial, limit bool) (data.Transaction, data.Hash256, []byte) {
 	if partial {
 		log.Warn("Building tx with partial")
 	}
@@ -209,8 +210,9 @@ func NewUnsignedPaymentTransaction(key crypto.Key, keyseq *uint32, txseq uint32,
 
 	destination, amount := parseAccount(dest), parseAmount(amt)
 	payment := &data.Payment{
-		Destination: *destination,
-		Amount:      *amount,
+		Destination:    *destination,
+		Amount:         *amount,
+		DestinationTag: destinationTag,
 	}
 	payment.TransactionType = data.PAYMENT
 

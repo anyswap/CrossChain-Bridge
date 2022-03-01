@@ -24,6 +24,7 @@ var (
 	seed       string
 	keyseq     uint
 	to         string
+	toTag      *uint32
 	memo       string
 	amount     string
 	txfee      int64
@@ -53,6 +54,10 @@ var (
 	toFlag = &cli.StringFlag{
 		Name:  "to",
 		Usage: "send xrp to",
+	}
+	toTagFlag = &cli.UintFlag{
+		Name:  "totag",
+		Usage: "destination tag",
 	}
 	amountFlag = &cli.StringFlag{
 		Name:  "amount",
