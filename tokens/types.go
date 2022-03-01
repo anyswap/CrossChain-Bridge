@@ -120,26 +120,6 @@ func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 	}
 }
 
-// GetTxNonce get tx nonce
-func (args *BuildTxArgs) GetTxNonce() uint64 {
-	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.Nonce != nil {
-		return *args.Extra.EthExtra.Nonce
-	}
-	return 0
-}
-
-// SetTxNonce set tx nonce
-func (args *BuildTxArgs) SetTxNonce(nonce uint64) {
-	var extra *EthExtraArgs
-	if args.Extra == nil || args.Extra.EthExtra == nil {
-		extra = &EthExtraArgs{}
-		args.Extra = &AllExtras{EthExtra: extra}
-	} else {
-		extra = args.Extra.EthExtra
-	}
-	extra.Nonce = &nonce
-}
-
 // GetTxGasPrice get tx gas price
 func (args *BuildTxArgs) GetTxGasPrice() *big.Int {
 	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.GasPrice != nil {
@@ -148,11 +128,22 @@ func (args *BuildTxArgs) GetTxGasPrice() *big.Int {
 	return nil
 }
 
+// GetTxNonce get tx nonce
+func (args *BuildTxArgs) GetTxNonce() uint64 {
+	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.Nonce != nil {
+		return *args.Extra.EthExtra.Nonce
+	}
+	if args.Extra != nil && args.Extra.RippleExtra != nil && args.Extra.RippleExtra.Sequence != nil {
+		return uint64(*args.Extra.RippleExtra.Sequence)
+	}
+	return 0
+}
+
 // AllExtras struct
 type AllExtras struct {
+	ReplaceNum  uint64        `json:"replaceNum,omitempty"`
 	BtcExtra    *BtcExtraArgs `json:"btcExtra,omitempty"`
 	EthExtra    *EthExtraArgs `json:"ethExtra,omitempty"`
-	ReplaceNum  uint64        `json:"replaceNum,omitempty"`
 	RippleExtra *RippleExtra  `json:"rippleExtra,omitempty"`
 }
 
