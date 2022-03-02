@@ -97,6 +97,7 @@ var (
 			seedFlag,
 			keyseqFlag,
 			toFlag,
+			toTagFlag,
 			amountFlag,
 			feeFlag,
 			memoFlag,

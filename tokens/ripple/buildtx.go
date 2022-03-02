@@ -114,8 +114,9 @@ func getTokenAmount(amount *big.Int, token *tokens.TokenConfig) (string, error) 
 	}
 
 	// get a Value of amount*10^(-decimals)
-	value, err := data.NewNonNativeValue(amount.Int64(), int64(-*token.Decimals))
+	value, err := data.NewNonNativeValue(amount.Int64(), -int64(*token.Decimals))
 	if err != nil {
+		log.Error("getTokenAmount failed", "currency", token.RippleExtra.Currency, "issuer", token.RippleExtra.Issuer, "amount", amount, "decimals", *token.Decimals, "err", err)
 		return "", err
 	}
 
