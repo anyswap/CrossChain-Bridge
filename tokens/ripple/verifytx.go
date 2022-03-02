@@ -149,6 +149,8 @@ func (b *Bridge) checkToken(pairID string, txmeta *data.TransactionWithMetaData)
 		if !strings.EqualFold(token.RippleExtra.Issuer, txmeta.MetaData.DeliveredAmount.Issuer.String()) {
 			return fmt.Errorf("ripple currency issuer not match")
 		}
+	} else if !txmeta.MetaData.DeliveredAmount.Issuer.IsZero() {
+		return fmt.Errorf("ripple native issuer is not zero")
 	}
 	return nil
 }
