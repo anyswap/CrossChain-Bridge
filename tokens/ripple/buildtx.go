@@ -72,6 +72,11 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		args.Identifier = params.GetIdentifier()
 	}
 
+	amt, err := getPaymentAmount(amount, token)
+	if err != nil {
+		return nil, err
+	}
+
 	if token.RippleExtra.IsNative() {
 		if err = b.checkNativeBalance(from, amount, true); err != nil {
 			return nil, err
@@ -80,17 +85,12 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 			return nil, err
 		}
 	} else {
-		if err = b.checkTokenBalance(from, amount, token); err != nil {
-			return nil, err
-		}
 		if err = b.checkNativeBalance(to, nil, false); err != nil {
 			return nil, err
 		}
-	}
-
-	amt, err := getPaymentAmount(amount, token)
-	if err != nil {
-		return nil, err
+		if err = b.checkNonNativeBalance(token.RippleExtra.Currency, token.RippleExtra.Issuer, from, amt); err != nil {
+			return nil, err
+		}
 	}
 
 	ripplePubKey := ImportPublicKey(common.FromHex(pubkey))
@@ -186,7 +186,14 @@ func (b *Bridge) checkNativeBalance(account string, amount *big.Int, isPay bool)
 	return nil
 }
 
-func (b *Bridge) checkTokenBalance(account string, amount *big.Int, token *tokens.TokenConfig) error {
+func (b *Bridge) checkNonNativeBalance(currency, issuer, account string, amount *data.Amount) error {
+	accl, err := b.GetAccountLine(currency, issuer, account)
+	if err != nil {
+		return err
+	}
+	if accl.Balance.Value.Compare(*amount.Value) < 0 {
+		return fmt.Errorf("insufficient %v balance, issuer: %v, account: %v", currency, issuer, account)
+	}
 	return nil
 }
 

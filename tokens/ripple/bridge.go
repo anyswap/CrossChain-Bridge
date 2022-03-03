@@ -335,3 +335,31 @@ func (b *Bridge) GetAccount(address string) (acct *websockets.AccountInfoResult,
 	}
 	return
 }
+
+// GetAccountLine get account line
+func (b *Bridge) GetAccountLine(currency, issuer, accountAddress string) (*data.AccountLine, error) {
+	account, err := data.NewAccountFromAddress(accountAddress)
+	if err != nil {
+		return nil, err
+	}
+	var acclRes *websockets.AccountLinesResult
+	for i := 0; i < rpcRetryTimes; i++ {
+		for _, r := range b.Remotes {
+			acclRes, err = r.AccountLines(*account, nil)
+			if err == nil && acclRes != nil {
+				break
+			}
+		}
+		time.Sleep(rpcRetryInterval)
+	}
+	if err != nil {
+		return nil, err
+	}
+	for _, accl := range acclRes.Lines {
+		asset := accl.Asset()
+		if asset.Currency == currency && asset.Issuer == issuer {
+			return &accl, nil
+		}
+	}
+	return nil, fmt.Errorf("account line not found")
+}
