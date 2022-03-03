@@ -16,6 +16,7 @@ import (
 var (
 	defaultFee     int64 = 10
 	accountReserve       = big.NewInt(10000000)
+	minReserveFee  *big.Int
 )
 
 // BuildRawTransaction build raw tx
@@ -78,7 +79,11 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	}
 
 	if token.RippleExtra.IsNative() {
-		if err = b.checkNativeBalance(from, amount, true); err != nil {
+		needAmount := amount
+		if args.SwapType != tokens.NoSwapType {
+			needAmount = new(big.Int).Add(amount, b.getMinReserveFee())
+		}
+		if err = b.checkNativeBalance(from, needAmount, true); err != nil {
 			return nil, err
 		}
 		if err = b.checkNativeBalance(to, amount, false); err != nil {
@@ -130,6 +135,17 @@ func getPaymentAmount(amount *big.Int, token *tokens.TokenConfig) (*data.Amount,
 		Currency: currency,
 		Issuer:   *issuer,
 	}, nil
+}
+
+func (b *Bridge) getMinReserveFee() *big.Int {
+	if minReserveFee != nil {
+		return minReserveFee
+	}
+	minReserveFee = b.ChainConfig.GetMinReserveFee()
+	if minReserveFee == nil {
+		minReserveFee = big.NewInt(100000) // default 0.1 XRP
+	}
+	return minReserveFee
 }
 
 func (b *Bridge) swapoutDefaultArgs(txargs *tokens.BuildTxArgs) *tokens.RippleExtra {
