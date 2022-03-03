@@ -133,7 +133,7 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 		return "", nil, err
 	}
 
-	if isECDSA() { // prevent multiple use of same r value
+	if isECDSA() && mongodb.HasClient() { // prevent multiple use of same r value
 		for _, rsv := range rsvs {
 			signature := common.FromHex(rsv)
 			if len(signature) != crypto.SignatureLength {

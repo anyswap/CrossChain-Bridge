@@ -299,8 +299,8 @@ func (b *Bridge) GetPoolTxidList() ([]string, error) {
 // GetBalance gets balance
 func (b *Bridge) GetBalance(accountAddress string) (*big.Int, error) {
 	acct, err := b.GetAccount(accountAddress)
-	if err != nil {
-		log.Warn("Get balance failed")
+	if err != nil || acct == nil {
+		log.Warn("get balance failed", "account", accountAddress, "err", err)
 		return nil, err
 	}
 	bal := big.NewInt(int64(acct.AccountData.Balance.Float() * 1000000))

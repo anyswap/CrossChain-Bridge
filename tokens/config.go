@@ -158,6 +158,11 @@ type RippleTokenExtra struct {
 	Issuer   string
 }
 
+// IsNative is native of ripple
+func (e *RippleTokenExtra) IsNative() bool {
+	return e.Currency == "XRP"
+}
+
 // CheckConfig check chain config
 func (c *ChainConfig) CheckConfig(isServer bool) error {
 	if c.BlockChain == "" {

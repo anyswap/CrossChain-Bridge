@@ -72,61 +72,64 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		args.Identifier = params.GetIdentifier()
 	}
 
-	remain, err := b.GetBalance(from)
-	if err != nil {
-		log.Warn("Get from address balance error", "error", err)
-	}
-	if pairID == "XRP" {
-		remain = new(big.Int).Sub(remain, amount)
-	}
-	if remain.Cmp(accountReserve) < 0 {
-		return nil, fmt.Errorf("insufficient xrp balance")
+	if token.RippleExtra.IsNative() {
+		if err = b.checkNativeBalance(from, amount, true); err != nil {
+			return nil, err
+		}
+		if err = b.checkNativeBalance(to, amount, false); err != nil {
+			return nil, err
+		}
+	} else {
+		if err = b.checkTokenBalance(from, amount, token); err != nil {
+			return nil, err
+		}
+		if err = b.checkNativeBalance(to, nil, false); err != nil {
+			return nil, err
+		}
 	}
 
-	amt, err := getTokenAmount(amount, token)
+	amt, err := getPaymentAmount(amount, token)
 	if err != nil {
 		return nil, err
 	}
 
 	ripplePubKey := ImportPublicKey(common.FromHex(pubkey))
-	rawtx, _, _ := NewUnsignedPaymentTransaction(ripplePubKey, nil, sequence, to, toTag, amt, fee, "", "", false, false, false)
+	rawtx, _, _ := NewUnsignedPaymentTransaction(ripplePubKey, nil, sequence, to, toTag, amt.String(), fee, "", "", false, false, false)
 
 	return rawtx, err
 }
 
-func getTokenAmount(amount *big.Int, token *tokens.TokenConfig) (string, error) {
+func getPaymentAmount(amount *big.Int, token *tokens.TokenConfig) (*data.Amount, error) {
 	currency, exist := currencyMap[token.RippleExtra.Currency]
 	if !exist {
-		return "", fmt.Errorf("non exist currency %v", token.RippleExtra.Currency)
+		return nil, fmt.Errorf("non exist currency %v", token.RippleExtra.Currency)
 	}
 
 	if !amount.IsInt64() {
-		return "", fmt.Errorf("amount value %v is overflow of type int64", amount)
+		return nil, fmt.Errorf("amount value %v is overflow of type int64", amount)
 	}
 
 	if currency.IsNative() { // native XRP
-		return amount.String(), nil
+		return data.NewAmount(amount.Int64())
 	}
 
 	issuer, exist := issuerMap[token.RippleExtra.Issuer]
 	if !exist {
-		return "", fmt.Errorf("non exist issuer %v", token.RippleExtra.Issuer)
+		return nil, fmt.Errorf("non exist issuer %v", token.RippleExtra.Issuer)
 	}
 
 	// get a Value of amount*10^(-decimals)
 	value, err := data.NewNonNativeValue(amount.Int64(), -int64(*token.Decimals))
 	if err != nil {
-		log.Error("getTokenAmount failed", "currency", token.RippleExtra.Currency, "issuer", token.RippleExtra.Issuer, "amount", amount, "decimals", *token.Decimals, "err", err)
-		return "", err
+		log.Error("getPaymentAmount failed", "currency", token.RippleExtra.Currency, "issuer", token.RippleExtra.Issuer, "amount", amount, "decimals", *token.Decimals, "err", err)
+		return nil, err
 	}
 
-	txAmout := &data.Amount{
+	return &data.Amount{
 		Value:    value,
 		Currency: currency,
 		Issuer:   *issuer,
-	}
-
-	return txAmout.String(), nil
+	}, nil
 }
 
 func (b *Bridge) swapoutDefaultArgs(txargs *tokens.BuildTxArgs) *tokens.RippleExtra {
@@ -156,6 +159,35 @@ func (b *Bridge) swapoutDefaultArgs(txargs *tokens.BuildTxArgs) *tokens.RippleEx
 		*args.Fee = defaultFee
 	}
 	return args
+}
+
+func (b *Bridge) checkNativeBalance(account string, amount *big.Int, isPay bool) error {
+	balance, err := b.GetBalance(account)
+	if err != nil && balance == nil {
+		balance = big.NewInt(0)
+	}
+
+	remain := balance
+	if amount != nil {
+		if isPay {
+			remain = new(big.Int).Sub(balance, amount)
+		} else {
+			remain = new(big.Int).Add(balance, amount)
+		}
+	}
+
+	if remain.Cmp(accountReserve) < 0 {
+		if isPay {
+			return fmt.Errorf("insufficient native balance, sender: %v", account)
+		}
+		return fmt.Errorf("insufficient native balance, receiver: %v", account)
+	}
+
+	return nil
+}
+
+func (b *Bridge) checkTokenBalance(account string, amount *big.Int, token *tokens.TokenConfig) error {
+	return nil
 }
 
 // GetTxBlockInfo impl NonceSetter interface

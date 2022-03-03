@@ -23,9 +23,10 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 				err = err1
 				continue
 			}
-			if resp.EngineResult == 0 {
-				return tx.GetBase().Hash.String(), nil
+			if !resp.EngineResult.Success() {
+				log.Warn("send tx with error result", "result", resp.EngineResult, "message", resp.EngineResultMessage)
 			}
+			return tx.GetBase().Hash.String(), nil
 		}
 		time.Sleep(rpcRetryInterval)
 	}

@@ -77,13 +77,13 @@ func newValue(native, negative bool, num uint64, offset int64) *Value {
 // NewNativeValue returns a Value with n drops.
 // If the value is impossible an error is returned.
 func NewNativeValue(n int64) (*Value, error) {
-	v := newValue(true, n < 0, uint64(n), 0)
+	v := newValue(true, n < 0, abs(n), 0)
 	return v, v.canonicalise()
 }
 
 // NewNonNativeValue returns a Value of n*10^offset.
 func NewNonNativeValue(n int64, offset int64) (*Value, error) {
-	v := newValue(false, n < 0, uint64(n), offset)
+	v := newValue(false, n < 0, abs(n), offset)
 	return v, v.canonicalise()
 }
 
