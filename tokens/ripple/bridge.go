@@ -32,6 +32,9 @@ type Bridge struct {
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	tokens.IsSwapoutToStringAddress = true
+	if !isSrc {
+		log.Fatalf("ripple::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
+	}
 	return &Bridge{
 		NonceSetterBase: base.NewNonceSetterBase(isSrc),
 		Remotes:         make(map[string]*websockets.Remote),

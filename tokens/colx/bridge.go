@@ -29,6 +29,7 @@ var instance *Bridge
 
 // NewCrossChainBridge new colx bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
+	tokens.IsSwapoutToStringAddress = true
 	if !isSrc {
 		log.Fatalf("colx::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
