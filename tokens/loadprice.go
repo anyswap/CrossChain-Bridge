@@ -1,14 +1,17 @@
 package tokens
 
 import (
+	"math/big"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
+	"github.com/anyswap/CrossChain-Bridge/tokens/eth/abicoder"
 )
 
 func callContract(contract string, urls []string, data hexutil.Bytes, blockNumber string) (string, error) {
@@ -27,43 +30,94 @@ func callContract(contract string, urls []string, data hexutil.Bytes, blockNumbe
 	return "", err
 }
 
-func (c *TokenConfig) loadTokenPrice(isSrc bool) (err error) {
+func (c *TokenPairConfig) loadTokenPrice() (err error) {
 	if TokenPriceCfg == nil {
 		return nil
 	}
-	chainID := GetCrossChainBridge(isSrc).GetChainConfig().GetChainID()
-	if chainID == nil && isSrc {
-		// if source token price is not set, then use dest token price
-		chainID = GetCrossChainBridge(false).GetChainConfig().GetChainID()
+
+	var srcTokenPrice, dstTokenPrice float64
+	srcChainID := GetCrossChainBridge(true).GetChainConfig().GetChainID()
+	srcTokenAddress := c.SrcToken.ContractAddress
+	dstChainID := GetCrossChainBridge(false).GetChainConfig().GetChainID()
+	dstTokenAddress := c.DestToken.ContractAddress
+	if srcChainID != nil {
+		srcTokenPrice, _ = loadTokenPrice(srcChainID, srcTokenAddress)
 	}
-	if chainID == nil {
+	if dstChainID != nil {
+		dstTokenPrice, _ = loadTokenPrice(dstChainID, dstTokenAddress)
+	}
+	if srcTokenPrice == 0 && dstTokenPrice == 0 {
 		return ErrMissTokenPrice
 	}
-	// call `getTokenPrice(uint256 chainID, address tokenAddr)`
-	data := make(hexutil.Bytes, 68)
-	copy(data[:4], "0x87e320e4")
-	copy(data[4:36], common.LeftPadBytes(chainID.Bytes(), 32))
-	copy(data[36:], common.HexToAddress(c.ContractAddress).Hash().Bytes())
-	result, err := callContract(TokenPriceCfg.Contract, TokenPriceCfg.APIAddress, data, "latest")
-	if err != nil {
-		log.Error("load token price failed", "token", c.ContractAddress, "err", err)
-		return err
+	if srcTokenPrice == 0 {
+		log.Info("srcTokenPrice is not config, use dstTokenPrice", "pairID", c.PairID)
+		srcTokenPrice = dstTokenPrice
 	}
-	biTokenPrice, err := common.GetBigIntFromStr(result)
-	if err != nil {
-		return err
-	}
-	c.TokenPrice = FromBits(biTokenPrice, 4)
-	if c.TokenPrice == 0 {
-		return ErrMissTokenPrice
+	if dstTokenPrice == 0 {
+		log.Info("dstTokenPrice is not config, use srcTokenPrice", "pairID", c.PairID)
+		dstTokenPrice = srcTokenPrice
 	}
 
-	log.Info("load token price success", "token", c.ContractAddress, "name", c.Name, "price", c.TokenPrice)
+	c.SrcToken.TokenPrice = srcTokenPrice
+	c.DestToken.TokenPrice = dstTokenPrice
+
+	log.Info("load token pair price success", "pairID", c.PairID,
+		"srcTokenAddress", srcTokenAddress, "dstTokenAddress", dstTokenAddress,
+		"srcTokenName", c.SrcToken.Name, "dstTokenName", c.DestToken.Name,
+		"srcTokenPrice", c.SrcToken.TokenPrice, "dstTokenPrice", c.DestToken.TokenPrice,
+	)
 	return nil
+}
+
+func loadTokenPrice(chainID *big.Int, tokenAddress string) (float64, error) {
+	// call `getTokenPrice(uint256 chainID, address tokenAddr)`
+	data := make(hexutil.Bytes, 68)
+	copy(data[:4], common.FromHex("0x87e320e4"))
+	copy(data[4:36], common.LeftPadBytes(chainID.Bytes(), 32))
+	copy(data[36:], common.HexToAddress(tokenAddress).Hash().Bytes())
+	result, err := callContract(TokenPriceCfg.Contract, TokenPriceCfg.APIAddress, data, "latest")
+	if err != nil {
+		log.Error("load token price failed", "chainID", chainID, "token", tokenAddress, "err", err)
+		return 0, err
+	}
+	str, err := abicoder.ParseStringInData(common.FromHex(result), 0)
+	if err != nil {
+		log.Error("parse token price failed", "chainID", chainID, "token", tokenAddress, "err", err)
+		return 0, err
+	}
+	if str == "" {
+		return 0, ErrMissTokenPrice
+	}
+	price, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		log.Error("parse token price as float failed", "price", str, "chainID", chainID, "token", tokenAddress, "err", err)
+		return 0, err
+	}
+	log.Info("load token price success", "chainID", chainID, "token", tokenAddress, "price", price)
+	return price, nil
+}
+
+func initAllTokenPrices() {
+	if TokenPriceCfg == nil {
+		return
+	}
+	for _, pairCfg := range GetTokenPairsConfig() {
+		err := pairCfg.loadTokenPrice()
+		if err != nil {
+			log.Fatal("init token price failed", "pairID", pairCfg.PairID, "err", err)
+		}
+		log.Info("init token price success", "pairID", pairCfg.PairID)
+		pairCfg.SrcToken.CalcAndStoreValue()
+		pairCfg.DestToken.CalcAndStoreValue()
+	}
+	log.Info("init all token price success")
 }
 
 // reload specified pairIDs' token prices. if no pairIDs, then reload all.
 func reloadTokenPrices(pairIDs []string) {
+	if TokenPriceCfg == nil {
+		return
+	}
 	var pairCfgs []*TokenPairConfig
 	if len(pairIDs) == 0 {
 		allPairsCfg := GetTokenPairsConfig()
@@ -81,26 +135,19 @@ func reloadTokenPrices(pairIDs []string) {
 	}
 	reloadAllSuccess := true
 	for _, pairCfg := range pairCfgs {
-		oldPrice := pairCfg.SrcToken.TokenPrice
-		err := pairCfg.SrcToken.loadTokenPrice(true)
-		if err == nil {
-			if pairCfg.SrcToken.TokenPrice != oldPrice {
-				pairCfg.SrcToken.CalcAndStoreValue()
-			}
-		} else {
+		oldSrcPrice := pairCfg.SrcToken.TokenPrice
+		oldDstPrice := pairCfg.DestToken.TokenPrice
+		err := pairCfg.loadTokenPrice()
+		if err != nil {
 			reloadAllSuccess = false
-			log.Error("reload token price failed", "name", pairCfg.SrcToken.Name, "token", pairCfg.SrcToken.ContractAddress, "err", err)
+			log.Error("reload token price failed", "pairID", pairCfg.PairID, "err", err)
+			continue
 		}
-
-		oldPrice = pairCfg.DestToken.TokenPrice
-		err = pairCfg.DestToken.loadTokenPrice(false)
-		if err == nil {
-			if pairCfg.DestToken.TokenPrice != oldPrice {
-				pairCfg.DestToken.CalcAndStoreValue()
-			}
-		} else {
-			reloadAllSuccess = false
-			log.Error("reload token price failed", "name", pairCfg.SrcToken.Name, "token", pairCfg.DestToken.ContractAddress, "err", err)
+		if pairCfg.SrcToken.TokenPrice != oldSrcPrice {
+			pairCfg.SrcToken.CalcAndStoreValue()
+		}
+		if pairCfg.DestToken.TokenPrice != oldDstPrice {
+			pairCfg.DestToken.CalcAndStoreValue()
 		}
 	}
 	if reloadAllSuccess {

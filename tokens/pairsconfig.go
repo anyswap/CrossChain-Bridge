@@ -217,6 +217,7 @@ func LoadTokenPairsConfig(check bool) {
 	}
 	SetTokenPairsConfig(pairsConfig, check)
 	if TokenPriceCfg != nil {
+		initAllTokenPrices()
 		go watchAndReloadTokenPrices()
 	}
 }
