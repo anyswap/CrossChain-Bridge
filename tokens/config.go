@@ -69,6 +69,7 @@ type ChainConfig struct {
 	EnableReplaceSwap  bool
 	EnableDynamicFeeTx bool
 
+	AllowCallByContract     bool
 	CallByContractWhitelist []string `json:",omitempty"`
 
 	MinReserveFee              string

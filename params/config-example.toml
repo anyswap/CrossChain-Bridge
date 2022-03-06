@@ -158,6 +158,8 @@ PlusGasFeeCapPercent = 10
 BlockCountFeeHistory = 3
 MaxGasTipCap = "5000000000"
 MaxGasFeeCap = "10000000000"
+# allow call by contract
+AllowCallByContract = false
 # call by contract whitelist
 CallByContractWhitelist = [
 	"0x1111111111111111111111111111111111111111",

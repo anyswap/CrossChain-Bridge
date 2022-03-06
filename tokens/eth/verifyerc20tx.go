@@ -45,6 +45,7 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 	swapInfo.From = strings.ToLower(receipt.From.String())      // From
 
 	if !token.AllowSwapinFromContract &&
+		!b.ChainConfig.AllowCallByContract &&
 		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) &&
 		!b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
 		return tokens.ErrTxWithWrongContract
