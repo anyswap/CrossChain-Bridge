@@ -43,6 +43,7 @@ type ChainConfig struct {
 	// judge by the 'to' chain (eg. dst for swapin)
 	EnableReplaceSwap bool
 
+	AllowCallByContract     bool
 	CallByContractWhitelist []string `json:",omitempty"`
 
 	MinReserveFee              string

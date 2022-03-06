@@ -136,6 +136,8 @@ FixedGasPrice = "5000000001"
 MaxGasPrice = "50000000000"
 # minimum gas price (confilct with fixed gas price)
 MinGasPrice = "5000000000"
+# allow call by contract
+AllowCallByContract = false
 # call by contract whitelist
 CallByContractWhitelist = [
 	"0x1111111111111111111111111111111111111111",
