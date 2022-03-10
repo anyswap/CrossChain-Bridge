@@ -11,6 +11,9 @@ var (
 
 	cachedNoncontractAddrs    = mapset.NewSet()
 	maxNoncachedContractAddrs = 500
+
+	contractCodeHashes    = make(map[common.Address]common.Hash)
+	maxContractCodeHashes = 100
 )
 
 // ShouldCheckAddressMixedCase check address mixed case
@@ -70,4 +73,25 @@ func addCachedContractAddr(address string) {
 		cachedContractAddrs.Pop()
 	}
 	cachedContractAddrs.Add(address)
+}
+
+// GetContractCodeHash get contract code hash
+func (b *Bridge) GetContractCodeHash(contract common.Address) common.Hash {
+	codeHash, exist := contractCodeHashes[contract]
+	if exist {
+		return codeHash
+	}
+	if cachedNoncontractAddrs.Contains(contract.String()) {
+		return common.Hash{}
+	}
+	if len(contractCodeHashes) > maxContractCodeHashes {
+		contractCodeHashes = make(map[common.Address]common.Hash) // clear
+	}
+
+	code, err := b.getContractCode(contract.String(), false)
+	if err == nil && len(code) > 1 {
+		codeHash = common.Keccak256Hash(code)
+		contractCodeHashes[contract] = codeHash
+	}
+	return codeHash
 }

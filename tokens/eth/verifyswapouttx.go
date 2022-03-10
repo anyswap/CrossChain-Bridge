@@ -62,13 +62,6 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 		return tokens.ErrTxWithWrongSender
 	}
 
-	if !token.AllowSwapoutFromContract &&
-		!b.ChainConfig.AllowCallByContract &&
-		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) &&
-		!b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
-		return tokens.ErrTxWithWrongContract
-	}
-
 	bindAddress, value, err := parseSwapoutTxLogs(receipt.Logs, token.ContractAddress)
 	if err != nil {
 		if err != tokens.ErrSwapoutLogNotFound {
@@ -82,6 +75,15 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 		swapInfo.Bind = swapInfo.From // Bind
 	}
 	swapInfo.Value = value // Value
+
+	if !token.AllowSwapoutFromContract &&
+		!b.ChainConfig.AllowCallByContract &&
+		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) {
+		if err := b.checkCallByContract(swapInfo); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

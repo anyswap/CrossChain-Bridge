@@ -50,13 +50,6 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 	swapInfo.TxTo = strings.ToLower(receipt.Recipient.String()) // TxTo
 	swapInfo.From = strings.ToLower(receipt.From.String())      // From
 
-	if !token.AllowSwapinFromContract &&
-		!b.ChainConfig.AllowCallByContract &&
-		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) &&
-		!b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
-		return tokens.ErrTxWithWrongContract
-	}
-
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.ContractAddress, token.DepositAddress)
 	if err != nil {
 		if err != tokens.ErrTxWithWrongReceiver {
@@ -67,7 +60,30 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 	swapInfo.To = strings.ToLower(to)     // To
 	swapInfo.Value = value                // Value
 	swapInfo.Bind = strings.ToLower(from) // Bind
+
+	if !token.AllowSwapinFromContract &&
+		!b.ChainConfig.AllowCallByContract &&
+		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) {
+		if err := b.checkCallByContract(swapInfo); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (b *Bridge) checkCallByContract(swapInfo *tokens.TxSwapInfo) error {
+	if b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
+		return nil
+	}
+	if b.ChainConfig.HasCallByContractCodeHashWhitelist() {
+		codehash := b.GetContractCodeHash(common.HexToAddress(swapInfo.TxTo))
+		if codehash != (common.Hash{}) &&
+			b.ChainConfig.IsInCallByContractCodeHashWhitelist(codehash.String()) {
+			return nil
+		}
+	}
+	return tokens.ErrTxWithWrongContract
 }
 
 // ParseErc20SwapinTxInput parse erc20 swapin tx input

@@ -43,8 +43,9 @@ type ChainConfig struct {
 	// judge by the 'to' chain (eg. dst for swapin)
 	EnableReplaceSwap bool
 
-	AllowCallByContract     bool
-	CallByContractWhitelist []string `json:",omitempty"`
+	AllowCallByContract             bool
+	CallByContractWhitelist         []string `json:",omitempty"`
+	CallByContractCodeHashWhitelist []string `json:",omitempty"`
 
 	MinReserveFee              string
 	BaseFeePercent             int64
@@ -62,7 +63,8 @@ type ChainConfig struct {
 	minGasPrice   *big.Int
 	minReserveFee *big.Int
 
-	callByContractWhitelist map[string]struct{}
+	callByContractWhitelist         map[string]struct{}
+	callByContractCodeHashWhitelist map[string]struct{}
 }
 
 // IsInCallByContractWhitelist is in call by contract whitelist
@@ -71,6 +73,20 @@ func (c *ChainConfig) IsInCallByContractWhitelist(caller string) bool {
 		return false
 	}
 	_, exist := c.callByContractWhitelist[strings.ToLower(caller)]
+	return exist
+}
+
+// HasCallByContractCodeHashWhitelist has call by contract code hash whitelist
+func (c *ChainConfig) HasCallByContractCodeHashWhitelist() bool {
+	return len(c.callByContractCodeHashWhitelist) > 0
+}
+
+// IsInCallByContractCodeHashWhitelist is in call by contract code hash whitelist
+func (c *ChainConfig) IsInCallByContractCodeHashWhitelist(codehash string) bool {
+	if c.callByContractCodeHashWhitelist == nil {
+		return false
+	}
+	_, exist := c.callByContractCodeHashWhitelist[codehash]
 	return exist
 }
 
@@ -377,6 +393,18 @@ func (c *ChainConfig) CheckConfig() error {
 				return fmt.Errorf("duplicate address '%v' in 'CallByContractWhitelist'", addr)
 			}
 			c.callByContractWhitelist[key] = struct{}{}
+		}
+	}
+	if len(c.CallByContractCodeHashWhitelist) > 0 {
+		c.callByContractCodeHashWhitelist = make(map[string]struct{}, len(c.CallByContractCodeHashWhitelist))
+		for _, codehash := range c.CallByContractCodeHashWhitelist {
+			if !common.IsHexHash(codehash) {
+				return fmt.Errorf("wrong codeHash '%v' in CallByContractCodeHashWhitelist", codehash)
+			}
+			if _, exist := c.callByContractCodeHashWhitelist[codehash]; exist {
+				return fmt.Errorf("duplicate codeHash '%v' in 'CallByContractCodeHashWhitelist'", codehash)
+			}
+			c.callByContractCodeHashWhitelist[codehash] = struct{}{}
 		}
 	}
 	if c.minGasPrice != nil {
