@@ -70,44 +70,6 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 	return nil
 }
 
-// nolint:unused // keep
-func (b *Bridge) verifySwapinRawTx(swapInfo *tokens.TxSwapInfo, token *tokens.TokenConfig) error {
-	txHash := swapInfo.Hash
-	tx, err := b.GetTransactionByHash(txHash)
-	if err != nil {
-		log.Debug("[verifySwapinRawTx] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
-		return tokens.ErrTxNotFound
-	}
-	if tx.Recipient == nil {
-		return tokens.ErrTxWithWrongContract
-	}
-
-	txRecipient := strings.ToLower(tx.Recipient.String())
-	if !common.IsEqualIgnoreCase(txRecipient, token.ContractAddress) {
-		return tokens.ErrTxWithWrongContract
-	}
-
-	swapInfo.TxTo = txRecipient                       // TxTo
-	swapInfo.From = strings.ToLower(tx.From.String()) // From
-
-	input := (*[]byte)(tx.Payload)
-	from, to, value, err := ParseErc20SwapinTxInput(input, token.DepositAddress)
-	if err != nil {
-		if err != tokens.ErrTxWithWrongReceiver {
-			log.Debug(b.ChainConfig.BlockChain+" ParseErc20SwapinTxInput fail", "tx", swapInfo.Hash, "err", err)
-		}
-		return err
-	}
-	swapInfo.To = strings.ToLower(to) // To
-	swapInfo.Value = value            // Value
-	if from != "" {
-		swapInfo.Bind = strings.ToLower(from) // Bind
-	} else {
-		swapInfo.Bind = swapInfo.From // Bind
-	}
-	return nil
-}
-
 // ParseErc20SwapinTxInput parse erc20 swapin tx input
 func ParseErc20SwapinTxInput(input *[]byte, checkToAddress string) (from, to string, value *big.Int, err error) {
 	if input == nil || len(*input) < 4 {

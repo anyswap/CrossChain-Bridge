@@ -85,44 +85,6 @@ func (b *Bridge) verifySwapoutTxReceipt(swapInfo *tokens.TxSwapInfo, receipt *ty
 	return nil
 }
 
-// nolint:unused // keep
-func (b *Bridge) verifySwapoutRawTx(swapInfo *tokens.TxSwapInfo, token *tokens.TokenConfig) error {
-	txHash := swapInfo.Hash
-	tx, err := b.GetTransactionByHash(txHash)
-	if err != nil {
-		log.Debug("[verifySwapoutWithPairID] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
-		return tokens.ErrTxNotFound
-	}
-	if tx.Recipient == nil { // ignore contract creation tx
-		return tokens.ErrTxWithWrongContract
-	}
-
-	txRecipient := strings.ToLower(tx.Recipient.String())
-	if !common.IsEqualIgnoreCase(txRecipient, token.ContractAddress) {
-		return tokens.ErrTxWithWrongContract
-	}
-
-	swapInfo.TxTo = txRecipient                       // TxTo
-	swapInfo.To = txRecipient                         // To
-	swapInfo.From = strings.ToLower(tx.From.String()) // From
-
-	input := (*[]byte)(tx.Payload)
-	bindAddress, value, err := ParseSwapoutTxInput(input)
-	if err != nil {
-		if err != tokens.ErrTxFuncHashMismatch {
-			log.Debug(b.ChainConfig.BlockChain+" ParseSwapoutTxInput fail", "tx", txHash, "err", err)
-		}
-		return err
-	}
-	if bindAddress != "" {
-		swapInfo.Bind = bindAddress // Bind
-	} else {
-		swapInfo.Bind = swapInfo.From // Bind
-	}
-	swapInfo.Value = value // Value
-	return nil
-}
-
 // verifySwapoutTx verify swapout (in scan job)
 func (b *Bridge) verifySwapoutTx(txHash string, allowUnstable bool) ([]*tokens.TxSwapInfo, []error) {
 	if allowUnstable {
