@@ -123,6 +123,7 @@ type ExtraConfig struct {
 	EnableCheckBlockFork     bool
 	IsNullSwapoutNativeMemo  bool `toml:",omitempty" json:",omitempty"`
 	UsePendingBalance        bool `toml:",omitempty" json:",omitempty"`
+	CheckBindAddrIsContract  bool `toml:",omitempty" json:",omitempty"`
 }
 
 // GetAPIPort get api service port
@@ -172,6 +173,11 @@ func IsTestMode() bool {
 // IsDebugMode is debug mode, add more debugging log infos
 func IsDebugMode() bool {
 	return GetExtraConfig() != nil && GetExtraConfig().IsDebugMode
+}
+
+// CheckBindAddrIsContract check if bind address is contract
+func CheckBindAddrIsContract() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().CheckBindAddrIsContract
 }
 
 // IsDcrmEnabled is dcrm enabled (for dcrm sign)

@@ -132,9 +132,10 @@ func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 	if params.MustRegisterAccount() && !tools.IsAddressRegistered(bindAddr) {
 		return tokens.ErrTxSenderNotRegistered
 	}
-	if params.IsSwapServer && token.ContractAddress != "" &&
-		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) &&
-		!b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
+	if params.IsSwapServer &&
+		token.ContractAddress != "" &&
+		params.CheckBindAddrIsContract() &&
+		common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) {
 		isContract, err := b.IsContractAddress(bindAddr)
 		if err != nil {
 			log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)

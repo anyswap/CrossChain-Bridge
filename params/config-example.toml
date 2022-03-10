@@ -75,6 +75,7 @@ IsSwapoutToStringAddress = false
 EnableCheckBlockFork = false
 IsNullSwapoutNativeMemo = false
 UsePendingBalance = false
+CheckBindAddrIsContract = false
 
 # source chain config
 [SrcChain]
