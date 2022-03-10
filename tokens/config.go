@@ -69,8 +69,9 @@ type ChainConfig struct {
 	EnableReplaceSwap  bool
 	EnableDynamicFeeTx bool
 
-	AllowCallByContract     bool
-	CallByContractWhitelist []string `json:",omitempty"`
+	AllowCallByContract             bool
+	CallByContractWhitelist         []string `json:",omitempty"`
+	CallByContractCodeHashWhitelist []string `json:",omitempty"`
 
 	MinReserveFee              string
 	BaseFeePercent             int64
@@ -98,7 +99,8 @@ type ChainConfig struct {
 	maxGasTipCap  *big.Int
 	maxGasFeeCap  *big.Int
 
-	callByContractWhitelist map[string]struct{}
+	callByContractWhitelist         map[string]struct{}
+	callByContractCodeHashWhitelist map[string]struct{}
 }
 
 // TokenPriceConfig struct
@@ -231,6 +233,18 @@ func (c *ChainConfig) CheckConfig(isServer bool) error {
 				return fmt.Errorf("duplicate address '%v' in 'CallByContractWhitelist'", addr)
 			}
 			c.callByContractWhitelist[key] = struct{}{}
+		}
+	}
+	if len(c.CallByContractCodeHashWhitelist) > 0 {
+		c.callByContractCodeHashWhitelist = make(map[string]struct{}, len(c.CallByContractCodeHashWhitelist))
+		for _, codehash := range c.CallByContractCodeHashWhitelist {
+			if !common.IsHexHash(codehash) {
+				return fmt.Errorf("wrong codeHash '%v' in CallByContractCodeHashWhitelist", codehash)
+			}
+			if _, exist := c.callByContractCodeHashWhitelist[codehash]; exist {
+				return fmt.Errorf("duplicate codeHash '%v' in 'CallByContractCodeHashWhitelist'", codehash)
+			}
+			c.callByContractCodeHashWhitelist[codehash] = struct{}{}
 		}
 	}
 	if c.EnableDynamicFeeTx {
@@ -460,6 +474,20 @@ func (c *ChainConfig) IsInCallByContractWhitelist(caller string) bool {
 		return false
 	}
 	_, exist := c.callByContractWhitelist[strings.ToLower(caller)]
+	return exist
+}
+
+// HasCallByContractCodeHashWhitelist has call by contract code hash whitelist
+func (c *ChainConfig) HasCallByContractCodeHashWhitelist() bool {
+	return len(c.callByContractCodeHashWhitelist) > 0
+}
+
+// IsInCallByContractCodeHashWhitelist is in call by contract code hash whitelist
+func (c *ChainConfig) IsInCallByContractCodeHashWhitelist(codehash string) bool {
+	if c.callByContractCodeHashWhitelist == nil {
+		return false
+	}
+	_, exist := c.callByContractCodeHashWhitelist[codehash]
 	return exist
 }
 
