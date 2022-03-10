@@ -96,6 +96,7 @@ type ExtraConfig struct {
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
 	IsNullSwapoutNativeMemo  bool `toml:",omitempty" json:",omitempty"`
 	UsePendingBalance        bool `toml:",omitempty" json:",omitempty"`
+	CheckBindAddrIsContract  bool `toml:",omitempty" json:",omitempty"`
 
 	MinReserveFee string
 }
@@ -132,6 +133,11 @@ func IsNullSwapoutNativeMemo() bool {
 // IsDebugMode is debug mode, add more debugging log infos
 func IsDebugMode() bool {
 	return GetExtraConfig() != nil && GetExtraConfig().IsDebugMode
+}
+
+// CheckBindAddrIsContract check if bind address is contract
+func CheckBindAddrIsContract() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().CheckBindAddrIsContract
 }
 
 // IsDcrmEnabled is dcrm enabled (for dcrm sign)

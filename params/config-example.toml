@@ -42,6 +42,7 @@ IsDebugMode = false
 IsSwapoutToStringAddress = false
 IsNullSwapoutNativeMemo = false
 UsePendingBalance = false
+CheckBindAddrIsContract = false
 
 # customize fees in building btc transaction (btc only)
 [BtcExtra]
