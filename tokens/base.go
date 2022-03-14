@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/big"
 
+	cmath "github.com/anyswap/CrossChain-Bridge/common/math"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/types"
 )
@@ -124,6 +125,17 @@ func ToBits(value float64, decimals uint8) *big.Int {
 	return result
 }
 
+// ConvertTokenValue convert token value
+func ConvertTokenValue(fromValue *big.Int, fromDecimals, toDecimals uint8) *big.Int {
+	if fromDecimals == toDecimals || fromValue == nil {
+		return fromValue
+	}
+	if fromDecimals > toDecimals {
+		return new(big.Int).Div(fromValue, cmath.BigPow(10, int64(fromDecimals-toDecimals)))
+	}
+	return new(big.Int).Mul(fromValue, cmath.BigPow(10, int64(toDecimals-fromDecimals)))
+}
+
 // GetBigValueThreshold get big value threshold
 func GetBigValueThreshold(pairID string, isSrc bool) *big.Int {
 	token := GetTokenConfig(pairID, isSrc)
@@ -141,7 +153,7 @@ func CalcSwappedValue(pairID string, value *big.Int, isSrc bool, from, txto stri
 		return big.NewInt(0)
 	}
 
-	token := GetTokenConfig(pairID, isSrc)
+	token, cpToken := GetTokenConfigsByDirection(pairID, isSrc)
 
 	if value.Cmp(token.minSwap) < 0 {
 		return big.NewInt(0)
@@ -195,10 +207,10 @@ func CalcSwappedValue(pairID string, value *big.Int, isSrc bool, from, txto stri
 
 	swappedValue := new(big.Int).Sub(value, swapFee)
 	// recheck swap value range
-	if swappedValue.Cmp(value) > 0 || swappedValue.Cmp(token.maxSwap) > 0 {
+	if swappedValue.Cmp(value) > 0 || (!isInBigValueWhitelist && swappedValue.Cmp(token.maxSwap) > 0) {
 		return big.NewInt(0)
 	}
-	return swappedValue
+	return ConvertTokenValue(swappedValue, *token.Decimals, *cpToken.Decimals)
 }
 
 // SetLatestBlockHeight set latest block height
