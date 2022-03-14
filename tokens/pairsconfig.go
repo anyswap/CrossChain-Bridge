@@ -21,9 +21,10 @@ var (
 
 // TokenPairConfig pair config
 type TokenPairConfig struct {
-	PairID    string
-	SrcToken  *TokenConfig
-	DestToken *TokenConfig
+	PairID       string
+	DiffDecimals bool
+	SrcToken     *TokenConfig
+	DestToken    *TokenConfig
 }
 
 // SetTokenPairsDir set token pairs directory
@@ -177,7 +178,7 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 		if err != nil {
 			return err
 		}
-		if *tokenPair.SrcToken.Decimals != *tokenPair.DestToken.Decimals {
+		if *tokenPair.SrcToken.Decimals != *tokenPair.DestToken.Decimals && !tokenPair.DiffDecimals {
 			return fmt.Errorf("decimals of pair are not equal, src %v, dest %v", *tokenPair.SrcToken.Decimals, *tokenPair.DestToken.Decimals)
 		}
 	}

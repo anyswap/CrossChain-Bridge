@@ -1,4 +1,5 @@
 PairID = "BTC"
+DiffDecimals = false
 
 # source token config
 [SrcToken]
