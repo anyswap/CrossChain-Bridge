@@ -203,7 +203,7 @@ func CalcSwappedValue(pairID string, value *big.Int, isSrc bool, from, txto stri
 	}
 
 	if *token.SwapFeeRate == 0.0 {
-		return value
+		return ConvertTokenValue(value, *token.Decimals, *cpToken.Decimals)
 	}
 
 	var swapFee, adjustBaseFee *big.Int
