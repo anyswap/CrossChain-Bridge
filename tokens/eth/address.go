@@ -1,6 +1,8 @@
 package eth
 
 import (
+	"strings"
+
 	"github.com/anyswap/CrossChain-Bridge/common"
 	mapset "github.com/deckarep/golang-set"
 )
@@ -19,7 +21,7 @@ var (
 // ShouldCheckAddressMixedCase check address mixed case
 // eg. RSK chain do not check mixed case or not same as eth
 func (b *Bridge) ShouldCheckAddressMixedCase() bool {
-	return true
+	return !b.ChainConfig.IgnoreCheckAddressMixedCase
 }
 
 // IsValidAddress check address
@@ -32,6 +34,9 @@ func (b *Bridge) IsValidAddress(address string) bool {
 	}
 	unprefixedHex, ok, hasUpperChar := common.GetUnprefixedHex(address)
 	if hasUpperChar {
+		if strings.ToUpper(address) == address {
+			return true
+		}
 		// valid checksum
 		if unprefixedHex != common.HexToAddress(address).String()[2:] {
 			return false
