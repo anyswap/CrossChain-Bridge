@@ -109,6 +109,8 @@ ReplacePlusGasPricePercent = 1
 WaitTimeToReplace = 900
 # max replace swap count
 MaxReplaceCount = 20
+# check address mixed case
+IgnoreCheckAddressMixedCase = false
 
 # source blockchain gateway config
 [SrcGateway]

@@ -58,6 +58,9 @@ type ChainConfig struct {
 	Confirmations *uint64
 	InitialHeight *uint64
 
+	// special flags
+	IgnoreCheckAddressMixedCase bool // eg. RSK
+
 	// judge by the 'from' chain (eg. src for swapin)
 	EnableScan              bool
 	EnableScanPool          bool
