@@ -7,7 +7,7 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
+	"github.com/anyswap/CrossChain-Bridge/tokens/base"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -17,6 +17,11 @@ import (
 var (
 	// ChainIDs saves supported chain ids
 	ChainIDs = make(map[string]bool)
+
+	// ensure Bridge impl tokens.CrossChainBridge
+	_ tokens.CrossChainBridge = &Bridge{}
+	// ensure Bridge impl tokens.NonceSetter
+	_ tokens.NonceSetter = &Bridge{}
 )
 
 // BridgeInterface interface
@@ -95,8 +100,7 @@ type Coin struct {
 
 // Bridge cosmos bridge
 type Bridge struct {
-	*tokens.CrossChainBridgeBase
-	*eth.NonceSetterBase
+	*base.NonceSetterBase
 	// MainCoin is the gas coin
 	MainCoin Coin
 	// SupportedCoins save cosmos coins
@@ -106,9 +110,8 @@ type Bridge struct {
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
 	return &Bridge{
-		CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc),
-		NonceSetterBase:      eth.NewNonceSetterBase(),
-		SupportedCoins:       make(map[string]Coin),
+		NonceSetterBase: base.NewNonceSetterBase(isSrc),
+		SupportedCoins:  make(map[string]Coin),
 	}
 }
 

@@ -137,7 +137,11 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 // SignTransaction sign tx with pairID
 func (b *Bridge) SignTransaction(rawTx interface{}, pairID string) (signedTx interface{}, txHash string, err error) {
 	privKey := b.GetTokenConfig(pairID).GetDcrmAddressPrivateKey()
-	return b.SignTransactionWithPrivateKey(rawTx, privKey)
+	ecPrikey, err := crypto.HexToECDSA(*privKey)
+	if err != nil {
+		return nil, "", err
+	}
+	return b.SignTransactionWithPrivateKey(rawTx, ecPrikey)
 }
 
 // SignTransactionWithPrivateKey sign tx with ECDSA private key
