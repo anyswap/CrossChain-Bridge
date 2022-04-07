@@ -45,7 +45,7 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) error {
 	if !ok {
 		return tokens.ErrWrongRawTx
 	}
-	if len(msgHashes) != 1 {
+	if len(msgHashes) < 1 {
 		return tokens.ErrWrongCountOfMsgHashes
 	}
 	msgHash := msgHashes[0]

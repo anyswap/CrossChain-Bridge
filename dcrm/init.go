@@ -24,12 +24,15 @@ var (
 	dcrmSigner = types.MakeSigner("EIP155", big.NewInt(dcrmWalletServiceID))
 	dcrmToAddr = common.HexToAddress(dcrmToAddress)
 
+	dcrmSignType      = "ECDSA" // default sign type
 	dcrmAPIPrefix     = "dcrm_" // default prefix
 	dcrmGroupID       string
 	dcrmThreshold     string
 	dcrmMode          string
 	dcrmNeededOracles uint32
 	dcrmTotalOracles  uint32
+
+	verifySignatureInAccept bool
 
 	dcrmRPCTimeout  = 10                // default to 10 seconds
 	dcrmSignTimeout = 120 * time.Second // default to 120 seconds
@@ -40,6 +43,10 @@ var (
 	selfEnode string
 	allEnodes []string
 )
+
+func isECDSA() bool {
+	return strings.HasPrefix(dcrmSignType, "EC")
+}
 
 // NodeInfo dcrm node info
 type NodeInfo struct {
@@ -55,6 +62,10 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 		return
 	}
 
+	if dcrmConfig.SignType != "" {
+		dcrmSignType = dcrmConfig.SignType
+	}
+
 	if dcrmConfig.APIPrefix != "" {
 		dcrmAPIPrefix = dcrmConfig.APIPrefix
 	}
@@ -65,6 +76,8 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 	if dcrmConfig.SignTimeout > 0 {
 		dcrmSignTimeout = time.Duration(dcrmConfig.SignTimeout * uint64(time.Second))
 	}
+
+	verifySignatureInAccept = dcrmConfig.VerifySignatureInAccept
 
 	setDcrmGroup(*dcrmConfig.GroupID, dcrmConfig.Mode, *dcrmConfig.NeededOracles, *dcrmConfig.TotalOracles)
 	setDefaultDcrmNodeInfo(initDcrmNodeInfo(dcrmConfig.DefaultNode, isServer))
@@ -79,7 +92,7 @@ func Init(dcrmConfig *params.DcrmConfig, isServer bool) {
 	initAllEnodes()
 
 	verifyInitiators(dcrmConfig.Initiators)
-	log.Info("init dcrm success", "signTimeout", dcrmSignTimeout.String(), "isServer", isServer)
+	log.Info("init dcrm success", "signTimeout", dcrmSignTimeout.String(), "isServer", isServer, "signType", dcrmSignType, "apiPrefix", dcrmAPIPrefix)
 }
 
 // setDefaultDcrmNodeInfo set default dcrm node info

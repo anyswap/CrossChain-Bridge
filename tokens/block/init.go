@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 var (
@@ -21,7 +22,7 @@ var (
 
 // Init init btc extra
 func Init(btcExtra *tokens.BtcExtraConfig) {
-	if BridgeInstance == nil {
+	if btc.BridgeInstance == nil {
 		return
 	}
 
@@ -45,7 +46,7 @@ func initFromPublicKey() {
 	}
 
 	cfgFromPublicKey = pairCfg.SrcToken.DcrmPubkey
-	_, err := BridgeInstance.GetCompressedPublicKey(cfgFromPublicKey, true)
+	_, err := btc.BridgeInstance.GetCompressedPublicKey(cfgFromPublicKey, true)
 	if err != nil {
 		log.Fatal("wrong block dcrm public key", "err", err)
 	}
@@ -100,7 +101,7 @@ func initAggregate(btcExtra *tokens.BtcExtraConfig) {
 	}
 
 	cfgUtxoAggregateToAddress = btcExtra.UtxoAggregateToAddress
-	if !BridgeInstance.IsValidAddress(cfgUtxoAggregateToAddress) {
+	if !btc.BridgeInstance.IsValidAddress(cfgUtxoAggregateToAddress) {
 		log.Fatal("wrong utxo aggregate to address", "toAddress", cfgUtxoAggregateToAddress)
 	}
 

@@ -1,0 +1,301 @@
+{
+    "Account": "rGgj3GurcrAqgBXGVoS9wvQG3Hjkj5oCbj",
+    "Amount": {
+        "currency": "USD",
+        "issuer": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+        "value": "20"
+    },
+    "Destination": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+    "DestinationTag": 54025705,
+    "Fee": "12",
+    "Flags": 0,
+    "Paths": [
+        [
+            {
+                "account": "rpDMez6pm6dBve2TJsmDpv7Yae6V5Pyvy2",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            },
+            {
+                "account": "rnziParaNb8nsU4aruQdwYE3j5jUcqjzFm",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            },
+            {
+                "account": "r3v6QzgkBq9hM75XGThKS1NM9gchcTrBHL",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            }
+        ],
+        [
+            {
+                "account": "rpDMez6pm6dBve2TJsmDpv7Yae6V5Pyvy2",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            },
+            {
+                "account": "rnziParaNb8nsU4aruQdwYE3j5jUcqjzFm",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            }
+        ],
+        [
+            {
+                "account": "rpDMez6pm6dBve2TJsmDpv7Yae6V5Pyvy2",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            },
+            {
+                "currency": "XRP",
+                "type": 16,
+                "type_hex": "0000000000000010"
+            },
+            {
+                "currency": "USD",
+                "issuer": "rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q",
+                "type": 48,
+                "type_hex": "0000000000000030"
+            },
+            {
+                "account": "rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            },
+            {
+                "account": "rnziParaNb8nsU4aruQdwYE3j5jUcqjzFm",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            }
+        ],
+        [
+            {
+                "account": "rpDMez6pm6dBve2TJsmDpv7Yae6V5Pyvy2",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            },
+            {
+                "account": "rnziParaNb8nsU4aruQdwYE3j5jUcqjzFm",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            },
+            {
+                "account": "rQ96qm46YsRX2F7SSCQxToR2ybRuUYsZ4R",
+                "type": 1,
+                "type_hex": "0000000000000001"
+            }
+        ]
+    ],
+    "SendMax": {
+        "currency": "USD",
+        "issuer": "rGgj3GurcrAqgBXGVoS9wvQG3Hjkj5oCbj",
+        "value": "20.24259565"
+    },
+    "Sequence": 19,
+    "SigningPubKey": "037E87151D683F823FA17DBFBED751D9B2D4C8C747F244DB0D5FBFEE47869A619E",
+    "TransactionType": "Payment",
+    "TxnSignature": "3045022100D6D18032C3688D22BE128B88485DF11DF48DB1655C798A6CCAE85016F51CEE59022006FE2C35C3D32220C3732EEA6AB6CA239B7881204BD15818323B3F1C3B6759FD",
+    "hash": "AEEAE8066773533225B466CA8200BB56C2B68F3835B08770994D9E096A3B67B1",
+    "inLedger": 7206416,
+    "ledger_index": 7206416,
+    "meta": {
+        "AffectedNodes": [
+            {
+                "ModifiedNode": {
+                    "FinalFields": {
+                        "Balance": {
+                            "currency": "USD",
+                            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                            "value": "-5188.23282609105"
+                        },
+                        "Flags": 2228224,
+                        "HighLimit": {
+                            "currency": "USD",
+                            "issuer": "rGgj3GurcrAqgBXGVoS9wvQG3Hjkj5oCbj",
+                            "value": "10000"
+                        },
+                        "HighNode": "0000000000000000",
+                        "LowLimit": {
+                            "currency": "USD",
+                            "issuer": "rpDMez6pm6dBve2TJsmDpv7Yae6V5Pyvy2",
+                            "value": "0"
+                        },
+                        "LowNode": "0000000000000000"
+                    },
+                    "LedgerEntryType": "RippleState",
+                    "LedgerIndex": "4C975E1A876E0B21E7A52C355299D3BBB3C81EBE7E8CDBDDD9BB887A03CBB4F1",
+                    "PreviousFields": {
+                        "Balance": {
+                            "currency": "USD",
+                            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                            "value": "-5188.76"
+                        }
+                    },
+                    "PreviousTxnID": "66AC05ABA292FFB679F923A895AA4B01849A3AFDB90A9D1CC27DB4D4FEACE771",
+                    "PreviousTxnLgrSeq": 7206386
+                }
+            },
+            {
+                "ModifiedNode": {
+                    "FinalFields": {
+                        "Balance": {
+                            "currency": "USD",
+                            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                            "value": "-0.52717390895"
+                        },
+                        "Flags": 131072,
+                        "HighLimit": {
+                            "currency": "USD",
+                            "issuer": "rnziParaNb8nsU4aruQdwYE3j5jUcqjzFm",
+                            "value": "26"
+                        },
+                        "HighNode": "000000000000000F",
+                        "HighQualityIn": 920000000,
+                        "LowLimit": {
+                            "currency": "USD",
+                            "issuer": "rpDMez6pm6dBve2TJsmDpv7Yae6V5Pyvy2",
+                            "value": "0"
+                        },
+                        "LowNode": "0000000000000000"
+                    },
+                    "LedgerEntryType": "RippleState",
+                    "LedgerIndex": "95F5C784ECD41AD033E18BED4DB2A2920A7C27CF8D021BE4F31CE67857A926D8",
+                    "PreviousFields": {
+                        "Balance": {
+                            "currency": "USD",
+                            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                            "value": "0"
+                        }
+                    },
+                    "PreviousTxnID": "986D92643071FD0987C19E65EF9CBE6AD056893464B952DA7B69E4E382D8BD64",
+                    "PreviousTxnLgrSeq": 7093436
+                }
+            },
+            {
+                "ModifiedNode": {
+                    "FinalFields": {
+                        "Balance": {
+                            "currency": "USD",
+                            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                            "value": "-578.6146486699456"
+                        },
+                        "Flags": 131072,
+                        "HighLimit": {
+                            "currency": "USD",
+                            "issuer": "r3v6QzgkBq9hM75XGThKS1NM9gchcTrBHL",
+                            "value": "1000"
+                        },
+                        "HighNode": "0000000000000000",
+                        "LowLimit": {
+                            "currency": "USD",
+                            "issuer": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+                            "value": "0"
+                        },
+                        "LowNode": "00000000000000BE"
+                    },
+                    "LedgerEntryType": "RippleState",
+                    "LedgerIndex": "9E61FEB8F12418B79DE776EE96BE58643854B2AE3249FE7BDAF372B567A5FCEA",
+                    "PreviousFields": {
+                        "Balance": {
+                            "currency": "USD",
+                            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                            "value": "-579.0996486661796"
+                        }
+                    },
+                    "PreviousTxnID": "97B27E7DE525BCF62D55F6976811EC084B52392DFCBBFD4B4A14D0EA645D618C",
+                    "PreviousTxnLgrSeq": 6978555
+                }
+            },
+            {
+                "ModifiedNode": {
+                    "FinalFields": {
+                        "Balance": {
+                            "currency": "USD",
+                            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                            "value": "-0.754804521380785"
+                        },
+                        "Flags": 196608,
+                        "HighLimit": {
+                            "currency": "USD",
+                            "issuer": "r3v6QzgkBq9hM75XGThKS1NM9gchcTrBHL",
+                            "value": "20"
+                        },
+                        "HighNode": "0000000000000001",
+                        "LowLimit": {
+                            "currency": "USD",
+                            "issuer": "rnziParaNb8nsU4aruQdwYE3j5jUcqjzFm",
+                            "value": "20"
+                        },
+                        "LowNode": "0000000000000004"
+                    },
+                    "LedgerEntryType": "RippleState",
+                    "LedgerIndex": "AA87C6730FF1C793ACF3F90BE2F553BA78C98624361AACD32AFD5CC6E34B3B02",
+                    "PreviousFields": {
+                        "Balance": {
+                            "currency": "USD",
+                            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                            "value": "-0.269804525146785"
+                        }
+                    },
+                    "PreviousTxnID": "97B27E7DE525BCF62D55F6976811EC084B52392DFCBBFD4B4A14D0EA645D618C",
+                    "PreviousTxnLgrSeq": 6978555
+                }
+            },
+            {
+                "ModifiedNode": {
+                    "FinalFields": {
+                        "Account": "rGgj3GurcrAqgBXGVoS9wvQG3Hjkj5oCbj",
+                        "Balance": "17317999772",
+                        "Flags": 0,
+                        "OwnerCount": 3,
+                        "Sequence": 20
+                    },
+                    "LedgerEntryType": "AccountRoot",
+                    "LedgerIndex": "C7FF55044E7E503F7159307D46DC49CFDD9F38085FB9797DE94A2CF15618341C",
+                    "PreviousFields": {
+                        "Balance": "17317999784",
+                        "Sequence": 19
+                    },
+                    "PreviousTxnID": "66AC05ABA292FFB679F923A895AA4B01849A3AFDB90A9D1CC27DB4D4FEACE771",
+                    "PreviousTxnLgrSeq": 7206386
+                }
+            },
+            {
+                "ModifiedNode": {
+                    "FinalFields": {
+                        "Balance": {
+                            "currency": "USD",
+                            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                            "value": "0"
+                        },
+                        "Flags": 2228224,
+                        "HighLimit": {
+                            "currency": "USD",
+                            "issuer": "rGgj3GurcrAqgBXGVoS9wvQG3Hjkj5oCbj",
+                            "value": "10000"
+                        },
+                        "HighNode": "0000000000000000",
+                        "LowLimit": {
+                            "currency": "USD",
+                            "issuer": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+                            "value": "0"
+                        },
+                        "LowNode": "000000000000022E"
+                    },
+                    "LedgerEntryType": "RippleState",
+                    "LedgerIndex": "F42C673EEF14C3246B1B973ADE196726B762B0A51278F6286C3CABC0DF12FDBA",
+                    "PreviousFields": {
+                        "Balance": {
+                            "currency": "USD",
+                            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+                            "value": "-19.515000003766"
+                        }
+                    },
+                    "PreviousTxnID": "9CE58A8477D7F23E50246457A2AF932DE0DE5E5019679D7D0F0204348000CE61",
+                    "PreviousTxnLgrSeq": 7206328
+                }
+            }
+        ],
+        "TransactionIndex": 5,
+        "TransactionResult": "tesSUCCESS"
+    }
+}

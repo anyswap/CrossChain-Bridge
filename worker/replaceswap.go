@@ -112,6 +112,13 @@ func checkIfSwapNonceHasPassed(bridge tokens.CrossChainBridge, res *mongodb.MgoS
 				}
 				return nil
 			}
+			oldRes, errf := mongodb.FindSwapResult(isSwapin, txid, pairID, bind)
+			if errf != nil {
+				return errf
+			}
+			if oldRes.Status == mongodb.Reswapping {
+				return errors.New("forbid mark reswaping result to failed status")
+			}
 			logWorkerWarn(iden, "mark swap result failed with nonce passed", "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "swaptime", res.Timestamp, "nowtime", now(), "swapNonce", res.SwapNonce, "latestNonce", nonce)
 			_ = markSwapResultFailed(txid, pairID, bind, isSwapin)
 		}

@@ -11,6 +11,10 @@ Assistants = [
         "0x6666666666666666666666666666666666666666"
 ]
 
+# send tx loop count until success (use negative to disable loop)
+SendTxLoopCount = 30
+SendTxLoopInterval = 10
+
 # modgodb database connection config (server only)
 [Server.MongoDB]
 # DBURLs is prefered if exists. forbids set both DBURL and DBURLs.
@@ -62,12 +66,16 @@ UtxoAggregateMinValue = 1000000 # unit satoshi
 # aggreate to this address
 UtxoAggregateToAddress = "mfwPnCuht2b4Lvb5XTds4Rvzy3jZ2ZWrBL"
 
+# extra config
 [Extra]
+IsTestMode = false
+IsDebugMode = false
 MustRegisterAccount = false
 IsSwapoutToStringAddress = false
 EnableCheckBlockFork = false
 IsNullSwapoutNativeMemo = false
 UsePendingBalance = false
+CheckBindAddrIsContract = false
 
 # source chain config
 [SrcChain]
@@ -101,6 +109,8 @@ ReplacePlusGasPricePercent = 1
 WaitTimeToReplace = 900
 # max replace swap count
 MaxReplaceCount = 20
+# check address mixed case
+IgnoreCheckAddressMixedCase = false
 
 # source blockchain gateway config
 [SrcGateway]
@@ -151,6 +161,8 @@ PlusGasFeeCapPercent = 10
 BlockCountFeeHistory = 3
 MaxGasTipCap = "5000000000"
 MaxGasFeeCap = "10000000000"
+# allow call by contract
+AllowCallByContract = false
 # call by contract whitelist
 CallByContractWhitelist = [
 	"0x1111111111111111111111111111111111111111",
@@ -166,12 +178,17 @@ APIAddressExt = ["http://5.189.139.168:8000"]
 [Dcrm]
 # disable flag
 Disable = false
+# sign type (eg. ECDSA, EC256K1, ED25519)
+SignType = "ECDSA"
 # RPC API prefix
 APIPrefix = "dcrm_"
 # RPC timeout
 RPCTimeout = 10
 # sign timeout of seconds
 SignTimeout = 120
+
+# verify signature in accept sign info
+VerifySignatureInAccept = false
 
 # dcrm group ID
 GroupID = "74245ef03937fa75b979bdaa6a5952a93f53e021e0832fca4c2ad8952572c9b70f49e291de7e024b0f7fc54ec5875210db2ac775dba44448b3972b75af074d17"

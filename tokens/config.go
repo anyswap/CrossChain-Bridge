@@ -9,7 +9,6 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
-	"github.com/anyswap/CrossChain-Bridge/tools"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 )
 
@@ -59,6 +58,9 @@ type ChainConfig struct {
 	Confirmations *uint64
 	InitialHeight *uint64
 
+	// special flags
+	IgnoreCheckAddressMixedCase bool // eg. RSK
+
 	// judge by the 'from' chain (eg. src for swapin)
 	EnableScan              bool
 	EnableScanPool          bool
@@ -70,7 +72,9 @@ type ChainConfig struct {
 	EnableReplaceSwap  bool
 	EnableDynamicFeeTx bool
 
-	CallByContractWhitelist []string `json:",omitempty"`
+	AllowCallByContract             bool
+	CallByContractWhitelist         []string `json:",omitempty"`
+	CallByContractCodeHashWhitelist []string `json:",omitempty"`
 
 	MinReserveFee              string
 	BaseFeePercent             int64
@@ -98,7 +102,8 @@ type ChainConfig struct {
 	maxGasTipCap  *big.Int
 	maxGasFeeCap  *big.Int
 
-	callByContractWhitelist map[string]struct{}
+	callByContractWhitelist         map[string]struct{}
+	callByContractCodeHashWhitelist map[string]struct{}
 }
 
 // TokenPriceConfig struct
@@ -144,10 +149,7 @@ type TokenConfig struct {
 	GasRate float64 `json:",omitempty"`
 
 	// use private key address instead
-	DcrmAddressKeyStore string `json:"-"`
-	DcrmAddressPassword string `json:"-"`
-	DcrmAddressKeyFile  string `json:"-"`
-	dcrmAddressPriKey   *ecdsa.PrivateKey
+	DcrmAddressPriKey string `json:"-"`
 
 	// calced value
 	maxSwap          *big.Int
@@ -158,21 +160,33 @@ type TokenConfig struct {
 
 	Unit              string `json:",omitempty"` // Cosmos coin unit denom
 	bigValueWhitelist map[string]struct{}
+	RippleExtra       *RippleTokenExtra
+}
+
+// RippleTokenExtra ripple extra
+type RippleTokenExtra struct {
+	Currency string
+	Issuer   string
+}
+
+// IsNative is native of ripple
+func (e *RippleTokenExtra) IsNative() bool {
+	return e.Currency == "XRP"
 }
 
 // CheckConfig check chain config
 func (c *ChainConfig) CheckConfig(isServer bool) error {
 	if c.BlockChain == "" {
-		return errors.New("token must config 'BlockChain'")
+		return errors.New("chain must config 'BlockChain'")
 	}
 	if c.NetID == "" {
-		return errors.New("token must config 'NetID'")
+		return errors.New("chain must config 'NetID'")
 	}
 	if c.Confirmations == nil {
-		return errors.New("token must config 'Confirmations'")
+		return errors.New("chain must config 'Confirmations'")
 	}
 	if c.InitialHeight == nil {
-		return errors.New("token must config 'InitialHeight'")
+		return errors.New("chain must config 'InitialHeight'")
 	}
 	if c.BaseFeePercent < -90 || c.BaseFeePercent > 500 {
 		return errors.New("'BaseFeePercent' must be in range [-90, 500]")
@@ -227,6 +241,18 @@ func (c *ChainConfig) CheckConfig(isServer bool) error {
 				return fmt.Errorf("duplicate address '%v' in 'CallByContractWhitelist'", addr)
 			}
 			c.callByContractWhitelist[key] = struct{}{}
+		}
+	}
+	if len(c.CallByContractCodeHashWhitelist) > 0 {
+		c.callByContractCodeHashWhitelist = make(map[string]struct{}, len(c.CallByContractCodeHashWhitelist))
+		for _, codehash := range c.CallByContractCodeHashWhitelist {
+			if !common.IsHexHash(codehash) {
+				return fmt.Errorf("wrong codeHash '%v' in CallByContractCodeHashWhitelist", codehash)
+			}
+			if _, exist := c.callByContractCodeHashWhitelist[codehash]; exist {
+				return fmt.Errorf("duplicate codeHash '%v' in 'CallByContractCodeHashWhitelist'", codehash)
+			}
+			c.callByContractCodeHashWhitelist[codehash] = struct{}{}
 		}
 	}
 	if c.EnableDynamicFeeTx {
@@ -368,19 +394,12 @@ func (c *TokenConfig) CheckConfig(isSrc bool) (err error) {
 	} else if c.DelegateToken != "" {
 		return errors.New("token forbid config 'DelegateToken' if 'IsDelegateContract' is false")
 	}
-	c.TokenPrice = 0
-	err = c.loadTokenPrice(isSrc)
-	if err != nil {
-		return err
-	}
-	c.CalcAndStoreValue()
-	err = c.LoadDcrmAddressPrivateKey()
-	if err != nil {
-		return err
-	}
 	err = c.VerifyDcrmPublicKey()
 	if err != nil {
 		return err
+	}
+	if TokenPriceCfg == nil {
+		c.CalcAndStoreValue()
 	}
 	if len(c.BigValueWhitelist) > 0 {
 		c.bigValueWhitelist = make(map[string]struct{}, len(c.BigValueWhitelist))
@@ -418,17 +437,33 @@ func (c *TokenConfig) CalcAndStoreValue() {
 		minFee /= c.TokenPrice
 	}
 	smallBiasValue := 0.0001
-	c.maxSwap = ToBits(maxSwap+smallBiasValue, *c.Decimals)
-	c.minSwap = ToBits(minSwap-smallBiasValue, *c.Decimals)
-	c.maxSwapFee = ToBits(maxFee, *c.Decimals)
-	c.minSwapFee = ToBits(minFee, *c.Decimals)
-	c.bigValThreshhold = ToBits(bigSwap+smallBiasValue, *c.Decimals)
+	decimals := *c.Decimals
+	c.maxSwap = ToBits(maxSwap+smallBiasValue, decimals)
+	c.minSwap = ToBits(minSwap-smallBiasValue, decimals)
+	c.maxSwapFee = ToBits(maxFee, decimals)
+	c.minSwapFee = ToBits(minFee, decimals)
+	c.bigValThreshhold = ToBits(bigSwap+smallBiasValue, decimals)
+	if decimals > 8 {
+		mod := big.NewInt(10)
+		mod.Exp(mod, big.NewInt(int64(decimals-8)), nil)
+		c.maxSwap = calcModValue(c.maxSwap, mod)
+		c.minSwap = calcModValue(c.minSwap, mod)
+		c.maxSwapFee = calcModValue(c.maxSwapFee, mod)
+		c.minSwapFee = calcModValue(c.minSwapFee, mod)
+		c.bigValThreshhold = calcModValue(c.bigValThreshhold, mod)
+	}
 	log.Info("calc and store token swap and fee success",
-		"name", c.Name, "decimals", *c.Decimals, "contractAddress", c.ContractAddress,
+		"name", c.Name, "decimals", decimals, "contractAddress", c.ContractAddress,
 		"maxSwap", c.maxSwap, "minSwap", c.minSwap, "bigValThreshhold", c.bigValThreshhold,
 		"maxSwapFee", c.maxSwapFee, "minSwapFee", c.minSwapFee, "swapFeeRate", c.SwapFeeRate,
-		"bigValueWhitelist", c.bigValueWhitelist,
 	)
+}
+
+// result = (value / mod) * mod
+func calcModValue(value, mod *big.Int) (result *big.Int) {
+	result = new(big.Int).Div(value, mod)
+	result.Mul(result, mod)
+	return result
 }
 
 // SetChainID set chainID
@@ -447,6 +482,20 @@ func (c *ChainConfig) IsInCallByContractWhitelist(caller string) bool {
 		return false
 	}
 	_, exist := c.callByContractWhitelist[strings.ToLower(caller)]
+	return exist
+}
+
+// HasCallByContractCodeHashWhitelist has call by contract code hash whitelist
+func (c *ChainConfig) HasCallByContractCodeHashWhitelist() bool {
+	return len(c.callByContractCodeHashWhitelist) > 0
+}
+
+// IsInCallByContractCodeHashWhitelist is in call by contract code hash whitelist
+func (c *ChainConfig) IsInCallByContractCodeHashWhitelist(codehash string) bool {
+	if c.callByContractCodeHashWhitelist == nil {
+		return false
+	}
+	_, exist := c.callByContractCodeHashWhitelist[codehash]
 	return exist
 }
 
@@ -514,53 +563,34 @@ func (c *TokenConfig) IsInBigValueWhitelist(caller string) bool {
 }
 
 // GetDcrmAddressPrivateKey get private key
-func (c *TokenConfig) GetDcrmAddressPrivateKey() *ecdsa.PrivateKey {
-	return c.dcrmAddressPriKey
-}
-
-// LoadDcrmAddressPrivateKey load private key
-func (c *TokenConfig) LoadDcrmAddressPrivateKey() error {
-	if c.DcrmAddressKeyFile != "" {
-		priKey, err := crypto.LoadECDSA(c.DcrmAddressKeyFile)
-		if err != nil {
-			return fmt.Errorf("wrong private key, %w", err)
-		}
-		c.dcrmAddressPriKey = priKey
-	} else if c.DcrmAddressKeyStore != "" {
-		key, err := tools.LoadKeyStore(c.DcrmAddressKeyStore, c.DcrmAddressPassword)
-		if err != nil {
-			return err
-		}
-		c.dcrmAddressPriKey = key.PrivateKey
+func (c *TokenConfig) GetDcrmAddressPrivateKey() *string {
+	// get rid of '0x' prefix
+	if common.HasHexPrefix(c.DcrmAddressPriKey) {
+		c.DcrmAddressPriKey = c.DcrmAddressPriKey[2:]
 	}
-	if c.dcrmAddressPriKey != nil {
-		keyAddr := crypto.PubkeyToAddress(c.dcrmAddressPriKey.PublicKey)
-		if !strings.EqualFold(keyAddr.String(), c.DcrmAddress) {
-			return fmt.Errorf("dcrm address %v and its keystore address %v is not match", c.DcrmAddress, keyAddr.String())
-		}
-	} else {
-		if c.DcrmPubkey == "" {
-			return fmt.Errorf("token must config 'DcrmPubkey'")
-		}
-		if IsDcrmDisabled {
-			return fmt.Errorf("dcrm is disabled but no private key is provided")
-		}
+	if c.DcrmAddressPriKey == "" {
+		return nil
 	}
-	return nil
+	return &c.DcrmAddressPriKey
 }
 
 // VerifyDcrmPublicKey verify public key
 func (c *TokenConfig) VerifyDcrmPublicKey() error {
+	if c.DcrmAddressPriKey != "" {
+		return nil
+	}
+	if IsDcrmDisabled {
+		return fmt.Errorf("dcrm is disabled but no private key is provided")
+	}
+
 	if !common.IsHexAddress(c.DcrmAddress) {
 		return nil
 	}
-	if c.dcrmAddressPriKey != nil && c.DcrmPubkey == "" {
-		return nil
-	}
+
 	// ETH like address
 	pkBytes := common.FromHex(c.DcrmPubkey)
 	if len(pkBytes) != 65 || pkBytes[0] != 4 {
-		return fmt.Errorf("wrong dcrm public key, shoule be uncompressed")
+		return fmt.Errorf("wrong uncompressed dcrm public key")
 	}
 	pubKey := ecdsa.PublicKey{
 		Curve: crypto.S256(),

@@ -21,10 +21,13 @@ var PairID = "block"
 
 // NewCrossChainBridge new fsn bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
+	tokens.IsSwapoutToStringAddress = true
+	if !isSrc {
+		log.Fatalf("block::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
+	}
 	btc.PairID = PairID
 	instance := &Bridge{CrossChainBridgeBase: tokens.NewCrossChainBridgeBase(isSrc)}
-	BridgeInstance = instance
-	btc.BridgeInstance = BridgeInstance
+	btc.BridgeInstance = instance
 	return instance
 }
 

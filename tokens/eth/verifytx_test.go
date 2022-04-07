@@ -266,7 +266,7 @@ var consArgsSlice = []*consArgs{
 			"0x0000000000000000000000005c71f679870b190c7545a26981fa1f38aaba839e",
 			"0x0000000000000000000000005c71f679870b190c7545a26981fa1f38aaba839e",
 		},
-		wantErr: tokens.ErrTxWithWrongContract,
+		wantErr: tokens.ErrSwapoutLogNotFound,
 	},
 	{ // 13
 		args: []string{
@@ -334,6 +334,7 @@ func TestVerifyTx(t *testing.T) {
 	params.SetConfig(&params.BridgeConfig{
 		Identifier: "testIdentifier",
 		Extra: &params.ExtraConfig{
+			IsTestMode:          true,
 			MustRegisterAccount: false,
 		},
 	})
@@ -365,11 +366,11 @@ func verifyTestTx(test *verifyTxTest) (err error) {
 	switch test.txtype {
 	case swapoutType:
 		ExtCodeParts = mETHExtCodeParts
-		params.GetExtraConfig().IsSwapoutToStringAddress = false
+		tokens.IsSwapoutToStringAddress = false
 		_, err = br.verifySwapoutTx(swapInfo, allowUnstable, test.token, test.receipt)
 	case swapout2Type:
 		ExtCodeParts = mBTCExtCodeParts
-		params.GetExtraConfig().IsSwapoutToStringAddress = true
+		tokens.IsSwapoutToStringAddress = true
 		_, err = br.verifySwapoutTx(swapInfo, allowUnstable, test.token, test.receipt)
 	case swapinType:
 		_, err = br.verifyErc20SwapinTx(swapInfo, allowUnstable, test.token, test.receipt)

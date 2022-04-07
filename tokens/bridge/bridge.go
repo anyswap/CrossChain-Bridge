@@ -19,6 +19,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/kusama"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/okex"
+	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
 	"github.com/anyswap/CrossChain-Bridge/tokens/terra"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
@@ -45,6 +46,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return cosmos.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "TERRA"):
 		return terra.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "XRP"):
+		return ripple.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "COLOSSUS") || strings.HasPrefix(blockChainIden, "COLX"):
 		return colx.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "KUSAMA"):
@@ -119,6 +122,9 @@ func InitCrossChainBridge(isServer bool) {
 	default:
 		cfg.BtcExtra = nil
 	}
+
+	tokens.SrcBridge.InitAfterConfig()
+	tokens.DstBridge.InitAfterConfig()
 
 	dcrm.Init(cfg.Dcrm, isServer)
 

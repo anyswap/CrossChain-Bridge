@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/anyswap/CrossChain-Bridge/internal/swapapi"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -222,6 +223,7 @@ func (s *RPCAPI) Swapin(r *http.Request, args *RPCTxAndPairIDArgs, result *swapa
 	if err != nil {
 		return err
 	}
+	log.Infof("111111\nRPC Swapin\n111111")
 	res, err := swapapi.Swapin(txid, pairID)
 	if err == nil && res != nil {
 		*result = *res

@@ -21,9 +21,10 @@ var (
 
 // TokenPairConfig pair config
 type TokenPairConfig struct {
-	PairID    string
-	SrcToken  *TokenConfig
-	DestToken *TokenConfig
+	PairID       string
+	DiffDecimals bool
+	SrcToken     *TokenConfig
+	DestToken    *TokenConfig
 }
 
 // SetTokenPairsDir set token pairs directory
@@ -177,7 +178,7 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 		if err != nil {
 			return err
 		}
-		if *tokenPair.SrcToken.Decimals != *tokenPair.DestToken.Decimals {
+		if *tokenPair.SrcToken.Decimals != *tokenPair.DestToken.Decimals && !tokenPair.DiffDecimals {
 			return fmt.Errorf("decimals of pair are not equal, src %v, dest %v", *tokenPair.SrcToken.Decimals, *tokenPair.DestToken.Decimals)
 		}
 	}
@@ -217,6 +218,7 @@ func LoadTokenPairsConfig(check bool) {
 	}
 	SetTokenPairsConfig(pairsConfig, check)
 	if TokenPriceCfg != nil {
+		initAllTokenPrices()
 		go watchAndReloadTokenPrices()
 	}
 }
@@ -277,7 +279,7 @@ func loadTokenPairConfig(configFile string) (config *TokenPairConfig, err error)
 		bs, _ = json.MarshalIndent(config, "", "  ")
 	}
 	log.Tracef("load token pair finished. %v", string(bs))
-	log.Println("finish load token pair config file", configFile)
+	log.Info("finish load token pair config file", "file", configFile, "pairID", config.PairID)
 	return config, nil
 }
 

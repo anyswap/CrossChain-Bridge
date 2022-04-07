@@ -224,9 +224,6 @@ func processAcceptInfo(info *dcrm.SignInfoData) {
 
 func getBuildTxArgsFromMsgContext(signInfo *dcrm.SignInfoData) (*tokens.BuildTxArgs, error) {
 	msgContext := signInfo.MsgContext
-	if len(msgContext) != 1 {
-		return nil, errWrongMsgContext
-	}
 	var args tokens.BuildTxArgs
 	err := json.Unmarshal([]byte(msgContext[0]), &args)
 	if err != nil {

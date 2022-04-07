@@ -76,8 +76,12 @@ type SignInfoData struct {
 }
 
 // IsValid is valid
-func (signInfo *SignInfoData) IsValid() bool {
-	return signInfo != nil && signInfo.Key != "" && signInfo.Account != "" && signInfo.GroupID != ""
+func (s *SignInfoData) IsValid() bool {
+	return s != nil &&
+		s.Key != "" &&
+		s.Account != "" &&
+		s.GroupID != "" &&
+		s.HasValidSignature()
 }
 
 // SignInfoResp sign info response

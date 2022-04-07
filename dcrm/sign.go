@@ -96,13 +96,27 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 		PubKey:     signPubkey,
 		MsgHash:    msgHash,
 		MsgContext: msgContext,
-		Keytype:    "ECDSA",
+		Keytype:    dcrmSignType,
 		GroupID:    dcrmNode.signGroups[signGroupIndex],
 		ThresHold:  dcrmThreshold,
 		Mode:       dcrmMode,
 		TimeStamp:  common.NowMilliStr(),
 	}
-	payload, _ := json.Marshal(txdata)
+	payload, err := json.Marshal(txdata)
+	if err != nil {
+		return "", nil, err
+	}
+	if verifySignatureInAccept {
+		// append payload signature into the end of message context
+		sighash := common.Keccak256Hash(payload)
+		signature, errf := crypto.Sign(sighash[:], dcrmNode.keyWrapper.PrivateKey)
+		if errf != nil {
+			return "", nil, errf
+		}
+		txdata.MsgContext = append(txdata.MsgContext, common.ToHex(signature))
+		payload, _ = json.Marshal(txdata)
+	}
+
 	rawTX, err := BuildDcrmRawTx(nonce, payload, dcrmNode.keyWrapper)
 	if err != nil {
 		return "", nil, err
@@ -118,15 +132,18 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 	if err != nil {
 		return "", nil, err
 	}
-	for _, rsv := range rsvs {
-		signature := common.FromHex(rsv)
-		if len(signature) != crypto.SignatureLength {
-			return "", nil, errWrongSignatureLength
-		}
-		r := common.ToHex(signature[:32])
-		err = mongodb.AddUsedRValue(signPubkey, r)
-		if err != nil {
-			return "", nil, errRValueIsUsed
+
+	if isECDSA() && mongodb.HasClient() { // prevent multiple use of same r value
+		for _, rsv := range rsvs {
+			signature := common.FromHex(rsv)
+			if len(signature) != crypto.SignatureLength {
+				return "", nil, errWrongSignatureLength
+			}
+			r := common.ToHex(signature[:32])
+			err = mongodb.AddUsedRValue(signPubkey, r)
+			if err != nil {
+				return "", nil, errRValueIsUsed
+			}
 		}
 	}
 
@@ -166,6 +183,7 @@ LOOP_GET_SIGN_STATUS:
 				break LOOP_GET_SIGN_STATUS
 			}
 		}
+		log.Trace("get sign status failed", "keyID", keyID, "count", i, "err", err)
 		time.Sleep(3 * time.Second)
 	}
 	if len(rsvs) == 0 || err != nil {
@@ -200,4 +218,44 @@ func BuildDcrmRawTx(nonce uint64, payload []byte, keyWrapper *keystore.Key) (str
 	}
 	rawTX := common.ToHex(txdata)
 	return rawTX, nil
+}
+
+// HasValidSignature has valid signature
+func (s *SignInfoData) HasValidSignature() bool {
+	msgContextLen := len(s.MsgContext)
+	if !verifySignatureInAccept {
+		return msgContextLen == 1
+	}
+
+	if msgContextLen != 2 {
+		return false
+	}
+	msgContext := s.MsgContext[:msgContextLen-1]
+	msgSig := common.FromHex(s.MsgContext[msgContextLen-1])
+
+	txdata := SignData{
+		TxType:     "SIGN",
+		PubKey:     s.PubKey,
+		MsgHash:    s.MsgHash,
+		MsgContext: msgContext,
+		Keytype:    dcrmSignType,
+		GroupID:    s.GroupID,
+		ThresHold:  s.ThresHold,
+		Mode:       s.Mode,
+		TimeStamp:  s.TimeStamp,
+	}
+	payload, _ := json.Marshal(txdata)
+	sighash := common.Keccak256Hash(payload)
+
+	// recover the public key from the signature
+	pub, err := crypto.Ecrecover(sighash[:], msgSig)
+	if err != nil {
+		return false
+	}
+	if len(pub) == 0 || pub[0] != 4 {
+		return false
+	}
+	var addr common.Address
+	copy(addr[:], crypto.Keccak256(pub[1:])[12:])
+	return addr == common.HexToAddress(s.Account)
 }

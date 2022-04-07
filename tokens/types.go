@@ -121,26 +121,6 @@ func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 	}
 }
 
-// GetTxNonce get tx nonce
-func (args *BuildTxArgs) GetTxNonce() uint64 {
-	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.Nonce != nil {
-		return *args.Extra.EthExtra.Nonce
-	}
-	return 0
-}
-
-// SetTxNonce set tx nonce
-func (args *BuildTxArgs) SetTxNonce(nonce uint64) {
-	var extra *EthExtraArgs
-	if args.Extra == nil || args.Extra.EthExtra == nil {
-		extra = &EthExtraArgs{}
-		args.Extra = &AllExtras{EthExtra: extra}
-	} else {
-		extra = args.Extra.EthExtra
-	}
-	extra.Nonce = &nonce
-}
-
 // GetTxGasPrice get tx gas price
 func (args *BuildTxArgs) GetTxGasPrice() *big.Int {
 	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.GasPrice != nil {
@@ -149,11 +129,23 @@ func (args *BuildTxArgs) GetTxGasPrice() *big.Int {
 	return nil
 }
 
+// GetTxNonce get tx nonce
+func (args *BuildTxArgs) GetTxNonce() uint64 {
+	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.Nonce != nil {
+		return *args.Extra.EthExtra.Nonce
+	}
+	if args.Extra != nil && args.Extra.RippleExtra != nil && args.Extra.RippleExtra.Sequence != nil {
+		return uint64(*args.Extra.RippleExtra.Sequence)
+	}
+	return 0
+}
+
 // AllExtras struct
 type AllExtras struct {
-	BtcExtra   *BtcExtraArgs `json:"btcExtra,omitempty"`
-	EthExtra   *EthExtraArgs `json:"ethExtra,omitempty"`
-	ReplaceNum uint64        `json:"replaceNum,omitempty"`
+	ReplaceNum  uint64        `json:"replaceNum,omitempty"`
+	BtcExtra    *BtcExtraArgs `json:"btcExtra,omitempty"`
+	EthExtra    *EthExtraArgs `json:"ethExtra,omitempty"`
+	RippleExtra *RippleExtra  `json:"rippleExtra,omitempty"`
 }
 
 // EthExtraArgs struct
@@ -163,6 +155,12 @@ type EthExtraArgs struct {
 	GasTipCap *big.Int `json:"gasTipCap,omitempty"`
 	GasFeeCap *big.Int `json:"gasFeeCap,omitempty"`
 	Nonce     *uint64  `json:"nonce,omitempty"`
+}
+
+// RippleExtra struct
+type RippleExtra struct {
+	Sequence *uint32 `json:"sequence,omitempty"`
+	Fee      *int64  `json:"fee,omitempty"`
 }
 
 // BtcOutPoint struct

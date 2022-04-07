@@ -1,6 +1,8 @@
 package eth
 
 import (
+	"strings"
+
 	"github.com/anyswap/CrossChain-Bridge/common"
 	mapset "github.com/deckarep/golang-set"
 )
@@ -11,12 +13,15 @@ var (
 
 	cachedNoncontractAddrs    = mapset.NewSet()
 	maxNoncachedContractAddrs = 500
+
+	contractCodeHashes    = make(map[common.Address]common.Hash)
+	maxContractCodeHashes = 100
 )
 
 // ShouldCheckAddressMixedCase check address mixed case
 // eg. RSK chain do not check mixed case or not same as eth
 func (b *Bridge) ShouldCheckAddressMixedCase() bool {
-	return true
+	return !b.ChainConfig.IgnoreCheckAddressMixedCase
 }
 
 // IsValidAddress check address
@@ -29,6 +34,9 @@ func (b *Bridge) IsValidAddress(address string) bool {
 	}
 	unprefixedHex, ok, hasUpperChar := common.GetUnprefixedHex(address)
 	if hasUpperChar {
+		if strings.ToUpper(address) == address {
+			return true
+		}
 		// valid checksum
 		if unprefixedHex != common.HexToAddress(address).String()[2:] {
 			return false
@@ -70,4 +78,25 @@ func addCachedContractAddr(address string) {
 		cachedContractAddrs.Pop()
 	}
 	cachedContractAddrs.Add(address)
+}
+
+// GetContractCodeHash get contract code hash
+func (b *Bridge) GetContractCodeHash(contract common.Address) common.Hash {
+	codeHash, exist := contractCodeHashes[contract]
+	if exist {
+		return codeHash
+	}
+	if cachedNoncontractAddrs.Contains(contract.String()) {
+		return common.Hash{}
+	}
+	if len(contractCodeHashes) > maxContractCodeHashes {
+		contractCodeHashes = make(map[common.Address]common.Hash) // clear
+	}
+
+	code, err := b.getContractCode(contract.String(), false)
+	if err == nil && len(code) > 1 {
+		codeHash = common.Keccak256Hash(code)
+		contractCodeHashes[contract] = codeHash
+	}
+	return codeHash
 }

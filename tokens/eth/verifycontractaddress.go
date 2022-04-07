@@ -9,7 +9,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 )
 
 var (
@@ -155,7 +154,7 @@ func InitExtCodePartsWithFlag(isMbtc bool) {
 }
 
 func isSwapoutToStringAddress() bool {
-	return tokens.IsSwapoutToStringAddress || params.IsSwapoutToStringAddress() || btc.BridgeInstance != nil
+	return tokens.IsSwapoutToStringAddress || params.IsSwapoutToStringAddress()
 }
 
 func getSwapinFuncHash() []byte {

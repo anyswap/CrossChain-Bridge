@@ -44,12 +44,6 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 	swapInfo.TxTo = strings.ToLower(receipt.Recipient.String()) // TxTo
 	swapInfo.From = strings.ToLower(receipt.From.String())      // From
 
-	if !token.AllowSwapinFromContract &&
-		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) &&
-		!b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
-		return tokens.ErrTxWithWrongContract
-	}
-
 	from, to, value, err := ParseErc20SwapinTxLogs(receipt.Logs, token.ContractAddress, token.DepositAddress)
 	if err != nil {
 		if !errors.Is(err, tokens.ErrTxWithWrongReceiver) {
@@ -60,7 +54,30 @@ func (b *Bridge) verifyErc20SwapinTxReceipt(swapInfo *tokens.TxSwapInfo, receipt
 	swapInfo.To = strings.ToLower(to)     // To
 	swapInfo.Value = value                // Value
 	swapInfo.Bind = strings.ToLower(from) // Bind
+
+	if !token.AllowSwapinFromContract &&
+		!b.ChainConfig.AllowCallByContract &&
+		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) {
+		if err := b.checkCallByContract(swapInfo); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (b *Bridge) checkCallByContract(swapInfo *tokens.TxSwapInfo) error {
+	if b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
+		return nil
+	}
+	if b.ChainConfig.HasCallByContractCodeHashWhitelist() {
+		codehash := b.GetContractCodeHash(common.HexToAddress(swapInfo.TxTo))
+		if codehash != (common.Hash{}) &&
+			b.ChainConfig.IsInCallByContractCodeHashWhitelist(codehash.String()) {
+			return nil
+		}
+	}
+	return tokens.ErrTxWithWrongContract
 }
 
 // ParseErc20SwapinTxLogs parse erc20 swapin tx logs
@@ -115,9 +132,10 @@ func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 	if params.MustRegisterAccount() && !tools.IsAddressRegistered(bindAddr) {
 		return tokens.ErrTxSenderNotRegistered
 	}
-	if params.IsSwapServer && token.ContractAddress != "" &&
-		!common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) &&
-		!b.ChainConfig.IsInCallByContractWhitelist(swapInfo.TxTo) {
+	if params.IsSwapServer &&
+		token.ContractAddress != "" &&
+		params.CheckBindAddrIsContract() &&
+		common.IsEqualIgnoreCase(swapInfo.TxTo, token.ContractAddress) {
 		isContract, err := b.IsContractAddress(bindAddr)
 		if err != nil {
 			log.Warn("query is contract address failed", "bindAddr", bindAddr, "err", err)

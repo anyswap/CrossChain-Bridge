@@ -2,6 +2,7 @@ package params
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -83,14 +84,17 @@ func checkChainAndGatewayConfig(isServer bool) (err error) {
 
 // CheckConfig check swap server config
 func (c *ServerConfig) CheckConfig() error {
+	if c.APIServer == nil {
+		return errors.New("server must config 'Server.APIServer'")
+	}
+	if IsTestMode() {
+		return nil
+	}
 	if c.MongoDB == nil {
 		return errors.New("server must config 'Server.MongoDB'")
 	}
 	if err := c.MongoDB.CheckConfig(); err != nil {
 		return err
-	}
-	if c.APIServer == nil {
-		return errors.New("server must config 'Server.APIServer'")
 	}
 	return nil
 }
@@ -116,6 +120,13 @@ func (c *MongoDBConfig) CheckConfig() error {
 func (c *DcrmConfig) CheckConfig(isServer bool) (err error) {
 	if c.Disable {
 		return nil
+	}
+	switch {
+	case c.SignType == "":
+	case strings.HasPrefix(c.SignType, "EC"):
+	case strings.HasPrefix(c.SignType, "ED"):
+	default:
+		return fmt.Errorf("unknown dcrm sign type '%v'", c.SignType)
 	}
 	if c.GroupID == nil {
 		return errors.New("dcrm must config 'GroupID'")
@@ -169,6 +180,9 @@ func (c *DcrmNodeConfig) CheckConfig(isServer bool) (err error) {
 func (c *OracleConfig) CheckConfig() (err error) {
 	if c == nil {
 		return errors.New("oracle must config 'Oracle'")
+	}
+	if IsTestMode() {
+		return nil
 	}
 	ServerAPIAddress = c.ServerAPIAddress
 	if ServerAPIAddress == "" {

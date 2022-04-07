@@ -143,3 +143,11 @@ func (h *UnprefixedHash) UnmarshalText(input []byte) error {
 func (h UnprefixedHash) MarshalText() ([]byte, error) {
 	return []byte(hex.EncodeToString(h[:])), nil
 }
+
+// IsHexHash is hex hash
+func IsHexHash(s string) bool {
+	if HasHexPrefix(s) {
+		s = s[2:]
+	}
+	return len(s) == 2*HashLength && IsHex(s)
+}

@@ -30,6 +30,14 @@ var (
 	GetBalanceBlockNumberOpt = "latest"
 )
 
+// variables used for testing
+var (
+	// ChanIn channel to receive input arguments
+	ChanIn = make(chan map[string]string)
+	// ChanOut channel to send output result
+	ChanOut = make(chan string)
+)
+
 // BridgeConfig config items (decode from toml file)
 type BridgeConfig struct {
 	Identifier  string
@@ -51,14 +59,21 @@ type ServerConfig struct {
 	APIServer  *APIServerConfig `toml:",omitempty" json:",omitempty"`
 	Admins     []string         `toml:",omitempty" json:",omitempty"`
 	Assistants []string         `toml:",omitempty" json:",omitempty"`
+
+	SendTxLoopCount    int `toml:",omitempty" json:",omitempty"`
+	SendTxLoopInterval int `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmConfig dcrm related config
 type DcrmConfig struct {
-	Disable       bool
-	APIPrefix     string
-	RPCTimeout    uint64
-	SignTimeout   uint64
+	Disable     bool
+	SignType    string // ECDSA, ED25519 etc.
+	APIPrefix   string
+	RPCTimeout  uint64
+	SignTimeout uint64
+
+	VerifySignatureInAccept bool `toml:",omitempty" json:",omitempty"`
+
 	GroupID       *string
 	NeededOracles *uint32
 	TotalOracles  *uint32
@@ -101,12 +116,14 @@ type MongoDBConfig struct {
 
 // ExtraConfig extra config
 type ExtraConfig struct {
+	IsTestMode               bool `toml:",omitempty" json:",omitempty"`
 	IsDebugMode              bool `toml:",omitempty" json:",omitempty"`
 	MustRegisterAccount      bool
 	IsSwapoutToStringAddress bool `toml:",omitempty" json:",omitempty"`
 	EnableCheckBlockFork     bool
 	IsNullSwapoutNativeMemo  bool `toml:",omitempty" json:",omitempty"`
 	UsePendingBalance        bool `toml:",omitempty" json:",omitempty"`
+	CheckBindAddrIsContract  bool `toml:",omitempty" json:",omitempty"`
 }
 
 // GetAPIPort get api service port
@@ -148,9 +165,19 @@ func IsNullSwapoutNativeMemo() bool {
 	return GetExtraConfig() != nil && GetExtraConfig().IsNullSwapoutNativeMemo
 }
 
+// IsTestMode is test mode (get rid of business related components: MPC, DB, etc.)
+func IsTestMode() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().IsTestMode
+}
+
 // IsDebugMode is debug mode, add more debugging log infos
 func IsDebugMode() bool {
 	return GetExtraConfig() != nil && GetExtraConfig().IsDebugMode
+}
+
+// CheckBindAddrIsContract check if bind address is contract
+func CheckBindAddrIsContract() bool {
+	return GetExtraConfig() != nil && GetExtraConfig().CheckBindAddrIsContract
 }
 
 // IsDcrmEnabled is dcrm enabled (for dcrm sign)
