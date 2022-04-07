@@ -19,6 +19,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/ltc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/okex"
 	"github.com/anyswap/CrossChain-Bridge/tokens/ripple"
+	"github.com/anyswap/CrossChain-Bridge/tokens/terra"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
 )
 
@@ -46,6 +47,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return colx.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "KUSAMA"):
 		return kusama.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "TERRA"):
+		return terra.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
 		return nil
