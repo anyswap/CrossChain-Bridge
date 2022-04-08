@@ -10,7 +10,7 @@ func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
 }
 
 // GetTransactionByHash get tx response by hash
-func (b *Bridge) GetTransactionByHash(txHash string) (*GetTxResponse, error) {
+func (b *Bridge) GetTransactionByHash(txHash string) (*GetTxResult, error) {
 	return nil, tokens.ErrTodo
 }
 
