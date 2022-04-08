@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
@@ -23,7 +24,7 @@ func (b *Bridge) GetLatestBlockNumberOf(apiAddress string) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return uint64(result.Block.Header.Height), nil
+	return common.GetUint64FromStr(result.Block.Header.Height)
 }
 
 // GetLatestBlockNumber impl
@@ -44,10 +45,10 @@ func getMaxLatestBlockNumber(urls []string) (maxHeight uint64, err error) {
 	var result GetBlockResult
 	path := "/cosmos/base/tendermint/v1beta1/blocks/latest"
 	for _, url := range urls {
-		err := client.RPCGetWithTimeout(&result, url+path, rpcTimeout)
+		err = client.RPCGetWithTimeout(&result, url+path, rpcTimeout)
 		if err == nil {
-			height := uint64(result.Block.Header.Height)
-			if height > maxHeight {
+			height, errt := common.GetUint64FromStr(result.Block.Header.Height)
+			if errt == nil && height > maxHeight {
 				maxHeight = height
 			}
 		}

@@ -61,6 +61,15 @@ func GetIntFromStr(str string) (int, error) {
 	return res, nil
 }
 
+// GetInt64FromStr get int64 from string.
+func GetInt64FromStr(str string) (int64, error) {
+	bi, err := GetBigIntFromStr(str)
+	if err != nil || !bi.IsInt64() {
+		return 0, errors.New("invalid signed 64 integer: " + str)
+	}
+	return bi.Int64(), nil
+}
+
 // GetUint64FromStr get uint64 from string.
 func GetUint64FromStr(str string) (uint64, error) {
 	res, ok := cmath.ParseUint64(str)

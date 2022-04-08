@@ -1,10 +1,7 @@
 package terra
 
 import (
-	"encoding/json"
 	"time"
-
-	"github.com/anyswap/CrossChain-Bridge/common"
 )
 
 // GetBlockResult get block result
@@ -20,25 +17,8 @@ type Block struct {
 // Header header
 type Header struct {
 	ChainID string    `json:"chain_id"`
-	Height  int64     `json:"height"`
+	Height  string    `json:"height"`
 	Time    time.Time `json:"time"`
-}
-
-func (h *Header) UnmarshalJSON(data []byte) error {
-	var head struct {
-		ChainID string    `json:"chain_id"`
-		Height  string    `json:"height"`
-		Time    time.Time `json:"time"`
-	}
-	err := json.Unmarshal(data, &head)
-	if err != nil {
-		return err
-	}
-	h.ChainID = head.ChainID
-	h.Time = head.Time
-	biHeight, err := common.GetBigIntFromStr(head.Height)
-	h.Height = biHeight.Int64()
-	return err
 }
 
 // GetTxResult gettx result
