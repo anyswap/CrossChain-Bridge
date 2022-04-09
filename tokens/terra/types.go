@@ -60,13 +60,23 @@ type SimulateRequest struct {
 type SimulateResponse struct {
 }
 
-// QueryAccountResult query account result
-type QueryAccountResult struct {
-	Account QueryAccountResponse `json:"account"`
+// GetBaseAccountResult get base account result
+type GetBaseAccountResult struct {
+	Account *BaseAccount `json:"account"`
 }
 
-// QueryAccountResponse query account response
-type QueryAccountResponse struct {
-	TypeURL string `json:"type_url"`
-	Value   string `json:"value"`
+// BaseAccount base account
+type BaseAccount struct {
+	TypeURL       string  `json:"@type"`
+	Address       string  `json:"address"`
+	Pubkey        *Pubkey `json:"pub_key,omitempty"`
+	AccountNumber string  `json:"account_number"`
+	Sequence      string  `json:"sequence"`
+	Value         string  `json:"value,omitempty"`
+}
+
+// Pubkey public key
+type Pubkey struct {
+	TypeURL string `json:"@type"`
+	Key     string `json:"key"`
 }
