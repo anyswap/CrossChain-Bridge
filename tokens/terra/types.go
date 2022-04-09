@@ -59,3 +59,14 @@ type SimulateRequest struct {
 // SimulateResponse simulate responce
 type SimulateResponse struct {
 }
+
+// QueryAccountResult query account result
+type QueryAccountResult struct {
+	Account QueryAccountResponse `json:"account"`
+}
+
+// QueryAccountResponse query account response
+type QueryAccountResponse struct {
+	TypeURL string `json:"type_url"`
+	Value   string `json:"value"`
+}

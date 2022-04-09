@@ -3,6 +3,7 @@ package terra
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
@@ -15,11 +16,19 @@ var (
 	errEmptyTxHash = errors.New("empty tx hash")
 )
 
+func joinURLPath(url, path string) string {
+	url = strings.TrimSuffix(url, "/")
+	if !strings.HasPrefix(path, "/") {
+		url += "/"
+	}
+	return url + path
+}
+
 // GetLatestBlock get latest block
 func GetLatestBlock(url string) (height uint64, err error) {
 	path := "/cosmos/base/tendermint/v1beta1/blocks/latest"
 	var result GetBlockResult
-	err = client.RPCGetWithTimeout(&result, url+path, rpcTimeout)
+	err = client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
 	if err != nil {
 		return 0, err
 	}
@@ -29,7 +38,7 @@ func GetLatestBlock(url string) (height uint64, err error) {
 // BroadcastTx broadcast tx
 func BroadcastTx(url, txData string) (txHash string, err error) {
 	path := "/cosmos/tx/v1beta1/txs"
-	result, err := client.RPCRawPostWithTimeout(url+path, txData, rpcTimeout)
+	result, err := client.RPCRawPostWithTimeout(joinURLPath(url, path), txData, rpcTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -47,4 +56,11 @@ func BroadcastTx(url, txData string) (txHash string, err error) {
 func SimulateTx(url string, req *SimulateRequest) (resp *SimulateResponse, err error) {
 	//path := "/cosmos/tx/v1beta1/simulate"
 	return nil, tokens.ErrTodo
+}
+
+// GetAccount get account details
+func GetAccount(url, address string) (result *QueryAccountResult, err error) {
+	path := "/cosmos/auth/v1beta1/accounts/" + address
+	err = client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
+	return result, err
 }
