@@ -79,8 +79,11 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 		if err != nil {
 			return swapInfo, err
 		}
-		h,err=common.GetUint64FromStr(txres.Height)
-		if h < h+*b.GetChainConfig().Confirmations {
+		height,errf:=common.GetUint64FromStr(txres.Height)
+		if errf!=nil{
+			return swapInfo,errf
+		}
+		if h < height+*b.GetChainConfig().Confirmations {
 			return swapInfo, tokens.ErrTxNotStable
 		}
 		if h < *b.ChainConfig.InitialHeight {
@@ -112,9 +115,9 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 		return swapInfo,tokens.ErrTxWithWrongReceiver
 	}
 
-	txBody,ok :=tx.(*Tx)
-	bind, ok := GetBindAddressFromMemos(txBody.Body)
-	if !ok {
+	txBody,ok2 :=tx.(*Tx)
+	bind, ok2 := GetBindAddressFromMemos(txBody.Body)
+	if !ok2 {
 		log.Debug("wrong memos", "memos", bind)
 		return swapInfo, tokens.ErrWrongMemoBindAddress
 	}
@@ -122,7 +125,10 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	swapInfo.To = token.DepositAddress                        // To
 	swapInfo.From = strings.ToLower(from) // From
 	swapInfo.Bind = bind                                      // Bind
-	amt,err:=common.GetBigIntFromStr(amount)
+	amt,errf:=common.GetBigIntFromStr(amount)
+	if errf!=nil{
+		return swapInfo,errf
+	}
 	swapInfo.Value = amt
 
 	if !allowUnstable {
