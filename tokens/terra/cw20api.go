@@ -55,3 +55,29 @@ func (b *Bridge) GetTokenBalance(token, account string) (sdk.Dec, error) {
 	err = convertTo(res, &tokenBalance)
 	return tokenBalance.Balance, nil
 }
+
+// GetTokenTransferExecMsg impl
+// `recipient` is user address.
+func GetTokenTransferExecMsg(recipient, amount string) (string, error) {
+	execMsg := map[string]map[string]interface{}{
+		"transfer": {
+			"recipient": recipient,
+			"amount":    amount,
+		},
+	}
+	return base64EncodedJson(execMsg)
+}
+
+// GetTokenSendExecMsg impl
+// `recipient` is contract address.
+// `msg` is base64-endcoded JSON string.
+func GetTokenSendExecMsg(recipient, amount, msg string) (string, error) {
+	execMsg := map[string]map[string]interface{}{
+		"send": {
+			"contract": recipient,
+			"amount":   amount,
+			"msg":      msg,
+		},
+	}
+	return base64EncodedJson(execMsg)
+}

@@ -9,7 +9,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 
 	sdktx "github.com/cosmos/cosmos-sdk/client/tx"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 )
 
@@ -69,9 +68,12 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		WithGas(*extra.Gas).
 		WithFees(*extra.Fees)
 
-	var msg sdk.Msg
+	execMsg, err := GetTokenTransferExecMsg(to, amount.String())
+	if err != nil {
+		return nil, err
+	}
+	msg := NewMsgExecuteContract(from, tokenCfg.ContractAddress, execMsg)
 
-	_ = to
 	return sdktx.BuildUnsignedTx(txf, msg)
 }
 
@@ -87,7 +89,7 @@ func (b *Bridge) initExtra(args *tokens.BuildTxArgs) (extra *tokens.TerraExtra, 
 	}
 	if extra.Gas == nil {
 	}
-	return extra, err
+	return extra, tokens.ErrTodo
 }
 
 func (b *Bridge) getMinReserveFee() *big.Int {
