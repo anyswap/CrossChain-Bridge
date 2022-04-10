@@ -40,6 +40,12 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 }
 
 // VerifyTokenConfig verify token config
-func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) error {
+func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
+	if tokenCfg.DcrmAccountNumber == 0 {
+		tokenCfg.DcrmAccountNumber, err = b.GetAccountNumber(tokenCfg.DcrmAddress)
+		if err != nil {
+			return err
+		}
+	}
 	return tokens.ErrTodo
 }

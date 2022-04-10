@@ -88,6 +88,11 @@ func GetUint32FromStr(str string) (uint32, error) {
 	return uint32(u64), nil
 }
 
+// GetFloat64FromStr get float64 from string
+func GetFloat64FromStr(str string) (float64, error) {
+	return strconv.ParseFloat(str, 64)
+}
+
 // Now returns timestamp of the point of calling.
 func Now() int64 {
 	return time.Now().Unix()

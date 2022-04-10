@@ -110,11 +110,40 @@ type BaseAccount struct {
 	Pubkey        *Pubkey `json:"pub_key,omitempty"`
 	AccountNumber string  `json:"account_number"`
 	Sequence      string  `json:"sequence"`
-	Value         string  `json:"value,omitempty"`
 }
 
 // Pubkey public key
 type Pubkey struct {
 	TypeURL string `json:"@type"`
 	Key     string `json:"key"`
+}
+
+// GetBalanceResult get balance result
+type GetBalanceResult struct {
+	Denom  string `json:"denom,omitempty"`
+	Amount string `json:"amount"`
+}
+
+// QueryContractStoreResult query contract store result
+type QueryContractStoreResult struct {
+	QueryResult interface{} `json:"query_result"`
+}
+
+// QueryTaxRateResponse query tax rate
+type QueryTaxRateResuslt struct {
+	TaxRate string `json:"tax_rate"`
+}
+
+// QueryContractInfoResult query contract info result
+type QueryContractInfoResult struct {
+	ContractInfo QueryContractInfoResponse `json:"contract_info"`
+}
+
+// QueryContractInfoResponse query contract info response
+type QueryContractInfoResponse struct {
+	Address string      `json:"address"`
+	Creator string      `json:"creator"`
+	Admin   string      `json:"admin"`
+	CodeID  string      `json:"code_id"`
+	InitMsg interface{} `json:"init_msg"`
 }

@@ -9,10 +9,13 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var (
 	rpcTimeout = 60
+
+	zeroDec = sdk.Dec{}
 )
 
 func joinURLPath(url, path string) string {
@@ -72,10 +75,61 @@ func GetBaseAccount(url, address string) (*BaseAccount, error) {
 	return result.Account, nil
 }
 
-// GetBaseAccount get account details
+// GetTransactionByHash get tx by hash
 func GetTransactionByHash(url, txHash string) (*GetTxResult, error) {
 	path := "/cosmos/tx/v1beta1/txs/" + txHash
 	var result GetTxResult
+	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
+	if err != nil {
+		return nil, err
+	}
+	if !strings.EqualFold(result.TxResponse.TxHash, txHash) {
+		return nil, fmt.Errorf("get tx hash mismatch, have %v want %v", result.TxResponse.TxHash, txHash)
+	}
+	return &result, nil
+}
+
+// GetBalanceByDenom get balance by denom
+func GetBalanceByDenom(url, address, denom string) (sdk.Dec, error) {
+	path := fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s/by_denom?denom=%s", address, denom)
+	var result sdk.DecCoin
+	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
+	if err != nil {
+		return zeroDec, err
+	}
+	if !strings.EqualFold(result.Denom, denom) {
+		return zeroDec, fmt.Errorf("get balance denom mismatch, have %v want %v", result.Denom, denom)
+	}
+	return result.Amount, nil
+}
+
+// GetTaxRate get current tax rate
+func GetTaxRate(url string) (sdk.Dec, error) {
+	path := "/terra/treasury/v1beta1/tax_rate"
+	var result QueryTaxRateResuslt
+	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
+	if err != nil {
+		return zeroDec, err
+	}
+	return sdk.NewDecFromStr(result.TaxRate)
+}
+
+// GetContractInfo get contract info
+func GetContractInfo(url, contract string) (*QueryContractInfoResponse, error) {
+	path := "/terra/wasm/v1beta1/contracts/" + contract
+	var result QueryContractInfoResult
+	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
+	if err != nil {
+		return nil, err
+	}
+	return &result.ContractInfo, nil
+}
+
+// QueryContractStore query contract store
+// `queryMsg` is json formed message with base64
+func QueryContractStore(url, contract, queryMsg string) (interface{}, error) {
+	path := fmt.Sprintf("/terra/wasm/v1beta1/contracts/%s/store?query_msg=%s", contract, queryMsg)
+	var result QueryContractStoreResult
 	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
 	if err != nil {
 		return nil, err

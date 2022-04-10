@@ -130,11 +130,17 @@ func (args *BuildTxArgs) GetTxGasPrice() *big.Int {
 
 // GetTxNonce get tx nonce
 func (args *BuildTxArgs) GetTxNonce() uint64 {
-	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.Nonce != nil {
+	if args.Extra == nil {
+		return 0
+	}
+	if args.Extra.EthExtra != nil && args.Extra.EthExtra.Nonce != nil {
 		return *args.Extra.EthExtra.Nonce
 	}
-	if args.Extra != nil && args.Extra.RippleExtra != nil && args.Extra.RippleExtra.Sequence != nil {
+	if args.Extra.RippleExtra != nil && args.Extra.RippleExtra.Sequence != nil {
 		return uint64(*args.Extra.RippleExtra.Sequence)
+	}
+	if args.Extra.TerraExtra != nil && args.Extra.TerraExtra.Sequence != nil {
+		return uint64(*args.Extra.TerraExtra.Sequence)
 	}
 	return 0
 }
@@ -145,6 +151,7 @@ type AllExtras struct {
 	BtcExtra    *BtcExtraArgs `json:"btcExtra,omitempty"`
 	EthExtra    *EthExtraArgs `json:"ethExtra,omitempty"`
 	RippleExtra *RippleExtra  `json:"rippleExtra,omitempty"`
+	TerraExtra  *TerraExtra   `json:"terraExtra,omitempty"`
 }
 
 // EthExtraArgs struct
@@ -160,6 +167,13 @@ type EthExtraArgs struct {
 type RippleExtra struct {
 	Sequence *uint32 `json:"sequence,omitempty"`
 	Fee      *int64  `json:"fee,omitempty"`
+}
+
+// TerraExtra struct
+type TerraExtra struct {
+	Sequence *uint64 `json:"sequence,omitempty"`
+	Fees     *string `json:"fees,omitempty"`
+	Gas      *uint64 `json:"gas,omitempty"`
 }
 
 // BtcOutPoint struct

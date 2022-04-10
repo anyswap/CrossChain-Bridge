@@ -1,9 +1,11 @@
 package terra
 
 import (
+	"encoding/base64"
 	"encoding/json"
 
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var (
@@ -64,4 +66,65 @@ func (b *Bridge) SimulateTx(req *SimulateRequest) (res *SimulateResponse, err er
 		}
 	}
 	return nil, wrapRPCQueryError(err, "SimulateTx")
+}
+
+// GetBalanceByDenom impl
+func (b *Bridge) GetBalanceByDenom(address, denom string) (res sdk.Dec, err error) {
+	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
+	for _, url := range urls {
+		res, err = GetBalanceByDenom(url, address, denom)
+		if err == nil {
+			return res, nil
+		}
+	}
+	return zeroDec, wrapRPCQueryError(err, "GetBalanceByDenom", denom)
+}
+
+// GetTaxRate impl
+func (b *Bridge) GetTaxRate() (res sdk.Dec, err error) {
+	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
+	for _, url := range urls {
+		res, err = GetTaxRate(url)
+		if err == nil {
+			return res, nil
+		}
+	}
+	return zeroDec, wrapRPCQueryError(err, "GetTaxRate")
+}
+
+// GetContractInfo impl
+func (b *Bridge) GetContractInfo(contract string) (res *QueryContractInfoResponse, err error) {
+	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
+	for _, url := range urls {
+		res, err = GetContractInfo(url, contract)
+		if err == nil {
+			return res, nil
+		}
+	}
+	return nil, wrapRPCQueryError(err, "GetContractInfo", contract)
+}
+
+func base64EncodedJson(v interface{}) (string, error) {
+	jsonData, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(jsonData), nil
+}
+
+// QueryContractStore impl
+func (b *Bridge) QueryContractStore(contract string, query interface{}) (res interface{}, err error) {
+	jsonData, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	queryMsg := base64.StdEncoding.EncodeToString(jsonData)
+	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
+	for _, url := range urls {
+		res, err = QueryContractStore(url, contract, queryMsg)
+		if err == nil {
+			return res, nil
+		}
+	}
+	return nil, wrapRPCQueryError(err, "QueryContractStore", string(jsonData))
 }
