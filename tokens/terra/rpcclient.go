@@ -71,3 +71,14 @@ func GetBaseAccount(url, address string) (*BaseAccount, error) {
 	}
 	return result.Account, nil
 }
+
+// GetBaseAccount get account details
+func GetTransactionByHash(url, txHash string) (*GetTxResult, error) {
+	path := "/cosmos/tx/v1beta1/txs/" + txHash
+	var result GetTxResult
+	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
