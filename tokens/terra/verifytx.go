@@ -115,8 +115,7 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 		return swapInfo,tokens.ErrTxWithWrongReceiver
 	}
 
-	txBody,ok2 :=tx.(*Tx)
-	bind, ok2 := GetBindAddressFromMemos(txBody.Body)
+	bind, ok2 := GetBindAddressFromMemos(tx.(*Tx).Body)
 	if !ok2 {
 		log.Debug("wrong memos", "memos", bind)
 		return swapInfo, tokens.ErrWrongMemoBindAddress
