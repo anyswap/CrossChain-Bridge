@@ -2,13 +2,16 @@ package terra
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/tendermint/tendermint/crypto/tmhash"
 )
 
 var (
@@ -75,8 +78,29 @@ func (b *Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
 }
 
 // VerifyMsgHash verify msg hash
-func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHash []string) (err error) {
-	return tokens.ErrTodo
+func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) (err error) {
+	txw, ok := rawTx.(*wrapper)
+	if !ok {
+		return tokens.ErrWrongRawTx
+	}
+
+	if len(msgHashes) < 1 {
+		return tokens.ErrWrongCountOfMsgHashes
+	}
+	msgHash := msgHashes[0]
+
+	signBytes, err := txw.GetSignBytes()
+	if err != nil {
+		return err
+	}
+	sigHash := fmt.Sprintf("%X", tmhash.Sum(signBytes))
+
+	if !strings.EqualFold(sigHash, msgHash) {
+		logFunc := log.GetPrintFuncOr(params.IsDebugMode, log.Info, log.Trace)
+		logFunc("message hash mismatch", "want", msgHash, "have", sigHash)
+		return tokens.ErrMsgHashMismatch
+	}
+	return nil
 }
 
 // VerifyTransaction impl
