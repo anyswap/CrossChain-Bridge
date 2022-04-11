@@ -14,6 +14,7 @@ import (
 var (
 	errTxResultType = errors.New("tx type is not TxResponse")
 	errTxEvent      = errors.New("tx event is not support")
+	errTxAmount     = errors.New("tx amount is zero")
 )
 
 // GetTransaction impl
@@ -142,6 +143,10 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 		return swapInfo, tokens.ErrTxWithWrongReceiver
 	}
 
+	if amount.CmpAbs(big.NewInt(0)) == 0 {
+		return swapInfo, errTxAmount
+	}
+
 	bind, ok2 := GetBindAddressFromMemos(tx.(*Tx).Body)
 	if !ok2 {
 		log.Debug("wrong memos", "memos", bind)
@@ -161,6 +166,7 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 
 func (b *Bridge) checkEvents(pairID string, events StringEvents) (from, to string, amount *big.Int) {
 	token := b.GetTokenConfig(pairID)
+	amount = big.NewInt(0)
 	for _, event := range events {
 		if event.Attributes[1].Value == "transfer" && common.IsEqualIgnoreCase(event.Attributes[3].Value, token.DepositAddress) {
 			from = event.Attributes[2].Value
