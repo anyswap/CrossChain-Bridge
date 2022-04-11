@@ -12,6 +12,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -195,7 +196,7 @@ func findSwapOrSwapResult(result interface{}, collection *mongo.Collection, txid
 	if bind != "" {
 		err = collection.FindOne(clientCtx, bson.M{"_id": GetSwapKey(txid, pairID, bind)}).Decode(result)
 	} else {
-		qtxid := bson.M{"txid": strings.ToLower(txid)}
+		qtxid := bson.M{"txid": bson.D{{"$regex", primitive.Regex{Pattern: txid, Options: "i"}}}}
 		qpair := bson.M{"pairid": strings.ToLower(pairID)}
 		queries := []bson.M{qtxid, qpair}
 		err = collection.FindOne(clientCtx, bson.M{"$and": queries}).Decode(result)
@@ -825,8 +826,8 @@ func AddSwapHistory(isSwapin bool, txid, bind, swaptx string) error {
 
 // GetSwapHistory get
 func GetSwapHistory(isSwapin bool, txid, bind string) ([]*MgoSwapHistory, error) {
-	qtxid := bson.M{"txid": strings.ToLower(txid)}
-	qbind := bson.M{"bind": bind}
+	qtxid := bson.M{"txid": bson.D{{"$regex", primitive.Regex{Pattern: txid, Options: "i"}}}}
+	qbind := bson.M{"bind": bson.D{{"$regex", primitive.Regex{Pattern: bind, Options: "i"}}}}
 	qisswapin := bson.M{"isswapin": isSwapin}
 	queries := []bson.M{qtxid, qbind, qisswapin}
 	cur, err := collSwapHistory.Find(clientCtx, bson.M{"$and": queries})
