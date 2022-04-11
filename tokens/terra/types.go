@@ -42,11 +42,19 @@ type TxResponse struct {
 	Code uint32 `protobuf:"varint,4,opt,name=code,proto3" json:"code,omitempty"`
 	// The output of the application's logger (typed). May be non-deterministic.
 	Logs ABCIMessageLogs `protobuf:"bytes,7,rep,name=logs,proto3,castrepeated=ABCIMessageLogs" json:"logs"`
+	// The request transaction bytes.
+	Tx Any `protobuf:"bytes,11,opt,name=tx,proto3" json:"tx,omitempty"`
 	// the timestamps of the valid votes in the block.LastCommit. For height == 1,
 	// it's genesis time.
 	// Timestamp string `protobuf:"bytes,12,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 }
 
+type Any struct {
+	// nolint
+	TypeUrl string `protobuf:"bytes,1,opt,name=type_url,json=typeUrl,proto3" json:"type_url,omitempty"`
+	// Must be a valid serialized protocol buffer of the above specified type.
+	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
 
 type TxBody struct {
 	// memo is any arbitrary note/comment to be added to the transaction.
