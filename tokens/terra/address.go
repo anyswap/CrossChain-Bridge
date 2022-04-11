@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -21,19 +23,36 @@ func (b *Bridge) EqualAddress(address1, address2 string) bool {
 	return err1 == nil && err2 == nil && acc1.Equals(acc2)
 }
 
-// PublicKeyToAddress returns cosmos public key address
-func (b *Bridge) PublicKeyToAddress(pubKeyHex string) (string, error) {
+// PubKeyFromStr get public key from hex string
+func PubKeyFromStr(pubKeyHex string) (cryptotypes.PubKey, error) {
 	pubKeyHex = strings.TrimPrefix(pubKeyHex, "0x")
 	bs, err := hex.DecodeString(pubKeyHex)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	pk, err := btcec.ParsePubKey(bs, btcec.S256())
+	return PubKeyFromBytes(bs)
+}
+
+// PubKeyFromBytes get public key from bytes
+func PubKeyFromBytes(pubKeyBytes []byte) (cryptotypes.PubKey, error) {
+	cmp, err := btcec.ParsePubKey(pubKeyBytes, btcec.S256())
+	if err != nil {
+		return nil, err
+	}
+
+	compressedPublicKey := make([]byte, secp256k1.PubKeySize)
+	copy(compressedPublicKey, cmp.SerializeCompressed())
+
+	return &secp256k1.PubKey{Key: compressedPublicKey}, nil
+}
+
+// PublicKeyToAddress returns cosmos public key address
+func PublicKeyToAddress(pubKeyHex string) (string, error) {
+	pk, err := PubKeyFromStr(pubKeyHex)
 	if err != nil {
 		return "", err
 	}
-	cpk := pk.SerializeCompressed()
-	accAddress, err := sdk.AccAddressFromHex(hex.EncodeToString(cpk))
+	accAddress, err := sdk.AccAddressFromHex(pk.Address().String())
 	if err != nil {
 		return "", err
 	}

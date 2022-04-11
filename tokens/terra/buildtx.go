@@ -7,14 +7,15 @@ import (
 
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-
-	sdktx "github.com/cosmos/cosmos-sdk/client/tx"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 )
 
 var (
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
+
+	signMode = signing.SignMode_SIGN_MODE_DIRECT
 )
 
 // BuildRawTransaction build raw tx
@@ -59,22 +60,53 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
-	txf := sdktx.Factory{}.
-		WithChainID(b.ChainConfig.GetChainID().String()).
-		WithSignMode(signing.SignMode_SIGN_MODE_DIRECT).
-		WithAccountNumber(tokenCfg.DcrmAccountNumber).
-		WithMemo(memo).
-		WithSequence(*extra.Sequence).
-		WithGas(*extra.Gas).
-		WithFees(*extra.Fees)
+	txb := newBuilder()
+
+	txb.SetSignerData(
+		b.ChainConfig.GetChainID().String(),
+		tokenCfg.DcrmAccountNumber,
+		*extra.Sequence)
+
+	txb.SetMemo(memo)
+
+	txb.SetGasLimit(*extra.Gas)
+
+	parsedFees, err := sdk.ParseCoinsNormalized(*extra.Fees)
+	if err != nil {
+		return nil, err
+	}
+	txb.SetFeeAmount(parsedFees)
+
+	feePayer, err := sdk.AccAddressFromBech32(tokenCfg.DcrmAddress)
+	if err != nil {
+		return nil, err
+	}
+	txb.SetFeePayer(feePayer)
 
 	execMsg, err := GetTokenTransferExecMsg(to, amount.String())
 	if err != nil {
 		return nil, err
 	}
 	msg := NewMsgExecuteContract(from, tokenCfg.ContractAddress, execMsg)
+	txb.SetMsgs(msg)
 
-	return sdktx.BuildUnsignedTx(txf, msg)
+	pubkey, err := PubKeyFromStr(tokenCfg.DcrmPubkey)
+	if err != nil {
+		return nil, err
+	}
+
+	sigData := signing.SingleSignatureData{
+		SignMode:  signMode,
+		Signature: nil,
+	}
+	sig := signing.SignatureV2{
+		PubKey:   pubkey,
+		Data:     &sigData,
+		Sequence: *extra.Sequence,
+	}
+	txb.SetSignatures(sig)
+
+	return txb, nil
 }
 
 func (b *Bridge) initExtra(args *tokens.BuildTxArgs) (extra *tokens.TerraExtra, err error) {

@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
@@ -28,7 +29,9 @@ type wrapper struct {
 	// from the client using TxRaw if the tx was decoded from the wire
 	authInfoBz []byte
 
-	txBodyHasUnknownNonCriticals bool
+	// signerData is the specific information needed to sign a transaction that generally
+	// isn't included in the transaction body itself
+	signerData *authsigning.SignerData
 }
 
 var (
@@ -259,7 +262,7 @@ func (w *wrapper) SetGasLimit(limit uint64) {
 	w.authInfoBz = nil
 }
 
-// SetFeeAmount set dee amount
+// SetFeeAmount set fee amount
 func (w *wrapper) SetFeeAmount(coins sdk.Coins) {
 	if w.tx.AuthInfo.Fee == nil {
 		w.tx.AuthInfo.Fee = &tx.Fee{}
@@ -368,4 +371,38 @@ func (w *wrapper) SetExtensionOptions(extOpts ...*codectypes.Any) {
 func (w *wrapper) SetNonCriticalExtensionOptions(extOpts ...*codectypes.Any) {
 	w.tx.Body.NonCriticalExtensionOptions = extOpts
 	w.bodyBz = nil
+}
+
+// GetSignerData get signer data
+func (w *wrapper) GetSignerData() *authsigning.SignerData {
+	return w.signerData
+}
+
+// SetSignerData set signer data
+func (w *wrapper) SetSignerData(chainID string, accountNumber, sequence uint64) {
+	w.signerData = &authsigning.SignerData{
+		ChainID:       chainID,
+		AccountNumber: accountNumber,
+		Sequence:      sequence,
+	}
+}
+
+// GetSignBytes get sign bytes
+func (w *wrapper) GetSignBytes() ([]byte, error) {
+	return authtx.DirectSignBytes(
+		w.getBodyBytes(),
+		w.getAuthInfoBytes(),
+		w.signerData.ChainID,
+		w.signerData.AccountNumber)
+}
+
+// EncodeTx encode to tx bytes
+func (w *wrapper) EncodeTx() ([]byte, error) {
+	raw := &txtypes.TxRaw{
+		BodyBytes:     w.getBodyBytes(),
+		AuthInfoBytes: w.getAuthInfoBytes(),
+		Signatures:    w.tx.Signatures,
+	}
+
+	return proto.Marshal(raw)
 }
