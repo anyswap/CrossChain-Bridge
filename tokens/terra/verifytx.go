@@ -2,10 +2,12 @@ package terra
 
 import (
 	"errors"
+	"strings"
+	"time"
+
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"strings"
 )
 
 var (
@@ -19,10 +21,10 @@ func (b *Bridge) GetTransaction(txHash string) (interface{}, error) {
 }
 
 // GetTransactionByHash get tx response by hash
-func (b *Bridge) GetTransactionByHash(txHash string) (*GetTxResult, error) {
+func (b *Bridge) GetTransactionByHash(txHash string) (result *GetTxResult, err error) {
 	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
 	for _, url := range urls {
-		result, err := GetTransactionByHash(url, txHash)
+		result, err = GetTransactionByHash(url, txHash)
 		if err == nil {
 			return result, nil
 		}
@@ -32,7 +34,32 @@ func (b *Bridge) GetTransactionByHash(txHash string) (*GetTxResult, error) {
 
 // GetTransactionStatus impl
 func (b *Bridge) GetTransactionStatus(txHash string) (*tokens.TxStatus, error) {
-	return nil, tokens.ErrTodo
+	txr, err := b.GetTransactionByHash(txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	blockHeight, err := common.GetInt64FromStr(txr.TxResponse.Height)
+	if err != nil {
+		return nil, err
+	}
+
+	txStatus := &tokens.TxStatus{}
+	txStatus.BlockHeight = uint64(blockHeight)
+
+	if txStatus.BlockHeight != 0 {
+		for i := 0; i < 3; i++ {
+			latest, errt := b.GetLatestBlockNumber()
+			if errt == nil {
+				if latest > txStatus.BlockHeight {
+					txStatus.Confirmations = latest - txStatus.BlockHeight
+				}
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
+	return txStatus, nil
 }
 
 // GetTxBlockInfo impl NonceSetter interface
