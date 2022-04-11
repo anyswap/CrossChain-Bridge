@@ -15,6 +15,7 @@ var (
 	errTxResultType = errors.New("tx type is not TxResponse")
 	errTxEvent      = errors.New("tx event is not support")
 	errTxAmount     = errors.New("tx amount is zero")
+	errTxLog        = errors.New("tx don't has execute_contract log")
 )
 
 // GetTransaction impl
@@ -125,23 +126,26 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 		return swapInfo, tokens.ErrTxWithWrongStatus
 	}
 	var events StringEvents
+	from := ""
 	for _, log := range txres.Logs {
 		for _, event := range log.Events {
+			if from == "" && event.Type == "execute_contract" && event.Attributes[1].Key == "contract_address" && common.IsEqualIgnoreCase(event.Attributes[1].Value, token.ContractAddress) {
+				from = event.Attributes[0].Value
+			}
 			if event.Type == "from_contract" && event.Attributes[0].Key == "contract_address" && common.IsEqualIgnoreCase(event.Attributes[0].Value, token.ContractAddress) {
 				events = append(events, event)
 			}
 		}
+	}
+	if from == "" {
+		return swapInfo, errTxLog
 	}
 
 	if len(events) == 0 {
 		return swapInfo, errTxEvent
 	}
 
-	from, to, amount := b.checkEvents(pairID, events)
-
-	if to != token.DepositAddress {
-		return swapInfo, tokens.ErrTxWithWrongReceiver
-	}
+	amount := b.checkEvents(pairID, events)
 
 	if amount.CmpAbs(big.NewInt(0)) == 0 {
 		return swapInfo, errTxAmount
@@ -164,37 +168,28 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	return swapInfo, nil
 }
 
-func (b *Bridge) checkEvents(pairID string, events StringEvents) (from, to string, amount *big.Int) {
+func (b *Bridge) checkEvents(pairID string, events StringEvents) (amount *big.Int) {
 	token := b.GetTokenConfig(pairID)
 	amount = big.NewInt(0)
 	for _, event := range events {
 		if event.Attributes[1].Value == "transfer" && common.IsEqualIgnoreCase(event.Attributes[3].Value, token.DepositAddress) {
-			from = event.Attributes[2].Value
-			to = event.Attributes[3].Value
 			amt, _ := common.GetBigIntFromStr(event.Attributes[4].Value)
 			amount.Add(amount, amt)
 		} else if event.Attributes[1].Value == "transfer_from" && common.IsEqualIgnoreCase(event.Attributes[3].Value, token.DepositAddress) {
-			from = event.Attributes[2].Value
-			to = event.Attributes[3].Value
 			amt, _ := common.GetBigIntFromStr(event.Attributes[5].Value)
 			amount.Add(amount, amt)
 		} else if event.Attributes[1].Value == "send" && common.IsEqualIgnoreCase(event.Attributes[3].Value, token.DepositAddress) {
-			from = event.Attributes[2].Value
-			to = event.Attributes[3].Value
 			amt, _ := common.GetBigIntFromStr(event.Attributes[4].Value)
 			amount.Add(amount, amt)
 		} else if event.Attributes[1].Value == "send_from" && common.IsEqualIgnoreCase(event.Attributes[3].Value, token.DepositAddress) {
-			from = event.Attributes[2].Value
-			to = event.Attributes[3].Value
 			amt, _ := common.GetBigIntFromStr(event.Attributes[5].Value)
 			amount.Add(amount, amt)
 		} else if event.Attributes[1].Value == "mint" && common.IsEqualIgnoreCase(event.Attributes[2].Value, token.DepositAddress) {
-			to = event.Attributes[2].Value
 			amt, _ := common.GetBigIntFromStr(event.Attributes[3].Value)
 			amount.Add(amount, amt)
 		}
 	}
-	return from, to, amount
+	return amount
 }
 
 // GetBindAddressFromMemos get bind address
