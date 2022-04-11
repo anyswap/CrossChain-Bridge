@@ -12,6 +12,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -129,11 +130,12 @@ func addSwap(collection *mongo.Collection, ms *MgoSwap) error {
 	ms.Key = GetSwapKey(ms.TxID, ms.PairID, ms.Bind)
 	ms.InitTime = common.NowMilli()
 	_, err := collection.InsertOne(clientCtx, ms)
-	if err == nil {
+	switch {
+	case err == nil:
 		log.Info("mongodb add swap success", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection))
-	} else if !mongo.IsDuplicateKeyError(err) {
+	case !mongo.IsDuplicateKeyError(err):
 		log.Error("mongodb add swap failed", "txid", ms.TxID, "pairID", ms.PairID, "bind", ms.Bind, "isSwapin", isSwapin(collection), "err", err)
-	} else {
+	default:
 		swap := &MgoSwap{}
 		errt := collection.FindOne(clientCtx, bson.M{"_id": ms.Key}).Decode(swap)
 		if errt == nil && swap.Status == TxNotSwapped {
@@ -195,7 +197,7 @@ func findSwapOrSwapResult(result interface{}, collection *mongo.Collection, txid
 	if bind != "" {
 		err = collection.FindOne(clientCtx, bson.M{"_id": GetSwapKey(txid, pairID, bind)}).Decode(result)
 	} else {
-		qtxid := bson.M{"txid": strings.ToLower(txid)}
+		qtxid := bson.M{"txid": bson.M{"$regex": primitive.Regex{Pattern: txid, Options: "i"}}}
 		qpair := bson.M{"pairid": strings.ToLower(pairID)}
 		queries := []bson.M{qtxid, qpair}
 		err = collection.FindOne(clientCtx, bson.M{"$and": queries}).Decode(result)
@@ -354,6 +356,7 @@ func addSwapResult(collection *mongo.Collection, ms *MgoSwapResult) error {
 	return mgoError(err)
 }
 
+// nolint:gocyclo // allow complexity
 func updateSwapResult(collection *mongo.Collection, txid, pairID, bind string, items *SwapResultUpdateItems) error {
 	pairID = strings.ToLower(pairID)
 	updates := bson.M{
@@ -825,8 +828,8 @@ func AddSwapHistory(isSwapin bool, txid, bind, swaptx string) error {
 
 // GetSwapHistory get
 func GetSwapHistory(isSwapin bool, txid, bind string) ([]*MgoSwapHistory, error) {
-	qtxid := bson.M{"txid": strings.ToLower(txid)}
-	qbind := bson.M{"bind": bind}
+	qtxid := bson.M{"txid": bson.M{"$regex": primitive.Regex{Pattern: txid, Options: "i"}}}
+	qbind := bson.M{"bind": bson.M{"$regex": primitive.Regex{Pattern: bind, Options: "i"}}}
 	qisswapin := bson.M{"isswapin": isSwapin}
 	queries := []bson.M{qtxid, qbind, qisswapin}
 	cur, err := collSwapHistory.Find(clientCtx, bson.M{"$and": queries})
