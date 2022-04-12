@@ -72,7 +72,10 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		Data:     &sigData,
 		Sequence: txw.GetSignerData().Sequence,
 	}
-	txw.SetSignatures(sig)
+	err = txw.SetSignatures(sig)
+	if err != nil {
+		return nil, "", err
+	}
 
 	txBytes, err := txw.EncodeTx()
 	if err != nil {
@@ -132,7 +135,10 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 		Data:     &sigData,
 		Sequence: txw.GetSignerData().Sequence,
 	}
-	txw.SetSignatures(sig)
+	err = txw.SetSignatures(sig)
+	if err != nil {
+		return nil, "", err
+	}
 
 	txBytes, err := txw.EncodeTx()
 	if err != nil {

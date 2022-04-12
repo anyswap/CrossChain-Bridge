@@ -2,6 +2,8 @@
 package terra
 
 import (
+	"fmt"
+
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/base"
@@ -24,11 +26,12 @@ type Bridge struct {
 // InitSDK init cosmos sdk
 func InitSDK() {
 	config := sdk.GetConfig()
+	config.SetPurpose(44)
 	config.SetCoinType(core.CoinType)
-	config.SetFullFundraiserPath(core.FullFundraiserPath)
 	config.SetBech32PrefixForAccount(core.Bech32PrefixAccAddr, core.Bech32PrefixAccPub)
 	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
 	config.SetBech32PrefixForConsensusNode(core.Bech32PrefixConsAddr, core.Bech32PrefixConsPub)
+	config.SetAddressVerifier(core.AddressVerifier)
 	config.Seal()
 }
 
@@ -54,12 +57,21 @@ func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *to
 }
 
 // VerifyTokenConfig verify token config
-func (b *Bridge) VerifyTokenConfig(tokenCfg *tokens.TokenConfig) (err error) {
-	if tokenCfg.DcrmAccountNumber == 0 {
-		tokenCfg.DcrmAccountNumber, err = b.GetAccountNumber(tokenCfg.DcrmAddress)
+func (b *Bridge) VerifyTokenConfig(token *tokens.TokenConfig) (err error) {
+	if token.DcrmAccountNumber == 0 {
+		token.DcrmAccountNumber, err = b.GetAccountNumber(token.DcrmAddress)
 		if err != nil {
 			return err
 		}
 	}
-	return tokens.ErrTodo
+	if token.TaxCap <= 0 {
+		return fmt.Errorf("invalid tax cap: %v", token.TaxCap)
+	}
+	if token.TaxRate <= 0 || token.TaxRate >= 0.01 {
+		return fmt.Errorf("invalid tax tax rate: %v", token.TaxRate)
+	}
+	if token.GasRate <= 0 {
+		return fmt.Errorf("invalid tax gas rate: %v", token.GasRate)
+	}
+	return nil
 }

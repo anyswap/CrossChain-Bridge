@@ -33,7 +33,10 @@ func (b *Bridge) GetTokenInfo(token string) (*TokenInfo, error) {
 	}
 	var tokenInfo TokenInfo
 	err = convertTo(res, &tokenInfo)
-	return &tokenInfo, err
+	if err != nil {
+		return nil, err
+	}
+	return &tokenInfo, nil
 }
 
 type TokenBalance struct {
@@ -53,6 +56,9 @@ func (b *Bridge) GetTokenBalance(token, account string) (sdk.Dec, error) {
 	}
 	var tokenBalance TokenBalance
 	err = convertTo(res, &tokenBalance)
+	if err != nil {
+		return zeroDec, err
+	}
 	return tokenBalance.Balance, nil
 }
 
@@ -65,7 +71,7 @@ func GetTokenTransferExecMsg(recipient, amount string) (string, error) {
 			"amount":    amount,
 		},
 	}
-	return base64EncodedJson(execMsg)
+	return base64EncodedJSON(execMsg)
 }
 
 // GetTokenSendExecMsg impl
@@ -79,5 +85,5 @@ func GetTokenSendExecMsg(recipient, amount, msg string) (string, error) {
 			"msg":      msg,
 		},
 	}
-	return base64EncodedJson(execMsg)
+	return base64EncodedJSON(execMsg)
 }

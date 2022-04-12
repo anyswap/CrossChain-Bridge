@@ -104,7 +104,7 @@ func (b *Bridge) GetContractInfo(contract string) (res *QueryContractInfoRespons
 	return nil, wrapRPCQueryError(err, "GetContractInfo", contract)
 }
 
-func base64EncodedJson(v interface{}) (string, error) {
+func base64EncodedJSON(v interface{}) (string, error) {
 	jsonData, err := json.Marshal(v)
 	if err != nil {
 		return "", err

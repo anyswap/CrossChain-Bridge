@@ -26,19 +26,15 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
 	}
 
-	var (
-		from   string
-		to     string
-		amount *big.Int
-		memo   string
-	)
+	var from, to, memo string
+	var amount *big.Int
 
 	switch args.SwapType {
 	case tokens.SwapinType:
 		return nil, tokens.ErrSwapTypeNotSupported
 	case tokens.SwapoutType:
 		from = tokenCfg.DcrmAddress // from
-		to = args.Bind              //to
+		to = args.Bind              // to
 
 		amount = tokens.CalcSwappedValue(pairID, args.OriginValue, false, args.OriginFrom, args.OriginTxTo) // amount
 		memo = tokens.UnlockMemoPrefix + args.SwapID
@@ -60,6 +56,15 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
+	return b.buildRawTx(from, to, memo, amount, extra, tokenCfg)
+}
+
+func (b *Bridge) buildRawTx(
+	from, to, memo string,
+	amount *big.Int,
+	extra *tokens.TerraExtra,
+	tokenCfg *tokens.TokenConfig,
+) (*wrapper, error) {
 	txb := newBuilder()
 
 	txb.SetSignerData(
@@ -83,12 +88,18 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	}
 	txb.SetFeePayer(feePayer)
 
+	if amount.Sign() < 0 {
+		return nil, fmt.Errorf("negative token amount")
+	}
 	execMsg, err := GetTokenTransferExecMsg(to, amount.String())
 	if err != nil {
 		return nil, err
 	}
 	msg := NewMsgExecuteContract(from, tokenCfg.ContractAddress, execMsg)
-	txb.SetMsgs(msg)
+	err = txb.SetMsgs(msg)
+	if err != nil {
+		return nil, err
+	}
 
 	pubkey, err := PubKeyFromStr(tokenCfg.DcrmPubkey)
 	if err != nil {
@@ -104,7 +115,10 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		Data:     &sigData,
 		Sequence: *extra.Sequence,
 	}
-	txb.SetSignatures(sig)
+	err = txb.SetSignatures(sig)
+	if err != nil {
+		return nil, err
+	}
 
 	return txb, nil
 }

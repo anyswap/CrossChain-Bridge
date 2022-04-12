@@ -81,7 +81,7 @@ type Attribute struct {
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-// BroadcastTxRequest broadcat tx request
+// BroadcastTxRequest broadcast tx request
 type BroadcastTxRequest struct {
 	TxBytes string `json:"tx_bytes"`
 	Mode    string `json:"mode"`
@@ -102,7 +102,7 @@ type BroadcastTxResponse struct {
 type SimulateRequest struct {
 }
 
-// SimulateResponse simulate responce
+// SimulateResponse simulate response
 type SimulateResponse struct {
 }
 

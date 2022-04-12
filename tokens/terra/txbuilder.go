@@ -9,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
@@ -207,7 +206,6 @@ func (w *wrapper) GetSignaturesV2() ([]signing.SignatureV2, error) {
 				Data:     sigData,
 				Sequence: si.GetSequence(),
 			}
-
 		}
 	}
 
@@ -398,7 +396,7 @@ func (w *wrapper) GetSignBytes() ([]byte, error) {
 
 // EncodeTx encode to tx bytes
 func (w *wrapper) EncodeTx() ([]byte, error) {
-	raw := &txtypes.TxRaw{
+	raw := &tx.TxRaw{
 		BodyBytes:     w.getBodyBytes(),
 		AuthInfoBytes: w.getAuthInfoBytes(),
 		Signatures:    w.tx.Signatures,
