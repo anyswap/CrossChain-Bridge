@@ -133,6 +133,7 @@ func initApp() {
 		sendXRPCommand,
 		scanCommand,
 		checkTxCommand,
+		utils.VersionCommand,
 	}
 	app.Flags = []cli.Flag{
 		utils.VerbosityFlag,
