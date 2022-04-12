@@ -58,6 +58,9 @@ type ChainConfig struct {
 	Confirmations *uint64
 	InitialHeight *uint64
 
+	// native coin (pay for tx gas fee)
+	MetaCoin *MetaCoin `json:",omitempty"`
+
 	// special flags
 	IgnoreCheckAddressMixedCase bool // eg. RSK
 
@@ -106,6 +109,12 @@ type ChainConfig struct {
 	callByContractCodeHashWhitelist map[string]struct{}
 }
 
+// MetaCoin struct
+type MetaCoin struct {
+	Symbol   string
+	Decimals uint8
+}
+
 // TokenPriceConfig struct
 type TokenPriceConfig struct {
 	Contract   string
@@ -149,7 +158,6 @@ type TokenConfig struct {
 	DcrmAddressPriKey string `json:"-"`
 
 	// cosmos/terra specific
-	Unit    string  `json:",omitempty"`
 	TaxCap  float64 `json:",omitempty"`
 	TaxRate float64 `json:",omitempty"`
 	GasRate float64 `json:",omitempty"`

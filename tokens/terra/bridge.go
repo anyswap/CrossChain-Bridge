@@ -3,6 +3,7 @@ package terra
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
@@ -16,6 +17,9 @@ var (
 	_ tokens.CrossChainBridge = &Bridge{}
 	// ensure Bridge impl tokens.NonceSetter
 	_ tokens.NonceSetter = &Bridge{}
+
+	// SupportedChains supported chains, key is chainID or netID
+	SupportedChains = make(map[string]bool)
 )
 
 // Bridge eth bridge
@@ -37,8 +41,7 @@ func InitSDK() {
 
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
-	InitSDK()
-	tokens.IsSwapoutToStringAddress = true
+	Init()
 	if !isSrc {
 		log.Fatalf("terra::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)
 	}
@@ -47,13 +50,54 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	}
 }
 
+// Init run before loading bridge and token config
+func Init() {
+	InitSDK()
+
+	SupportedChains["columbus-5"] = true
+	SupportedChains["tequila-0004"] = true
+
+	tokens.IsSwapoutToStringAddress = true
+}
+
 // InitAfterConfig init and verify after loading config
 func (b *Bridge) InitAfterConfig() {
+	if b.ChainConfig == nil {
+		log.Fatal("chain config is nil")
+	}
 }
 
 // SetChainAndGateway set chain and gateway config
 func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
+
+	err := b.VerifyChainConfig()
+	if err != nil {
+		log.Fatal("verify chain config failed", "err", err)
+	}
+}
+
+// VerifyChainConfig verify chain config
+func (b *Bridge) VerifyChainConfig() (err error) {
+	c := b.ChainConfig
+	// possible nil in testing code
+	if c == nil {
+		return nil
+	}
+
+	netID := strings.ToLower(c.NetID)
+	if !SupportedChains[netID] {
+		return fmt.Errorf("unsupported terra network: %v", c.NetID)
+	}
+
+	if c.MetaCoin == nil {
+		return fmt.Errorf("chain must config 'MetaCoin'")
+	}
+	if c.MetaCoin.Symbol == "" {
+		return fmt.Errorf("chain meta coin symbol is empty")
+	}
+
+	return nil
 }
 
 // VerifyTokenConfig verify token config
