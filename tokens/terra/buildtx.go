@@ -46,6 +46,12 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, tokens.ErrTxWithWrongSender
 	}
 
+	neededValue := b.getMinReserveFee()
+	err = b.checkCoinBalance(from, b.ChainConfig.MetaCoin.Symbol, neededValue)
+	if err != nil {
+		return nil, err
+	}
+
 	err = b.checkTokenBalance(tokenCfg.ContractAddress, from, amount)
 	if err != nil {
 		return nil, err
@@ -209,7 +215,7 @@ func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
 }
 
 func (b *Bridge) checkCoinBalance(account, denom string, amount *big.Int) error {
-	bal, err := b.GetBalanceByDenom(account, denom)
+	bal, err := b.GetBalance(account, denom)
 	if err != nil {
 		return err
 	}

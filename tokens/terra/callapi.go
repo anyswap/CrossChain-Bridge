@@ -68,16 +68,16 @@ func (b *Bridge) SimulateTx(req *SimulateRequest) (res *SimulateResponse, err er
 	return nil, wrapRPCQueryError(err, "SimulateTx")
 }
 
-// GetBalanceByDenom impl
-func (b *Bridge) GetBalanceByDenom(address, denom string) (res sdk.Dec, err error) {
+// GetBalance impl
+func (b *Bridge) GetBalance(address, denom string) (res sdk.Int, err error) {
 	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
 	for _, url := range urls {
-		res, err = GetBalanceByDenom(url, address, denom)
+		res, err = GetBalance(url, address, denom)
 		if err == nil {
 			return res, nil
 		}
 	}
-	return zeroDec, wrapRPCQueryError(err, "GetBalanceByDenom", denom)
+	return zeroInt, wrapRPCQueryError(err, "GetBalance", denom)
 }
 
 // GetTaxRate impl

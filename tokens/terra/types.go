@@ -137,6 +137,11 @@ type QueryContractStoreResult struct {
 	QueryResult interface{} `json:"query_result"`
 }
 
+// QueryTaxCapResponse query tax cap
+type QueryTaxCapResuslt struct {
+	TaxCap string `json:"tax_cap"`
+}
+
 // QueryTaxRateResponse query tax rate
 type QueryTaxRateResuslt struct {
 	TaxRate string `json:"tax_rate"`

@@ -40,11 +40,11 @@ func (b *Bridge) GetTokenInfo(token string) (*TokenInfo, error) {
 }
 
 type TokenBalance struct {
-	Balance sdk.Dec `json:"balance"`
+	Balance sdk.Int `json:"balance"`
 }
 
 // GetTokenBalance impl
-func (b *Bridge) GetTokenBalance(token, account string) (sdk.Dec, error) {
+func (b *Bridge) GetTokenBalance(token, account string) (sdk.Int, error) {
 	query := map[string]map[string]interface{}{
 		"balance": {
 			"address": account,
@@ -52,12 +52,12 @@ func (b *Bridge) GetTokenBalance(token, account string) (sdk.Dec, error) {
 	}
 	res, err := b.QueryContractStore(token, query)
 	if err != nil {
-		return zeroDec, err
+		return zeroInt, err
 	}
 	var tokenBalance TokenBalance
 	err = convertTo(res, &tokenBalance)
 	if err != nil {
-		return zeroDec, err
+		return zeroInt, err
 	}
 	return tokenBalance.Balance, nil
 }

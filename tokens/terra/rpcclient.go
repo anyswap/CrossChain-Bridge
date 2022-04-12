@@ -16,6 +16,7 @@ var (
 	rpcTimeout = 60
 
 	zeroDec = sdk.Dec{}
+	zeroInt = sdk.Int{}
 )
 
 func joinURLPath(url, path string) string {
@@ -89,18 +90,33 @@ func GetTransactionByHash(url, txHash string) (*GetTxResult, error) {
 	return &result, nil
 }
 
-// GetBalanceByDenom get balance by denom
-func GetBalanceByDenom(url, address, denom string) (sdk.Dec, error) {
+// GetBalance get balance by denom
+func GetBalance(url, address, denom string) (sdk.Int, error) {
 	path := fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s/by_denom?denom=%s", address, denom)
-	var result sdk.DecCoin
+	var result sdk.Coin
 	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
 	if err != nil {
-		return zeroDec, err
+		return zeroInt, err
 	}
 	if !strings.EqualFold(result.Denom, denom) {
-		return zeroDec, fmt.Errorf("get balance denom mismatch, have %v want %v", result.Denom, denom)
+		return zeroInt, fmt.Errorf("get balance denom mismatch, have %v want %v", result.Denom, denom)
 	}
 	return result.Amount, nil
+}
+
+// GetTaxCap get tax cap of a denom
+func GetTaxCap(url, denom string) (sdk.Int, error) {
+	path := "/terra/treasury/v1beta1/tax_caps/" + denom
+	var result QueryTaxCapResuslt
+	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
+	if err != nil {
+		return zeroInt, err
+	}
+	taxCap, ok := sdk.NewIntFromString(result.TaxCap)
+	if !ok {
+		return zeroInt, fmt.Errorf("wrong tax cap %v of denom %v", result.TaxCap, denom)
+	}
+	return taxCap, nil
 }
 
 // GetTaxRate get current tax rate
