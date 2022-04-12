@@ -158,9 +158,9 @@ type TokenConfig struct {
 	DcrmAddressPriKey string `json:"-"`
 
 	// cosmos/terra specific
-	TaxCap  float64 `json:",omitempty"`
-	TaxRate float64 `json:",omitempty"`
-	GasRate float64 `json:",omitempty"`
+	DefaultFees string  `json:",omitempty"`
+	TaxCap      float64 `json:",omitempty"`
+	TaxRate     float64 `json:",omitempty"`
 
 	// calced value
 	maxSwap          *big.Int

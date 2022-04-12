@@ -108,14 +108,11 @@ func (b *Bridge) VerifyTokenConfig(token *tokens.TokenConfig) (err error) {
 			return err
 		}
 	}
-	if token.TaxCap <= 0 {
+	if token.TaxCap < 0 {
 		return fmt.Errorf("invalid tax cap: %v", token.TaxCap)
 	}
-	if token.TaxRate <= 0 || token.TaxRate >= 0.01 {
+	if token.TaxRate < 0 || token.TaxRate > 0.01 {
 		return fmt.Errorf("invalid tax tax rate: %v", token.TaxRate)
-	}
-	if token.GasRate <= 0 {
-		return fmt.Errorf("invalid tax gas rate: %v", token.GasRate)
 	}
 	return nil
 }

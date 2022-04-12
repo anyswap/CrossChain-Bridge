@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -16,6 +17,9 @@ var (
 	retryRPCInterval = 1 * time.Second
 
 	signMode = signing.SignMode_SIGN_MODE_DIRECT
+
+	DefaultGasLimit = uint64(200000)
+	DefaultFees     = "10000uluna"
 )
 
 // BuildRawTransaction build raw tx
@@ -57,7 +61,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
-	extra, err := b.initExtra(args)
+	extra, err := b.initExtra(args, tokenCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -126,10 +130,32 @@ func (b *Bridge) buildRawTx(
 		return nil, err
 	}
 
+	if params.IsSwapServer {
+		err = b.simulateTx(txb, extra)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return txb, nil
 }
 
-func (b *Bridge) initExtra(args *tokens.BuildTxArgs) (extra *tokens.TerraExtra, err error) {
+func (b *Bridge) simulateTx(txb *wrapper, extra *tokens.TerraExtra) error {
+	txBytes, err := txb.EncodeTx()
+	if err != nil {
+		return err
+	}
+	simRes, err := b.SimulateTx(&SimulateRequest{TxBytes: txBytes})
+	if err != nil {
+		return err
+	}
+	if simRes.GasInfo.GasWanted < simRes.GasInfo.GasUsed {
+		return fmt.Errorf("simulate tx gas exceeded, wanted %v used %v", simRes.GasInfo.GasWanted, simRes.GasInfo.GasUsed)
+	}
+	return nil
+}
+
+func (b *Bridge) initExtra(args *tokens.BuildTxArgs, tokenCfg *tokens.TokenConfig) (extra *tokens.TerraExtra, err error) {
 	extra = getOrInitExtra(args)
 	if extra.Sequence == nil {
 		extra.Sequence, err = b.getSequence(args)
@@ -137,11 +163,21 @@ func (b *Bridge) initExtra(args *tokens.BuildTxArgs) (extra *tokens.TerraExtra, 
 			return nil, err
 		}
 	}
-	if extra.Fees == nil {
-	}
 	if extra.Gas == nil {
+		gas := tokenCfg.DefaultGasLimit
+		if gas == 0 {
+			gas = DefaultGasLimit
+		}
+		extra.Gas = &gas
 	}
-	return extra, tokens.ErrTodo
+	if extra.Fees == nil {
+		fees := tokenCfg.DefaultFees
+		if fees == "" {
+			fees = DefaultFees
+		}
+		extra.Fees = &fees
+	}
+	return extra, nil
 }
 
 func (b *Bridge) getMinReserveFee() *big.Int {

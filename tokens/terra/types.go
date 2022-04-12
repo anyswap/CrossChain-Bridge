@@ -2,6 +2,8 @@ package terra
 
 import (
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/types/tx"
 )
 
 // GetBlockResult get block result
@@ -99,12 +101,10 @@ type BroadcastTxResponse struct {
 }
 
 // SimulateRequest simulate request
-type SimulateRequest struct {
-}
+type SimulateRequest = tx.SimulateRequest
 
 // SimulateResponse simulate response
-type SimulateResponse struct {
-}
+type SimulateResponse = tx.SimulateResponse
 
 // GetBaseAccountResult get base account result
 type GetBaseAccountResult struct {

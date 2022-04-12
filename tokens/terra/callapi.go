@@ -80,6 +80,18 @@ func (b *Bridge) GetBalance(address, denom string) (res sdk.Int, err error) {
 	return zeroInt, wrapRPCQueryError(err, "GetBalance", denom)
 }
 
+// GetTaxCap impl
+func (b *Bridge) GetTaxCap(denom string) (res sdk.Int, err error) {
+	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
+	for _, url := range urls {
+		res, err = GetTaxCap(url, denom)
+		if err == nil {
+			return res, nil
+		}
+	}
+	return zeroInt, wrapRPCQueryError(err, "GetTaxCap")
+}
+
 // GetTaxRate impl
 func (b *Bridge) GetTaxRate() (res sdk.Dec, err error) {
 	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)

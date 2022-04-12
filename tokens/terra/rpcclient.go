@@ -8,7 +8,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
-	"github.com/anyswap/CrossChain-Bridge/tokens"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -57,9 +56,10 @@ func BroadcastTx(url, txData string) (txHash string, err error) {
 }
 
 // SimulateTx simulate tx
-func SimulateTx(url string, req *SimulateRequest) (resp *SimulateResponse, err error) {
-	//path := "/cosmos/tx/v1beta1/simulate"
-	return nil, tokens.ErrTodo
+func SimulateTx(url string, req *SimulateRequest) (result *SimulateResponse, err error) {
+	path := "/cosmos/tx/v1beta1/simulate"
+	err = client.RPCPostJSONRequestWithTimeout(joinURLPath(url, path), req, &result, rpcTimeout)
+	return result, err
 }
 
 // GetBaseAccount get account details

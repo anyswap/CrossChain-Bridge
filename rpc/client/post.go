@@ -175,3 +175,50 @@ func RPCRawPostWithTimeout(url, reqBody string, timeout int) (string, error) {
 	}
 	return string(body), nil
 }
+
+// RPCPostJSONRequest rpc post json request
+func RPCPostJSONRequest(url string, request, result interface{}) error {
+	return RPCPostJSONRequestWithContext(httpCtx, url, request, result, defaultTimeout)
+}
+
+// RPCPostJSONRequestWithTimeout rpc post json request with timeout
+func RPCPostJSONRequestWithTimeout(url string, request, result interface{}, timeout int) error {
+	return RPCPostJSONRequestWithContext(httpCtx, url, request, result, timeout)
+}
+
+// RPCPostJSONRequestWithContext rpc post json request with context
+func RPCPostJSONRequestWithContext(ctx context.Context, url string, request, result interface{}, timeout int) error {
+	resp, err := HTTPPostWithContext(ctx, url, request, nil, nil, timeout)
+	if err != nil {
+		log.Trace("post rpc error", "url", url, "request", request, "err", err)
+		return err
+	}
+	err = getRawResultFromJSONResponse(result, resp)
+	if err != nil {
+		log.Trace("post rpc error", "url", url, "request", request, "err", err)
+	}
+	return err
+}
+
+func getRawResultFromJSONResponse(result interface{}, resp *http.Response) error {
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	const maxReadContentLength int64 = 1024 * 1024 * 10 // 10M
+	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, maxReadContentLength))
+	if err != nil {
+		return fmt.Errorf("read body error: %w", err)
+	}
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("wrong response status %v. message: %v", resp.StatusCode, string(body))
+	}
+	if len(body) == 0 {
+		return fmt.Errorf("empty response body")
+	}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return fmt.Errorf("unmarshal body error, body is \"%v\" err=\"%w\"", string(body), err)
+	}
+	return nil
+}
