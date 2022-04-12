@@ -5,6 +5,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/base"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	core "github.com/terra-money/core/types"
 )
 
 var (
@@ -19,8 +21,20 @@ type Bridge struct {
 	*base.NonceSetterBase
 }
 
+// InitSDK init cosmos sdk
+func InitSDK() {
+	config := sdk.GetConfig()
+	config.SetCoinType(core.CoinType)
+	config.SetFullFundraiserPath(core.FullFundraiserPath)
+	config.SetBech32PrefixForAccount(core.Bech32PrefixAccAddr, core.Bech32PrefixAccPub)
+	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
+	config.SetBech32PrefixForConsensusNode(core.Bech32PrefixConsAddr, core.Bech32PrefixConsPub)
+	config.Seal()
+}
+
 // NewCrossChainBridge new bridge
 func NewCrossChainBridge(isSrc bool) *Bridge {
+	InitSDK()
 	tokens.IsSwapoutToStringAddress = true
 	if !isSrc {
 		log.Fatalf("terra::NewCrossChainBridge error %v", tokens.ErrBridgeDestinationNotSupported)

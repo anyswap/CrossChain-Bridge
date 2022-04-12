@@ -14,7 +14,7 @@ require (
 	github.com/didip/tollbooth/v6 v6.1.1
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fatih/color v1.10.0
-	github.com/fsnotify/fsnotify v1.4.9
+	github.com/fsnotify/fsnotify v1.5.1
 	github.com/giangnamnabka/btcd v0.21.0-beta.0.20210425211148-6b9fe474f6d7
 	github.com/giangnamnabka/btcutil v1.0.3-0.20210422183801-1e4dd2b8f1ba
 	github.com/giangnamnabka/btcwallet/wallet/txauthor v1.0.1-0.20210422185028-3bf95367dc20
@@ -44,6 +44,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/tendermint/tendermint v0.34.14
+	github.com/terra-money/core v0.5.17
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/willf/bitset v1.1.10
 	go.mongodb.org/mongo-driver v1.7.2
