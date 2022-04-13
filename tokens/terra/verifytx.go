@@ -15,10 +15,9 @@ import (
 )
 
 var (
-	errTxResultType = errors.New("tx type is not TxResponse")
-	errTxEvent      = errors.New("tx event is not support")
-	errTxAmount     = errors.New("tx amount is zero")
-	errTxLog        = errors.New("tx don't has execute_contract log")
+	errTxEvent  = errors.New("tx event is not support")
+	errTxLog    = errors.New("tx has no execute_contract log")
+	errTxAmount = errors.New("tx amount is zero")
 )
 
 // GetTransaction impl
@@ -105,9 +104,6 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) (err error
 
 // VerifyTransaction impl
 func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*tokens.TxSwapInfo, error) {
-	if !b.IsSrc {
-		return nil, tokens.ErrBridgeDestinationNotSupported
-	}
 	swapInfo := &tokens.TxSwapInfo{}
 	swapInfo.PairID = pairID // PairID
 	swapInfo.Hash = txHash   // Hash
@@ -117,110 +113,147 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 		return swapInfo, tokens.ErrUnknownPairID
 	}
 
-	tx, err := b.GetTransaction(txHash)
+	txr, err := b.GetTransactionByHash(txHash)
 	if err != nil {
 		log.Debug("[verifySwapin] "+b.ChainConfig.BlockChain+" Bridge::GetTransaction fail", "tx", txHash, "err", err)
 		return swapInfo, tokens.ErrTxNotFound
 	}
 
-	txres, ok := tx.(*TxResponse)
-	if !ok {
-		return swapInfo, errTxResultType
+	txres := txr.TxResponse
+
+	err = b.checkTxStatus(&txres, allowUnstable)
+	if err != nil {
+		return swapInfo, err
 	}
 
-	if !allowUnstable {
-		h, err := b.GetLatestBlockNumber()
-		if err != nil {
-			return swapInfo, err
-		}
-		height, errf := common.GetUint64FromStr(txres.Height)
-		if errf != nil {
-			return swapInfo, errf
-		}
-		if h < height+*b.GetChainConfig().Confirmations {
-			return swapInfo, tokens.ErrTxNotStable
-		}
-		if h < *b.ChainConfig.InitialHeight {
-			return swapInfo, tokens.ErrTxBeforeInitialHeight
-		}
-	}
-
-	// Check tx status
-	if txres.Code != 0 {
-		return swapInfo, tokens.ErrTxWithWrongStatus
-	}
-	var events StringEvents
-	from := ""
-	for _, log := range txres.Logs {
-		for _, event := range log.Events {
-			if from == "" && event.Type == "execute_contract" && event.Attributes[1].Key == "contract_address" && common.IsEqualIgnoreCase(event.Attributes[1].Value, token.ContractAddress) {
-				from = event.Attributes[0].Value
-			}
-			if event.Type == "from_contract" && event.Attributes[0].Key == "contract_address" && common.IsEqualIgnoreCase(event.Attributes[0].Value, token.ContractAddress) {
-				events = append(events, event)
-			}
-		}
-	}
+	events, from := filterEvents(&txres, "contract_address", token.ContractAddress)
 	if from == "" {
 		return swapInfo, errTxLog
 	}
-
 	if len(events) == 0 {
 		return swapInfo, errTxEvent
 	}
 
-	amount := b.checkEvents(pairID, events)
-
+	amount := b.checkEvents(events, token)
 	if amount.CmpAbs(big.NewInt(0)) == 0 {
 		return swapInfo, errTxAmount
 	}
 
-	bind, ok2 := GetBindAddressFromMemos(tx.(*Tx).Body)
-	if !ok2 {
-		log.Debug("wrong memos", "memos", bind)
+	bind, ok := getBindAddressFromMemo(txr.Tx.Body.Memo)
+	if !ok {
 		return swapInfo, tokens.ErrWrongMemoBindAddress
 	}
 
 	swapInfo.To = token.DepositAddress    // To
 	swapInfo.From = strings.ToLower(from) // From
-	swapInfo.Bind = bind                  // Bin
+	swapInfo.Bind = bind                  // Bind
 	swapInfo.Value = amount
 
+	err = b.checkSwapinInfo(swapInfo)
+	if err != nil {
+		return swapInfo, err
+	}
+
 	if !allowUnstable {
-		log.Info("verify swapin pass", "pairID", swapInfo.PairID, "from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind, "value", swapInfo.Value, "txid", swapInfo.Hash, "height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
+		log.Info("verify swapin stable pass",
+			"identifier", params.GetIdentifier(), "pairID", swapInfo.PairID,
+			"from", swapInfo.From, "to", swapInfo.To, "bind", swapInfo.Bind,
+			"value", swapInfo.Value, "txid", swapInfo.Hash,
+			"height", swapInfo.Height, "timestamp", swapInfo.Timestamp)
 	}
 	return swapInfo, nil
 }
 
-func (b *Bridge) checkEvents(pairID string, events StringEvents) (amount *big.Int) {
-	token := b.GetTokenConfig(pairID)
+func (b *Bridge) checkTxStatus(txres *TxResponse, allowUnstable bool) error {
+	if txres.Code != 0 {
+		return tokens.ErrTxWithWrongStatus
+	}
+
+	if !allowUnstable {
+		h, err := b.GetLatestBlockNumber()
+		if err != nil {
+			return err
+		}
+		height, err := common.GetUint64FromStr(txres.Height)
+		if err != nil {
+			return err
+		}
+		if h < height+*b.GetChainConfig().Confirmations {
+			return tokens.ErrTxNotStable
+		}
+		if h < *b.ChainConfig.InitialHeight {
+			return tokens.ErrTxBeforeInitialHeight
+		}
+	}
+
+	return nil
+}
+
+func filterEvents(txres *TxResponse, attrKey, attrVal string) (events StringEvents, from string) {
+	for _, log := range txres.Logs {
+		for _, event := range log.Events {
+			if from == "" &&
+				event.Type == "execute_contract" &&
+				event.Attributes[1].Key == attrKey &&
+				common.IsEqualIgnoreCase(event.Attributes[1].Value, attrVal) {
+				from = event.Attributes[0].Value
+			}
+			if event.Type == "from_contract" &&
+				event.Attributes[0].Key == attrKey &&
+				common.IsEqualIgnoreCase(event.Attributes[0].Value, attrVal) {
+				events = append(events, event)
+			}
+		}
+	}
+	return events, from
+}
+
+func (b *Bridge) checkEvents(events StringEvents, token *tokens.TokenConfig) (amount *big.Int) {
 	amount = big.NewInt(0)
+	depositAddress := token.DepositAddress
+	var amountAtIndex int
 	for _, event := range events {
-		if event.Attributes[1].Value == "transfer" && common.IsEqualIgnoreCase(event.Attributes[3].Value, token.DepositAddress) {
-			amt, _ := common.GetBigIntFromStr(event.Attributes[4].Value)
-			amount.Add(amount, amt)
-		} else if event.Attributes[1].Value == "transfer_from" && common.IsEqualIgnoreCase(event.Attributes[3].Value, token.DepositAddress) {
-			amt, _ := common.GetBigIntFromStr(event.Attributes[5].Value)
-			amount.Add(amount, amt)
-		} else if event.Attributes[1].Value == "send" && common.IsEqualIgnoreCase(event.Attributes[3].Value, token.DepositAddress) {
-			amt, _ := common.GetBigIntFromStr(event.Attributes[4].Value)
-			amount.Add(amount, amt)
-		} else if event.Attributes[1].Value == "send_from" && common.IsEqualIgnoreCase(event.Attributes[3].Value, token.DepositAddress) {
-			amt, _ := common.GetBigIntFromStr(event.Attributes[5].Value)
-			amount.Add(amount, amt)
-		} else if event.Attributes[1].Value == "mint" && common.IsEqualIgnoreCase(event.Attributes[2].Value, token.DepositAddress) {
-			amt, _ := common.GetBigIntFromStr(event.Attributes[3].Value)
+		switch {
+		case event.Attributes[1].Value == "transfer" &&
+			common.IsEqualIgnoreCase(event.Attributes[3].Value, depositAddress):
+			amountAtIndex = 4
+		case event.Attributes[1].Value == "transfer_from" &&
+			common.IsEqualIgnoreCase(event.Attributes[3].Value, depositAddress):
+			amountAtIndex = 5
+		case event.Attributes[1].Value == "send" &&
+			common.IsEqualIgnoreCase(event.Attributes[3].Value, depositAddress):
+			amountAtIndex = 4
+		case event.Attributes[1].Value == "send_from" &&
+			common.IsEqualIgnoreCase(event.Attributes[3].Value, depositAddress):
+			amountAtIndex = 5
+		case event.Attributes[1].Value == "mint" &&
+			common.IsEqualIgnoreCase(event.Attributes[2].Value, depositAddress):
+			amountAtIndex = 3
+		default:
+			continue
+		}
+		amt, err := common.GetBigIntFromStr(event.Attributes[amountAtIndex].Value)
+		if err == nil {
 			amount.Add(amount, amt)
 		}
 	}
 	return amount
 }
 
-// GetBindAddressFromMemos get bind address
-func GetBindAddressFromMemos(txBody TxBody) (string, bool) {
-	bindStr := txBody.Memo
+func getBindAddressFromMemo(memo string) (string, bool) {
+	bindStr := memo
 	if tokens.DstBridge.IsValidAddress(bindStr) {
 		return bindStr, true
 	}
 	return bindStr, false
+}
+
+func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
+	if swapInfo.Bind == swapInfo.To {
+		return tokens.ErrTxWithWrongSender
+	}
+	if !tokens.CheckSwapValue(swapInfo, b.IsSrc) {
+		return tokens.ErrTxWithWrongValue
+	}
+	return nil
 }
