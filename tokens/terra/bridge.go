@@ -114,5 +114,11 @@ func (b *Bridge) VerifyTokenConfig(token *tokens.TokenConfig) (err error) {
 	if token.TaxRate < 0 || token.TaxRate > 0.01 {
 		return fmt.Errorf("invalid tax tax rate: %v", token.TaxRate)
 	}
+
+	_, err = sdk.ParseCoinsNormalized(token.DefaultFees)
+	if err != nil {
+		return fmt.Errorf("parse coin error: %w", err)
+	}
+
 	return nil
 }

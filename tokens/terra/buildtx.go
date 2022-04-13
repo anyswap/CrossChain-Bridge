@@ -131,7 +131,7 @@ func (b *Bridge) buildRawTx(
 	}
 
 	if params.IsSwapServer {
-		err = b.simulateTx(txb, extra)
+		err = b.simulateTx(txb)
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +140,7 @@ func (b *Bridge) buildRawTx(
 	return txb, nil
 }
 
-func (b *Bridge) simulateTx(txb *wrapper, extra *tokens.TerraExtra) error {
+func (b *Bridge) simulateTx(txb *wrapper) error {
 	txBytes, err := txb.EncodeTx()
 	if err != nil {
 		return err
@@ -149,7 +149,15 @@ func (b *Bridge) simulateTx(txb *wrapper, extra *tokens.TerraExtra) error {
 	if err != nil {
 		return err
 	}
-	if simRes.GasInfo.GasWanted < simRes.GasInfo.GasUsed {
+	gasWanted, err := common.GetUint64FromStr(simRes.GasInfo.GasWanted)
+	if err != nil {
+		return err
+	}
+	gasUsed, err := common.GetUint64FromStr(simRes.GasInfo.GasUsed)
+	if err != nil {
+		return err
+	}
+	if gasWanted < gasUsed {
 		return fmt.Errorf("simulate tx gas exceeded, wanted %v used %v", simRes.GasInfo.GasWanted, simRes.GasInfo.GasUsed)
 	}
 	return nil

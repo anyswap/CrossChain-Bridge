@@ -104,7 +104,17 @@ type BroadcastTxResponse struct {
 type SimulateRequest = tx.SimulateRequest
 
 // SimulateResponse simulate response
-type SimulateResponse = tx.SimulateResponse
+type SimulateResponse struct {
+	GasInfo *GasInfo `json:"gas_info,omitempty"`
+}
+
+// GasInfo defines tx execution gas context.
+type GasInfo struct {
+	// GasWanted is the maximum units of work we allow this tx to perform.
+	GasWanted string `json:"gas_wanted,omitempty"`
+	// GasUsed is the amount of gas actually consumed.
+	GasUsed string `json:"gas_used,omitempty"`
+}
 
 // GetBaseAccountResult get base account result
 type GetBaseAccountResult struct {
