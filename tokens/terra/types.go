@@ -83,6 +83,17 @@ type Attribute struct {
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
+type QueryBalanceResponse struct {
+	Balance Balance
+}
+
+type Balance struct {
+	// nolint
+	Denom string `protobuf:"bytes,1,opt,name=denom,proto3" json:"denom,omitempty"`
+	// Must be a valid serialized protocol buffer of the above specified type.
+	Amount string `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
+}
+
 // BroadcastTxRequest broadcast tx request
 type BroadcastTxRequest struct {
 	TxBytes string `json:"tx_bytes"`

@@ -93,15 +93,19 @@ func GetTransactionByHash(url, txHash string) (*GetTxResult, error) {
 // GetBalance get balance by denom
 func GetBalance(url, address, denom string) (sdk.Int, error) {
 	path := fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s/by_denom?denom=%s", address, denom)
-	var result sdk.Coin
+	var result QueryBalanceResponse
 	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
 	if err != nil {
 		return zeroInt, err
 	}
-	if !strings.EqualFold(result.Denom, denom) {
-		return zeroInt, fmt.Errorf("get balance denom mismatch, have %v want %v", result.Denom, denom)
+	if !strings.EqualFold(result.Balance.Denom, denom) {
+		return zeroInt, fmt.Errorf("get balance denom mismatch, have %v want %v", result.Balance.Denom, denom)
 	}
-	return result.Amount, nil
+	amount, ok := sdk.NewIntFromString(result.Balance.Amount)
+	if !ok {
+		return zeroInt, fmt.Errorf("get balance amount parse to big.Int error,%v", result.Balance.Amount)
+	}
+	return amount, nil
 }
 
 // GetTaxCap get tax cap of a denom

@@ -1,5 +1,5 @@
 # a short string to identify the bridge
-Identifier = "ETH2BSC"
+Identifier = "TERRA2BSC"
 
 # bridge API service (server only)
 [Server.APIServer]
@@ -14,14 +14,19 @@ IsTestMode = true
 
 # source chain config
 [SrcChain]
-BlockChain = "Ethereum"
-NetID = "custom"
+BlockChain = "TERRA"
+NetID = "columbus-5"
 Confirmations = 6
 InitialHeight = 0
 
+[SrcChain.MetaCoin]
+Symbol = "uluna"
+Unit = "uluna"
+Decimals = 6
+
 # source blockchain gateway config
 [SrcGateway]
-APIAddress = ["http://127.0.0.1:8711"]
+APIAddress = ["https://bombay-lcd.terra.dev/"]
 
 # dest chain config
 [DestChain]
@@ -32,7 +37,7 @@ InitialHeight = 0
 
 # dest blockchain gateway config
 [DestGateway]
-APIAddress = ["http://127.0.0.1:8712"]
+APIAddress = ["https://data-seed-prebsc-1-s1.binance.org:8545/"]
 
 # DCRM config
 [Dcrm]
