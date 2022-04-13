@@ -55,7 +55,8 @@ func Init() {
 	InitSDK()
 
 	SupportedChains["columbus-5"] = true
-	SupportedChains["tequila-0004"] = true
+	SupportedChains["bombay-12"] = true
+	SupportedChains["custom"] = true
 
 	tokens.IsSwapoutToStringAddress = true
 }

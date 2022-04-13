@@ -145,7 +145,7 @@ func (b *Bridge) buildRawTx(
 }
 
 func (b *Bridge) simulateTx(txb *wrapper) error {
-	txBytes, err := txb.EncodeTx()
+	txBytes, err := txb.GetTxBytes()
 	if err != nil {
 		return err
 	}

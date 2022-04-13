@@ -77,14 +77,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 
-	txBytes, err := txw.EncodeTx()
-	if err != nil {
-		return nil, "", err
-	}
-
-	txHash = fmt.Sprintf("%X", tmhash.Sum(txBytes))
-
-	return txBytes, txHash, err
+	return txw.GetSignedTx()
 }
 
 // SignTransaction sign tx with pairID
@@ -140,12 +133,5 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 		return nil, "", err
 	}
 
-	txBytes, err := txw.EncodeTx()
-	if err != nil {
-		return nil, "", err
-	}
-
-	txHash = fmt.Sprintf("%X", tmhash.Sum(txBytes))
-
-	return txBytes, txHash, err
+	return txw.GetSignedTx()
 }

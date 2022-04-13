@@ -160,6 +160,7 @@ func RPCRawPost(url, body string) (string, error) {
 func RPCRawPostWithTimeout(url, reqBody string, timeout int) (string, error) {
 	resp, err := HTTPRawPost(url, reqBody, nil, nil, timeout)
 	if err != nil {
+		log.Trace("post rpc error", "url", url, "request", reqBody, "err", err)
 		return "", err
 	}
 	defer func() {

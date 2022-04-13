@@ -1,6 +1,9 @@
 package terra
 
 import (
+	"encoding/base64"
+	"fmt"
+
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -13,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"github.com/tendermint/tendermint/crypto/tmhash"
 )
 
 // wrapper is a wrapper around the tx.Tx proto.Message which retain the raw
@@ -394,13 +398,18 @@ func (w *wrapper) GetSignBytes() ([]byte, error) {
 		w.signerData.AccountNumber)
 }
 
-// EncodeTx encode to tx bytes
-func (w *wrapper) EncodeTx() ([]byte, error) {
-	raw := &tx.TxRaw{
-		BodyBytes:     w.getBodyBytes(),
-		AuthInfoBytes: w.getAuthInfoBytes(),
-		Signatures:    w.tx.Signatures,
+// GetSignedTx get signed raw tx to broadcast
+func (w *wrapper) GetSignedTx() (signedTx []byte, txHash string, err error) {
+	txBytes, err := w.GetProtoTx().Marshal()
+	if err != nil {
+		return nil, "", err
 	}
+	signedTx = []byte(base64.StdEncoding.EncodeToString(txBytes))
+	txHash = fmt.Sprintf("%X", tmhash.Sum(txBytes))
+	return signedTx, txHash, nil
+}
 
-	return proto.Marshal(raw)
+// GetTxBytes get tx marshal bytes
+func (w *wrapper) GetTxBytes() ([]byte, error) {
+	return w.GetProtoTx().Marshal()
 }
