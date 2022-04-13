@@ -13,12 +13,12 @@ import (
 func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error) {
 	txBytes, ok := signedTx.([]byte)
 	if !ok {
-		log.Printf("signed tx type %T is not []byte", signedTx)
+		log.Printf("wrong signed tx type '%T'", signedTx)
 		return "", fmt.Errorf("wrong signed transaction type")
 	}
 	req := &BroadcastTxRequest{
 		TxBytes: string(txBytes),
-		Mode:    "BROADCAST_MODE_SYNC",
+		Mode:    "sync",
 	}
 	txHash, err = b.BroadcastTx(req)
 	if err != nil {

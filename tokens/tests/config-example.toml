@@ -20,7 +20,7 @@ Confirmations = 6
 InitialHeight = 0
 
 [SrcChain.MetaCoin]
-Symbol = "uluna"
+Symbol = "LUNA"
 Unit = "uluna"
 Decimals = 6
 

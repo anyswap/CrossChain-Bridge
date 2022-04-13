@@ -51,7 +51,7 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	}
 
 	neededValue := b.getMinReserveFee()
-	err = b.checkCoinBalance(from, b.ChainConfig.MetaCoin.Symbol, neededValue)
+	err = b.checkCoinBalance(from, b.ChainConfig.MetaCoin.Unit, neededValue)
 	if err != nil {
 		return nil, err
 	}
