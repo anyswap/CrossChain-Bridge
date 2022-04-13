@@ -104,9 +104,7 @@ func (b *Bridge) VerifyChainConfig() (err error) {
 func (b *Bridge) VerifyTokenConfig(token *tokens.TokenConfig) (err error) {
 	if token.DcrmAccountNumber == 0 {
 		token.DcrmAccountNumber, err = b.GetAccountNumber(token.DcrmAddress)
-		if err != nil {
-			return err
-		}
+		log.Error("get dcrm account number failed", "err", err)
 	}
 	if token.TaxCap < 0 {
 		return fmt.Errorf("invalid tax cap: %v", token.TaxCap)

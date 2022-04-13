@@ -80,6 +80,18 @@ func (b *Bridge) GetBalance(address, denom string) (res sdk.Int, err error) {
 	return zeroInt, wrapRPCQueryError(err, "GetBalance", denom)
 }
 
+// GetBaseAccount impl
+func (b *Bridge) GetBaseAccount(address string) (res *BaseAccount, err error) {
+	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
+	for _, url := range urls {
+		res, err = GetBaseAccount(url, address)
+		if err == nil && res != nil {
+			return res, nil
+		}
+	}
+	return nil, wrapRPCQueryError(err, "GetBaseAccount", address)
+}
+
 // GetTaxCap impl
 func (b *Bridge) GetTaxCap(denom string) (res sdk.Int, err error) {
 	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
@@ -134,7 +146,7 @@ func (b *Bridge) QueryContractStore(contract string, query interface{}) (res int
 	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
 	for _, url := range urls {
 		res, err = QueryContractStore(url, contract, queryMsg)
-		if err == nil {
+		if err == nil && res != nil {
 			return res, nil
 		}
 	}

@@ -26,6 +26,11 @@ func joinURLPath(url, path string) string {
 	return url + path
 }
 
+// SetRPCTimeout set rpc timeout
+func SetRPCTimeout(timeout int) {
+	rpcTimeout = timeout
+}
+
 // GetLatestBlock get latest block
 func GetLatestBlock(url string) (height uint64, err error) {
 	path := "/cosmos/base/tendermint/v1beta1/blocks/latest"

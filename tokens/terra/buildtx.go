@@ -29,6 +29,10 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 	if tokenCfg == nil {
 		return nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
 	}
+	if tokenCfg.DcrmAccountNumber == 0 {
+		tokenCfg.DcrmAccountNumber, err = b.GetAccountNumber(tokenCfg.DcrmAddress)
+		return nil, fmt.Errorf("init dcrm account number failed: %w", err)
+	}
 
 	var from, to, memo string
 	var amount *big.Int
@@ -232,28 +236,18 @@ func (b *Bridge) GetPoolNonce(address, _height string) (uint64, error) {
 
 // GetAccountSequence get account sequence
 func (b *Bridge) GetAccountSequence(address string) (uint64, error) {
-	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
-	var acc *BaseAccount
-	var err error
-	for _, url := range urls {
-		acc, err = GetBaseAccount(url, address)
-		if err == nil && acc != nil {
-			return common.GetUint64FromStr(acc.Sequence)
-		}
+	acc, err := b.GetBaseAccount(address)
+	if err == nil && acc != nil {
+		return common.GetUint64FromStr(acc.Sequence)
 	}
 	return 0, wrapRPCQueryError(err, "GetAccountSequence")
 }
 
 // GetAccountNumber get account number
 func (b *Bridge) GetAccountNumber(address string) (uint64, error) {
-	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
-	var acc *BaseAccount
-	var err error
-	for _, url := range urls {
-		acc, err = GetBaseAccount(url, address)
-		if err == nil && acc != nil {
-			return common.GetUint64FromStr(acc.AccountNumber)
-		}
+	acc, err := b.GetBaseAccount(address)
+	if err == nil && acc != nil {
+		return common.GetUint64FromStr(acc.AccountNumber)
 	}
 	return 0, wrapRPCQueryError(err, "GetAccountNumber")
 }
