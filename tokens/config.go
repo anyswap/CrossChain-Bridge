@@ -112,6 +112,7 @@ type ChainConfig struct {
 // MetaCoin struct
 type MetaCoin struct {
 	Symbol   string
+	Unit     string
 	Decimals uint8
 }
 
@@ -130,7 +131,6 @@ type TokenConfig struct {
 	Description            string `json:",omitempty"`
 	DepositAddress         string `json:",omitempty"`
 	DcrmAddress            string
-	DcrmAccountNumber      uint64   `json:",omitempty"`
 	DcrmPubkey             string   `json:"-"`
 	ContractAddress        string   `json:",omitempty"`
 	ContractCodeHash       string   `json:",omitempty"`
@@ -158,9 +158,13 @@ type TokenConfig struct {
 	DcrmAddressPriKey string `json:"-"`
 
 	// cosmos/terra specific
-	DefaultFees string  `json:",omitempty"`
-	TaxCap      float64 `json:",omitempty"`
-	TaxRate     float64 `json:",omitempty"`
+	DcrmAccountNumber uint64 `json:",omitempty"`
+	DefaultFees       string `json:",omitempty"`
+	// cosmos/terra meta coins
+	Unit    string  `json:",omitempty"`
+	TaxCap  float64 `json:",omitempty"`
+	TaxRate float64 `json:",omitempty"`
+	GasRate float64 `json:",omitempty"`
 
 	// calced value
 	maxSwap          *big.Int

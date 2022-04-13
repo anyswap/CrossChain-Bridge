@@ -150,5 +150,5 @@ func QueryContractStore(url, contract, queryMsg string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &result, nil
+	return result.QueryResult, nil
 }

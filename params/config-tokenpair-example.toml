@@ -43,6 +43,13 @@ BigValueWhitelist = [
 	"0x1111111111111111111111111111111111111111",
 	"0x2222222222222222222222222222222222222222"
 ]
+# items added for cosmos/terra
+DcrmAccountNumber = 0
+DefaultFees = "10000uluna"
+Unit = "uluna"
+TaxCap = 0.04
+TaxRate = 0.003
+GasRate = 0.012
 
 # dest token config
 [DestToken]

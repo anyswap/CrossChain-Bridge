@@ -111,6 +111,11 @@ WaitTimeToReplace = 900
 MaxReplaceCount = 20
 # check address mixed case
 IgnoreCheckAddressMixedCase = false
+# native coin config, added since support cosmos/terra
+[SrcChain.MetaCoin]
+Symbol = "LUNA"
+Unit = "uluna"
+Decimals = 6
 
 # source blockchain gateway config
 [SrcGateway]
