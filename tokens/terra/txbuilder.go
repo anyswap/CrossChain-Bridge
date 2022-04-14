@@ -16,7 +16,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/tendermint/tendermint/crypto/tmhash"
+
+	"github.com/anyswap/CrossChain-Bridge/common"
 )
 
 // wrapper is a wrapper around the tx.Tx proto.Message which retain the raw
@@ -405,7 +406,7 @@ func (w *wrapper) GetSignedTx() (signedTx []byte, txHash string, err error) {
 		return nil, "", err
 	}
 	signedTx = []byte(base64.StdEncoding.EncodeToString(txBytes))
-	txHash = fmt.Sprintf("%X", tmhash.Sum(txBytes))
+	txHash = fmt.Sprintf("%X", common.Sha256Sum(txBytes))
 	return signedTx, txHash, nil
 }
 

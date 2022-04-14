@@ -14,7 +14,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/tendermint/tendermint/crypto/tmhash"
 )
 
 // DcrmSignTransaction dcrm sign raw tx
@@ -39,7 +38,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	if err != nil {
 		return nil, "", err
 	}
-	msgHash := fmt.Sprintf("%X", tmhash.Sum(signBytes))
+	msgHash := fmt.Sprintf("%X", common.Sha256Sum(signBytes))
 
 	jsondata, _ := json.Marshal(args.GetExtraArgs())
 	msgContext := string(jsondata)
@@ -68,8 +67,8 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", errors.New("wrong signature length of keyID " + keyID)
 	}
 
-	if !pubKey.VerifySignature(common.FromHex(msgHash), signature) {
-		log.Error("verify signature failed", "msgHash", msgHash, "signature", signature)
+	if !pubKey.VerifySignature(signBytes, signature) {
+		log.Error("verify signature failed", "signBytes", common.ToHex(signBytes), "signature", signature)
 		return nil, "", errors.New("wrong signature")
 	}
 
@@ -119,9 +118,8 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 	if err != nil {
 		return nil, "", err
 	}
-	msgHash := tmhash.Sum(signBytes)
 
-	signature, err := ecPriv.Sign(msgHash)
+	signature, err := ecPriv.Sign(signBytes)
 	if err != nil {
 		return nil, "", err
 	}
@@ -139,8 +137,8 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 		log.Info("signer info", "pubkey", pubKeyHex, "signer", pubAddr)
 	}
 
-	if !pubKey.VerifySignature(msgHash, signature) {
-		log.Error("verify signature failed", "msgHash", msgHash, "signature", signature)
+	if !pubKey.VerifySignature(signBytes, signature) {
+		log.Error("verify signature failed", "signBytes", common.ToHex(signBytes), "signature", signature)
 		return nil, "", errors.New("wrong signature")
 	}
 

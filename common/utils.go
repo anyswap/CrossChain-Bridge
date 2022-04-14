@@ -1,6 +1,7 @@
 package common
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -21,6 +22,12 @@ func ToJSONString(content interface{}, pretty bool) string {
 		data, _ = json.Marshal(content)
 	}
 	return string(data)
+}
+
+// Sha256Sum returns the SHA256 of the data.
+func Sha256Sum(data []byte) []byte {
+	h := sha256.Sum256(data)
+	return h[:]
 }
 
 // Keccak256Hash calc keccak hash.

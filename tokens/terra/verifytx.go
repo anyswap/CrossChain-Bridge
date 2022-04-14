@@ -11,7 +11,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-	"github.com/tendermint/tendermint/crypto/tmhash"
 )
 
 var (
@@ -92,7 +91,7 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) (err error
 	if err != nil {
 		return err
 	}
-	sigHash := fmt.Sprintf("%X", tmhash.Sum(signBytes))
+	sigHash := fmt.Sprintf("%X", common.Sha256Sum(signBytes))
 
 	if !strings.EqualFold(sigHash, msgHash) {
 		logFunc := log.GetPrintFuncOr(params.IsDebugMode, log.Info, log.Trace)
