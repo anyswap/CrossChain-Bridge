@@ -163,6 +163,11 @@ func (b *Bridge) buildRawTx(
 		return nil, err
 	}
 
+	err = txb.ValidateBasic()
+	if err == nil {
+		return nil, err
+	}
+
 	if params.IsSwapServer {
 		err = b.simulateTx(txb)
 		if err != nil {

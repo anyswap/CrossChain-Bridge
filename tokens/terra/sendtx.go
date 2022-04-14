@@ -16,7 +16,7 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 	}
 	req := &BroadcastTxRequest{
 		TxBytes: string(txBytes),
-		Mode:    "BROADCAST_MODE_SYNC",
+		Mode:    "BROADCAST_MODE_BLOCK",
 	}
 	txHash, err = b.BroadcastTx(req)
 	if err != nil {

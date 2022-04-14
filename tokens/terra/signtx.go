@@ -9,9 +9,10 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/dcrm"
 	"github.com/anyswap/CrossChain-Bridge/log"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 )
@@ -57,9 +58,19 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	rsv := rsvs[0]
 	log.Trace(b.ChainConfig.BlockChain+" DcrmSignTransaction get rsv success", "keyID", keyID, "txid", args.SwapID, "rsv", rsv)
 	signature := common.FromHex(rsv)
-	if len(signature) != crypto.SignatureLength {
-		log.Error("DcrmSignTransaction wrong length of signature")
-		return nil, "", errors.New("wrong signature of keyID " + keyID)
+
+	if len(signature) == crypto.SignatureLength {
+		signature = signature[:crypto.SignatureLength-1]
+	}
+
+	if len(signature) != crypto.SignatureLength-1 {
+		log.Error("wrong length of signature", "length", len(signature))
+		return nil, "", errors.New("wrong signature length of keyID " + keyID)
+	}
+
+	if !pubKey.VerifySignature(common.FromHex(msgHash), signature) {
+		log.Error("verify signature failed", "msgHash", msgHash, "signature", signature)
+		return nil, "", errors.New("wrong signature")
 	}
 
 	// Construct the SignatureV2 struct
@@ -77,6 +88,10 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 
+	err = txw.ValidateBasic()
+	if err == nil {
+		return nil, "", err
+	}
 	return txw.GetSignedTx()
 }
 
@@ -91,37 +106,48 @@ func (b *Bridge) SignTransaction(rawTx interface{}, pairID string) (signTx inter
 }
 
 // SignTransactionWithPrivateKey sign tx with ECDSA private key
-func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa.PrivateKey) (signedTx interface{}, txHash string, err error) {
+func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa.PrivateKey) (signTx interface{}, txHash string, err error) {
 	txw, ok := rawTx.(*wrapper)
 	if !ok {
 		return nil, "", errors.New("wrong raw tx param")
 	}
 
+	// convert private key
+	ecPriv := &secp256k1.PrivKey{Key: privKey.D.Bytes()}
+
 	signBytes, err := txw.GetSignBytes()
 	if err != nil {
 		return nil, "", err
 	}
-	msgHash := fmt.Sprintf("%X", tmhash.Sum(signBytes))
+	msgHash := tmhash.Sum(signBytes)
 
-	ecPriv, ecPub := btcec.PrivKeyFromBytes(btcec.S256(), privKey.D.Bytes())
-	if err != nil {
-		return nil, "", err
-	}
-	pubKey, err := PubKeyFromBytes(ecPub.SerializeCompressed())
+	signature, err := ecPriv.Sign(msgHash)
 	if err != nil {
 		return nil, "", err
 	}
 
-	// Sign those bytes
-	signature, err := ecPriv.Sign(common.FromHex(msgHash))
-	if err != nil {
-		return nil, "", err
+	if len(signature) != crypto.SignatureLength-1 {
+		log.Error("wrong length of signature", "length", len(signature))
+		return nil, "", errors.New("wrong signature length")
+	}
+
+	pubKey := ecPriv.PubKey()
+
+	if params.IsDebugMode() || params.IsTestMode() {
+		pubKeyHex := common.ToHex(pubKey.Bytes())
+		pubAddr, _ := PublicKeyToAddress(pubKeyHex)
+		log.Info("signer info", "pubkey", pubKeyHex, "signer", pubAddr)
+	}
+
+	if !pubKey.VerifySignature(msgHash, signature) {
+		log.Error("verify signature failed", "msgHash", msgHash, "signature", signature)
+		return nil, "", errors.New("wrong signature")
 	}
 
 	// Construct the SignatureV2 struct
 	sigData := signing.SingleSignatureData{
 		SignMode:  signMode,
-		Signature: signature.Serialize(),
+		Signature: signature,
 	}
 	sig := signing.SignatureV2{
 		PubKey:   pubKey,
@@ -133,5 +159,9 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 		return nil, "", err
 	}
 
+	err = txw.ValidateBasic()
+	if err == nil {
+		return nil, "", err
+	}
 	return txw.GetSignedTx()
 }
