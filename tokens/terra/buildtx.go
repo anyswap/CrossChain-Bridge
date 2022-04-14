@@ -182,16 +182,13 @@ func (b *Bridge) simulateTx(txb *wrapper) error {
 	if err != nil {
 		return err
 	}
-	gasWanted, err := common.GetUint64FromStr(simRes.GasInfo.GasWanted)
-	if err != nil {
-		return err
-	}
 	gasUsed, err := common.GetUint64FromStr(simRes.GasInfo.GasUsed)
 	if err != nil {
 		return err
 	}
+	gasWanted := txb.GetGas()
 	if gasWanted < gasUsed {
-		return fmt.Errorf("simulate tx gas exceeded, wanted %v used %v", simRes.GasInfo.GasWanted, simRes.GasInfo.GasUsed)
+		return fmt.Errorf("simulate tx gas exceeded, wanted %v used %v", gasWanted, gasUsed)
 	}
 	return nil
 }
