@@ -88,7 +88,7 @@ func (b *Bridge) buildRawTx(
 	txb := newBuilder()
 
 	txb.SetSignerData(
-		b.ChainConfig.GetChainID().String(),
+		b.ChainConfig.NetID,
 		tokenCfg.DcrmAccountNumber,
 		*extra.Sequence)
 

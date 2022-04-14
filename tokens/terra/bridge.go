@@ -98,8 +98,7 @@ func (b *Bridge) VerifyChainConfig() (err error) {
 		return nil
 	}
 
-	netID := strings.ToLower(c.NetID)
-	if !SupportedChains[netID] {
+	if !SupportedChains[c.NetID] {
 		return fmt.Errorf("unsupported terra network: %v", c.NetID)
 	}
 
