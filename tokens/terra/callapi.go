@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -138,11 +139,10 @@ func base64EncodedJSON(v interface{}) (string, error) {
 
 // QueryContractStore impl
 func (b *Bridge) QueryContractStore(contract string, query interface{}) (res interface{}, err error) {
-	jsonData, err := json.Marshal(query)
+	queryMsg, err := base64EncodedJSON(query)
 	if err != nil {
 		return nil, err
 	}
-	queryMsg := base64.StdEncoding.EncodeToString(jsonData)
 	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
 	for _, url := range urls {
 		res, err = QueryContractStore(url, contract, queryMsg)
@@ -150,5 +150,5 @@ func (b *Bridge) QueryContractStore(contract string, query interface{}) (res int
 			return res, nil
 		}
 	}
-	return nil, wrapRPCQueryError(err, "QueryContractStore", string(jsonData))
+	return nil, wrapRPCQueryError(err, "QueryContractStore", common.ToJSONString(query, false))
 }

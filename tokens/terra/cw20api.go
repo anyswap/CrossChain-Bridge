@@ -64,20 +64,20 @@ func (b *Bridge) GetTokenBalance(token, account string) (sdk.Int, error) {
 
 // GetTokenTransferExecMsg impl
 // `recipient` is user address.
-func GetTokenTransferExecMsg(recipient, amount string) (string, error) {
+func GetTokenTransferExecMsg(recipient, amount string) ([]byte, error) {
 	execMsg := map[string]map[string]interface{}{
 		"transfer": {
 			"recipient": recipient,
 			"amount":    amount,
 		},
 	}
-	return base64EncodedJSON(execMsg)
+	return json.Marshal(execMsg)
 }
 
 // GetTokenSendExecMsg impl
 // `recipient` is contract address.
 // `msg` is base64-endcoded JSON string.
-func GetTokenSendExecMsg(recipient, amount, msg string) (string, error) {
+func GetTokenSendExecMsg(recipient, amount, msg string) ([]byte, error) {
 	execMsg := map[string]map[string]interface{}{
 		"send": {
 			"contract": recipient,
@@ -85,5 +85,5 @@ func GetTokenSendExecMsg(recipient, amount, msg string) (string, error) {
 			"msg":      msg,
 		},
 	}
-	return base64EncodedJSON(execMsg)
+	return json.Marshal(execMsg)
 }

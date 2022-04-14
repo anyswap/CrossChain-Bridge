@@ -10,6 +10,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	wasmtypes "github.com/terra-money/core/x/wasm/types"
 )
 
 var (
@@ -54,6 +56,10 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, tokens.ErrTxWithWrongSender
 	}
 
+	if amount.Sign() < 0 {
+		return nil, fmt.Errorf("negative token amount")
+	}
+
 	neededValue := b.getMinReserveFee()
 	err = b.checkCoinBalance(from, b.ChainConfig.MetaCoin.Unit, neededValue)
 	if err != nil {
@@ -96,20 +102,43 @@ func (b *Bridge) buildRawTx(
 	}
 	txb.SetFeeAmount(parsedFees)
 
-	feePayer, err := sdk.AccAddressFromBech32(tokenCfg.DcrmAddress)
+	feePayer, err := sdk.AccAddressFromBech32(from)
 	if err != nil {
 		return nil, err
 	}
 	txb.SetFeePayer(feePayer)
 
-	if amount.Sign() < 0 {
-		return nil, fmt.Errorf("negative token amount")
-	}
-	execMsg, err := GetTokenTransferExecMsg(to, amount.String())
+	accFrom, err := sdk.AccAddressFromBech32(from)
 	if err != nil {
 		return nil, err
 	}
-	msg := NewMsgExecuteContract(from, tokenCfg.ContractAddress, execMsg)
+	accTo, err := sdk.AccAddressFromBech32(to)
+	if err != nil {
+		return nil, err
+	}
+
+	var msg sdk.Msg
+
+	if tokenCfg.ContractAddress != "" {
+		accContract, errf := sdk.AccAddressFromBech32(tokenCfg.ContractAddress)
+		if errf != nil {
+			return nil, errf
+		}
+		execMsg, errf := GetTokenTransferExecMsg(accTo.String(), amount.String())
+		if errf != nil {
+			return nil, errf
+		}
+		msg = wasmtypes.NewMsgExecuteContract(accFrom, accContract, execMsg, nil)
+	} else {
+		msg = &banktypes.MsgSend{
+			FromAddress: accFrom.String(),
+			ToAddress:   accTo.String(),
+			Amount: sdk.Coins{
+				sdk.NewCoin(tokenCfg.Unit, sdk.NewIntFromBigInt(amount)),
+			},
+		}
+	}
+
 	err = txb.SetMsgs(msg)
 	if err != nil {
 		return nil, err
