@@ -165,7 +165,7 @@ func (b *Bridge) BuildTx(
 	}
 
 	err = txb.ValidateBasic()
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 

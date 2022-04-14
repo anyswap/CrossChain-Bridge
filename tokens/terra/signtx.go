@@ -88,7 +88,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	}
 
 	err = txw.ValidateBasic()
-	if err == nil {
+	if err != nil {
 		return nil, "", err
 	}
 	return txw.GetSignedTx()
@@ -158,7 +158,7 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 	}
 
 	err = txw.ValidateBasic()
-	if err == nil {
+	if err != nil {
 		return nil, "", err
 	}
 	return txw.GetSignedTx()
