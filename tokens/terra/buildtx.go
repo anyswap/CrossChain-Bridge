@@ -76,10 +76,11 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
-	return b.buildRawTx(from, to, memo, amount, extra, tokenCfg)
+	return b.BuildTx(from, to, memo, amount, extra, tokenCfg)
 }
 
-func (b *Bridge) buildRawTx(
+// BuildTx build tx
+func (b *Bridge) BuildTx(
 	from, to, memo string,
 	amount *big.Int,
 	extra *tokens.TerraExtra,
