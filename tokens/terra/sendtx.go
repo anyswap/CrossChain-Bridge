@@ -14,9 +14,10 @@ func (b *Bridge) SendTransaction(signedTx interface{}) (txHash string, err error
 		log.Printf("wrong signed tx type '%T'", signedTx)
 		return "", fmt.Errorf("wrong signed transaction type")
 	}
+	// use sync mode because block mode may rpc call timeout
 	req := &BroadcastTxRequest{
 		TxBytes: string(txBytes),
-		Mode:    "BROADCAST_MODE_BLOCK",
+		Mode:    "BROADCAST_MODE_SYNC",
 	}
 	txHash, err = b.BroadcastTx(req)
 	if err != nil {

@@ -45,7 +45,8 @@ func GetLatestBlock(url string) (height uint64, err error) {
 // BroadcastTx broadcast tx
 func BroadcastTx(url, txData string) (txHash string, err error) {
 	path := "/cosmos/tx/v1beta1/txs"
-	result, err := client.RPCRawPostWithTimeout(joinURLPath(url, path), txData, rpcTimeout)
+	// broadcast tx needs more rpc call time, here we double it
+	result, err := client.RPCRawPostWithTimeout(joinURLPath(url, path), txData, 2*rpcTimeout)
 	if err != nil {
 		log.Trace("broadcast tx failed", "url", url, "path", path, "err", err)
 		return "", err
