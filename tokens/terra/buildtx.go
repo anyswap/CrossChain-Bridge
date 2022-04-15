@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
+	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -26,36 +27,42 @@ var (
 
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
-	pairID := args.PairID
-	tokenCfg := b.GetTokenConfig(pairID)
-	if tokenCfg == nil {
-		return nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
+	tokenCfg, err := b.getAndInitTokenConfig(args.PairID)
+	if err != nil {
+		return nil, err
 	}
-	if tokenCfg.DcrmAccountNumber == 0 {
-		tokenCfg.DcrmAccountNumber, err = b.GetAccountNumber(tokenCfg.DcrmAddress)
-		return nil, fmt.Errorf("init dcrm account number failed: %w", err)
-	}
-
-	var from, to, memo string
-	var amount *big.Int
 
 	switch args.SwapType {
 	case tokens.SwapinType:
 		return nil, tokens.ErrSwapTypeNotSupported
 	case tokens.SwapoutType:
-		from = tokenCfg.DcrmAddress // from
-		to = args.Bind              // to
-
-		amount = tokens.CalcSwappedValue(pairID, args.OriginValue, false, args.OriginFrom, args.OriginTxTo) // amount
-		memo = tokens.UnlockMemoPrefix + args.SwapID
+		return b.buildSwapoutTx(args, tokenCfg)
 	default:
 		return nil, tokens.ErrUnknownSwapType
 	}
+}
 
+func (b *Bridge) getAndInitTokenConfig(pairID string) (tokenCfg *tokens.TokenConfig, err error) {
+	tokenCfg = b.GetTokenConfig(pairID)
+	if tokenCfg == nil {
+		return nil, fmt.Errorf("swap pair '%v' is not configed", pairID)
+	}
+	if tokenCfg.DcrmAccountNumber == 0 {
+		tokenCfg.DcrmAccountNumber, err = b.GetAccountNumber(tokenCfg.DcrmAddress)
+		if err != nil {
+			return nil, fmt.Errorf("init dcrm account number failed: %w", err)
+		}
+	}
+	return tokenCfg, nil
+}
+
+func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.TokenConfig) (txw *wrapper, err error) {
+	from := tokenCfg.DcrmAddress
 	if from == "" {
 		return nil, tokens.ErrTxWithWrongSender
 	}
 
+	amount := tokens.CalcSwappedValue(args.PairID, args.OriginValue, false, args.OriginFrom, args.OriginTxTo)
 	if amount.Sign() < 0 {
 		return nil, fmt.Errorf("negative token amount")
 	}
@@ -76,7 +83,8 @@ func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{
 		return nil, err
 	}
 
-	return b.BuildTx(from, to, memo, amount, extra, tokenCfg)
+	memo := tokens.UnlockMemoPrefix + args.SwapID
+	return b.BuildTx(from, args.Bind, memo, amount, extra, tokenCfg)
 }
 
 // BuildTx build tx
@@ -103,16 +111,12 @@ func (b *Bridge) BuildTx(
 	}
 	txb.SetFeeAmount(parsedFees)
 
-	feePayer, err := sdk.AccAddressFromBech32(from)
-	if err != nil {
-		return nil, err
-	}
-	txb.SetFeePayer(feePayer)
-
 	accFrom, err := sdk.AccAddressFromBech32(from)
 	if err != nil {
 		return nil, err
 	}
+	txb.SetFeePayer(accFrom)
+
 	accTo, err := sdk.AccAddressFromBech32(to)
 	if err != nil {
 		return nil, err
@@ -196,6 +200,7 @@ func (b *Bridge) simulateTx(txb *wrapper) error {
 	if gasWanted < gasUsed {
 		return fmt.Errorf("simulate tx gas exceeded, wanted %v used %v", gasWanted, gasUsed)
 	}
+	log.Info("simulate tx success", "gasWanted", gasWanted, "gasUsed", gasUsed)
 	return nil
 }
 
