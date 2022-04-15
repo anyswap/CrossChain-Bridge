@@ -95,6 +95,11 @@ func (b *CrossChainBridgeBase) GetDcrmPublicKey(pairID string) string {
 	return ""
 }
 
+// GetDefaultExtras get default extras
+func (b *CrossChainBridgeBase) GetDefaultExtras() *AllExtras {
+	return nil
+}
+
 // InitAfterConfig init and verify after loading config
 func (b *CrossChainBridgeBase) InitAfterConfig() {
 }

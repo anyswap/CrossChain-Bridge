@@ -25,6 +25,11 @@ var (
 	DefaultFees     = "10000uluna"
 )
 
+// GetDefaultExtras get default extras
+func (b *Bridge) GetDefaultExtras() *tokens.AllExtras {
+	return &tokens.AllExtras{TerraExtra: &tokens.TerraExtra{}}
+}
+
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	tokenCfg, err := b.getAndInitTokenConfig(args.PairID)

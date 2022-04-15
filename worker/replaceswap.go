@@ -180,14 +180,11 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin, isManual bool
 		OriginFrom:  swap.From,
 		OriginTxTo:  swap.TxTo,
 		OriginValue: swapInfo.Value,
-		Extra: &tokens.AllExtras{
-			EthExtra: &tokens.EthExtraArgs{
-				GasPrice: gasPrice,
-				Nonce:    &nonce,
-			},
-			ReplaceNum: replaceNum,
-		},
+		Extra:       bridge.GetDefaultExtras(),
 	}
+	args.SetReplaceNum(replaceNum)
+	args.SetTxNonce(nonce)
+	args.SetTxGasPrice(gasPrice)
 	rawTx, err := bridge.BuildRawTransaction(args)
 	if err != nil {
 		logWorkerError("replaceSwap", "build tx failed", err, "txid", txid, "bind", bind, "isSwapin", isSwapin)

@@ -122,10 +122,17 @@ func (args *BuildTxArgs) GetExtraArgs() *BuildTxArgs {
 
 // GetTxGasPrice get tx gas price
 func (args *BuildTxArgs) GetTxGasPrice() *big.Int {
-	if args.Extra != nil && args.Extra.EthExtra != nil && args.Extra.EthExtra.GasPrice != nil {
+	if args.Extra != nil && args.Extra.EthExtra != nil {
 		return args.Extra.EthExtra.GasPrice
 	}
 	return nil
+}
+
+// SetTxGasPrice set tx gas price
+func (args *BuildTxArgs) SetTxGasPrice(gasPrice *big.Int) {
+	if args != nil && args.Extra != nil && args.Extra.EthExtra != nil {
+		args.Extra.EthExtra.GasPrice = gasPrice
+	}
 }
 
 // GetTxNonce get tx nonce
@@ -143,6 +150,27 @@ func (args *BuildTxArgs) GetTxNonce() uint64 {
 		return uint64(*args.Extra.TerraExtra.Sequence)
 	}
 	return 0
+}
+
+// SetTxNonce set tx nonce
+func (args *BuildTxArgs) SetTxNonce(nonce uint64) {
+	switch {
+	case args == nil || args.Extra == nil:
+		return
+	case args.Extra.EthExtra != nil:
+		args.Extra.EthExtra.Nonce = &nonce
+	case args.Extra.RippleExtra != nil:
+		seq := uint32(nonce)
+		args.Extra.RippleExtra.Sequence = &seq
+	case args.Extra.TerraExtra != nil:
+		args.Extra.TerraExtra.Sequence = &nonce
+	}
+}
+
+func (args *BuildTxArgs) SetReplaceNum(replaceNum uint64) {
+	if args != nil && args.Extra != nil {
+		args.Extra.ReplaceNum = replaceNum
+	}
 }
 
 // AllExtras struct

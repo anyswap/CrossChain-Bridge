@@ -34,6 +34,11 @@ func (b *Bridge) buildNonswapTx(args *tokens.BuildTxArgs) (rawTx interface{}, er
 	return b.buildTx(args)
 }
 
+// GetDefaultExtras get default extras
+func (b *Bridge) GetDefaultExtras() *tokens.AllExtras {
+	return &tokens.AllExtras{EthExtra: &tokens.EthExtraArgs{}}
+}
+
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	if args.SwapType == tokens.NoSwapType {

@@ -28,6 +28,9 @@ type CrossChainBridge interface {
 
 	GetLatestBlockNumber() (uint64, error)
 	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
+
+	// needed by replace swap job to set bridge specific buildtx extras
+	GetDefaultExtras() *AllExtras
 }
 
 // NonceSetter interface (for eth-like)
