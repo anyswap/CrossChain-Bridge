@@ -56,7 +56,7 @@ func (b *Bridge) getAndInitTokenConfig(pairID string) (tokenCfg *tokens.TokenCon
 	return tokenCfg, nil
 }
 
-func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.TokenConfig) (txw *wrapper, err error) {
+func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.TokenConfig) (txb *TxBuilder, err error) {
 	from := tokenCfg.DcrmAddress
 	if from == "" {
 		return nil, tokens.ErrTxWithWrongSender
@@ -93,7 +93,7 @@ func (b *Bridge) BuildTx(
 	amount *big.Int,
 	extra *tokens.TerraExtra,
 	tokenCfg *tokens.TokenConfig,
-) (*wrapper, error) {
+) (*TxBuilder, error) {
 	txb := newBuilder()
 
 	txb.SetSignerData(
@@ -183,7 +183,7 @@ func (b *Bridge) BuildTx(
 	return txb, nil
 }
 
-func (b *Bridge) simulateTx(txb *wrapper) error {
+func (b *Bridge) simulateTx(txb *TxBuilder) error {
 	txBytes, err := txb.GetTxBytes()
 	if err != nil {
 		return err

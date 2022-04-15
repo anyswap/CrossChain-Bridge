@@ -18,7 +18,7 @@ import (
 
 // DcrmSignTransaction dcrm sign raw tx
 func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signedTx interface{}, txHash string, err error) {
-	txw, ok := rawTx.(*wrapper)
+	txb, ok := rawTx.(*TxBuilder)
 	if !ok {
 		return nil, "", errors.New("wrong raw tx param")
 	}
@@ -34,7 +34,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 		return nil, "", err
 	}
 
-	signBytes, err := txw.GetSignBytes()
+	signBytes, err := txb.GetSignBytes()
 	if err != nil {
 		return nil, "", err
 	}
@@ -80,18 +80,18 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	sig := signing.SignatureV2{
 		PubKey:   pubKey,
 		Data:     &sigData,
-		Sequence: txw.GetSignerData().Sequence,
+		Sequence: txb.GetSignerData().Sequence,
 	}
-	err = txw.SetSignatures(sig)
+	err = txb.SetSignatures(sig)
 	if err != nil {
 		return nil, "", err
 	}
 
-	err = txw.ValidateBasic()
+	err = txb.ValidateBasic()
 	if err != nil {
 		return nil, "", err
 	}
-	return txw.GetSignedTx()
+	return txb.GetSignedTx()
 }
 
 // SignTransaction sign tx with pairID
@@ -106,7 +106,7 @@ func (b *Bridge) SignTransaction(rawTx interface{}, pairID string) (signTx inter
 
 // SignTransactionWithPrivateKey sign tx with ECDSA private key
 func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa.PrivateKey) (signTx interface{}, txHash string, err error) {
-	txw, ok := rawTx.(*wrapper)
+	txb, ok := rawTx.(*TxBuilder)
 	if !ok {
 		return nil, "", errors.New("wrong raw tx param")
 	}
@@ -114,7 +114,7 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 	// convert private key
 	ecPriv := &secp256k1.PrivKey{Key: privKey.D.Bytes()}
 
-	signBytes, err := txw.GetSignBytes()
+	signBytes, err := txb.GetSignBytes()
 	if err != nil {
 		return nil, "", err
 	}
@@ -150,16 +150,16 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 	sig := signing.SignatureV2{
 		PubKey:   pubKey,
 		Data:     &sigData,
-		Sequence: txw.GetSignerData().Sequence,
+		Sequence: txb.GetSignerData().Sequence,
 	}
-	err = txw.SetSignatures(sig)
+	err = txb.SetSignatures(sig)
 	if err != nil {
 		return nil, "", err
 	}
 
-	err = txw.ValidateBasic()
+	err = txb.ValidateBasic()
 	if err != nil {
 		return nil, "", err
 	}
-	return txw.GetSignedTx()
+	return txb.GetSignedTx()
 }

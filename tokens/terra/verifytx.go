@@ -77,7 +77,7 @@ func (b *Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
 
 // VerifyMsgHash verify msg hash
 func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) (err error) {
-	txw, ok := rawTx.(*wrapper)
+	txb, ok := rawTx.(*TxBuilder)
 	if !ok {
 		return tokens.ErrWrongRawTx
 	}
@@ -87,7 +87,7 @@ func (b *Bridge) VerifyMsgHash(rawTx interface{}, msgHashes []string) (err error
 	}
 	msgHash := msgHashes[0]
 
-	signBytes, err := txw.GetSignBytes()
+	signBytes, err := txb.GetSignBytes()
 	if err != nil {
 		return err
 	}

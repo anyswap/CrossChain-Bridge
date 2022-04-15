@@ -20,9 +20,9 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common"
 )
 
-// wrapper is a wrapper around the tx.Tx proto.Message which retain the raw
+// TxBuilder is a wrapper around the tx.Tx proto.Message which retain the raw
 // body and auth_info bytes.
-type wrapper struct {
+type TxBuilder struct {
 	tx *tx.Tx
 
 	// bodyBz represents the protobuf encoding of TxBody. This should be encoding
@@ -39,10 +39,10 @@ type wrapper struct {
 }
 
 var (
-	_ authsigning.Tx             = &wrapper{}
-	_ client.TxBuilder           = &wrapper{}
-	_ ante.HasExtensionOptionsTx = &wrapper{}
-	_ ExtensionOptionsTxBuilder  = &wrapper{}
+	_ authsigning.Tx             = &TxBuilder{}
+	_ client.TxBuilder           = &TxBuilder{}
+	_ ante.HasExtensionOptionsTx = &TxBuilder{}
+	_ ExtensionOptionsTxBuilder  = &TxBuilder{}
 )
 
 // ExtensionOptionsTxBuilder defines a TxBuilder that can also set extensions.
@@ -53,8 +53,8 @@ type ExtensionOptionsTxBuilder interface {
 	SetNonCriticalExtensionOptions(...*codectypes.Any)
 }
 
-func newBuilder() *wrapper {
-	return &wrapper{
+func newBuilder() *TxBuilder {
+	return &TxBuilder{
 		tx: &tx.Tx{
 			Body: &tx.TxBody{},
 			AuthInfo: &tx.AuthInfo{
@@ -65,16 +65,16 @@ func newBuilder() *wrapper {
 }
 
 // GetMsgs impl
-func (w *wrapper) GetMsgs() []sdk.Msg {
+func (w *TxBuilder) GetMsgs() []sdk.Msg {
 	return w.tx.GetMsgs()
 }
 
 // ValidateBasic impl
-func (w *wrapper) ValidateBasic() error {
+func (w *TxBuilder) ValidateBasic() error {
 	return w.tx.ValidateBasic()
 }
 
-func (w *wrapper) getBodyBytes() []byte {
+func (w *TxBuilder) getBodyBytes() []byte {
 	if len(w.bodyBz) == 0 {
 		// if bodyBz is empty, then marshal the body. bodyBz will generally
 		// be set to nil whenever SetBody is called so the result of calling
@@ -90,7 +90,7 @@ func (w *wrapper) getBodyBytes() []byte {
 	return w.bodyBz
 }
 
-func (w *wrapper) getAuthInfoBytes() []byte {
+func (w *TxBuilder) getAuthInfoBytes() []byte {
 	if len(w.authInfoBz) == 0 {
 		// if authInfoBz is empty, then marshal the body. authInfoBz will generally
 		// be set to nil whenever SetAuthInfo is called so the result of calling
@@ -107,13 +107,13 @@ func (w *wrapper) getAuthInfoBytes() []byte {
 }
 
 // GetSigners impl
-func (w *wrapper) GetSigners() []sdk.AccAddress {
+func (w *TxBuilder) GetSigners() []sdk.AccAddress {
 	return w.tx.GetSigners()
 }
 
 // GetPubkeys returns the pubkeys of signers if the pubkey is included in the signature
 // If pubkey is not included in the signature, then nil is in the slice instead
-func (w *wrapper) GetPubKeys() ([]cryptotypes.PubKey, error) {
+func (w *TxBuilder) GetPubKeys() ([]cryptotypes.PubKey, error) {
 	signerInfos := w.tx.AuthInfo.SignerInfos
 	pks := make([]cryptotypes.PubKey, len(signerInfos))
 
@@ -137,17 +137,17 @@ func (w *wrapper) GetPubKeys() ([]cryptotypes.PubKey, error) {
 }
 
 // GetGas get gas
-func (w *wrapper) GetGas() uint64 {
+func (w *TxBuilder) GetGas() uint64 {
 	return w.tx.AuthInfo.Fee.GasLimit
 }
 
 // GetFee get fee
-func (w *wrapper) GetFee() sdk.Coins {
+func (w *TxBuilder) GetFee() sdk.Coins {
 	return w.tx.AuthInfo.Fee.Amount
 }
 
 // FeePayer get fee payer
-func (w *wrapper) FeePayer() sdk.AccAddress {
+func (w *TxBuilder) FeePayer() sdk.AccAddress {
 	feePayer := w.tx.AuthInfo.Fee.Payer
 	if feePayer != "" {
 		payerAddr, err := sdk.AccAddressFromBech32(feePayer)
@@ -161,7 +161,7 @@ func (w *wrapper) FeePayer() sdk.AccAddress {
 }
 
 // FeeGranter get fee granter
-func (w *wrapper) FeeGranter() sdk.AccAddress {
+func (w *TxBuilder) FeeGranter() sdk.AccAddress {
 	feePayer := w.tx.AuthInfo.Fee.Granter
 	if feePayer != "" {
 		granterAddr, err := sdk.AccAddressFromBech32(feePayer)
@@ -174,17 +174,17 @@ func (w *wrapper) FeeGranter() sdk.AccAddress {
 }
 
 // GetMemo get memo
-func (w *wrapper) GetMemo() string {
+func (w *TxBuilder) GetMemo() string {
 	return w.tx.Body.Memo
 }
 
 // GetTimeoutHeight returns the transaction's timeout height (if set).
-func (w *wrapper) GetTimeoutHeight() uint64 {
+func (w *TxBuilder) GetTimeoutHeight() uint64 {
 	return w.tx.Body.TimeoutHeight
 }
 
 // GetSignaturesV2 get signature v2
-func (w *wrapper) GetSignaturesV2() ([]signing.SignatureV2, error) {
+func (w *TxBuilder) GetSignaturesV2() ([]signing.SignatureV2, error) {
 	signerInfos := w.tx.AuthInfo.SignerInfos
 	sigs := w.tx.Signatures
 	pubKeys, err := w.GetPubKeys()
@@ -218,7 +218,7 @@ func (w *wrapper) GetSignaturesV2() ([]signing.SignatureV2, error) {
 }
 
 // SetMsgs set msgs
-func (w *wrapper) SetMsgs(msgs ...sdk.Msg) error {
+func (w *TxBuilder) SetMsgs(msgs ...sdk.Msg) error {
 	anys := make([]*codectypes.Any, len(msgs))
 
 	for i, msg := range msgs {
@@ -238,7 +238,7 @@ func (w *wrapper) SetMsgs(msgs ...sdk.Msg) error {
 }
 
 // SetTimeoutHeight sets the transaction's height timeout.
-func (w *wrapper) SetTimeoutHeight(height uint64) {
+func (w *TxBuilder) SetTimeoutHeight(height uint64) {
 	w.tx.Body.TimeoutHeight = height
 
 	// set bodyBz to nil because the cached bodyBz no longer matches tx.Body
@@ -246,7 +246,7 @@ func (w *wrapper) SetTimeoutHeight(height uint64) {
 }
 
 // SetMemo set memo
-func (w *wrapper) SetMemo(memo string) {
+func (w *TxBuilder) SetMemo(memo string) {
 	w.tx.Body.Memo = memo
 
 	// set bodyBz to nil because the cached bodyBz no longer matches tx.Body
@@ -254,7 +254,7 @@ func (w *wrapper) SetMemo(memo string) {
 }
 
 // SetGasLimit set gas limit
-func (w *wrapper) SetGasLimit(limit uint64) {
+func (w *TxBuilder) SetGasLimit(limit uint64) {
 	if w.tx.AuthInfo.Fee == nil {
 		w.tx.AuthInfo.Fee = &tx.Fee{}
 	}
@@ -266,7 +266,7 @@ func (w *wrapper) SetGasLimit(limit uint64) {
 }
 
 // SetFeeAmount set fee amount
-func (w *wrapper) SetFeeAmount(coins sdk.Coins) {
+func (w *TxBuilder) SetFeeAmount(coins sdk.Coins) {
 	if w.tx.AuthInfo.Fee == nil {
 		w.tx.AuthInfo.Fee = &tx.Fee{}
 	}
@@ -278,7 +278,7 @@ func (w *wrapper) SetFeeAmount(coins sdk.Coins) {
 }
 
 // SetFeePayer set fee payer
-func (w *wrapper) SetFeePayer(feePayer sdk.AccAddress) {
+func (w *TxBuilder) SetFeePayer(feePayer sdk.AccAddress) {
 	if w.tx.AuthInfo.Fee == nil {
 		w.tx.AuthInfo.Fee = &tx.Fee{}
 	}
@@ -290,7 +290,7 @@ func (w *wrapper) SetFeePayer(feePayer sdk.AccAddress) {
 }
 
 // SetFeeGranter set fee granter
-func (w *wrapper) SetFeeGranter(feeGranter sdk.AccAddress) {
+func (w *TxBuilder) SetFeeGranter(feeGranter sdk.AccAddress) {
 	if w.tx.AuthInfo.Fee == nil {
 		w.tx.AuthInfo.Fee = &tx.Fee{}
 	}
@@ -302,7 +302,7 @@ func (w *wrapper) SetFeeGranter(feeGranter sdk.AccAddress) {
 }
 
 // SetSignatures set signatures
-func (w *wrapper) SetSignatures(signatures ...signing.SignatureV2) error {
+func (w *TxBuilder) SetSignatures(signatures ...signing.SignatureV2) error {
 	n := len(signatures)
 	signerInfos := make([]*tx.SignerInfo, n)
 	rawSigs := make([][]byte, n)
@@ -327,62 +327,62 @@ func (w *wrapper) SetSignatures(signatures ...signing.SignatureV2) error {
 	return nil
 }
 
-func (w *wrapper) setSignerInfos(infos []*tx.SignerInfo) {
+func (w *TxBuilder) setSignerInfos(infos []*tx.SignerInfo) {
 	w.tx.AuthInfo.SignerInfos = infos
 	// set authInfoBz to nil because the cached authInfoBz no longer matches tx.AuthInfo
 	w.authInfoBz = nil
 }
 
-func (w *wrapper) setSignatures(sigs [][]byte) {
+func (w *TxBuilder) setSignatures(sigs [][]byte) {
 	w.tx.Signatures = sigs
 }
 
 // GetTx get tx
-func (w *wrapper) GetTx() authsigning.Tx {
+func (w *TxBuilder) GetTx() authsigning.Tx {
 	return w
 }
 
 // GetProtoTx get proto tx
-func (w *wrapper) GetProtoTx() *tx.Tx {
+func (w *TxBuilder) GetProtoTx() *tx.Tx {
 	return w.tx
 }
 
-// WrapTx creates a TxBuilder wrapper around a tx.Tx proto message.
+// WrapTx creates a TxBuilder TxBuilder around a tx.Tx proto message.
 func WrapTx(protoTx *tx.Tx) client.TxBuilder {
-	return &wrapper{
+	return &TxBuilder{
 		tx: protoTx,
 	}
 }
 
 // GetExtensionOptions get extension options
-func (w *wrapper) GetExtensionOptions() []*codectypes.Any {
+func (w *TxBuilder) GetExtensionOptions() []*codectypes.Any {
 	return w.tx.Body.ExtensionOptions
 }
 
 // GetNonCriticalExtensionOptions get non critical extension options
-func (w *wrapper) GetNonCriticalExtensionOptions() []*codectypes.Any {
+func (w *TxBuilder) GetNonCriticalExtensionOptions() []*codectypes.Any {
 	return w.tx.Body.NonCriticalExtensionOptions
 }
 
 // SetExtensionOptions set extension options
-func (w *wrapper) SetExtensionOptions(extOpts ...*codectypes.Any) {
+func (w *TxBuilder) SetExtensionOptions(extOpts ...*codectypes.Any) {
 	w.tx.Body.ExtensionOptions = extOpts
 	w.bodyBz = nil
 }
 
 // SetNonCriticalExtensionOptions set non critical extension options
-func (w *wrapper) SetNonCriticalExtensionOptions(extOpts ...*codectypes.Any) {
+func (w *TxBuilder) SetNonCriticalExtensionOptions(extOpts ...*codectypes.Any) {
 	w.tx.Body.NonCriticalExtensionOptions = extOpts
 	w.bodyBz = nil
 }
 
 // GetSignerData get signer data
-func (w *wrapper) GetSignerData() *authsigning.SignerData {
+func (w *TxBuilder) GetSignerData() *authsigning.SignerData {
 	return w.signerData
 }
 
 // SetSignerData set signer data
-func (w *wrapper) SetSignerData(chainID string, accountNumber, sequence uint64) {
+func (w *TxBuilder) SetSignerData(chainID string, accountNumber, sequence uint64) {
 	w.signerData = &authsigning.SignerData{
 		ChainID:       chainID,
 		AccountNumber: accountNumber,
@@ -391,7 +391,7 @@ func (w *wrapper) SetSignerData(chainID string, accountNumber, sequence uint64) 
 }
 
 // GetSignBytes get sign bytes
-func (w *wrapper) GetSignBytes() ([]byte, error) {
+func (w *TxBuilder) GetSignBytes() ([]byte, error) {
 	return authtx.DirectSignBytes(
 		w.getBodyBytes(),
 		w.getAuthInfoBytes(),
@@ -400,7 +400,7 @@ func (w *wrapper) GetSignBytes() ([]byte, error) {
 }
 
 // GetSignedTx get signed raw tx to broadcast
-func (w *wrapper) GetSignedTx() (signedTx []byte, txHash string, err error) {
+func (w *TxBuilder) GetSignedTx() (signedTx []byte, txHash string, err error) {
 	txBytes, err := w.GetProtoTx().Marshal()
 	if err != nil {
 		return nil, "", err
@@ -411,6 +411,6 @@ func (w *wrapper) GetSignedTx() (signedTx []byte, txHash string, err error) {
 }
 
 // GetTxBytes get tx marshal bytes
-func (w *wrapper) GetTxBytes() ([]byte, error) {
+func (w *TxBuilder) GetTxBytes() ([]byte, error) {
 	return w.GetProtoTx().Marshal()
 }
