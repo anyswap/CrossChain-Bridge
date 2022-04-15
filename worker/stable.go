@@ -180,8 +180,11 @@ func processUpdateSwapHeight(resBridge tokens.CrossChainBridge, swap *mongodb.Mg
 			}
 		}
 	}
-	if blockHeight == 0 && swap.SwapNonce > 0 {
+	if blockHeight > 0 {
+		return updateSwapResultHeight(swap, blockHeight, blockTime, swap.SwapTx != oldSwapTx)
+	}
+	if swap.SwapNonce > 0 {
 		return checkIfSwapNonceHasPassed(resBridge, swap, false)
 	}
-	return updateSwapResultHeight(swap, blockHeight, blockTime, swap.SwapTx != oldSwapTx)
+	return nil
 }
