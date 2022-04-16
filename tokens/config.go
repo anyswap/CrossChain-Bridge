@@ -166,6 +166,8 @@ type TokenConfig struct {
 	TaxRate float64 `json:",omitempty"`
 	GasRate float64 `json:",omitempty"`
 
+	RippleExtra *RippleTokenExtra `json:",omitempty"`
+
 	// calced value
 	maxSwap          *big.Int
 	minSwap          *big.Int
@@ -174,7 +176,6 @@ type TokenConfig struct {
 	bigValThreshhold *big.Int
 
 	bigValueWhitelist map[string]struct{}
-	RippleExtra       *RippleTokenExtra
 }
 
 // RippleTokenExtra ripple extra

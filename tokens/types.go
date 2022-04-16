@@ -167,6 +167,7 @@ func (args *BuildTxArgs) SetTxNonce(nonce uint64) {
 	}
 }
 
+// SetReplaceNum set replace number
 func (args *BuildTxArgs) SetReplaceNum(replaceNum uint64) {
 	if args != nil && args.Extra != nil {
 		args.Extra.ReplaceNum = replaceNum
