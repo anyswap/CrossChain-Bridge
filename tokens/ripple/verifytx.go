@@ -92,6 +92,8 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 		}
 	}
 
+	swapInfo.Height = uint64(txres.TransactionWithMetaData.LedgerSequence)
+
 	// Check tx status
 	if !txres.TransactionWithMetaData.MetaData.TransactionResult.Success() {
 		return swapInfo, tokens.ErrTxWithWrongStatus

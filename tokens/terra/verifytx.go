@@ -68,11 +68,16 @@ func (b *Bridge) GetTransactionStatus(txHash string) (*tokens.TxStatus, error) {
 
 // GetTxBlockInfo impl NonceSetter interface
 func (b *Bridge) GetTxBlockInfo(txHash string) (blockHeight, blockTime uint64) {
-	txStatus, err := b.GetTransactionStatus(txHash)
+	txr, err := b.GetTransactionByHash(txHash)
 	if err != nil {
-		return 0, 0
+		return
 	}
-	return txStatus.BlockHeight, txStatus.BlockTime
+	height, err := common.GetInt64FromStr(txr.TxResponse.Height)
+	if err != nil {
+		return
+	}
+	blockHeight = uint64(height)
+	return
 }
 
 // VerifyMsgHash verify msg hash
@@ -120,10 +125,11 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 
 	txres := txr.TxResponse
 
-	err = b.checkTxStatus(&txres, allowUnstable)
+	txHeight, err := b.checkTxStatus(&txres, allowUnstable)
 	if err != nil {
 		return swapInfo, err
 	}
+	swapInfo.Height = txHeight // Height
 
 	events, from := filterEvents(&txres, "contract_address", token.ContractAddress)
 	if from == "" {
@@ -132,21 +138,20 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	if len(events) == 0 {
 		return swapInfo, errTxEvent
 	}
+	swapInfo.From = strings.ToLower(from) // From
 
-	amount := b.checkEvents(events, token)
+	amount := b.checkEvents(events, token.DepositAddress)
 	if amount.CmpAbs(big.NewInt(0)) == 0 {
 		return swapInfo, errTxAmount
 	}
+	swapInfo.To = token.DepositAddress // To
+	swapInfo.Value = amount            // Value
 
 	bind, ok := getBindAddressFromMemo(txr.Tx.Body.Memo)
 	if !ok {
 		return swapInfo, tokens.ErrWrongMemoBindAddress
 	}
-
-	swapInfo.To = token.DepositAddress    // To
-	swapInfo.From = strings.ToLower(from) // From
-	swapInfo.Bind = bind                  // Bind
-	swapInfo.Value = amount
+	swapInfo.Bind = bind // Bind
 
 	err = b.checkSwapinInfo(swapInfo)
 	if err != nil {
@@ -163,29 +168,30 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	return swapInfo, nil
 }
 
-func (b *Bridge) checkTxStatus(txres *TxResponse, allowUnstable bool) error {
+func (b *Bridge) checkTxStatus(txres *TxResponse, allowUnstable bool) (txHeight uint64, err error) {
+	txHeight, err = common.GetUint64FromStr(txres.Height)
+	if err != nil {
+		return txHeight, err
+	}
+
 	if txres.Code != 0 {
-		return tokens.ErrTxWithWrongStatus
+		return txHeight, tokens.ErrTxWithWrongStatus
 	}
 
 	if !allowUnstable {
-		h, err := b.GetLatestBlockNumber()
-		if err != nil {
-			return err
+		h, errf := b.GetLatestBlockNumber()
+		if errf != nil {
+			return txHeight, errf
 		}
-		height, err := common.GetUint64FromStr(txres.Height)
-		if err != nil {
-			return err
-		}
-		if h < height+*b.GetChainConfig().Confirmations {
-			return tokens.ErrTxNotStable
+		if h < txHeight+*b.GetChainConfig().Confirmations {
+			return txHeight, tokens.ErrTxNotStable
 		}
 		if h < *b.ChainConfig.InitialHeight {
-			return tokens.ErrTxBeforeInitialHeight
+			return txHeight, tokens.ErrTxBeforeInitialHeight
 		}
 	}
 
-	return nil
+	return txHeight, err
 }
 
 func filterEvents(txres *TxResponse, attrKey, attrVal string) (events StringEvents, from string) {
@@ -207,9 +213,8 @@ func filterEvents(txres *TxResponse, attrKey, attrVal string) (events StringEven
 	return events, from
 }
 
-func (b *Bridge) checkEvents(events StringEvents, token *tokens.TokenConfig) (amount *big.Int) {
+func (b *Bridge) checkEvents(events StringEvents, depositAddress string) (amount *big.Int) {
 	amount = big.NewInt(0)
-	depositAddress := token.DepositAddress
 	var amountAtIndex int
 	for _, event := range events {
 		switch {

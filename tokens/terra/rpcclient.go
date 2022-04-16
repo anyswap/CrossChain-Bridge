@@ -32,14 +32,23 @@ func SetRPCTimeout(timeout int) {
 }
 
 // GetLatestBlock get latest block
-func GetLatestBlock(url string) (height uint64, err error) {
+func GetLatestBlock(url string) (*Block, error) {
 	path := "/cosmos/base/tendermint/v1beta1/blocks/latest"
 	var result GetBlockResult
-	err = client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
+	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
+	if err != nil {
+		return nil, err
+	}
+	return result.Block, err
+}
+
+// GetLatestBlockNumber get latest block height
+func GetLatestBlockNumber(url string) (height uint64, err error) {
+	block, err := GetLatestBlock(url)
 	if err != nil {
 		return 0, err
 	}
-	return common.GetUint64FromStr(result.Block.Header.Height)
+	return common.GetUint64FromStr(block.Header.Height)
 }
 
 // BroadcastTx broadcast tx

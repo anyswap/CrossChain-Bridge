@@ -40,8 +40,9 @@ var SuccessPostResult PostResult = "Success"
 type SwapInfo struct {
 	PairID        string     `json:"pairid"`
 	TxID          string     `json:"txid"`
-	TxTo          string     `json:"txto"`
+	TxTo          string     `json:"txto,omitempty"`
 	TxHeight      uint64     `json:"txheight"`
+	TxTime        uint64     `json:"txtime,omitempty"`
 	From          string     `json:"from"`
 	To            string     `json:"to"`
 	Bind          string     `json:"bind"`
@@ -56,7 +57,7 @@ type SwapInfo struct {
 	InitTime      int64      `json:"inittime"`
 	Timestamp     int64      `json:"timestamp"`
 	Memo          string     `json:"memo"`
-	ReplaceCount  int        `json:"replaceCount"`
+	ReplaceCount  int        `json:"replaceCount,omitempty"`
 	Confirmations uint64     `json:"confirmations"`
 }
 

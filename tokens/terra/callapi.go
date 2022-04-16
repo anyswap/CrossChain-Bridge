@@ -15,7 +15,7 @@ var (
 
 // GetLatestBlockNumberOf impl
 func (b *Bridge) GetLatestBlockNumberOf(url string) (uint64, error) {
-	return GetLatestBlock(url)
+	return GetLatestBlockNumber(url)
 }
 
 // GetLatestBlockNumber impl
@@ -23,7 +23,7 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 	var tmp uint64
 	urls := b.GatewayConfig.APIAddress
 	for _, url := range urls {
-		tmp, err = GetLatestBlock(url)
+		tmp, err = GetLatestBlockNumber(url)
 		if err == nil && tmp > height {
 			height = tmp
 		}
@@ -32,7 +32,7 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 		tokens.CmpAndSetLatestBlockHeight(height, b.IsSrcEndpoint())
 		return height, nil
 	}
-	return 0, wrapRPCQueryError(err, "GetLatestBlock")
+	return 0, wrapRPCQueryError(err, "GetLatestBlockNumber")
 }
 
 // BroadcastTx impl
