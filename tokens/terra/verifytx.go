@@ -131,7 +131,7 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	}
 	swapInfo.Height = txHeight // Height
 
-	events, from := filterEvents(&txres, "contract_address", token.ContractAddress)
+	events, from := filterEvents(&txres, token.ContractAddress)
 	if from == "" {
 		return swapInfo, errTxLog
 	}
@@ -194,18 +194,23 @@ func (b *Bridge) checkTxStatus(txres *TxResponse, allowUnstable bool) (txHeight 
 	return txHeight, err
 }
 
-func filterEvents(txres *TxResponse, attrKey, attrVal string) (events StringEvents, from string) {
+func filterEvents(txres *TxResponse, contractAddress string) (events StringEvents, from string) {
+	contractAddressKey := "contract_address"
 	for _, log := range txres.Logs {
 		for _, event := range log.Events {
+			if len(event.Attributes) < 2 {
+				continue
+			}
 			if from == "" &&
 				event.Type == "execute_contract" &&
-				event.Attributes[1].Key == attrKey &&
-				common.IsEqualIgnoreCase(event.Attributes[1].Value, attrVal) {
+				event.Attributes[1].Key == contractAddressKey &&
+				common.IsEqualIgnoreCase(event.Attributes[1].Value, contractAddress) {
 				from = event.Attributes[0].Value
 			}
 			if event.Type == "from_contract" &&
-				event.Attributes[0].Key == attrKey &&
-				common.IsEqualIgnoreCase(event.Attributes[0].Value, attrVal) {
+				event.Attributes[1].Key == "action" &&
+				event.Attributes[0].Key == contractAddressKey &&
+				common.IsEqualIgnoreCase(event.Attributes[0].Value, contractAddress) {
 				events = append(events, event)
 			}
 		}
@@ -215,25 +220,34 @@ func filterEvents(txres *TxResponse, attrKey, attrVal string) (events StringEven
 
 func (b *Bridge) checkEvents(events StringEvents, depositAddress string) (amount *big.Int) {
 	amount = big.NewInt(0)
-	var amountAtIndex int
+	var toAtIndex, amountAtIndex int
 	for _, event := range events {
 		switch {
 		case event.Attributes[1].Value == "transfer" &&
 			common.IsEqualIgnoreCase(event.Attributes[3].Value, depositAddress):
+			toAtIndex = 3
 			amountAtIndex = 4
 		case event.Attributes[1].Value == "transfer_from" &&
 			common.IsEqualIgnoreCase(event.Attributes[3].Value, depositAddress):
+			toAtIndex = 3
 			amountAtIndex = 5
 		case event.Attributes[1].Value == "send" &&
 			common.IsEqualIgnoreCase(event.Attributes[3].Value, depositAddress):
+			toAtIndex = 3
 			amountAtIndex = 4
 		case event.Attributes[1].Value == "send_from" &&
 			common.IsEqualIgnoreCase(event.Attributes[3].Value, depositAddress):
+			toAtIndex = 3
 			amountAtIndex = 5
 		case event.Attributes[1].Value == "mint" &&
 			common.IsEqualIgnoreCase(event.Attributes[2].Value, depositAddress):
+			toAtIndex = 2
 			amountAtIndex = 3
 		default:
+			continue
+		}
+		if event.Attributes[toAtIndex].Key != "to" ||
+			event.Attributes[amountAtIndex].Key != "amount" {
 			continue
 		}
 		amt, err := common.GetBigIntFromStr(event.Attributes[amountAtIndex].Value)
