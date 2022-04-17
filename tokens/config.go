@@ -455,6 +455,9 @@ func (c *TokenConfig) CalcAndStoreValue() {
 	decimals := *c.Decimals
 	c.maxSwap = ToBits(maxSwap+smallBiasValue, decimals)
 	c.minSwap = ToBits(minSwap-smallBiasValue, decimals)
+	if c.minSwap.Sign() < 0 {
+		c.minSwap = big.NewInt(0)
+	}
 	c.maxSwapFee = ToBits(maxFee, decimals)
 	c.minSwapFee = ToBits(minFee, decimals)
 	c.bigValThreshhold = ToBits(bigSwap+smallBiasValue, decimals)

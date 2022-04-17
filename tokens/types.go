@@ -56,9 +56,9 @@ type TxSwapInfo struct {
 	PairID    string   `json:"pairid"`
 	Hash      string   `json:"hash"`
 	Height    uint64   `json:"height"`
-	Timestamp uint64   `json:"timestamp"`
+	Timestamp uint64   `json:"timestamp,omitempty"`
 	From      string   `json:"from"`
-	TxTo      string   `json:"txto"`
+	TxTo      string   `json:"txto,omitempty"`
 	To        string   `json:"to"`
 	Bind      string   `json:"bind"`
 	Value     *big.Int `json:"value"`
@@ -70,7 +70,7 @@ type TxStatus struct {
 	Confirmations uint64      `json:"confirmations"`
 	BlockHeight   uint64      `json:"block_height"`
 	BlockHash     string      `json:"block_hash"`
-	BlockTime     uint64      `json:"block_time"`
+	BlockTime     uint64      `json:"block_time,omitempty"`
 }
 
 // SwapInfo struct

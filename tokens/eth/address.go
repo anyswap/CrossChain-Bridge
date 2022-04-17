@@ -21,7 +21,7 @@ var (
 // ShouldCheckAddressMixedCase check address mixed case
 // eg. RSK chain do not check mixed case or not same as eth
 func (b *Bridge) ShouldCheckAddressMixedCase() bool {
-	return !b.ChainConfig.IgnoreCheckAddressMixedCase
+	return b.ChainConfig != nil && !b.ChainConfig.IgnoreCheckAddressMixedCase
 }
 
 // IsValidAddress check address
