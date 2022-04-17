@@ -10,6 +10,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // GetTransaction impl
@@ -134,6 +135,8 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	var amount *big.Int
 	if token.ContractAddress != "" {
 		from, amount, err = b.checkTokenDepist(&txres, token)
+	} else {
+		from, amount, err = b.checkCoinDeposit(&txres, token)
 	}
 	if err != nil {
 		return swapInfo, err
@@ -184,13 +187,73 @@ func (b *Bridge) checkTxStatus(txres *TxResponse, allowUnstable bool) (txHeight 
 	return txHeight, err
 }
 
+//nolint:gocyclo,goconst // allow big check logic
+func (b *Bridge) checkCoinDeposit(txres *TxResponse, token *tokens.TokenConfig) (from string, amount *big.Int, err error) {
+	depositAddress := token.DepositAddress
+	depositDenom := token.Unit
+	amount = big.NewInt(0)
+	found := false
+	for _, log := range txres.Logs {
+		for _, event := range log.Events {
+			if event.Type != "transfer" {
+				continue
+			}
+			// event length mismatch
+			if len(event.Attributes)%3 != 0 {
+				continue
+			}
+			for i := 0; i < len(event.Attributes); i += 3 {
+				// attribute key mismatch
+				if event.Attributes[i].Key != "recipient" ||
+					event.Attributes[i+1].Key != "sender" ||
+					event.Attributes[i+2].Key != "amount" {
+					continue
+				}
+				// receiver mismatch
+				if !common.IsEqualIgnoreCase(event.Attributes[i].Value, depositAddress) {
+					continue
+				}
+				recvCoins, errf := sdk.ParseCoinsNormalized(event.Attributes[i+2].Value)
+				if errf != nil {
+					continue
+				}
+				matched := false
+				for _, coin := range recvCoins {
+					// denom mismatch
+					if coin.Denom != depositDenom {
+						continue
+					}
+					recvAmount := coin.Amount.BigInt()
+					if recvAmount != nil {
+						amount.Add(amount, recvAmount)
+					}
+					matched = true
+				}
+				if !matched {
+					continue
+				}
+				if from == "" {
+					from = event.Attributes[i+1].Value
+				}
+				found = true
+			}
+		}
+	}
+	if !found {
+		err = tokens.ErrDepositLogNotFound
+	}
+	return from, amount, err
+}
+
 func (b *Bridge) checkTokenDepist(txres *TxResponse, token *tokens.TokenConfig) (from string, amount *big.Int, err error) {
-	var events StringEvents
-	events, from = filterEvents(txres, token.ContractAddress)
+	events, from := filterEvents(txres, token.ContractAddress)
 	if from == "" || len(events) == 0 {
 		return "", nil, tokens.ErrDepositLogNotFound
 	}
-	amount = b.checkEvents(events, token.DepositAddress)
+	amount, found := b.checkEvents(events, token.DepositAddress)
+	if !found {
+		return "", nil, tokens.ErrDepositLogNotFound
+	}
 	return from, amount, nil
 }
 
@@ -218,7 +281,8 @@ func filterEvents(txres *TxResponse, contractAddress string) (events StringEvent
 	return events, from
 }
 
-func (b *Bridge) checkEvents(events StringEvents, depositAddress string) (amount *big.Int) {
+//nolint:gocyclo // allow big check logic
+func (b *Bridge) checkEvents(events StringEvents, depositAddress string) (amount *big.Int, found bool) {
 	amount = big.NewInt(0)
 	var toAtIndex, amountAtIndex int
 	for _, event := range events {
@@ -250,12 +314,13 @@ func (b *Bridge) checkEvents(events StringEvents, depositAddress string) (amount
 			event.Attributes[amountAtIndex].Key != "amount" {
 			continue
 		}
+		found = true
 		amt, err := common.GetBigIntFromStr(event.Attributes[amountAtIndex].Value)
 		if err == nil {
 			amount.Add(amount, amt)
 		}
 	}
-	return amount
+	return amount, found
 }
 
 func getBindAddressFromMemo(memo string) (string, bool) {
