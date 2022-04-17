@@ -1,7 +1,6 @@
 package terra
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -11,12 +10,6 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
-)
-
-var (
-	errTxEvent  = errors.New("tx event is not support")
-	errTxLog    = errors.New("tx has no execute_contract log")
-	errTxAmount = errors.New("tx amount is zero")
 )
 
 // GetTransaction impl
@@ -137,21 +130,18 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	}
 	swapInfo.Bind = bind // Bind
 
-	events, from := filterEvents(&txres, token.ContractAddress)
-	if from == "" {
-		return swapInfo, errTxLog
+	var from string
+	var amount *big.Int
+	if token.ContractAddress != "" {
+		from, amount, err = b.checkTokenDepist(&txres, token)
 	}
-	if len(events) == 0 {
-		return swapInfo, errTxEvent
+	if err != nil {
+		return swapInfo, err
 	}
-	swapInfo.From = strings.ToLower(from) // From
 
-	amount := b.checkEvents(events, token.DepositAddress)
-	if amount.CmpAbs(big.NewInt(0)) == 0 {
-		return swapInfo, errTxAmount
-	}
-	swapInfo.To = token.DepositAddress // To
-	swapInfo.Value = amount            // Value
+	swapInfo.From = strings.ToLower(from) // From
+	swapInfo.To = token.DepositAddress    // To
+	swapInfo.Value = amount               // Value
 
 	err = b.checkSwapinInfo(swapInfo)
 	if err != nil {
@@ -192,6 +182,16 @@ func (b *Bridge) checkTxStatus(txres *TxResponse, allowUnstable bool) (txHeight 
 	}
 
 	return txHeight, err
+}
+
+func (b *Bridge) checkTokenDepist(txres *TxResponse, token *tokens.TokenConfig) (from string, amount *big.Int, err error) {
+	var events StringEvents
+	events, from = filterEvents(txres, token.ContractAddress)
+	if from == "" || len(events) == 0 {
+		return "", nil, tokens.ErrDepositLogNotFound
+	}
+	amount = b.checkEvents(events, token.DepositAddress)
+	return from, amount, nil
 }
 
 func filterEvents(txres *TxResponse, contractAddress string) (events StringEvents, from string) {
