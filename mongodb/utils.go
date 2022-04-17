@@ -15,7 +15,6 @@ func GetStatusByTokenVerifyError(err error) SwapStatus {
 	// TxNotStable status will be reverify at work/verify, add store in result table
 	switch {
 	case err == nil,
-		errors.Is(err, tokens.ErrTxWithWrongMemo),
 		errors.Is(err, tokens.ErrTxWithWrongValue),
 		errors.Is(err, tokens.ErrBindAddrIsContract):
 		return TxNotStable

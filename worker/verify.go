@@ -148,7 +148,7 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 
 	swapInfo, err := verifySwapTransaction(bridge, pairID, txid, bind, tokens.SwapTxType(swap.TxType))
 	if swapInfo == nil {
-		return err
+		return errors.New("verify tx return nil swap info")
 	}
 
 	if errors.Is(err, tokens.ErrTxBeforeInitialHeight) ||
@@ -165,6 +165,9 @@ func processSwapVerify(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 		err = tokens.ErrAddressIsInBlacklist
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.SwapInBlacklist, now(), err.Error())
 	}
+	if !tokens.ShouldRegisterSwapForError(err) {
+		return err
+	}
 	return updateSwapStatus(pairID, txid, bind, swapInfo, isSwapin, err)
 }
 
@@ -172,15 +175,6 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 	resultStatus := mongodb.MatchTxEmpty
 
 	switch {
-	case errors.Is(err, tokens.ErrTxNotStable),
-		errors.Is(err, tokens.ErrTxNotFound),
-		errors.Is(err, tokens.ErrSwapIsClosed),
-		errors.Is(err, tokens.ErrTxWithWrongReceipt),
-		errors.Is(err, tokens.ErrTxIncompatible),
-		errors.Is(err, tokens.ErrTxWithWrongSender),
-		errors.Is(err, tokens.ErrNotFound),
-		errors.Is(err, tokens.ErrRPCQueryError):
-		return err
 	case err == nil:
 		status := mongodb.TxNotSwapped
 		if swapInfo.Value.Cmp(tokens.GetBigValueThreshold(pairID, isSwapin)) > 0 {
@@ -192,9 +186,6 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 			}
 		}
 		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, status, now(), "")
-	case errors.Is(err, tokens.ErrTxWithWrongMemo):
-		resultStatus = mongodb.TxWithWrongMemo
-		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxWithWrongMemo, now(), err.Error())
 	case errors.Is(err, tokens.ErrBindAddrIsContract):
 		resultStatus = mongodb.BindAddrIsContract
 		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.BindAddrIsContract, now(), err.Error())
@@ -203,10 +194,7 @@ func updateSwapStatus(pairID, txid, bind string, swapInfo *tokens.TxSwapInfo, is
 		err = mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxWithWrongValue, now(), err.Error())
 	case errors.Is(err, tokens.ErrTxSenderNotRegistered):
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxSenderNotRegistered, now(), err.Error())
-	case errors.Is(err, tokens.ErrBindAddressMismatch):
-		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
 	default:
-		logWorkerWarn("verify", "maybe not considered tx verify error", "txid", txid, "bind", bind, "isSwapin", isSwapin, "err", err)
 		return mongodb.UpdateSwapStatus(isSwapin, txid, pairID, bind, mongodb.TxVerifyFailed, now(), err.Error())
 	}
 

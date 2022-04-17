@@ -131,6 +131,12 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	}
 	swapInfo.Height = txHeight // Height
 
+	bind, ok := getBindAddressFromMemo(txr.Tx.Body.Memo)
+	if !ok {
+		return swapInfo, tokens.ErrTxWithWrongMemo
+	}
+	swapInfo.Bind = bind // Bind
+
 	events, from := filterEvents(&txres, token.ContractAddress)
 	if from == "" {
 		return swapInfo, errTxLog
@@ -146,12 +152,6 @@ func (b *Bridge) VerifyTransaction(pairID, txHash string, allowUnstable bool) (*
 	}
 	swapInfo.To = token.DepositAddress // To
 	swapInfo.Value = amount            // Value
-
-	bind, ok := getBindAddressFromMemo(txr.Tx.Body.Memo)
-	if !ok {
-		return swapInfo, tokens.ErrWrongMemoBindAddress
-	}
-	swapInfo.Bind = bind // Bind
 
 	err = b.checkSwapinInfo(swapInfo)
 	if err != nil {
@@ -272,6 +272,11 @@ func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 	}
 	if !tokens.CheckSwapValue(swapInfo, b.IsSrc) {
 		return tokens.ErrTxWithWrongValue
+	}
+	bindAddr := swapInfo.Bind
+	if !tokens.DstBridge.IsValidAddress(bindAddr) {
+		log.Warn("wrong bind address in swapin", "bind", bindAddr)
+		return tokens.ErrTxWithWrongMemo
 	}
 	return nil
 }

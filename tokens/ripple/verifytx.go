@@ -118,7 +118,7 @@ func (b *Bridge) verifySwapinTxWithPairID(pairID, txHash string, allowUnstable b
 	bind, ok := GetBindAddressFromMemos(payment)
 	if !ok {
 		log.Debug("wrong memos", "memos", payment.Memos)
-		return swapInfo, tokens.ErrWrongMemoBindAddress
+		return swapInfo, tokens.ErrTxWithWrongMemo
 	}
 
 	if !txres.TransactionWithMetaData.MetaData.DeliveredAmount.IsPositive() {
@@ -192,7 +192,7 @@ func (b *Bridge) checkSwapinInfo(swapInfo *tokens.TxSwapInfo) error {
 	bindAddr := swapInfo.Bind
 	if !tokens.DstBridge.IsValidAddress(bindAddr) {
 		log.Warn("wrong bind address in swapin", "bind", bindAddr)
-		return tokens.ErrWrongMemoBindAddress
+		return tokens.ErrTxWithWrongMemo
 	}
 	return nil
 }

@@ -32,7 +32,6 @@ var (
 	ErrTxWithWrongLogData   = errors.New("tx with wrong log data")
 	ErrTxIsAggregateTx      = errors.New("tx is aggregate tx")
 	ErrWrongP2shBindAddress = errors.New("wrong p2sh bind address")
-	ErrWrongMemoBindAddress = errors.New("wrong memo bind address")
 	ErrTxFuncHashMismatch   = errors.New("tx func hash mismatch")
 	ErrDepositLogNotFound   = errors.New("deposit log not found or removed")
 	ErrSwapoutLogNotFound   = errors.New("swapout log not found or removed")
@@ -48,9 +47,9 @@ var (
 	ErrTxWithWrongStatus    = errors.New("tx with wrong status")
 	ErrTxWithNoPayment      = errors.New("tx with no payment")
 	ErrTxIsNotValidated     = errors.New("tx is not validated")
+	ErrTxWithWrongMemo      = errors.New("tx with wrong memo")
 
 	// errors should register
-	ErrTxWithWrongMemo       = errors.New("tx with wrong memo")
 	ErrTxWithWrongValue      = errors.New("tx with wrong value")
 	ErrTxSenderNotRegistered = errors.New("tx sender not registered")
 	ErrBindAddrIsContract    = errors.New("bind address is contract")
@@ -60,7 +59,6 @@ var (
 func ShouldRegisterSwapForError(err error) bool {
 	switch {
 	case err == nil:
-	case errors.Is(err, ErrTxWithWrongMemo):
 	case errors.Is(err, ErrTxWithWrongValue):
 	case errors.Is(err, ErrTxSenderNotRegistered):
 	case errors.Is(err, ErrBindAddrIsContract):
