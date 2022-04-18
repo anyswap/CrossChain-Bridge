@@ -159,6 +159,10 @@ func (b *Bridge) VerifyTokenConfig(c *tokens.TokenConfig) (err error) {
 		if *c.Decimals != decimals {
 			return fmt.Errorf("meta coin %v decimals mismatch, have %v want %v", c.Unit, c.Decimals, decimals)
 		}
+		err = sdk.ValidateDenom(c.Unit)
+		if err != nil {
+			return fmt.Errorf("wrong denom: %v %w", c.Unit, err)
+		}
 	}
 
 	// verify public key

@@ -187,7 +187,7 @@ func (b *Bridge) checkTxStatus(txres *TxResponse, allowUnstable bool) (txHeight 
 	return txHeight, err
 }
 
-//nolint:gocyclo,goconst // allow big check logic
+//nolint:goconst // allow big check logic
 func (b *Bridge) checkCoinDeposit(txres *TxResponse, token *tokens.TokenConfig) (from string, amount *big.Int, err error) {
 	depositAddress := token.DepositAddress
 	depositDenom := token.Unit
@@ -217,24 +217,14 @@ func (b *Bridge) checkCoinDeposit(txres *TxResponse, token *tokens.TokenConfig) 
 				if errf != nil {
 					continue
 				}
-				matched := false
-				for _, coin := range recvCoins {
-					// denom mismatch
-					if coin.Denom != depositDenom {
-						continue
-					}
-					recvAmount := coin.Amount.BigInt()
-					if recvAmount != nil {
-						amount.Add(amount, recvAmount)
-					}
-					matched = true
-				}
-				if !matched {
+				recvAmount := recvCoins.AmountOfNoDenomValidation(depositDenom)
+				if recvAmount.IsNil() || recvAmount.IsZero() {
 					continue
 				}
 				if from == "" {
 					from = event.Attributes[i+1].Value
 				}
+				amount.Add(amount, recvAmount.BigInt())
 				found = true
 			}
 		}
