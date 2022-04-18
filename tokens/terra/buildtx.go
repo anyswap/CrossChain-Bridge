@@ -97,7 +97,22 @@ func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.Token
 	}
 
 	memo := tokens.UnlockMemoPrefix + args.SwapID
-	return b.BuildTx(from, args.Bind, memo, amount, extra, tokenCfg)
+	txb, err = b.BuildTx(from, args.Bind, memo, amount, extra, tokenCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("build tx success",
+		"identifier", args.Identifier, "pairID", args.PairID, "swapID", args.SwapID,
+		"originValue", args.OriginValue, "swapValue", args.SwapValue,
+		"from", from, "bind", args.Bind, "amount", amount,
+		"replaceNum", args.GetReplaceNum(),
+		"gas", txb.GetGas(), "fees", txb.GetFee().String(),
+		"chainID", txb.GetSignerData().ChainID,
+		"sequence", txb.GetSignerData().Sequence,
+		"accountNumber", txb.GetSignerData().AccountNumber,
+	)
+	return txb, nil
 }
 
 // BuildTx build tx
@@ -187,7 +202,7 @@ func (b *Bridge) BuildTx(
 	}
 
 	if params.IsSwapServer {
-		err = b.adjustFees(txb, tokenCfg)
+		err = b.adjustFees(txb, extra, tokenCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +211,7 @@ func (b *Bridge) BuildTx(
 	return txb, nil
 }
 
-func (b *Bridge) adjustFees(txb *TxBuilder, tokenCfg *tokens.TokenConfig) error {
+func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *tokens.TokenConfig) error {
 	gasUsed, err := b.simulateTx(txb)
 	if err != nil {
 		return err
@@ -208,8 +223,10 @@ func (b *Bridge) adjustFees(txb *TxBuilder, tokenCfg *tokens.TokenConfig) error 
 	gasNeed := gasUsed * (100 + plusGasPercentage) / 100
 	gas := txb.GetGas()
 	if gasNeed > gas {
+		log.Info("build tx adjust gas limit", "old", gas, "new", gasNeed)
 		gas = gasNeed
 		txb.SetGasLimit(gas) // adjust gas limit
+		*extra.Gas = gas     // update extra gas limit
 	}
 
 	fees := txb.GetFee()
@@ -227,8 +244,10 @@ func (b *Bridge) adjustFees(txb *TxBuilder, tokenCfg *tokens.TokenConfig) error 
 			feesNeed = feeCap
 		}
 		if fees[0].Amount.Uint64() < feesNeed {
+			log.Info("build tx adjust fees", "old", fees.String(), "new", feesNeed)
 			fees = sdk.NewCoins(sdk.NewCoin(fees[0].Denom, sdk.NewIntFromUint64(feesNeed)))
-			txb.SetFeeAmount(fees) // adjust fees
+			txb.SetFeeAmount(fees)      // adjust fees
+			*extra.Fees = fees.String() // update extra fees
 		}
 	}
 
