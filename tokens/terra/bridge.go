@@ -174,14 +174,6 @@ func (b *Bridge) VerifyTokenConfig(c *tokens.TokenConfig) (err error) {
 		return fmt.Errorf("dcrm address %v and public key address %v is not match", c.DcrmAddress, pubAddr)
 	}
 
-	// check  tax config
-	if c.TaxCap < 0 {
-		return fmt.Errorf("invalid tax cap: %v", c.TaxCap)
-	}
-	if c.TaxRate < 0 || c.TaxRate > 0.01 {
-		return fmt.Errorf("invalid tax tax rate: %v", c.TaxRate)
-	}
-
 	// verify fees config
 	_, err = sdk.ParseCoinsNormalized(c.DefaultFees)
 	if err != nil {

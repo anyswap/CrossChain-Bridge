@@ -158,13 +158,12 @@ type TokenConfig struct {
 	DcrmAddressPriKey string `json:"-"`
 
 	// cosmos/terra specific
-	DcrmAccountNumber uint64 `json:",omitempty"`
-	DefaultFees       string `json:",omitempty"`
-	// cosmos/terra meta coins
-	Unit    string  `json:",omitempty"`
-	TaxCap  float64 `json:",omitempty"`
-	TaxRate float64 `json:",omitempty"`
-	GasRate float64 `json:",omitempty"`
+	Unit              string  `json:",omitempty"`
+	DcrmAccountNumber uint64  `json:",omitempty"`
+	DefaultFees       string  `json:",omitempty"`
+	FeeCap            uint64  `json:",omitempty"`
+	DefaultGasPrice   float64 `json:",omitempty"`
+	PlusGasPercentage uint64  `json:",omitempty"` // plus gas limit percentage
 
 	RippleExtra *RippleTokenExtra `json:",omitempty"`
 

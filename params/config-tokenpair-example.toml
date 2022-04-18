@@ -44,12 +44,13 @@ BigValueWhitelist = [
 	"0x2222222222222222222222222222222222222222"
 ]
 # items added for cosmos/terra
-DcrmAccountNumber = 0
-DefaultFees = "10000uluna"
 Unit = "uluna"
-TaxCap = 0.04
-TaxRate = 0.003
-GasRate = 0.012
+# account number is fixed for each account. advice query and assign it here
+DcrmAccountNumber = 0
+#DefaultFees = "3000uluna"
+#FeeCap = 10000
+#DefaultGasPrice = 0.02
+#PlusGasPercentage = 20
 
 # dest token config
 [DestToken]

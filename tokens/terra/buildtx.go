@@ -20,9 +20,17 @@ var (
 	retryRPCInterval = 1 * time.Second
 
 	signMode = signing.SignMode_SIGN_MODE_DIRECT
+)
 
-	DefaultGasLimit = uint64(200000)
-	DefaultFees     = "10000uluna"
+// default values to calc tx gas and fees
+var (
+	DefaultFees   = "3000uluna"
+	DefaultFeeCap = uint64(10000)
+
+	DefaultGasLimit          = uint64(130000)
+	DefaultPlusGasPercentage = uint64(20)
+
+	DefaultGasPrice = 0.02
 )
 
 // GetDefaultExtras get default extras
@@ -179,7 +187,7 @@ func (b *Bridge) BuildTx(
 	}
 
 	if params.IsSwapServer {
-		err = b.simulateTx(txb)
+		err = b.adjustFees(txb, tokenCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -188,25 +196,61 @@ func (b *Bridge) BuildTx(
 	return txb, nil
 }
 
-func (b *Bridge) simulateTx(txb *TxBuilder) error {
-	txBytes, err := txb.GetTxBytes()
+func (b *Bridge) adjustFees(txb *TxBuilder, tokenCfg *tokens.TokenConfig) error {
+	gasUsed, err := b.simulateTx(txb)
 	if err != nil {
 		return err
+	}
+	plusGasPercentage := tokenCfg.PlusGasPercentage
+	if plusGasPercentage == 0 {
+		plusGasPercentage = DefaultPlusGasPercentage
+	}
+	gasNeed := gasUsed * (100 + plusGasPercentage) / 100
+	gas := txb.GetGas()
+	if gasNeed > gas {
+		gas = gasNeed
+		txb.SetGasLimit(gas) // adjust gas limit
+	}
+
+	fees := txb.GetFee()
+	if len(fees) == 1 {
+		gasPrice := tokenCfg.DefaultGasPrice
+		if gasPrice == 0 {
+			gasPrice = DefaultGasPrice
+		}
+		feesNeed := uint64(float64(gas) * gasPrice)
+		feeCap := tokenCfg.FeeCap
+		if feeCap == 0 {
+			feeCap = DefaultFeeCap
+		}
+		if feesNeed > feeCap {
+			feesNeed = feeCap
+		}
+		if fees[0].Amount.Uint64() < feesNeed {
+			fees = sdk.NewCoins(sdk.NewCoin(fees[0].Denom, sdk.NewIntFromUint64(feesNeed)))
+			txb.SetFeeAmount(fees) // adjust fees
+		}
+	}
+
+	return nil
+}
+
+func (b *Bridge) simulateTx(txb *TxBuilder) (gasUsed uint64, err error) {
+	txBytes, err := txb.GetTxBytes()
+	if err != nil {
+		return 0, err
 	}
 	simRes, err := b.SimulateTx(&SimulateRequest{TxBytes: txBytes})
 	if err != nil {
-		return err
+		return 0, err
 	}
-	gasUsed, err := common.GetUint64FromStr(simRes.GasInfo.GasUsed)
+	gasUsed, err = common.GetUint64FromStr(simRes.GasInfo.GasUsed)
 	if err != nil {
-		return err
+		log.Warn("simulate tx failed", "err", err)
+		return 0, err
 	}
-	gasWanted := txb.GetGas()
-	if gasWanted < gasUsed {
-		return fmt.Errorf("simulate tx gas exceeded, wanted %v used %v", gasWanted, gasUsed)
-	}
-	log.Info("simulate tx success", "gasWanted", gasWanted, "gasUsed", gasUsed)
-	return nil
+	log.Info("simulate tx success", "gasUsed", gasUsed)
+	return gasUsed, nil
 }
 
 func (b *Bridge) initExtra(args *tokens.BuildTxArgs, tokenCfg *tokens.TokenConfig) (extra *tokens.TerraExtra, err error) {
