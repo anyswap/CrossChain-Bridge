@@ -114,6 +114,10 @@ func reverifySwap(txid, pairID, bind string, isSwapin bool) error {
 	if !swap.Status.CanReverify() {
 		return fmt.Errorf("swap status is %v, no need to reverify", swap.Status.String())
 	}
+	err = UpdateSwapResultStatus(isSwapin, txid, pairID, bind, MatchTxEmpty, time.Now().Unix(), "")
+	if err != nil {
+		return err
+	}
 	return UpdateSwapStatus(isSwapin, txid, pairID, bind, TxNotStable, time.Now().Unix(), "")
 }
 
