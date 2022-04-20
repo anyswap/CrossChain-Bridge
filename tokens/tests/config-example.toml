@@ -1,5 +1,5 @@
 # a short string to identify the bridge
-Identifier = "TERRA2BSC"
+Identifier = "NEAR2BSC"
 
 # bridge API service (server only)
 [Server.APIServer]
@@ -14,26 +14,26 @@ IsTestMode = true
 
 # source chain config
 [SrcChain]
-BlockChain = "TERRA"
-NetID = "columbus-5"
+BlockChain = "NEAR"
 Confirmations = 6
 InitialHeight = 0
+NetID = "columbus-5"
 
-[SrcChain.MetaCoin]
-Symbol = "LUNA"
-Unit = "uluna"
-Decimals = 6
+# [SrcChain.MetaCoin]
+# Symbol = "LUNA"
+# Unit = "uluna"
+# Decimals = 6
 
 # source blockchain gateway config
 [SrcGateway]
-APIAddress = ["https://bombay-lcd.terra.dev/"]
+APIAddress = ["https://rpc.testnet.near.org", "https://archival-rpc.testnet.near.org"]
 
 # dest chain config
 [DestChain]
 BlockChain = "Ethereum-BSC"
-NetID = "custom"
 Confirmations = 15
 InitialHeight = 0
+NetID = "custom"
 
 # dest blockchain gateway config
 [DestGateway]

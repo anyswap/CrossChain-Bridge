@@ -33,16 +33,29 @@ func (b *Bridge) GetLatestBlockNumber() (height uint64, err error) {
 	return 0, wrapRPCQueryError(err, "GetLatestBlockNumber")
 }
 
-// BroadcastTx impl
-func (b *Bridge) BroadcastTx(req *BroadcastTxRequest) (txHash string, err error) {
-	return "", nil
+// GetLatestBlockNumber impl
+func (b *Bridge) GetBlockByHash(hash string) (height string, err error) {
+	var tmp string
+	urls := b.GatewayConfig.APIAddress
+	for _, url := range urls {
+		tmp, err = GetBlockByHash(url, hash)
+		if err == nil {
+			return tmp, err
+		}
+	}
+	return "0", wrapRPCQueryError(err, "GetBlockByHash")
 }
 
-// SimulateTx impl
-func (b *Bridge) SimulateTx(req *SimulateRequest) (res *SimulateResponse, err error) {
+// // BroadcastTx impl
+// func (b *Bridge) BroadcastTx(req *BroadcastTxRequest) (txHash string, err error) {
+// 	return "", nil
+// }
 
-	return nil, nil
-}
+// // SimulateTx impl
+// func (b *Bridge) SimulateTx(req *SimulateRequest) (res *SimulateResponse, err error) {
+
+// 	return nil, nil
+// }
 
 // GetBalance impl
 func (b *Bridge) GetBalance(address, denom string) (res uint64, err error) {
@@ -50,9 +63,9 @@ func (b *Bridge) GetBalance(address, denom string) (res uint64, err error) {
 }
 
 // GetBaseAccount impl
-func (b *Bridge) GetBaseAccount(address string) (res *BaseAccount, err error) {
-	return nil, nil
-}
+// func (b *Bridge) GetBaseAccount(address string) (res *BaseAccount, err error) {
+// 	return nil, nil
+// }
 
 // GetTaxCap impl
 func (b *Bridge) GetTaxCap(denom string) (res uint64, err error) {
@@ -65,9 +78,9 @@ func (b *Bridge) GetTaxRate() (res uint64, err error) {
 }
 
 // GetContractInfo impl
-func (b *Bridge) GetContractInfo(contract string) (res *QueryContractInfoResponse, err error) {
-	return nil, nil
-}
+// func (b *Bridge) GetContractInfo(contract string) (res *QueryContractInfoResponse, err error) {
+// 	return nil, nil
+// }
 
 func base64EncodedJSON(v interface{}) (string, error) {
 	jsonData, err := json.Marshal(v)
