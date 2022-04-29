@@ -226,7 +226,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	msgContext := []string{string(jsondata)}
 
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "msgContext", msgContext, "txid", args.SwapID)
-	keyID, rsv, err := dcrm.DoSign(cfgFromPublicKey, msgHash, msgContext)
+	keyID, rsv, err := dcrm.DoSignEC(cfgFromPublicKey, msgHash, msgContext)
 	if err != nil {
 		return nil, err
 	}

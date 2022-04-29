@@ -182,8 +182,6 @@ APIAddressExt = ["http://5.189.139.168:8000"]
 [Dcrm]
 # disable flag
 Disable = false
-# sign type (eg. ECDSA, EC256K1, ED25519)
-SignType = "ECDSA"
 # RPC API prefix
 APIPrefix = "dcrm_"
 # RPC timeout
