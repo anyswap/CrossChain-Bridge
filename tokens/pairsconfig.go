@@ -153,7 +153,9 @@ func checkTokenPairsConfig(pairsConfig map[string]*TokenPairConfig) (err error) 
 			}
 			srcContractsMap[srcContract] = struct{}{}
 		} else {
-			nonContractSrcCount++
+			if tokenPair.SrcToken.Unit == "" {
+				nonContractSrcCount++
+			}
 		}
 		// check destination contract address
 		dstContract := strings.ToLower(tokenPair.DestToken.ContractAddress)
