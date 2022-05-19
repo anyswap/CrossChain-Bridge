@@ -173,6 +173,10 @@ CallByContractWhitelist = [
 	"0x1111111111111111111111111111111111111111",
 	"0x2222222222222222222222222222222222222222"
 ]
+# call by contract code hash whitelist
+CallByContractCodeHashWhitelist = [
+	"0x1111111111111111111111111111111111111111111111111111111111111111"
+]
 
 # dest blockchain gateway config
 [DestGateway]
@@ -183,8 +187,6 @@ APIAddressExt = ["http://5.189.139.168:8000"]
 [Dcrm]
 # disable flag
 Disable = false
-# sign type (eg. ECDSA, EC256K1, ED25519)
-SignType = "ECDSA"
 # RPC API prefix
 APIPrefix = "dcrm_"
 # RPC timeout

@@ -44,7 +44,7 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	msgContext := string(jsondata)
 
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "msghash", msgHash, "txid", args.SwapID)
-	keyID, rsvs, err := dcrm.DoSignOne(tokenCfg.DcrmPubkey, msgHash, msgContext)
+	keyID, rsvs, err := dcrm.DoSignOneEC(tokenCfg.DcrmPubkey, msgHash, msgContext)
 	if err != nil {
 		return nil, "", err
 	}

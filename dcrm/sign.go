@@ -45,17 +45,32 @@ func pingDcrmNode(nodeInfo *NodeInfo) (err error) {
 	return err
 }
 
+// DoSignOneEC dcrm sign single msgHash with context msgContext
+func DoSignOneEC(signPubkey, msgHash, msgContext string) (keyID string, rsvs []string, err error) {
+	return DoSign(SignTypeEC256K1, signPubkey, []string{msgHash}, []string{msgContext})
+}
+
+// DoSignOneED dcrm sign single msgHash with context msgContext
+func DoSignOneED(signPubkey, msgHash, msgContext string) (keyID string, rsvs []string, err error) {
+	return DoSign(SignTypeED25519, signPubkey, []string{msgHash}, []string{msgContext})
+}
+
 // DoSignOne dcrm sign single msgHash with context msgContext
-func DoSignOne(signPubkey, msgHash, msgContext string) (keyID string, rsvs []string, err error) {
-	return DoSign(signPubkey, []string{msgHash}, []string{msgContext})
+func DoSignOne(signType, signPubkey, msgHash, msgContext string) (keyID string, rsvs []string, err error) {
+	return DoSign(signType, signPubkey, []string{msgHash}, []string{msgContext})
+}
+
+// DoSignEC dcrm sign msgHash with context msgContext
+func DoSignEC(signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
+	return DoSign(SignTypeEC256K1, signPubkey, msgHash, msgContext)
 }
 
 // DoSign dcrm sign msgHash with context msgContext
-func DoSign(signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
+func DoSign(signType, signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
 	if !params.IsDcrmEnabled() {
 		return "", nil, errSignIsDisabled
 	}
-	log.Debug("dcrm DoSign", "msgHash", msgHash, "msgContext", msgContext)
+	log.Debug("dcrm DoSign", "msgHash", msgHash, "msgContext", msgContext, "signType", signType)
 	if signPubkey == "" {
 		return "", nil, errSignWithoutPublickey
 	}
@@ -70,7 +85,7 @@ func DoSign(signPubkey string, msgHash, msgContext []string) (keyID string, rsvs
 			startIndex := randIndex.Int64()
 			i := startIndex
 			for {
-				keyID, rsvs, err = doSignImpl(dcrmNode, i, signPubkey, msgHash, msgContext)
+				keyID, rsvs, err = doSignImpl(dcrmNode, i, signType, signPubkey, msgHash, msgContext)
 				if err == nil {
 					return keyID, rsvs, nil
 				}
@@ -82,11 +97,11 @@ func DoSign(signPubkey string, msgHash, msgContext []string) (keyID string, rsvs
 		}
 		time.Sleep(2 * time.Second)
 	}
-	log.Warn("dcrm DoSign failed", "msgHash", msgHash, "msgContext", msgContext, "err", err)
+	log.Warn("dcrm DoSign failed", "msgHash", msgHash, "msgContext", msgContext, "signType", signType, "err", err)
 	return "", nil, errDoSignFailed
 }
 
-func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
+func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signType, signPubkey string, msgHash, msgContext []string) (keyID string, rsvs []string, err error) {
 	nonce, err := GetSignNonce(dcrmNode.dcrmUser.String(), dcrmNode.dcrmRPCAddress)
 	if err != nil {
 		return "", nil, err
@@ -96,7 +111,7 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 		PubKey:     signPubkey,
 		MsgHash:    msgHash,
 		MsgContext: msgContext,
-		Keytype:    dcrmSignType,
+		Keytype:    signType,
 		GroupID:    dcrmNode.signGroups[signGroupIndex],
 		ThresHold:  dcrmThreshold,
 		Mode:       dcrmMode,
@@ -133,7 +148,7 @@ func doSignImpl(dcrmNode *NodeInfo, signGroupIndex int64, signPubkey string, msg
 		return "", nil, err
 	}
 
-	if isECDSA() && mongodb.HasClient() { // prevent multiple use of same r value
+	if isEC(signType) && mongodb.HasClient() { // prevent multiple use of same r value
 		for _, rsv := range rsvs {
 			signature := common.FromHex(rsv)
 			if len(signature) != crypto.SignatureLength {
@@ -238,7 +253,7 @@ func (s *SignInfoData) HasValidSignature() bool {
 		PubKey:     s.PubKey,
 		MsgHash:    s.MsgHash,
 		MsgContext: msgContext,
-		Keytype:    dcrmSignType,
+		Keytype:    SignTypeEC256K1,
 		GroupID:    s.GroupID,
 		ThresHold:  s.ThresHold,
 		Mode:       s.Mode,

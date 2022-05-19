@@ -67,17 +67,21 @@ func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs
 	isEd := isEd25519Pubkey(pubkey)
 
 	var signContent string
+	var signType string
+
 	if isEd {
 		// dcrm ed public key has no 0xed prefix
 		pubkeyStr = pubkeyStr[2:]
 		// the real sign content is (signing prefix + msg)
 		// when we hex encoding here, the dcrm should do hex decoding there.
 		signContent = common.ToHex(msg)
+		signType = dcrm.SignTypeEC256K1
 	} else {
 		signContent = msgHash.String()
+		signType = dcrm.SignTypeED25519
 	}
 
-	keyID, rsvs, err := dcrm.DoSignOne(pubkeyStr, signContent, msgContext)
+	keyID, rsvs, err := dcrm.DoSignOne(signType, pubkeyStr, signContent, msgContext)
 	if err != nil {
 		return nil, "", err
 	}
