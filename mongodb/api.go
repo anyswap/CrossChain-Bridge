@@ -477,14 +477,19 @@ func updateSwapResultOldTxs(collection *mongo.Collection, txid, pairID, bind, sw
 		}
 	}
 
+	updateSet := bson.M{
+		"timestamp": time.Now().Unix(),
+	}
+	if swapRes.Status != MatchTxStable {
+		updateSet["swaptx"] = swapTx
+	} else {
+		log.Warn("UpdateRouterOldSwapTxs ignore update swap tx with stable status", "txid", txid, "pairID", pairID, "bind", bind, "ignored", swapTx, "swaptx", swapRes.SwapTx, "swapnonce", swapRes.SwapNonce, "swapValue", swapValue)
+	}
+
 	var updates bson.M
 
 	if len(swapRes.OldSwapTxs) == 0 {
-		updateSet := bson.M{
-			"swaptx":     swapTx,
-			"oldswaptxs": []string{swapRes.SwapTx, swapTx},
-			"timestamp":  time.Now().Unix(),
-		}
+		updateSet["oldswaptxs"] = []string{swapRes.SwapTx, swapTx}
 		if swapValue != "" {
 			updateSet["oldswapvals"] = []string{swapRes.SwapValue, swapValue}
 		}
@@ -495,7 +500,7 @@ func updateSwapResultOldTxs(collection *mongo.Collection, txid, pairID, bind, sw
 			arrayPushes["oldswapvals"] = swapValue
 		}
 		updates = bson.M{
-			"$set":  bson.M{"swaptx": swapTx, "timestamp": time.Now().Unix()},
+			"$set":  updateSet,
 			"$push": arrayPushes,
 		}
 	}
