@@ -252,7 +252,7 @@ func processNonEmptySwapResult(res *mongodb.MgoSwapResult, isSwapin bool) error 
 
 func processHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	pairID, txid, bind := res.PairID, res.TxID, res.Bind
-	history := getSwapHistory(txid, bind, isSwapin)
+	history := getSwapHistory(pairID, txid, bind, isSwapin)
 	if history == nil {
 		return nil
 	}
@@ -379,7 +379,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	swapNonce := args.GetTxNonce()
 
 	// update database before sending transaction
-	addSwapHistory(txid, bind, originValue, txHash, swapNonce, isSwapin)
+	addSwapHistory(pairID, txid, bind, originValue, txHash, swapNonce, isSwapin)
 	matchTx := &MatchTx{
 		SwapTx:    txHash,
 		SwapValue: tokens.CalcSwappedValue(pairID, originValue, isSwapin, res.From, res.TxTo).String(),
@@ -438,6 +438,7 @@ func DeleteCachedSwap(isSwapin bool, txid, bind string) {
 }
 
 type swapInfo struct {
+	pairID   string
 	txid     string
 	bind     string
 	value    *big.Int
@@ -446,10 +447,11 @@ type swapInfo struct {
 	isSwapin bool
 }
 
-func addSwapHistory(txid, bind string, value *big.Int, matchTx string, nonce uint64, isSwapin bool) {
+func addSwapHistory(pairID, txid, bind string, value *big.Int, matchTx string, nonce uint64, isSwapin bool) {
 	// Create the new item as its own ring
 	item := ring.New(1)
 	item.Value = &swapInfo{
+		pairID:   pairID,
 		txid:     txid,
 		bind:     bind,
 		value:    value,
@@ -473,7 +475,7 @@ func addSwapHistory(txid, bind string, value *big.Int, matchTx string, nonce uin
 	}
 }
 
-func getSwapHistory(txid, bind string, isSwapin bool) *swapInfo {
+func getSwapHistory(pairID, txid, bind string, isSwapin bool) *swapInfo {
 	swapRingLock.RLock()
 	defer swapRingLock.RUnlock()
 
@@ -484,7 +486,7 @@ func getSwapHistory(txid, bind string, isSwapin bool) *swapInfo {
 	r := swapRing
 	for i := 0; i < r.Len(); i++ {
 		item := r.Value.(*swapInfo)
-		if item.txid == txid && item.bind == bind && item.isSwapin == isSwapin {
+		if item.pairID == pairID && item.txid == txid && item.bind == bind && item.isSwapin == isSwapin {
 			return item
 		}
 		r = r.Prev()
