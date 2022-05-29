@@ -231,8 +231,7 @@ func findSwapsWithPairIDAndStatus(pairID string, collection *mongo.Collection, s
 }
 
 func findSwapsOrSwapResultsWithPairIDAndStatus(result interface{}, pairID string, collection *mongo.Collection, status SwapStatus, septime int64) error {
-	pairID = strings.ToLower(pairID)
-	qpair := bson.M{"pairid": pairID}
+	qpair := bson.M{"pairid": strings.ToLower(pairID)}
 	qtime := bson.M{"timestamp": bson.M{"$gte": septime}}
 	qstatus := bson.M{"status": status}
 	queries := []bson.M{qpair, qtime, qstatus}
@@ -544,19 +543,16 @@ func getStatusesFromStr(status string) []SwapStatus {
 }
 
 func findSwapResults(collection *mongo.Collection, address, pairID string, offset, limit int, status string) ([]*MgoSwapResult, error) {
-	pairID = strings.ToLower(pairID)
-
 	var queries []bson.M
 
 	if pairID != "" && pairID != allPairs {
-		queries = append(queries, bson.M{"pairid": pairID})
+		qpair := bson.M{"pairid": strings.ToLower(pairID)}
+		queries = append(queries, qpair)
 	}
 
 	if address != "" && address != allAddresses {
-		if common.IsHexAddress(address) {
-			address = strings.ToLower(address)
-		}
-		queries = append(queries, bson.M{"from": address})
+		qaddress := bson.M{"from": bson.M{"$regex": primitive.Regex{Pattern: address, Options: "i"}}}
+		queries = append(queries, qaddress)
 	}
 
 	filterStatuses := getStatusesFromStr(status)
@@ -814,10 +810,11 @@ func LoadAllSwapNonces() (swapinNonces, swapoutNonces map[string]uint64) {
 // ---------------------- swap hisitory -----------------------------
 
 // AddSwapHistory add
-func AddSwapHistory(isSwapin bool, txid, bind, swaptx string) error {
+func AddSwapHistory(isSwapin bool, txid, pairID, bind, swaptx string) error {
 	item := &MgoSwapHistory{
 		Key:      newObjectID(),
 		IsSwapin: isSwapin,
+		PairID:   pairID,
 		TxID:     txid,
 		Bind:     bind,
 		SwapTx:   swaptx,
@@ -832,11 +829,12 @@ func AddSwapHistory(isSwapin bool, txid, bind, swaptx string) error {
 }
 
 // GetSwapHistory get
-func GetSwapHistory(isSwapin bool, txid, bind string) ([]*MgoSwapHistory, error) {
+func GetSwapHistory(isSwapin bool, txid, pairID, bind string) ([]*MgoSwapHistory, error) {
+	qpair := bson.M{"pairid": strings.ToLower(pairID)}
 	qtxid := bson.M{"txid": bson.M{"$regex": primitive.Regex{Pattern: txid, Options: "i"}}}
 	qbind := bson.M{"bind": bson.M{"$regex": primitive.Regex{Pattern: bind, Options: "i"}}}
 	qisswapin := bson.M{"isswapin": isSwapin}
-	queries := []bson.M{qtxid, qbind, qisswapin}
+	queries := []bson.M{qtxid, qpair, qbind, qisswapin}
 	cur, err := collSwapHistory.Find(clientCtx, bson.M{"$and": queries})
 	if err != nil {
 		return nil, mgoError(err)

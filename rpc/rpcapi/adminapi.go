@@ -260,7 +260,7 @@ func reswap(args *admin.CallArgs, result *string) (err error) {
 	if err != nil {
 		return err
 	}
-	worker.DeleteCachedSwap(isSwapin, txid, bind)
+	worker.DeleteCachedSwap(isSwapin, txid, pairID, bind)
 	*result = successReuslt
 	return nil
 }

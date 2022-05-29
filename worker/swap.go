@@ -187,7 +187,7 @@ func processSwap(swap *mongodb.MgoSwap, isSwapin bool) (err error) {
 	txid := swap.TxID
 	bind := swap.Bind
 
-	cacheKey := getSwapCacheKey(isSwapin, txid, bind)
+	cacheKey := getSwapCacheKey(isSwapin, txid, pairID, bind)
 	if cachedSwapTasks.Contains(cacheKey) {
 		return errAlreadySwapped
 	}
@@ -288,7 +288,7 @@ func preventReswap(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	default:
 	}
 	if res.Status != mongodb.Reswapping {
-		if isSwapHistoryExist(isSwapin, res.TxID, res.Bind) {
+		if isSwapHistoryExist(isSwapin, res.TxID, res.PairID, res.Bind) {
 			logWorkerError("[doSwap]", "forbid reswap by cache", errAlreadySwapped, "isSwapin", isSwapin, "txid", res.TxID, "bind", res.Bind)
 			_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, mongodb.TxProcessed, now(), "")
 			return errAlreadySwapped
@@ -298,7 +298,7 @@ func preventReswap(res *mongodb.MgoSwapResult, isSwapin bool) error {
 }
 
 func preventReswapByHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
-	swapHistories, _ := mongodb.GetSwapHistory(isSwapin, res.TxID, res.Bind)
+	swapHistories, _ := mongodb.GetSwapHistory(isSwapin, res.TxID, res.PairID, res.Bind)
 	if len(swapHistories) == 0 {
 		return nil
 	}
@@ -326,7 +326,7 @@ func preventReswapByHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
 	}
 	if alreadySwapped {
 		logWorkerError("[doSwap]", "forbid reswap by history", errAlreadySwapped,
-			"isSwapin", isSwapin, "txid", res.TxID, "bind", res.Bind, "history", swapHistories)
+			"isSwapin", isSwapin, "pairID", res.PairID, "txid", res.TxID, "bind", res.Bind, "history", swapHistories)
 		_ = mongodb.UpdateSwapStatus(isSwapin, res.TxID, res.PairID, res.Bind, mongodb.TxProcessed, now(), "")
 		return errAlreadySwapped
 	}
@@ -410,8 +410,8 @@ func processSwapTask(swapChan <-chan *tokens.BuildTxArgs, dcrmAddress string, is
 	}
 }
 
-func getSwapCacheKey(isSwapin bool, txid, bind string) string {
-	return strings.ToLower(fmt.Sprintf("%s:%s:%t", txid, bind, isSwapin))
+func getSwapCacheKey(isSwapin bool, txid, pairID, bind string) string {
+	return strings.ToLower(fmt.Sprintf("%s:%s:%s:%t", pairID, txid, bind, isSwapin))
 }
 
 func checkAndUpdateProcessSwapTaskCache(key string) error {
@@ -434,7 +434,7 @@ func doSwap(args *tokens.BuildTxArgs) (err error) {
 	isSwapin := swapType == tokens.SwapinType
 	resBridge := tokens.GetCrossChainBridge(!isSwapin)
 
-	cacheKey := getSwapCacheKey(isSwapin, txid, bind)
+	cacheKey := getSwapCacheKey(isSwapin, txid, pairID, bind)
 	err = checkAndUpdateProcessSwapTaskCache(cacheKey)
 	if err != nil {
 		return err
@@ -544,20 +544,20 @@ func reverifySwap(args *tokens.BuildTxArgs) {
 }
 
 // DeleteCachedSwap delete cached swap
-func DeleteCachedSwap(isSwapin bool, txid, bind string) {
-	cacheKey := getSwapCacheKey(isSwapin, txid, bind)
+func DeleteCachedSwap(isSwapin bool, txid, pairID, bind string) {
+	cacheKey := getSwapCacheKey(isSwapin, txid, pairID, bind)
 	cachedSwapTasks.Remove(cacheKey)
 }
 
-func addSwapHistory(isSwapin bool, txid, bind string) {
+func addSwapHistory(isSwapin bool, txid, pairID, bind string) {
 	if cachedSwapHistoty.Cardinality() >= maxCachedSwapHistorySize {
 		cachedSwapHistoty.Pop()
 	}
-	key := getSwapCacheKey(isSwapin, txid, bind)
+	key := getSwapCacheKey(isSwapin, txid, pairID, bind)
 	cachedSwapHistoty.Add(key)
 }
 
-func isSwapHistoryExist(isSwapin bool, txid, bind string) bool {
-	key := getSwapCacheKey(isSwapin, txid, bind)
+func isSwapHistoryExist(isSwapin bool, txid, pairID, bind string) bool {
+	key := getSwapCacheKey(isSwapin, txid, pairID, bind)
 	return cachedSwapHistoty.Contains(key)
 }

@@ -99,6 +99,7 @@ type MgoLatestSwapNonce struct {
 type MgoSwapHistory struct {
 	Key      primitive.ObjectID `bson:"_id"`
 	IsSwapin bool               `bson:"isswapin"`
+	PairID   string             `bson:"pairid"`
 	TxID     string             `bson:"txid"`
 	Bind     string             `bson:"bind"`
 	SwapTx   string             `bson:"swaptx"`

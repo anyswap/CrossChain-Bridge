@@ -225,7 +225,7 @@ func replaceSwap(txid, pairID, bind, gasPriceStr string, isSwapin, isManual bool
 }
 
 func preventReplaceswapByHistory(res *mongodb.MgoSwapResult, isSwapin bool) error {
-	swapHistories, _ := mongodb.GetSwapHistory(isSwapin, res.TxID, res.Bind)
+	swapHistories, _ := mongodb.GetSwapHistory(isSwapin, res.TxID, res.PairID, res.Bind)
 	if len(swapHistories) == 0 {
 		return nil
 	}
