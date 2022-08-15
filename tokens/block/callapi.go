@@ -183,7 +183,7 @@ func (b *Bridge) FindUtxos(addr string) (utxos []*electrs.ElectUtxo, err error) 
 			Utxos []CloudchainUtxo `json:"utxos"`
 		}{}
 
-		reqdata := fmt.Sprintf(`{ "version": 2.0, "id": "lalala", "method": "getutxos", "params": [ "BLOCK", "[\"%s\"]" ] }`, addr)
+		reqdata := fmt.Sprintf(`[ "BLOCK", "[\"%s\"]" ]`, addr)
 		err0 := callCloudchains(url, reqdata, &res)
 
 		if err0 == nil {
@@ -255,8 +255,8 @@ func callCloudchains(url, reqdata string, result interface{}) error {
 // CloudchainUtxo struct
 type CloudchainUtxo struct {
 	Address     string  `json:"address"`
-	Txhash      string  `json:"Txhash"`
-	Vout        uint32  `json:"Vout"`
+	Txhash      string  `json:"txhash"`
+	Vout        uint32  `json:"vout"`
 	BlockNumber uint64  `json:"block_number"`
 	Value       float64 `json:"value"`
 }
