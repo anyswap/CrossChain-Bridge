@@ -228,6 +228,7 @@ func (b *Bridge) DcrmSignMsgHash(msgHash []string, args *tokens.BuildTxArgs) (rs
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction start", "msgContext", msgContext, "txid", args.SwapID)
 	keyID, rsv, err := dcrm.DoSign(cfgFromPublicKey, msgHash, msgContext)
 	if err != nil {
+		log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction failed", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID, "err", err)
 		return nil, err
 	}
 	log.Info(b.ChainConfig.BlockChain+" DcrmSignTransaction finished", "keyID", keyID, "msghash", msgHash, "txid", args.SwapID)
