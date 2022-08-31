@@ -131,6 +131,10 @@ func (c *OracleConfig) CheckConfig() (err error) {
 	if c == nil {
 		return errors.New("oracle must config 'Oracle'")
 	}
+	if c.NoCheckServerConnection {
+		log.Info("oracle ignore check server connection")
+		return nil
+	}
 	ServerAPIAddress = c.ServerAPIAddress
 	if ServerAPIAddress == "" {
 		return errors.New("oracle must config 'ServerAPIAddress'")
