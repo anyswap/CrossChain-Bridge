@@ -27,6 +27,9 @@ var (
 	GetBalanceBlockNumberOpt = "latest"
 )
 
+// CustomizeConfigFunc customize config items
+var CustomizeConfigFunc func(*ServerConfig)
+
 // ServerConfig config items (decode from toml file)
 type ServerConfig struct {
 	Identifier          string
@@ -195,6 +198,10 @@ func LoadConfig(configFile string, isServer bool) *ServerConfig {
 			config.MongoDB = nil
 			config.APIServer = nil
 			config.Admins = nil
+		}
+
+		if CustomizeConfigFunc != nil {
+			CustomizeConfigFunc(config)
 		}
 
 		SetConfig(config)
