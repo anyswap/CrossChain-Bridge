@@ -38,6 +38,9 @@ var (
 	ChanOut = make(chan string)
 )
 
+// CustomizeConfigFunc customize config items
+var CustomizeConfigFunc func(*BridgeConfig)
+
 // BridgeConfig config items (decode from toml file)
 type BridgeConfig struct {
 	Identifier  string
@@ -245,6 +248,10 @@ func LoadConfig(configFile string, isServer bool) *BridgeConfig {
 			config.Oracle = nil
 		} else {
 			config.Server = nil
+		}
+
+		if CustomizeConfigFunc != nil {
+			CustomizeConfigFunc(config)
 		}
 
 		SetConfig(config)
