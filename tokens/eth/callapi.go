@@ -301,28 +301,38 @@ func (b *Bridge) GetLogs(filterQuery *types.FilterQuery) (result []*types.RPCLog
 func (b *Bridge) GetPoolNonce(address, height string) (uint64, error) {
 	account := common.HexToAddress(address)
 	gateway := b.GatewayConfig
-	return getMaxPoolNonce(account, height, gateway.APIAddress)
+	return getMedianPoolNonce(account, height, gateway.APIAddress)
 }
 
-func getMaxPoolNonce(account common.Address, height string, urls []string) (maxNonce uint64, err error) {
+func getMedianPoolNonce(account common.Address, height string, urls []string) (mdPoolNonce uint64, err error) {
 	if len(urls) == 0 {
 		return 0, errEmptyURLs
 	}
-	var success bool
-	var result hexutil.Uint64
+	allPoolNonces := make([]uint64, 0, 10)
 	for _, url := range urls {
+		var result hexutil.Uint64
 		err = client.RPCPost(&result, url, "eth_getTransactionCount", account, height)
 		if err == nil {
-			success = true
-			if uint64(result) > maxNonce {
-				maxNonce = uint64(result)
-			}
+			allPoolNonces = append(allPoolNonces, uint64(result))
+			log.Info("call eth_getTransactionCount success", "url", url, "account", account, "nonce", uint64(result))
 		}
 	}
-	if success {
-		return maxNonce, nil
+	if len(allPoolNonces) == 0 {
+		log.Warn("GetPoolNonce failed", "account", account, "height", height, "err", err)
+		return 0, wrapRPCQueryError(err, "eth_getTransactionCount", account, height)
 	}
-	return 0, wrapRPCQueryError(err, "eth_getTransactionCount", account, height)
+	sort.Slice(allPoolNonces, func(i, j int) bool {
+		return allPoolNonces[i] < allPoolNonces[j]
+	})
+	count := len(allPoolNonces)
+	mdInd := (count - 1) / 2
+	if count%2 != 0 {
+		mdPoolNonce = allPoolNonces[mdInd]
+	} else {
+		mdPoolNonce = (allPoolNonces[mdInd] + allPoolNonces[mdInd+1]) / 2
+	}
+	log.Info("GetPoolNonce success", "account", account, "urls", len(urls), "validCount", count, "median", mdPoolNonce)
+	return mdPoolNonce, nil
 }
 
 // SuggestPrice call eth_gasPrice

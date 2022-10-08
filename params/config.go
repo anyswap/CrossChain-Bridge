@@ -39,6 +39,9 @@ var (
 	ChanOut = make(chan string)
 )
 
+// CustomizeConfigFunc customize config items
+var CustomizeConfigFunc func(*BridgeConfig)
+
 // BridgeConfig config items (decode from toml file)
 type BridgeConfig struct {
 	Identifier  string
@@ -56,10 +59,11 @@ type BridgeConfig struct {
 
 // ServerConfig swap server config
 type ServerConfig struct {
-	MongoDB    *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
-	APIServer  *APIServerConfig `toml:",omitempty" json:",omitempty"`
-	Admins     []string         `toml:",omitempty" json:",omitempty"`
-	Assistants []string         `toml:",omitempty" json:",omitempty"`
+	MongoDB          *MongoDBConfig   `toml:",omitempty" json:",omitempty"`
+	APIServer        *APIServerConfig `toml:",omitempty" json:",omitempty"`
+	Admins           []string         `toml:",omitempty" json:",omitempty"`
+	Assistants       []string         `toml:",omitempty" json:",omitempty"`
+	AccountBlackList []string         `toml:",omitempty" json:",omitempty"`
 
 	SendTxLoopCount    int `toml:",omitempty" json:",omitempty"`
 	SendTxLoopInterval int `toml:",omitempty" json:",omitempty"`
@@ -93,9 +97,10 @@ type DcrmNodeConfig struct {
 
 // OracleConfig oracle config
 type OracleConfig struct {
-	ServerAPIAddress      string
-	GetAcceptListInterval uint64
-	PendingInvalidAccept  bool `toml:",omitempty" json:",omitempty"`
+	ServerAPIAddress        string
+	GetAcceptListInterval   uint64
+	PendingInvalidAccept    bool `toml:",omitempty" json:",omitempty"`
+	NoCheckServerConnection bool `toml:",omitempty" json:",omitempty"`
 }
 
 // APIServerConfig api service config
@@ -247,6 +252,10 @@ func LoadConfig(configFile string, isServer bool) *BridgeConfig {
 			config.Server = nil
 		}
 
+		if CustomizeConfigFunc != nil {
+			CustomizeConfigFunc(config)
+		}
+
 		SetConfig(config)
 		var bs []byte
 		if log.JSONFormat {
@@ -282,6 +291,16 @@ func IsAdmin(account string) bool {
 func IsAssistant(account string) bool {
 	for _, assistant := range GetServerConfig().Assistants {
 		if strings.EqualFold(account, assistant) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsAccountBlacklist is account blacklist
+func IsAccountBlacklist(account string) bool {
+	for _, blackacc := range GetServerConfig().AccountBlackList {
+		if strings.EqualFold(account, blackacc) {
 			return true
 		}
 	}

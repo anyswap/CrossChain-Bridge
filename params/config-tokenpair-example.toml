@@ -1,6 +1,9 @@
 PairID = "BTC"
 DiffDecimals = false
 
+# account black list of string array
+AccountBlackList = []
+
 # source token config
 [SrcToken]
 # ID must be ERC20 if source token is erc20 token

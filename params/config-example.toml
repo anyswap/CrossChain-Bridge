@@ -11,6 +11,9 @@ Assistants = [
         "0x6666666666666666666666666666666666666666"
 ]
 
+# account black list of string array
+AccountBlackList = []
+
 # send tx loop count until success (use negative to disable loop)
 SendTxLoopCount = 30
 SendTxLoopInterval = 10
@@ -42,6 +45,8 @@ APIAddress = ["http://127.0.0.1:8711", "http://127.0.0.1:8722"]
 [Oracle]
 # post swap register RPC requests to this server
 ServerAPIAddress = "http://127.0.0.1:11556/rpc"
+# don't check server connection
+NoCheckServerConnection = false
 # getting accept list interval in accept job
 GetAcceptListInterval = 20
 # when meet invalid accept, ignore it instead of disagree it immediately

@@ -597,7 +597,7 @@ func (c *TokenConfig) VerifyDcrmPublicKey() error {
 		return nil
 	}
 	if IsDcrmDisabled {
-		return fmt.Errorf("dcrm is disabled but no private key is provided")
+		return nil
 	}
 
 	if !common.IsHexAddress(c.DcrmAddress) {

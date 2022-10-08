@@ -258,8 +258,8 @@ func sendSignedTransaction(bridge tokens.CrossChainBridge, signedTx interface{},
 		time.Sleep(retrySendTxInterval)
 	}
 	if txHash != "" {
-		addSwapHistory(isSwapin, txid, bind)
-		_ = mongodb.AddSwapHistory(isSwapin, txid, bind, txHash)
+		addSwapHistory(isSwapin, txid, pairID, bind)
+		_ = mongodb.AddSwapHistory(isSwapin, txid, pairID, bind, txHash)
 	}
 	if err != nil {
 		logWorkerError("sendtx", "send tx failed", err, "pairID", pairID, "txid", txid, "bind", bind, "isSwapin", isSwapin, "txHash", txHash, "swapNonce", swapNonce)
