@@ -171,6 +171,11 @@ func isSwapInBlacklist(swap *mongodb.MgoSwapResult) (isBlacked bool, err error) 
 			return isBlacked, err
 		}
 	}
+	isBlacked = isBlacked ||
+		params.IsAccountBlacklist(swap.From) ||
+		params.IsAccountBlacklist(swap.Bind) ||
+		tokens.IsAccountBlacklistWithPairID(swap.From, swap.PairID) ||
+		tokens.IsAccountBlacklistWithPairID(swap.Bind, swap.PairID)
 	return isBlacked, nil
 }
 

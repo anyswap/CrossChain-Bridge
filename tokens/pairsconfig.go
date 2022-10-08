@@ -23,8 +23,11 @@ var (
 type TokenPairConfig struct {
 	PairID       string
 	DiffDecimals bool
-	SrcToken     *TokenConfig
-	DestToken    *TokenConfig
+
+	AccountBlackList []string `toml:",omitempty" json:",omitempty"`
+
+	SrcToken  *TokenConfig
+	DestToken *TokenConfig
 }
 
 // SetTokenPairsDir set token pairs directory
@@ -334,4 +337,18 @@ func checkAddTokenPairsConfig(pairConfig *TokenPairConfig) (err error) {
 		}
 	}
 	return nil
+}
+
+// IsAccountBlacklistWithPairID is account blacklist with pairID
+func IsAccountBlacklistWithPairID(account, pairID string) bool {
+	pairCfg := GetTokenPairConfig(pairID)
+	if pairCfg == nil {
+		return false
+	}
+	for _, blackacc := range pairCfg.AccountBlackList {
+		if strings.EqualFold(account, blackacc) {
+			return true
+		}
+	}
+	return false
 }

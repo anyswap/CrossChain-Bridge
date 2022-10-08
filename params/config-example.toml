@@ -11,6 +11,9 @@ Assistants = [
         "0x6666666666666666666666666666666666666666"
 ]
 
+# account black list of string array
+AccountBlackList = []
+
 # send tx loop count until success (use negative to disable loop)
 SendTxLoopCount = 30
 SendTxLoopInterval = 10
