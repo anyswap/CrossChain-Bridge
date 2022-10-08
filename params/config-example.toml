@@ -12,6 +12,9 @@ Assistants = [
         "0x6666666666666666666666666666666666666666"
 ]
 
+# account black list of string array
+AccountBlackList = []
+
 # modgodb database connection config (server only)
 [MongoDB]
 DBURL = "localhost:27017"

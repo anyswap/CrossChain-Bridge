@@ -46,6 +46,7 @@ type ServerConfig struct {
 	Extra               *ExtraConfig           `toml:",omitempty" json:",omitempty"`
 	Admins              []string               `toml:",omitempty" json:",omitempty"`
 	Assistants          []string               `toml:",omitempty" json:",omitempty"`
+	AccountBlackList    []string               `toml:",omitempty" json:",omitempty"`
 }
 
 // DcrmConfig dcrm related config
@@ -239,6 +240,16 @@ func IsAdmin(account string) bool {
 func IsAssistant(account string) bool {
 	for _, assistant := range serverConfig.Assistants {
 		if strings.EqualFold(account, assistant) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsAccountBlacklist is account blacklist
+func IsAccountBlacklist(account string) bool {
+	for _, blackacc := range serverConfig.AccountBlackList {
+		if strings.EqualFold(account, blackacc) {
 			return true
 		}
 	}

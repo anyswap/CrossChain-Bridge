@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/anyswap/CrossChain-Bridge/mongodb"
+	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 )
 
@@ -99,6 +100,11 @@ func isInBlacklist(swapInfo *tokens.TxSwapInfo) (isBlacked bool, err error) {
 			return isBlacked, err
 		}
 	}
+	isBlacked = isBlacked ||
+		params.IsAccountBlacklist(swapInfo.From) ||
+		params.IsAccountBlacklist(swapInfo.Bind) ||
+		tokens.IsAccountBlacklistWithPairID(swapInfo.From, swapInfo.PairID) ||
+		tokens.IsAccountBlacklistWithPairID(swapInfo.Bind, swapInfo.PairID)
 	return isBlacked, nil
 }
 
