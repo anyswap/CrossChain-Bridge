@@ -117,6 +117,18 @@ func (b *Bridge) GetTaxRate() (res sdk.Dec, err error) {
 	return zeroDec, wrapRPCQueryError(err, "GetTaxRate")
 }
 
+// GetGasPrice impl
+func (b *Bridge) GetGasPrice(denom string) (res sdk.Dec, err error) {
+	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)
+	for _, url := range urls {
+		res, err = GetGasPrice(url, denom)
+		if err == nil {
+			return res, nil
+		}
+	}
+	return zeroDec, wrapRPCQueryError(err, "GetGasPrice")
+}
+
 // GetContractInfo impl
 func (b *Bridge) GetContractInfo(contract string) (res *QueryContractInfoResponse, err error) {
 	urls := append(b.GatewayConfig.APIAddress, b.GatewayConfig.APIAddressExt...)

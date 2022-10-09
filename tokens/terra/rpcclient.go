@@ -149,6 +149,21 @@ func GetTaxRate(url string) (sdk.Dec, error) {
 	return sdk.NewDecFromStr(result.TaxRate)
 }
 
+// GetGasPrice get gas price
+func GetGasPrice(url, denom string) (sdk.Dec, error) {
+	path := "/v1/txs/gas_prices"
+	result := make(map[string]string)
+	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
+	if err != nil {
+		return zeroDec, err
+	}
+	val, exist := result[denom]
+	if !exist {
+		return zeroDec, fmt.Errorf("no gas price for denom '%v'", denom)
+	}
+	return sdk.NewDecFromStr(val)
+}
+
 // GetContractInfo get contract info
 func GetContractInfo(url, contract string) (*QueryContractInfoResponse, error) {
 	path := "/terra/wasm/v1beta1/contracts/" + contract

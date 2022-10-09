@@ -239,7 +239,17 @@ func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *
 
 	fees := txb.GetFee()
 	if len(fees) == 1 {
+		denom := fees[0].Denom
 		gasPrice := tokenCfg.DefaultGasPrice
+		if gasPrice == 0 {
+			gasPriceDec, errf := b.GetGasPrice(denom)
+			if errf == nil {
+				gasPrice, errf = gasPriceDec.Float64()
+			}
+			if errf != nil {
+				return errf
+			}
+		}
 		if gasPrice == 0 {
 			gasPrice = DefaultGasPrice
 		}
@@ -249,11 +259,12 @@ func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *
 			feeCap = DefaultFeeCap
 		}
 		if feesNeed > feeCap {
+			log.Info("build tx feeNeed is larger than feeCap", "gas", gas, "gasPrice", gasPrice, "feeNeed", feesNeed, "feeCap", feeCap)
 			feesNeed = feeCap
 		}
 		if fees[0].Amount.Uint64() < feesNeed {
 			log.Info("build tx adjust fees", "old", fees.String(), "new", feesNeed)
-			fees = sdk.NewCoins(sdk.NewCoin(fees[0].Denom, sdk.NewIntFromUint64(feesNeed)))
+			fees = sdk.NewCoins(sdk.NewCoin(denom, sdk.NewIntFromUint64(feesNeed)))
 			txb.SetFeeAmount(fees)      // adjust fees
 			*extra.Fees = fees.String() // update extra fees
 		}
