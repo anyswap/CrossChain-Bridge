@@ -80,6 +80,14 @@ func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.Token
 		return nil, fmt.Errorf("negative token amount")
 	}
 
+	// tax burn amount is equal to 1.2% total value
+	burnAmount := new(big.Int).Mul(amount, big.NewInt(12))
+	burnAmount.Div(burnAmount, big.NewInt(1000))
+
+	// adjust receiver amount by deduct tax burn fee
+	amount.Sub(amount, burnAmount)
+	args.SwapValue = amount // swap value
+
 	minReserve := b.getMinReserveFee()
 	err = b.checkCoinBalance(from, b.ChainConfig.MetaCoin.Unit, minReserve)
 	if err != nil {
@@ -105,7 +113,7 @@ func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.Token
 	}
 
 	memo := tokens.UnlockMemoPrefix + args.SwapID
-	txb, err = b.BuildTx(from, args.Bind, memo, amount, extra, tokenCfg)
+	txb, err = b.BuildTx(from, args.Bind, memo, amount, burnAmount, extra, tokenCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +121,8 @@ func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.Token
 	log.Info("build tx success",
 		"identifier", args.Identifier, "pairID", args.PairID, "swapID", args.SwapID,
 		"originValue", args.OriginValue, "swapValue", args.SwapValue,
-		"from", from, "bind", args.Bind, "amount", amount,
+		"from", from, "bind", args.Bind,
+		"amount", amount, "burnAmount", burnAmount,
 		"replaceNum", args.GetReplaceNum(),
 		"gas", txb.GetGas(), "fees", txb.GetFee().String(),
 		"chainID", txb.GetSignerData().ChainID,
@@ -126,7 +135,7 @@ func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.Token
 // BuildTx build tx
 func (b *Bridge) BuildTx(
 	from, to, memo string,
-	amount *big.Int,
+	amount, burnAmount *big.Int,
 	extra *tokens.TerraExtra,
 	tokenCfg *tokens.TokenConfig,
 ) (*TxBuilder, error) {
@@ -210,7 +219,7 @@ func (b *Bridge) BuildTx(
 	}
 
 	if params.IsSwapServer {
-		err = b.adjustFees(txb, extra, tokenCfg)
+		err = b.adjustFees(txb, extra, tokenCfg, burnAmount)
 		if err != nil {
 			return nil, err
 		}
@@ -219,7 +228,7 @@ func (b *Bridge) BuildTx(
 	return txb, nil
 }
 
-func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *tokens.TokenConfig) error {
+func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *tokens.TokenConfig, burnAmount *big.Int) error {
 	gasUsed, err := b.simulateTx(txb)
 	if err != nil {
 		return err
@@ -262,8 +271,10 @@ func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *
 			log.Info("build tx feeNeed is larger than feeCap", "gas", gas, "gasPrice", gasPrice, "feeNeed", feesNeed, "feeCap", feeCap)
 			feesNeed = feeCap
 		}
+
+		feesNeed += burnAmount.Uint64()
 		if fees[0].Amount.Uint64() < feesNeed {
-			log.Info("build tx adjust fees", "old", fees.String(), "new", feesNeed)
+			log.Info("build tx adjust fees", "old", fees.String(), "new", feesNeed, "burnAmount", burnAmount)
 			fees = sdk.NewCoins(sdk.NewCoin(denom, sdk.NewIntFromUint64(feesNeed)))
 			txb.SetFeeAmount(fees)      // adjust fees
 			*extra.Fees = fees.String() // update extra fees
