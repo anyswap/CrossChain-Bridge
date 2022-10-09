@@ -86,13 +86,14 @@ func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.Token
 		return nil, err
 	}
 
+	needAmount := amount
 	if tokenCfg.ContractAddress == "" {
 		if tokenCfg.Unit == b.ChainConfig.MetaCoin.Unit {
-			amount = new(big.Int).Add(amount, minReserve)
+			needAmount = new(big.Int).Add(amount, minReserve)
 		}
-		err = b.checkCoinBalance(from, tokenCfg.Unit, amount)
+		err = b.checkCoinBalance(from, tokenCfg.Unit, needAmount)
 	} else {
-		err = b.checkTokenBalance(tokenCfg.ContractAddress, from, amount)
+		err = b.checkTokenBalance(tokenCfg.ContractAddress, from, needAmount)
 	}
 	if err != nil {
 		return nil, err
