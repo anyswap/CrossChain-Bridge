@@ -73,6 +73,15 @@ func Init() {
 	SupportedCoinDecimals[core.MicroMNTDenom] = 6
 }
 
+func shouldBurnTax(denom string) bool {
+	switch denom {
+	case core.MicroLunaDenom, core.MicroUSDDenom:
+		return true
+	default:
+		return false
+	}
+}
+
 // InitAfterConfig init and verify after loading config
 func (b *Bridge) InitAfterConfig() {
 	if b.ChainConfig == nil {

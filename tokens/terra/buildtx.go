@@ -80,12 +80,14 @@ func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.Token
 		return nil, fmt.Errorf("negative token amount")
 	}
 
-	// tax burn amount is equal to 1.2% total value
-	burnAmount := new(big.Int).Mul(amount, big.NewInt(12))
-	burnAmount.Div(burnAmount, big.NewInt(1000))
-
-	// adjust receiver amount by deduct tax burn fee
-	amount.Sub(amount, burnAmount)
+	burnAmount := big.NewInt(0)
+	if shouldBurnTax(tokenCfg.Unit) && tokenCfg.ContractAddress == "" {
+		// tax burn amount is equal to 1.2% total value
+		burnAmount := new(big.Int).Mul(amount, big.NewInt(12))
+		burnAmount.Div(burnAmount, big.NewInt(1000))
+		// adjust receiver amount by deduct tax burn fee
+		amount.Sub(amount, burnAmount)
+	}
 	args.SwapValue = amount // swap value
 
 	minReserve := b.getMinReserveFee()
@@ -272,10 +274,19 @@ func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *
 			feesNeed = feeCap
 		}
 
-		feesNeed += burnAmount.Uint64()
+		if burnAmount.Sign() > 0 && tokenCfg.Unit == denom {
+			feesNeed += burnAmount.Uint64()
+		}
+
 		if fees[0].Amount.Uint64() < feesNeed {
 			log.Info("build tx adjust fees", "old", fees.String(), "new", feesNeed, "burnAmount", burnAmount)
 			fees = sdk.NewCoins(sdk.NewCoin(denom, sdk.NewIntFromUint64(feesNeed)))
+			txb.SetFeeAmount(fees)      // adjust fees
+			*extra.Fees = fees.String() // update extra fees
+		}
+
+		if burnAmount.Sign() > 0 && tokenCfg.Unit != denom {
+			fees = sdk.NewCoins(fees[0], sdk.NewCoin(tokenCfg.Unit, sdk.NewIntFromUint64(burnAmount.Uint64())))
 			txb.SetFeeAmount(fees)      // adjust fees
 			*extra.Fees = fees.String() // update extra fees
 		}
