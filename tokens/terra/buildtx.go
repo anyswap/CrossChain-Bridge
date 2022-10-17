@@ -83,7 +83,7 @@ func (b *Bridge) buildSwapoutTx(args *tokens.BuildTxArgs, tokenCfg *tokens.Token
 	burnAmount := big.NewInt(0)
 	if shouldBurnTax(tokenCfg.Unit) && tokenCfg.ContractAddress == "" {
 		// tax burn amount is equal to 1.2% total value
-		burnAmount := new(big.Int).Mul(amount, big.NewInt(12))
+		burnAmount = new(big.Int).Mul(amount, big.NewInt(12))
 		burnAmount.Div(burnAmount, big.NewInt(1000))
 		// adjust receiver amount by deduct tax burn fee
 		amount.Sub(amount, burnAmount)
