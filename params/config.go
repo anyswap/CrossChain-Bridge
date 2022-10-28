@@ -17,7 +17,7 @@ const (
 
 var (
 	locDataDir        string
-	bridgeConfig      *BridgeConfig
+	bridgeConfig      = &BridgeConfig{}
 	loadConfigStarter sync.Once
 
 	// IsSwapServer if true then it's swap server, otherwise it's swap oracle

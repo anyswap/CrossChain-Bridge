@@ -11,6 +11,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func init() {
+	SetLogger(6, false, true)
+}
+
 const timestampFormat = "2006-01-02T15:04:05.000"
 
 // JSONFormat print log in json format

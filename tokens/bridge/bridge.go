@@ -12,6 +12,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens/block"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/colx"
+	"github.com/anyswap/CrossChain-Bridge/tokens/conflux"
 	"github.com/anyswap/CrossChain-Bridge/tokens/etc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/fsn"
@@ -46,6 +47,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return colx.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "KUSAMA"):
 		return kusama.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "CONFLUX"):
+		return conflux.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
 		return nil

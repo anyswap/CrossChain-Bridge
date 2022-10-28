@@ -13,7 +13,7 @@ import (
 
 // GetTransactionStatus impl
 func (b *Bridge) GetTransactionStatus(txHash string) (*tokens.TxStatus, error) {
-	txr, url, err := b.GetTransactionReceipt(txHash)
+	txr, err := b.GetTransactionReceipt(txHash)
 	if err != nil {
 		log.Trace("GetTransactionReceipt fail", "hash", txHash, "err", err)
 		return nil, err
@@ -26,7 +26,7 @@ func (b *Bridge) GetTransactionStatus(txHash string) (*tokens.TxStatus, error) {
 
 	if txStatus.BlockHeight != 0 {
 		for i := 0; i < 3; i++ {
-			latest, errt := b.Inherit.GetLatestBlockNumberOf(url)
+			latest, errt := b.Inherit.GetFinalizedBlockNumber()
 			if errt == nil {
 				if latest > txStatus.BlockHeight {
 					txStatus.Confirmations = latest - txStatus.BlockHeight
@@ -143,7 +143,7 @@ func (b *Bridge) getReceipt(swapInfo *tokens.TxSwapInfo, allowUnstable bool) (*t
 	if !allowUnstable {
 		return b.getStableReceipt(swapInfo)
 	}
-	receipt, _, err := b.GetTransactionReceipt(swapInfo.Hash)
+	receipt, err := b.GetTransactionReceipt(swapInfo.Hash)
 	if err != nil {
 		log.Error("get tx receipt failed", "hash", swapInfo.Hash, "err", err)
 		return nil, err

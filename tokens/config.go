@@ -27,9 +27,10 @@ type BtcExtraConfig struct {
 
 // GatewayConfig struct
 type GatewayConfig struct {
-	APIAddress    []string
-	APIAddressExt []string
-	Extras        *GatewayExtras `json:",omitempty"`
+	APIAddress         []string
+	APIAddressExt      []string       `json:",omitempty"`
+	FinalizeAPIAddress []string       `json:",omitempty"`
+	Extras             *GatewayExtras `json:",omitempty"`
 }
 
 // GatewayExtras struct

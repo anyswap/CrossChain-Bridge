@@ -25,7 +25,7 @@ var (
 
 // InheritInterface inherit interface
 type InheritInterface interface {
-	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
+	GetFinalizedBlockNumber() (uint64, error)
 }
 
 // Bridge eth bridge
@@ -46,6 +46,11 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	return bridge
 }
 
+// GetFinalizedBlockNumber some chain may override this method
+func (b *Bridge) GetFinalizedBlockNumber() (uint64, error) {
+	return b.GetLatestBlockNumber()
+}
+
 // SetChainAndGateway set chain and gateway config
 func (b *Bridge) SetChainAndGateway(chainCfg *tokens.ChainConfig, gatewayCfg *tokens.GatewayConfig) {
 	b.CrossChainBridgeBase.SetChainAndGateway(chainCfg, gatewayCfg)
@@ -64,8 +69,8 @@ func (b *Bridge) Init() {
 			log.Crit("wrong chain config 'BaseGasPrice'", "BaseGasPrice", b.ChainConfig.BaseGasPrice, "err", err)
 		}
 		baseGasPrice = gasPrice
+		log.Info("init base gas price", "baseGasPrice", baseGasPrice, "isSrc", b.IsSrc, "chainID", b.SignerChainID)
 	}
-	log.Info("init base gas price", "baseGasPrice", baseGasPrice, "isSrc", b.IsSrc, "chainID", b.SignerChainID)
 }
 
 // VerifyChainID verify chain id

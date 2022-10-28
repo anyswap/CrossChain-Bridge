@@ -38,6 +38,11 @@ var (
 		"moonriver": big.NewInt(1285),
 		"shiden":    big.NewInt(336),
 	}
+
+	ConfluxNetworkAndChainIDMap = map[string]*big.Int{
+		"mainnet": big.NewInt(1030),
+		"testnet": big.NewInt(71),
+	}
 )
 
 // IsCustomNetwork is custom network
