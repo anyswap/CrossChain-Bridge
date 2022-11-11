@@ -26,11 +26,9 @@ func (b *Bridge) GetTransactionStatus(txHash string) (*tokens.TxStatus, error) {
 
 	if txStatus.BlockHeight != 0 {
 		for i := 0; i < 3; i++ {
-			latest, errt := b.Inherit.GetFinalizedBlockNumber()
+			confirmations, errt := b.Inherit.GetBlockConfirmations(txr)
 			if errt == nil {
-				if latest > txStatus.BlockHeight {
-					txStatus.Confirmations = latest - txStatus.BlockHeight
-				}
+				txStatus.Confirmations = confirmations
 				break
 			}
 			time.Sleep(1 * time.Second)

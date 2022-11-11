@@ -5,6 +5,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/common/hexutil"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/types"
 )
 
 var (
@@ -17,6 +18,19 @@ var (
 type KsmHeader struct {
 	ParentHash *common.Hash `json:"parentHash"`
 	Number     *hexutil.Big `json:"number"`
+}
+
+// GetBlockConfirmations override this method
+func (b *Bridge) GetBlockConfirmations(receipt *types.RPCTxReceipt) (uint64, error) {
+	latest, err := b.GetFinalizedBlockNumber()
+	if err != nil {
+		return 0, err
+	}
+	blockNumber := receipt.BlockNumber.ToInt().Uint64()
+	if latest > blockNumber {
+		return latest - blockNumber, nil
+	}
+	return 0, nil
 }
 
 // GetFinalizedBlockNumber call chain_getFinalizedHead and chain_getHeader

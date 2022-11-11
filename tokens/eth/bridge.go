@@ -25,7 +25,7 @@ var (
 
 // InheritInterface inherit interface
 type InheritInterface interface {
-	GetFinalizedBlockNumber() (uint64, error)
+	GetBlockConfirmations(receipt *types.RPCTxReceipt) (uint64, error)
 }
 
 // Bridge eth bridge
@@ -44,11 +44,6 @@ func NewCrossChainBridge(isSrc bool) *Bridge {
 	}
 	bridge.Inherit = bridge
 	return bridge
-}
-
-// GetFinalizedBlockNumber some chain may override this method
-func (b *Bridge) GetFinalizedBlockNumber() (uint64, error) {
-	return b.GetLatestBlockNumber()
 }
 
 // SetChainAndGateway set chain and gateway config
