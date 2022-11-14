@@ -39,9 +39,17 @@ var (
 		"shiden":    big.NewInt(336),
 	}
 
+	// Conflux chain
 	ConfluxNetworkAndChainIDMap = map[string]*big.Int{
 		"mainnet": big.NewInt(1030),
 		"testnet": big.NewInt(71),
+	}
+
+	// Arbitrum chain
+	ArbitrumNetworkAndChainIDMap = map[string]*big.Int{
+		"mainnet": big.NewInt(42161),
+		"rinkeby": big.NewInt(421611),
+		"goerli":  big.NewInt(421613),
 	}
 )
 
