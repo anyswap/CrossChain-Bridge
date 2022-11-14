@@ -9,6 +9,7 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	"github.com/anyswap/CrossChain-Bridge/tokens/arbitrum"
 	"github.com/anyswap/CrossChain-Bridge/tokens/block"
 	"github.com/anyswap/CrossChain-Bridge/tokens/btc"
 	"github.com/anyswap/CrossChain-Bridge/tokens/colx"
@@ -49,6 +50,8 @@ func NewCrossChainBridge(id string, isSrc bool) tokens.CrossChainBridge {
 		return kusama.NewCrossChainBridge(isSrc)
 	case strings.HasPrefix(blockChainIden, "CONFLUX"):
 		return conflux.NewCrossChainBridge(isSrc)
+	case strings.HasPrefix(blockChainIden, "ARBITRUM"):
+		return arbitrum.NewCrossChainBridge(isSrc)
 	default:
 		log.Fatalf("Unsupported block chain %v", id)
 		return nil
