@@ -26,6 +26,19 @@ var (
 	wrapRPCQueryError = tokens.WrapRPCQueryError
 )
 
+// GetBlockConfirmations some chain may override this method
+func (b *Bridge) GetBlockConfirmations(receipt *types.RPCTxReceipt) (uint64, error) {
+	latest, err := b.GetLatestBlockNumber()
+	if err != nil {
+		return 0, err
+	}
+	blockNumber := receipt.BlockNumber.ToInt().Uint64()
+	if latest > blockNumber {
+		return latest - blockNumber, nil
+	}
+	return 0, nil
+}
+
 // GetLatestBlockNumberOf call eth_blockNumber
 func (b *Bridge) GetLatestBlockNumberOf(url string) (latest uint64, err error) {
 	var result string

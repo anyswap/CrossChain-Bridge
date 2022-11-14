@@ -38,6 +38,13 @@ var (
 		"moonriver": big.NewInt(1285),
 		"shiden":    big.NewInt(336),
 	}
+
+	// Arbitrum chain
+	ArbitrumNetworkAndChainIDMap = map[string]*big.Int{
+		"mainnet": big.NewInt(42161),
+		"rinkeby": big.NewInt(421611),
+		"goerli":  big.NewInt(421613),
+	}
 )
 
 // IsCustomNetwork is custom network

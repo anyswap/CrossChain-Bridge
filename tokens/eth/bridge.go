@@ -29,7 +29,7 @@ const (
 
 // InheritInterface inherit interface
 type InheritInterface interface {
-	GetLatestBlockNumberOf(apiAddress string) (uint64, error)
+	GetBlockConfirmations(receipt *types.RPCTxReceipt) (uint64, error)
 }
 
 // Bridge eth bridge

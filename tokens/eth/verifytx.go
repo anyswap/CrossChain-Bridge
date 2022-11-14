@@ -15,7 +15,7 @@ import (
 // GetTransactionStatus impl
 func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	var txStatus tokens.TxStatus
-	txr, url, err := b.GetTransactionReceipt(txHash)
+	txr, _, err := b.GetTransactionReceipt(txHash)
 	if err != nil {
 		log.Trace("GetTransactionReceipt fail", "hash", txHash, "err", err)
 		return &txStatus
@@ -24,11 +24,9 @@ func (b *Bridge) GetTransactionStatus(txHash string) *tokens.TxStatus {
 	txStatus.BlockHash = txr.BlockHash.String()
 	if txStatus.BlockHeight != 0 {
 		for i := 0; i < 3; i++ {
-			latest, err := b.Inherit.GetLatestBlockNumberOf(url)
-			if err == nil {
-				if latest > txStatus.BlockHeight {
-					txStatus.Confirmations = latest - txStatus.BlockHeight
-				}
+			confirmations, errt := b.Inherit.GetBlockConfirmations(txr)
+			if errt == nil {
+				txStatus.Confirmations = confirmations
 				break
 			}
 			time.Sleep(1 * time.Second)
