@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/common"
@@ -15,6 +16,8 @@ import (
 var (
 	retryRPCCount    = 3
 	retryRPCInterval = 1 * time.Second
+
+	cachedNonce = make(map[string]uint64)
 
 	minReserveFee  *big.Int
 	latestGasPrice *big.Int
@@ -153,6 +156,14 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs) (rawTx interface{}, err error
 		}
 	}
 	nonce := *extra.Nonce
+
+	key := strings.ToLower(fmt.Sprintf("%v:%v", b.SignerChainID, args.From))
+	cached := cachedNonce[key]
+	if (cached > 0 && (nonce > cached+1000 || nonce+1000 < cached)) ||
+		(cached == 0 && nonce > 10000000) {
+		return nil, fmt.Errorf("nonce is out of range. cached %v, your %v", cached, nonce)
+	}
+	cachedNonce[key] = nonce
 
 	if isDynamicFeeTx {
 		rawTx = types.NewDynamicFeeTx(b.SignerChainID, nonce, &to, value, gasLimit, gasTipCap, gasFeeCap, input, nil)
