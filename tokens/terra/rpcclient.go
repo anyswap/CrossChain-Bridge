@@ -48,7 +48,7 @@ func GetLatestBlockNumber(url string) (height uint64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	if block.Header == nil {
+	if block == nil {
 		return 0, fmt.Errorf("wrong block result")
 	}
 	return common.GetUint64FromStr(block.Header.Height)
