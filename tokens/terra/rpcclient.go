@@ -33,7 +33,7 @@ func SetRPCTimeout(timeout int) {
 
 // GetLatestBlock get latest block
 func GetLatestBlock(url string) (*Block, error) {
-	path := "/cosmos/base/tendermint/v1beta1/blocks/latest"
+	path := "/blocks/latest"
 	var result GetBlockResult
 	err := client.RPCGetWithTimeout(&result, joinURLPath(url, path), rpcTimeout)
 	if err != nil {
