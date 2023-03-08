@@ -77,6 +77,10 @@ func BroadcastTx(url, txData string) (txHash string, err error) {
 func SimulateTx(url string, req *SimulateRequest) (result *SimulateResponse, err error) {
 	path := "/cosmos/tx/v1beta1/simulate"
 	err = client.RPCPostJSONRequestWithTimeout(joinURLPath(url, path), req, &result, rpcTimeout)
+	if err != nil {
+		log.Debug("simulate tx failed", "url", url, "path", path, "req", req, "err", err)
+		return nil, err
+	}
 	return result, err
 }
 
