@@ -231,10 +231,11 @@ func (b *Bridge) BuildTx(
 }
 
 func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *tokens.TokenConfig, burnAmount *big.Int) error {
-	gasUsed, err := b.simulateTx(txb)
+	/*gasUsed, err := b.simulateTx(txb)
 	if err != nil {
 		return err
-	}
+	}*/
+	gasUsed := uint64(130000)
 	plusGasPercentage := tokenCfg.PlusGasPercentage
 	if plusGasPercentage == 0 {
 		plusGasPercentage = DefaultPlusGasPercentage
