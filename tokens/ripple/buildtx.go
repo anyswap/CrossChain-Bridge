@@ -19,11 +19,6 @@ var (
 	minReserveFee  *big.Int
 )
 
-// GetDefaultExtras get default extras
-func (b *Bridge) GetDefaultExtras() *tokens.AllExtras {
-	return &tokens.AllExtras{RippleExtra: &tokens.RippleExtra{}}
-}
-
 // BuildRawTransaction build raw tx
 func (b *Bridge) BuildRawTransaction(args *tokens.BuildTxArgs) (rawTx interface{}, err error) {
 	var (
