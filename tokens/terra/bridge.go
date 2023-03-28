@@ -8,8 +8,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/base"
+	core "github.com/classic-terra/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	core "github.com/terra-money/core/types"
 )
 
 var (

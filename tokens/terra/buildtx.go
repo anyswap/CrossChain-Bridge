@@ -9,10 +9,10 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
+	wasmtypes "github.com/classic-terra/core/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	wasmtypes "github.com/terra-money/core/x/wasm/types"
 )
 
 var (
@@ -27,7 +27,7 @@ var (
 	DefaultFees   = "3000uluna"
 	DefaultFeeCap = uint64(10000)
 
-	DefaultGasLimit          = uint64(130000)
+	DefaultGasLimit          = uint64(200000)
 	DefaultPlusGasPercentage = uint64(20)
 
 	DefaultGasPrice = 0.02
@@ -235,7 +235,7 @@ func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *
 	if err != nil {
 		return err
 	}*/
-	gasUsed := uint64(130000)
+	gasUsed := uint64(200000)
 	plusGasPercentage := tokenCfg.PlusGasPercentage
 	if plusGasPercentage == 0 {
 		plusGasPercentage = DefaultPlusGasPercentage
