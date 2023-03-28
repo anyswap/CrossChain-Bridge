@@ -231,11 +231,11 @@ func (b *Bridge) BuildTx(
 }
 
 func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *tokens.TokenConfig, burnAmount *big.Int) error {
-	/*gasUsed, err := b.simulateTx(txb)
+	/* simulateTx is missing
+	gasUsed, err := b.simulateTx(txb)
 	if err != nil {
 		return err
-	}*/
-	gasUsed := uint64(200000)
+	}
 	plusGasPercentage := tokenCfg.PlusGasPercentage
 	if plusGasPercentage == 0 {
 		plusGasPercentage = DefaultPlusGasPercentage
@@ -247,8 +247,9 @@ func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *
 		gas = gasNeed
 		txb.SetGasLimit(gas) // adjust gas limit
 		*extra.Gas = gas     // update extra gas limit
-	}
+	}*/
 
+	gas := txb.GetGas()
 	fees := txb.GetFee()
 	if len(fees) == 1 {
 		denom := fees[0].Denom
@@ -328,6 +329,18 @@ func (b *Bridge) initExtra(args *tokens.BuildTxArgs, tokenCfg *tokens.TokenConfi
 		if gas == 0 {
 			gas = DefaultGasLimit
 		}
+		plusGasPercentage := tokenCfg.PlusGasPercentage
+		if plusGasPercentage == 0 {
+			plusGasPercentage = DefaultPlusGasPercentage
+		}
+		replaceNum := args.GetReplaceNum()
+		if replaceNum > 0 {
+			plusGasPercentage += replaceNum * b.ChainConfig.ReplacePlusGasPricePercent
+		}
+		if plusGasPercentage > tokens.MaxPlusGasPricePercentage {
+			plusGasPercentage = tokens.MaxPlusGasPricePercentage
+		}
+		gas = gas * (100 + plusGasPercentage) / 100
 		extra.Gas = &gas
 	}
 	if extra.Fees == nil {
