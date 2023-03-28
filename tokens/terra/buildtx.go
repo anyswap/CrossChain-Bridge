@@ -296,6 +296,7 @@ func (b *Bridge) adjustFees(txb *TxBuilder, extra *tokens.TerraExtra, tokenCfg *
 	return nil
 }
 
+//nolint:unused
 func (b *Bridge) simulateTx(txb *TxBuilder) (gasUsed uint64, err error) {
 	txBytes, err := txb.GetTxBytes()
 	if err != nil {
