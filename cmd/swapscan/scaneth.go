@@ -10,14 +10,15 @@ import (
 	"time"
 
 	"github.com/anyswap/CrossChain-Bridge/cmd/utils"
+	"github.com/anyswap/CrossChain-Bridge/common"
 	"github.com/anyswap/CrossChain-Bridge/log"
 	"github.com/anyswap/CrossChain-Bridge/rpc/client"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tokens/eth"
 	"github.com/anyswap/CrossChain-Bridge/tokens/tools"
-	"github.com/fsn-dev/fsn-go-sdk/efsn/common"
-	"github.com/fsn-dev/fsn-go-sdk/efsn/core/types"
-	"github.com/fsn-dev/fsn-go-sdk/efsn/ethclient"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/urfave/cli/v2"
 )
 
@@ -154,10 +155,10 @@ func (scanner *ethSwapScanner) verifyOptions() {
 		if pairID == "" {
 			log.Fatal("must specify pairid")
 		}
-		if scanner.isSwapin && !common.IsHexAddress(scanner.depositAddresses[i]) {
+		if scanner.isSwapin && !ethcommon.IsHexAddress(scanner.depositAddresses[i]) {
 			log.Fatalf("invalid deposit address '%v'", scanner.depositAddresses[i])
 		}
-		if scanner.tokenAddresses[i] != "" && !common.IsHexAddress(scanner.tokenAddresses[i]) {
+		if scanner.tokenAddresses[i] != "" && !ethcommon.IsHexAddress(scanner.tokenAddresses[i]) {
 			log.Fatalf("invalid token address '%v'", scanner.tokenAddresses[i])
 		}
 		switch strings.ToLower(pairID) {
@@ -212,7 +213,7 @@ func (scanner *ethSwapScanner) init() {
 			continue
 		}
 		var code []byte
-		code, err = ethcli.CodeAt(scanner.ctx, common.HexToAddress(tokenAddr), nil)
+		code, err = ethcli.CodeAt(scanner.ctx, ethcommon.HexToAddress(tokenAddr), nil)
 		if err != nil {
 			log.Fatalf("get contract code of '%v' failed, %v", tokenAddr, err)
 		}
@@ -316,7 +317,7 @@ func (scanner *ethSwapScanner) loopGetLatestBlockNumber() uint64 {
 	}
 }
 
-func (scanner *ethSwapScanner) getTxReceipt(txHash common.Hash) (*types.Receipt, error) {
+func (scanner *ethSwapScanner) getTxReceipt(txHash ethcommon.Hash) (*types.Receipt, error) {
 	return scanner.client.TransactionReceipt(scanner.ctx, txHash)
 }
 

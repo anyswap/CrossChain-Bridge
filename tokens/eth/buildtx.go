@@ -10,6 +10,8 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/params"
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/types"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/zksync-sdk/zksync2-go"
 )
 
 var (
@@ -129,7 +131,31 @@ func (b *Bridge) buildTx(args *tokens.BuildTxArgs, extra *tokens.EthExtraArgs, i
 		return nil, err
 	}
 
-	rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)
+	if b.IsZKSync() {
+		tx := zksync2.CreateFunctionCallTransaction(
+			ethcommon.HexToAddress(args.From),
+			ethcommon.HexToAddress(to.Hex()),
+			big.NewInt(0),
+			big.NewInt(0),
+			value,
+			[]byte(input),
+			nil, nil,
+		)
+		rawTx = zksync2.NewTransaction712(
+			b.SignerChainID,
+			big.NewInt(int64(nonce)),
+			big.NewInt(int64(gasLimit)),
+			ethcommon.HexToAddress(to.Hex()),
+			value,
+			input,
+			big.NewInt(100000000), // TODO: Estimate correct one
+			gasPrice,
+			ethcommon.HexToAddress(args.From),
+			tx.Eip712Meta,
+		)
+	} else {
+		rawTx = types.NewTransaction(nonce, to, value, gasLimit, gasPrice, input)
+	}
 
 	log.Info("build raw tx", "pairID", args.PairID, "identifier", args.Identifier,
 		"swapID", args.SwapID, "swapType", args.SwapType,

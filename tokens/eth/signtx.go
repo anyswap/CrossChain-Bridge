@@ -2,6 +2,7 @@ package eth
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,9 @@ import (
 	"github.com/anyswap/CrossChain-Bridge/tokens"
 	"github.com/anyswap/CrossChain-Bridge/tools/crypto"
 	"github.com/anyswap/CrossChain-Bridge/types"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	"github.com/zksync-sdk/zksync2-go"
 )
 
 func (b *Bridge) verifyTransactionWithArgs(rawTx interface{}, args *tokens.BuildTxArgs) (*types.Transaction, error) {
@@ -39,6 +43,9 @@ func (b *Bridge) verifyTransactionWithArgs(rawTx interface{}, args *tokens.Build
 
 // DcrmSignTransaction dcrm sign raw tx
 func (b *Bridge) DcrmSignTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signTx interface{}, txHash string, err error) {
+	if b.IsZKSync() {
+		return b.DcrmSignZkSyncTransaction(rawTx, args)
+	}
 	tx, err := b.verifyTransactionWithArgs(rawTx, args)
 	if err != nil {
 		return nil, "", err
@@ -129,4 +136,116 @@ func (b *Bridge) SignTransactionWithPrivateKey(rawTx interface{}, privKey *ecdsa
 	txHash = signedTx.Hash().String()
 	log.Info(b.ChainConfig.BlockChain+" SignTransaction success", "txhash", txHash, "nonce", signedTx.Nonce())
 	return signedTx, txHash, err
+}
+
+func (b *Bridge) verifyZkSyncTransactionReceiver(rawTx interface{}, args *tokens.BuildTxArgs) (*zksync2.Transaction712, error) {
+	tx, ok := rawTx.(*zksync2.Transaction712)
+	if !ok {
+		return nil, errors.New("[sign] wrong raw tx param")
+	}
+	if tx.To == nil || *tx.To == (ethcommon.Address{}) {
+		return nil, errors.New("[sign] tx receiver is empty")
+	}
+	tokenCfg := b.GetTokenConfig(args.PairID)
+	if tokenCfg == nil {
+		return nil, fmt.Errorf("[sign] verify tx with unknown pairID '%v'", args.PairID)
+	}
+	checkReceiver := tokenCfg.ContractAddress
+	if args.SwapType == tokens.SwapoutType && !tokenCfg.IsErc20() {
+		checkReceiver = args.Bind
+	}
+	if !strings.EqualFold(tx.To.String(), checkReceiver) {
+		return nil, fmt.Errorf("[sign] verify tx receiver failed")
+	}
+	return tx, nil
+}
+
+func HashTypedData(data apitypes.TypedData) ([]byte, error) {
+	domain, err := data.HashStruct("EIP712Domain", data.Domain.Map())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get hash of typed data domain: %w", err)
+	}
+	dataHash, err := data.HashStruct(data.PrimaryType, data.Message)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get hash of typed message: %w", err)
+	}
+	prefixedData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domain), string(dataHash)))
+	prefixedDataHash := crypto.Keccak256(prefixedData)
+	return prefixedDataHash, nil
+}
+
+type SignedZKSyncTx struct {
+	Raw []byte
+}
+
+func (b *Bridge) DcrmSignZkSyncTransaction(rawTx interface{}, args *tokens.BuildTxArgs) (signTx interface{}, txHash string, err error) {
+	tx, err := b.verifyZkSyncTransactionReceiver(rawTx, args)
+	if err != nil {
+		return nil, "", err
+	}
+
+	domain := zksync2.DefaultEip712Domain(b.SignerChainID.Int64())
+	typedData := apitypes.TypedData{
+		Types: apitypes.Types{
+			tx.GetEIP712Type():     tx.GetEIP712Types(),
+			domain.GetEIP712Type(): domain.GetEIP712Types(),
+		},
+		PrimaryType: tx.GetEIP712Type(),
+		Domain:      domain.GetEIP712Domain(),
+		Message:     tx.GetEIP712Message(),
+	}
+	msgHash, err := HashTypedData(typedData)
+	if err != nil {
+		return nil, "", err
+	}
+
+	jsondata, _ := json.Marshal(args.GetExtraArgs())
+	msgContext := string(jsondata)
+
+	txid := args.SwapID
+	logPrefix := b.ChainConfig.BlockChain + " DcrmSignTransaction "
+	log.Info(logPrefix+"start", "txid", txid, "msghash", fmt.Sprintf("%x", msgHash))
+
+	keyID, rsvs, err := dcrm.DoSignOne(b.GetDcrmPublicKey(args.PairID), fmt.Sprintf("%x", msgHash), msgContext)
+	if err != nil {
+		log.Info(logPrefix+"failed", "keyID", keyID, "txid", txid, "err", err)
+		return nil, "", err
+	}
+	log.Info(logPrefix+"finished", "keyID", keyID, "txid", txid, "msghash", fmt.Sprintf("%x", msgHash))
+
+	if len(rsvs) != 1 {
+		log.Warn("get sign status require one rsv but return many",
+			"rsvs", len(rsvs), "keyID", keyID, "txid", txid)
+		return nil, "", errors.New("get sign status require one rsv but return many")
+	}
+
+	rsv := rsvs[0]
+	log.Trace(logPrefix+"get rsv signature success", "keyID", keyID, "txid", txid, "rsv", rsv)
+	signature := common.FromHex(rsv)
+	if len(signature) != crypto.SignatureLength {
+		log.Error("wrong signature length", "keyID", keyID, "txid", txid, "have", len(signature), "want", crypto.SignatureLength)
+		return nil, "", errors.New("wrong signature length")
+	}
+
+	sig, _ := hex.DecodeString(rsv)
+	if sig[64] < 27 {
+		sig[64] += 27
+	}
+
+	signedRawTx, err := tx.RLPValues(sig)
+	if err != nil {
+		return nil, "", err
+	}
+
+	signedTx := &SignedZKSyncTx{
+		Raw: signedRawTx,
+	}
+
+	digest := []byte{}
+	digest = append(digest, msgHash...)
+	digest = append(digest, crypto.Keccak256(sig)...)
+	txHash = fmt.Sprintf("0x%x", crypto.Keccak256(digest))
+
+	log.Info(logPrefix+"success", "keyID", keyID, "txid", txid, "txhash", txHash, "nonce", tx.Nonce)
+	return signedTx, txHash, nil
 }
