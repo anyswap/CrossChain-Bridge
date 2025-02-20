@@ -95,10 +95,10 @@ Dcrm is used to config DCRM node info and group info.
 for the swap server, `SignGroups` is needed for dcrm signing.
 
 Notice:
-If in test enviroment you may run more than one program of swap servers on one machine,
+If in test environment you may run more than one program of swap servers on one machine,
 Please specify `different log file name` to clarify the outputs.
 And please specify `different config files` for each server,
-and assgin `KeystoreFile`, `PasswordFile` and `RPCAddress` etc. separatly.
+and assign `KeystoreFile`, `PasswordFile` and `RPCAddress` etc. separately.
 
 
 ## Modify token pair config files
@@ -155,11 +155,11 @@ For the config file, please refer [config file example](https://github.com/anysw
     For security reason, we suggest:
     1. change the mongodb `port` ( defaults to `27017`)
     2. enable `auth`
-    3. create user with passord to access the database
+    3. create user with password to access the database
 
 2. create MPC group
 
-    For example, we take creating `2/3 theshold` jonitly managed MPC group as an example.
+    For example, we take creating `2/3 threshold` jonitly managed MPC group as an example.
 
     we have 3 users in the MPC group, each user is running a `gdcrm` node to perform MPC functions.
 
@@ -172,7 +172,7 @@ For the config file, please refer [config file example](https://github.com/anysw
 
     We should config the `[Dcrm]` section accordingly（ eg. `GroupID`, `TotalOracles`，`Mode`, `DefaultNode`, etc.）
 
-    And we should config the following `[Dcrm]` section items sparately for each user in the MPC group:
+    And we should config the following `[Dcrm]` section items separately for each user in the MPC group:
 
     1. `KeystoreFile`
     2. `PasswordFile`
@@ -214,7 +214,7 @@ For the config file, please refer [config file example](https://github.com/anysw
 6. config `[SrcChain]`,`[SrcGateway]`
 
     We should config `APIAddress` in `[SrcGateway]` section,
-    to post RPC request to the running full node to get transaction, broadcat transaction etc.
+    to post RPC request to the running full node to get transaction, broadcast transaction etc.
 
     Config `[SrcChain]`, ref. to the following example:
 
@@ -229,7 +229,7 @@ For the config file, please refer [config file example](https://github.com/anysw
 7. config `[DestChain]`, `[DestGateway]`
 
     We should config `APIAddress` in `[DestGateway]` section,
-    to post RPC request to the running full node to get transaction, broadcat transaction etc.
+    to post RPC request to the running full node to get transaction, broadcast transaction etc.
 
     Config `[DestChain]` like `[SrcChain]`.
 
@@ -252,7 +252,7 @@ For the config file, please refer [config file example](https://github.com/anysw
     UtxoAggregateMinValue = 1000000
     ```
 
-    If not configed, the default vlaue will be used (in fact, the above values are the defaults)
+    If not configured, the default value will be used (in fact, the above values are the defaults)
 
 10. config `[SrcToken]`
 
